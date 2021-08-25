@@ -6,8 +6,7 @@ createSinglePlot <- function(target_range,reads,withFrames, colors, kmer = 1, yl
 
     } else profile <- getRiboProfile(target_range, reads, kmer)
   } else {
-    profile <- coveragePerTiling(target_range, subsetByOverlaps(reads, target_range), as.data.table = TRUE)
-
+    profile <- getCoverageProfile(target_range, reads, kmer)
   }
     profile_plot <- ggplot(profile)
     if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = "black", linetype = 4)
@@ -19,13 +18,13 @@ createSinglePlot <- function(target_range,reads,withFrames, colors, kmer = 1, yl
       geom_line(aes(y = count, x = position,color = frame), size = 0.5)
     } else if (type == "stacks") {
       profile_plot <- profile_plot +
-        geom_area(aes(y = count, x = position,fill = frame), size = 0.1, alpha = 0.8, col = "black")
+        geom_area(aes(y = count, x = position,fill = frame), size = 0.1, alpha = 0.8, col = "black", position = "identity")
       } else if (type == "columns") {
       profile_plot <- profile_plot +
         geom_col(aes(y = count, x = position, fill = frame))
       } else if (type == "area") {
         profile_plot <- profile_plot +
-          geom_area(aes(y = count, x = position,fill = frame),position = 'identity', size = 0.1, alpha = 0.8, col = "black")
+          geom_area(aes(y = count, x = position,fill = frame), size = 0.1, alpha = 0.8, col = "black", position = 'identity')
     }
     profile_plot <- profile_plot +
       theme(legend.position = "none") +

@@ -19,7 +19,7 @@ getCoverageProfile <- function(grl, reads, kmer = 1) {
     coverage <- coveragePerTiling(grl, subsetByOverlaps(reads, grl), as.data.table = TRUE)
   } else {
     extended_range <- grl %>% extendLeaders(kmer * 3) %>% extendTrailers(kmer * 3)
-    coverage <- coveragePerTiling(extended_range, subsetByOverlaps(coverage, extended_range), as.data.table = TRUE)
+    coverage <- coveragePerTiling(extended_range, subsetByOverlaps(reads, extended_range), as.data.table = TRUE)
     coverage$count <- as.numeric(coverage$count)
     coverage$genes <- as.factor(coverage$genes)
     coverage <- coverage[,count := frollmean(count, kmer, fill = 0, align = "center"), by = genes]

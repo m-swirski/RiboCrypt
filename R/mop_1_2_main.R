@@ -12,7 +12,9 @@
 #' - columns \cr
 #' - stacks \cr
 #' - area
-#' @param colors character, default NULL. Character vector of length 1 or length of "reads" list argument.
+#' @param colors character, default NULL (automatic colouring). If "withFrames" argument
+#' is TRUE, colors are set to to c("red", "green", "blue") for the 3 frames.
+#' Alternative:  Character vector of length 1 or length of "reads" list argument.
 #' @param kmers numeric (integer), bin positions into kmers.
 #' @param ylabels character, default NULL. Name of libraries in "reads" list arugment.
 #' @param proportions numeric, default NULL. Width of plot.

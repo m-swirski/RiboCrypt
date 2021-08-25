@@ -7,7 +7,9 @@ lineDeSimplify <- function(plot) {
 automateTicks <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE))
 }
-
+#'
+#' @import plotly
+#' @keywords internal
 automateTicksRNA <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE,nticks=3),xaxis=list(autorange=FALSE))
 }

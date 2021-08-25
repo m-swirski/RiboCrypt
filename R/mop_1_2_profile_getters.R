@@ -42,11 +42,9 @@ getStackProfile <- function(grl, footprints, kmer) {
 getProfileAnimate <- function(target_range, reads, withFrames, kmer = 1) {
   if (withFrames) {
     profile <- getRiboProfile(target_range, reads, kmer)
-    
+
   } else {
     profile <- coveragePerTiling(target_range, subsetByOverlaps(reads, target_range), as.data.table = TRUE)
   }
   profile
 }
-
-profiles <- mapply(function(x,y,z) getProfileAnimate(target_range, x, y, z), reads, withFrames, kmers,  SIMPLIFY = FALSE)

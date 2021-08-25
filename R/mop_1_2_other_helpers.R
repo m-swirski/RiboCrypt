@@ -19,7 +19,7 @@ matchMultiplePatterns <- function(patterns, Seq) {
     matches <- c(matches, cur_matches)
   }
   return(matches)
-} 
+}
 
 findPatterns <- function(patterns, sequence, frame = c(0,1,2), max_dist = NULL, min_dist = NULL) {
   matches <- matchMultiplePatterns(patterns = patterns, Seq = sequence)
@@ -64,14 +64,14 @@ nt_bar <- function(seq) {
                       colors = colors,
                       position = position,
                       y = rep(0,nc))
-  p = ggplot(nt_df, aes(x = position, y=y)) + 
+  p = ggplot(nt_df, aes(x = position, y=y)) +
     geom_text(label = chars, color = colors, position = "identity") +
     # geom_point(color = colors,shape = chars) +
     theme(axis.title = element_blank(),
           axis.ticks = element_blank(),
           axis.text = element_blank()) +
     theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-    scale_x_continuous(expand = c(0,0)) 
+    scale_x_continuous(expand = c(0,0))
   p
 }
 
@@ -82,7 +82,7 @@ antisense <- function(grl) {
   strand(gr[!pos_pointer]) <- "+"
   grl <- groupGRangesBy(gr)
   return(grl)
-  
+
 }
 
 
@@ -92,7 +92,7 @@ trimOverlaps <- function(overlaps, target_range) {
   end_indices <- end(overlaps) > max(end(tr))
   if (TRUE %in% start_indices) {
     start(overlaps)[start(overlaps) < min(start(tr))] <- min(start(tr))
-    
+
   }
   if (TRUE %in% end_indices) {
     end(overlaps)[end(overlaps) > max(end(tr))] <- max(end(tr))
@@ -106,7 +106,7 @@ selectCols <- function(cols, locations) {
   additions <- cumsum(duplications)
   additions[!duplications] <- 0
   matches <- matches + additions
-  
+
   return(cols[matches])
 }
 
@@ -130,7 +130,9 @@ colour_bars <- function(overlaps, target_range) {
   }
 }
 
-
+#'
+#' @import data.table
+#' @keywords internal
 getRelativeFrames <- function(overlaps) {
   dt <- data.table(names = names(overlaps),
                    width = width(overlaps))

@@ -55,10 +55,12 @@ matchWrapper <- function(patterns, ref_granges,sequence, frame = c(0,1,2), max_d
   }
 }
 
+#' @importFrom Biostrings nchar
+#' @keywords internal
 nt_bar <- function(seq) {
-  nc <- nchar(seq)
+  nc <- Biostrings::nchar(seq)
   position <- 1:nc
-  chars <- strsplit(as.character(seq),"")[[1]]
+  chars <- Biostrings::strsplit(as.character(seq),"")[[1]]
   colors <- c("#619CFF","#F8766D","#00BA38")[position %% 3 + 1]
   nt_df <- data.frame(nucleotide = chars,
                       colors = colors,

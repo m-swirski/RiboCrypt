@@ -26,6 +26,7 @@
 #' @param display_sequence logical, default FALSE. If TRUE, display nucleotide sequence in plot.
 #' @param annotation_names character, default NULL. Alternative naming for annotation.
 #' @return the plot object
+#' @importFrom GenomicFeatures extractTranscriptSeqs
 #' @export
 multiOmicsPlot_list <- function(target_range, annotation, reference_sequence, reads, withFrames = NULL, frames_type = "lines", colors = NULL, kmers = NULL, ylabels = NULL, proportions = NULL, width = NULL, height = NULL,plot_name = "default", plot_title = NULL, display_sequence = FALSE, annotation_names = NULL) {
   seqlevels(target_range) <- seqlevels(annotation)

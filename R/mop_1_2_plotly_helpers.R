@@ -8,7 +8,7 @@ automateTicks <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE))
 }
 #'
-#' @import plotly
+#' @rawNamespace import(plotly, except = c(config, last_plot))
 #' @keywords internal
 automateTicksRNA <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE,nticks=3),xaxis=list(autorange=FALSE))

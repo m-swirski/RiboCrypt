@@ -9,7 +9,7 @@ multiOmicsPlot_ORFikExp(
   annotation = target_range,
   df,
   reference_sequence = findFa(df),
-  reads = outputLibs(df, type = "pshifted", output.mode = "envirlist"),
+  reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
   withFrames = libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU"),
   frames_type = "lines",
   colors = NULL,
@@ -36,7 +36,7 @@ Usually a list when you have split Ribo-seq and RNA-seq etc.}
 \item{reference_sequence}{the genome reference, default findFa(df)}
 
 \item{reads}{the NGS libraries, as a list of \code{\link{GRanges}} with or without score column for replicates.
-Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist")}}
+Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full")}}
 
 \item{withFrames}{a logical vector, default
 \code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU")}

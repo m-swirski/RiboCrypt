@@ -6,7 +6,7 @@
 #' Usually a list when you have split Ribo-seq and RNA-seq etc.
 #' @param reference_sequence the genome reference, default findFa(df)
 #' @param reads the NGS libraries, as a list of \code{\link{GRanges}} with or without score column for replicates.
-#' Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist")}
+#' Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full")}
 #' @param withFrames a logical vector, default
 #' \code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU")}
 #' Alternative: a length 1 or same length as list length of "reads" argument.
@@ -31,7 +31,7 @@
 #' @importFrom GenomicFeatures extractTranscriptSeqs
 #' @export
 multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df, reference_sequence = findFa(df),
-                                    reads = outputLibs(df, type = "pshifted", output.mode = "envirlist"),
+                                    reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
                                     withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
                                     frames_type = "lines", colors = NULL, kmers = NULL,
                                     ylabels = bamVarName(df), proportions = NULL, width = NULL, height = NULL,

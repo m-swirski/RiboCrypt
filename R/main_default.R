@@ -28,7 +28,7 @@
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
 #' @export
-multiOmicsPlot_list <- function(target_range, annotation, reference_sequence, reads, withFrames = NULL, frames_type = "lines", colors = NULL, kmers = NULL, ylabels = NULL, proportions = NULL, width = NULL, height = NULL,plot_name = "default", plot_title = NULL, display_sequence = FALSE, annotation_names = NULL) {
+multiOmicsPlot_list <- function(target_range, annotation = target_range, reference_sequence, reads, withFrames = NULL, frames_type = "lines", colors = NULL, kmers = NULL, ylabels = NULL, proportions = NULL, width = NULL, height = NULL,plot_name = "default", plot_title = NULL, display_sequence = FALSE, annotation_names = NULL) {
   seqlevels(target_range) <- seqlevels(annotation)
   target_range <- GRangesList(target_range)
 
@@ -118,11 +118,11 @@ multiOmicsPlot_list <- function(target_range, annotation, reference_sequence, re
   return(multiomics_plot)
 }
 
-#' Multi-omics animation
+#' Multi-omics animation using list input
 #' @inheritParams multiOmicsPlot_list
 #' @return the plot object
 #' @export
-multiOmicsPlot_animate <- function(target_range, annotation, reference_sequence, reads, withFrames = NULL, colors = NULL, kmers = NULL, ylabels = NULL, proportions = NULL, width = NULL, height = NULL,plot_name = "default", plot_title = NULL, display_sequence = FALSE, annotation_names = NULL) {
+multiOmicsPlot_animate <- function(target_range, annotation = target_range, reference_sequence, reads, withFrames = NULL, colors = NULL, kmers = NULL, ylabels = NULL, proportions = NULL, width = NULL, height = NULL,plot_name = "default", plot_title = NULL, display_sequence = FALSE, annotation_names = NULL) {
   seqlevels(target_range) <- seqlevels(annotation)
   target_range <- GRangesList(target_range)
 

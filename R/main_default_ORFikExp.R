@@ -18,6 +18,7 @@
 #' is TRUE, colors are set to to c("red", "green", "blue") for the 3 frames.
 #' Alternative:  Character vector of length 1 or length of "reads" list argument.
 #' @param kmers numeric (integer), bin positions into kmers.
+#' @param kmers_type character, function used for kmers sliding window. default: "mean", alternative: "sum"
 #' @param ylabels character, default \code{bamVarName(df)}. Name of libraries in "reads" list arugment.
 #' @param proportions numeric, default NULL. Width of plot.
 #' @param width numeric, default NULL. Width of plot.
@@ -34,7 +35,7 @@
 multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df, reference_sequence = findFa(df),
                                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
                                     withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
-                                    frames_type = "lines", colors = NULL, kmers = NULL,
+                                    frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
                                     ylabels = bamVarName(df), proportions = NULL, width = NULL, height = NULL,
                                     plot_name = "default", plot_title = NULL, display_sequence = FALSE,
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
@@ -96,7 +97,7 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
   gene_model_panel <- createGeneModelPanel(target_range, annotation)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
-  plots <- mapply(function(x,y,z,c,g) createSinglePlot(target_range, x,y,z,c,g, lines, type = frames_type), reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE)
+  plots <- mapply(function(x,y,z,c,g) createSinglePlot(target_range, x,y,z,c,kmers_type, g, lines, type = frames_type), reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE)
 
   if (!display_sequence){
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))

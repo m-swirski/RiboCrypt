@@ -1,12 +1,12 @@
-createSinglePlot <- function(target_range,reads,withFrames, colors, kmer = 1, ylabels, lines, type = "lines"){
+createSinglePlot <- function(target_range,reads,withFrames, colors, kmers = 1, kmers_type = "mean",ylabels, lines, type = "lines"){
   if (withFrames) {
 
     if (type %in% c("stacks", "area" )) {
-      profile <- getStackProfile(target_range, reads, kmer)
+      profile <- getStackProfile(target_range, reads, kmers, kmers_type = kmers_type)
 
-    } else profile <- getRiboProfile(target_range, reads, kmer)
+    } else profile <- getRiboProfile(target_range, reads, kmers, kmers_type = kmers_type)
   } else {
-    profile <- getCoverageProfile(target_range, reads, kmer)
+    profile <- getCoverageProfile(target_range, reads, kmers, kmers_type = kmers_type)
   }
     profile_plot <- ggplot(profile)
     if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = "black", linetype = 4)
@@ -43,7 +43,7 @@ createSinglePlot <- function(target_range,reads,withFrames, colors, kmer = 1, yl
 }
 
 
-#profiles <- mapply(function(x,y,z) getProfileAnimate(target_range, x, y, z), reads, withFrames, kmers,  SIMPLIFY = FALSE)
+#profiles <- mapply(function(x,y,z) getProfileAnimate(target_range, x, y, z), reads, withFrames, kmerss,  SIMPLIFY = FALSE)
 
 getPlotAnimate <- function(profile,withFrames, colors, ylabels, lines){
   if (withFrames) {

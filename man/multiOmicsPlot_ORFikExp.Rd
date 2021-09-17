@@ -21,7 +21,10 @@ multiOmicsPlot_ORFikExp(
   plot_name = "default",
   plot_title = NULL,
   display_sequence = FALSE,
-  annotation_names = NULL
+  annotation_names = NULL,
+  start_codons = "ATG",
+  stop_codons = c("TAA", "TAG", "TGA"),
+  custom_motif = NULL
 )
 }
 \arguments{
@@ -69,6 +72,10 @@ Alternative: custom name for region.}
 \item{display_sequence}{logical, default FALSE. If TRUE, display nucleotide sequence in plot.}
 
 \item{annotation_names}{character, default NULL. Alternative naming for annotation.}
+
+\item{start_codons}{character vector, default c("TAA", "TAG", "TGA")}
+
+\item{custom_motif}{character vector, default NULL.}
 }
 \value{
 the plot object

@@ -1,7 +1,12 @@
+#' Create sequence panel for RiboCrypt
 #'
+#' @param start_codons character vector, default "ATG"
+#' @param start_codons character vector, default c("TAA", "TAG", "TGA")
+#' @param custom_motif character vector, default NULL.
 #' @import ggplot2
 #' @keywords internal
-createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"), frame = 1) {
+createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"), frame = 1,
+                           custom_motif = NULL) {
   starts <- matchMultiplePatterns(start_codons, sequence)
   stops <- matchMultiplePatterns(stop_codons, sequence)
   starts_0 <- starts[(starts - 1) %% 3 == 0 ]
@@ -10,6 +15,12 @@ createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA"
   stops_0 <- stops[(stops - 1) %% 3 == 0 ]
   stops_1 <- stops[(stops - 1) %% 3 == 1 ]
   stops_2 <- stops[(stops - 1) %% 3 == 2 ]
+  if (!is.null(custom_motif)) {
+    custom <- matchMultiplePatterns(custom_motif, sequence)
+    custom_0 <- custom[(custom - 1) %% 3 == 0 ]
+    custom_1 <- custom[(custom - 1) %% 3 == 1 ]
+    custom_2 <- custom[(custom - 1) %% 3 == 2 ]
+  }
   suppressWarnings({
   fig <- ggplot() + geom_rect(aes(ymin = 1, ymax = 2, xmin = 1, xmax = length(sequence), frame = frame), fill = "#F8766D") +
     geom_rect(aes(ymin = 0, ymax = 1, xmin = 1, xmax = length(sequence), frame = frame), fill = "#00BA38") +
@@ -24,9 +35,14 @@ createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA"
   if (length(stops_1) > 0) fig <- fig + geom_segment(aes(y = 0, yend = 1, x = stops_1, xend = stops_1), frame = frame)
   if (length(starts_2) > 0) fig <- fig + geom_segment(aes(y = -1 , yend = 0, x = starts_2, xend = starts_2), frame=frame, col = "white")
   if (length(stops_2) > 0) fig <- fig + geom_segment(aes(y = -1, yend = 0, x = stops_2, xend = stops_2), frame=frame)
+  if (!is.null(custom_motif)) {
+    if (length(custom_0) > 0) fig <- fig + geom_segment(aes(y = 1 , yend = 2, x = custom_0, xend = custom_0), frame = frame, col = "purple")
+    if (length(custom_1) > 0) fig <- fig + geom_segment(aes(y = 0 , yend = 1, x = custom_1, xend = custom_1), frame = frame, col = "purple")
+    if (length(custom_2) > 0) fig <- fig + geom_segment(aes(y = -1 , yend = 0, x = custom_2, xend = custom_2), frame=frame, col = "purple")
+  }
   })
-  return(fig)
 
+  return(fig)
 }
 
 

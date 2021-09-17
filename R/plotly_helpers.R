@@ -7,6 +7,11 @@ lineDeSimplify <- function(plot) {
 automateTicks <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE))
 }
+
+automateTicksGMP <- function(plot) {
+  plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>%
+    style(hoverinfo = "none")
+}
 #'
 #' @rawNamespace import(plotly, except = c(config, last_plot))
 #' @keywords internal
@@ -20,5 +25,6 @@ automateTicksX <- function(plot) {
                                                                        ticktext=list("2","1","0"),
                                                                        tickvals=list(-0.5,0.5,1.5),
                                                                        tickmode = "array")
-  )
+  ) %>% style(hoverinfo = "none")
+
 }

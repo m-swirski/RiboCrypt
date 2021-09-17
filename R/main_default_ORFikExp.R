@@ -27,6 +27,7 @@
 #' @param plot_title character, default NULL. A title for plot.
 #' @param display_sequence logical, default FALSE. If TRUE, display nucleotide sequence in plot.
 #' @param annotation_names character, default NULL. Alternative naming for annotation.
+#' @inheritParams createSeqPanel
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
 #' @export
@@ -36,7 +37,8 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
                                     frames_type = "lines", colors = NULL, kmers = NULL,
                                     ylabels = bamVarName(df), proportions = NULL, width = NULL, height = NULL,
                                     plot_name = "default", plot_title = NULL, display_sequence = FALSE,
-                                    annotation_names = NULL) {
+                                    annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
+                                    custom_motif = NULL) {
   seqlevels(target_range) <- seqlevels(annotation)
   target_range <- GRangesList(target_range)
 
@@ -86,7 +88,8 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
 
 
   target_seq <- extractTranscriptSeqs(reference_sequence, target_range)
-  seq_panel <- createSeqPanel(target_seq[[1]])
+  seq_panel <- createSeqPanel(target_seq[[1]], start_codons = start_codons,
+                              stop_codons = stop_codons, custom_motif = custom_motif)
 
 
 
@@ -106,7 +109,7 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
                                titleX = TRUE)
   } else {
     letters <- nt_bar(target_seq)
-    plots <- c(plots, list(automateTicks(letters),automateTicks(gene_model_panel), automateTicksX(seq_panel)))
+    plots <- c(plots, list(automateTicks(letters),automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
                                nrows = length(reads) + 3,

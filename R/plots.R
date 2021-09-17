@@ -10,6 +10,7 @@ createSinglePlot <- function(target_range,reads,withFrames, colors, kmer = 1, yl
   }
     profile_plot <- ggplot(profile)
     if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = "black", linetype = 4)
+    profile_plot <- profile_plot + geom_hline(yintercept = 0)
     if (!withFrames) {
       profile_plot <- profile_plot +
         geom_area(aes(y = count, x = position), fill = colors, col = "black", size = 0.1, alpha = 0.8, position = "identity")

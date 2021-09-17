@@ -5,7 +5,7 @@ lineDeSimplify <- function(plot) {
 }
 
 automateTicks <- function(plot) {
-  plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE))
+  plot %>% ggplotly(dynamicTicks = TRUE, tooltip=c("position")) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE))
 }
 
 automateTicksGMP <- function(plot) {

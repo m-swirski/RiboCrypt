@@ -99,7 +99,7 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
   plots <- mapply(function(x,y,z,c,g) createSinglePlot(target_range, x,y,z,c,g, lines, type = frames_type), reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE)
 
   if (!display_sequence){
-    plots <- c(plots, list(automateTicks(gene_model_panel), automateTicksX(seq_panel)))
+    plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
                                nrows = length(reads) + 2,

@@ -14,6 +14,7 @@ multiOmicsPlot_ORFikExp(
   frames_type = "lines",
   colors = NULL,
   kmers = NULL,
+  kmers_type = c("mean", "sum")[1],
   ylabels = bamVarName(df),
   proportions = NULL,
   width = NULL,
@@ -55,6 +56,8 @@ is TRUE, colors are set to to c("red", "green", "blue") for the 3 frames.
 Alternative:  Character vector of length 1 or length of "reads" list argument.}
 
 \item{kmers}{numeric (integer), bin positions into kmers.}
+
+\item{kmers_type}{character, function used for kmers sliding window. default: "mean", alternative: "sum"}
 
 \item{ylabels}{character, default \code{bamVarName(df)}. Name of libraries in "reads" list arugment.}
 

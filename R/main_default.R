@@ -103,7 +103,8 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
   gene_model_panel <- createGeneModelPanel(target_range, annotation)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
-  plots <- mapply(function(x,y,z,c,g) createSinglePlot(target_range, x,y,z,c,g, lines, type = frames_type), reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE)
+    plots <- mapply(function(x,y,z,c,g) createSinglePlot(target_range, x,y,z,c,kmers_type, g, lines, type = frames_type), reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE)
+
 
   if (!display_sequence){
     plots <- c(plots, list(automateTicks(gene_model_panel), automateTicksX(seq_panel)))
@@ -116,7 +117,7 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
                                titleX = TRUE)
   } else {
     letters <- nt_bar(target_seq)
-    plots <- c(plots, list(automateTicks(letters),automateTicks(gene_model_panel), automateTicksX(seq_panel)))
+    plots <- c(plots, list(automateTicksLetters(letters),automateTicks(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
                                nrows = length(reads) + 3,
@@ -213,7 +214,7 @@ multiOmicsPlot_animate <- function(target_range, annotation = target_range, refe
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
 
-  profiles <- mapply(function(x,y,z) getProfileAnimate(target_range, x, y, z), reads, withFrames, kmers,  SIMPLIFY = FALSE)
+  profiles <- mapply(function(x,y,z) getProfileAnimate(target_range, x, y, z, kmers_type), reads, withFrames, kmers,  SIMPLIFY = FALSE)
 
   profiles <- rbindlist(profiles, idcol = "file")
 

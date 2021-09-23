@@ -10,27 +10,23 @@
 #' @param withFrames a logical vector, default
 #' \code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU")}
 #' Alternative: a length 1 or same length as list length of "reads" argument.
-#' @param frames_type character, default "lines". Alternative:\cr
-#' - columns \cr
-#' - stacks \cr
-#' - area
-#' @param colors character, default NULL (automatic colouring). If "withFrames" argument
-#' is TRUE, colors are set to to c("red", "green", "blue") for the 3 frames.
-#' Alternative:  Character vector of length 1 or length of "reads" list argument.
-#' @param kmers_type character, function used for kmers sliding window. default: "mean", alternative: "sum"
-#' @param ylabels character, default \code{bamVarName(df)}. Name of libraries in "reads" list arugment.
-#' @param proportions numeric, default NULL. Width of plot.
-#' @param width numeric, default NULL. Width of plot.
-#' @param height numeric, default NULL. Height of plot.
-#' @param plot_name = character, default "default" (will create name from target_range name).
+#' @param ylabels character, default \code{bamVarName(df)}. Name of libraries in "reads" list argument.
+#' @param plot_name character, default "default" (will create name from target_range name).
 #' Alternative: custom name for region.
-#' @param plot_title character, default NULL. A title for plot.
-#' @param display_sequence logical, default FALSE. If TRUE, display nucleotide sequence in plot.
-#' @param annotation_names character, default NULL. Alternative naming for annotation.
-#' @inheritParams createSeqPanel
 #' @return the plot object
-#' @importFrom GenomicFeatures extractTranscriptSeqs
+#' @importFrom GenomicFeatures extractTranscriptSeqs seqlevels<-
+#' @importFrom GenomeInfoDb seqlevels
+#' @importFrom GenomicRanges GRangesList mcols
 #' @export
+#' @examples
+#' library(ORFik)
+#' df <- ORFik.template.experiment()[3,] #Use third library in experiment only
+#' if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
+#'   cds <- loadRegion(df, "cds")
+#'   multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
+#'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
+#'                         frames_type = "columns")
+#' }
 multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df, reference_sequence = findFa(df),
                                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
                                     withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
@@ -54,7 +50,7 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
     } else stop(wmsg("wrong annotation_names argument"))
   }
 
-  if(class(reads) != "list") reads <- list(reads)
+  if(!is(reads, "list")) reads <- list(reads)
 
   if (length(withFrames) == 0) withFrames <- FALSE
   if (!(length(withFrames)  %in% c(1, length(reads)))) stop("length of withFrames must be 0, 1 or the same as reads list")

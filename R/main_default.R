@@ -16,6 +16,7 @@
 #' is TRUE, colors are set to to c("red", "green", "blue") for the 3 frames.
 #' Alternative:  Character vector of length 1 or length of "reads" list argument.
 #' @param kmers numeric (integer), bin positions into kmers.
+#' @param kmers_type character, function used for kmers sliding window. default: "mean", alternative: "sum"
 #' @param ylabels character, default NULL. Name of libraries in "reads" list arugment.
 #' @param proportions numeric, default NULL. Width of plot.
 #' @param width numeric, default NULL. Width of plot.
@@ -25,14 +26,27 @@
 #' @param plot_title character, default NULL. A title for plot.
 #' @param display_sequence logical, default FALSE. If TRUE, display nucleotide sequence in plot.
 #' @param annotation_names character, default NULL. Alternative naming for annotation.
+#' @inheritParams createSeqPanel
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
 #' @export
+#' @examples
+#' library(ORFik)
+#' df <- ORFik.template.experiment()[3,] #Use third library in experiment only
+#' if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
+#'   cds <- loadRegion(df, "cds")
+#'   multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
+#'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
+#'                         frames_type = "columns")
+#' }
 multiOmicsPlot_list <- function(target_range, annotation = target_range, reference_sequence,
                                 reads, withFrames = NULL, frames_type = "lines", colors = NULL,
-                                kmers = NULL, ylabels = NULL, proportions = NULL,
+                                kmers = NULL, kmers_type = c("mean", "sum")[1],
+                                ylabels = NULL, proportions = NULL,
                                 width = NULL, height = NULL, plot_name = "default",
-                                plot_title = NULL, display_sequence = FALSE, annotation_names = NULL) {
+                                plot_title = NULL, display_sequence = FALSE, annotation_names = NULL,
+                                start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
+                                custom_motif = NULL) {
   seqlevels(target_range) <- seqlevels(annotation)
   target_range <- GRangesList(target_range)
 
@@ -48,7 +62,7 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
     } else stop(wmsg("wrong annotation_names argument"))
   }
 
-  if(class(reads) != "list") reads <- list(reads)
+  if(!is(reads, "list")) reads <- list(reads)
 
   if (length(withFrames) == 0) withFrames <- FALSE
   if (!(length(withFrames)  %in% c(1, length(reads)))) stop("length of withFrames must be 0, 1 or the same as reads list")
@@ -126,7 +140,23 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
 #' @inheritParams multiOmicsPlot_list
 #' @return the plot object
 #' @export
-multiOmicsPlot_animate <- function(target_range, annotation = target_range, reference_sequence, reads, withFrames = NULL, colors = NULL, kmers = NULL, ylabels = NULL, proportions = NULL, width = NULL, height = NULL,plot_name = "default", plot_title = NULL, display_sequence = FALSE, annotation_names = NULL) {
+#' @examples
+#' library(ORFik)
+#' df <- ORFik.template.experiment()[3,] #Use third library in experiment only
+#' if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
+#'   cds <- loadRegion(df, "cds")
+#'   multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
+#'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
+#'                         frames_type = "columns")
+#' }
+multiOmicsPlot_animate <- function(target_range, annotation = target_range, reference_sequence,
+                                   reads, withFrames = NULL, colors = NULL,
+                                   kmers = NULL, kmers_type = c("mean", "sum")[1],
+                                   ylabels = NULL, proportions = NULL,
+                                   width = NULL, height = NULL,plot_name = "default",
+                                   plot_title = NULL, display_sequence = FALSE, annotation_names = NULL,
+                                   start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
+                                   custom_motif = NULL) {
   seqlevels(target_range) <- seqlevels(annotation)
   target_range <- GRangesList(target_range)
 
@@ -142,7 +172,7 @@ multiOmicsPlot_animate <- function(target_range, annotation = target_range, refe
     } else stop(wmsg("wrong annotation_names argument"))
   }
 
-  if(class(reads) != "list") reads <- list(reads)
+  if(!is(reads, "list")) reads <- list(reads)
 
   if (length(withFrames) == 0) withFrames <- FALSE
   if (!(length(withFrames)  %in% c(1, length(reads)))) stop("length of withFrames must be 0, 1 or the same as reads list")

@@ -1,3 +1,9 @@
+
+#' Get index
+#' @param ref_granges a GRanges object
+#' @return integer vector, indices
+#' @importFrom BiocGenerics start end
+#' @keywords internal
 getIndexes <- function(ref_granges) {
   if (nrun(strand(ref_granges)) > 1) stop("More than one strand!")
   if (nrun(seqnames(ref_granges)) > 1) stop("More than one seqname!")
@@ -10,6 +16,13 @@ getIndexes <- function(ref_granges) {
   }
   return(indexes)
 }
+
+#' Match multiple patterns
+#' @param patterns character
+#' @param Seq a DNAStringSet
+#' @return integer vector, indices (named with pattern hit)
+#' @importFrom Biostrings matchPattern
+#' @keywords internal
 matchMultiplePatterns <- function(patterns, Seq) {
   matches <- c()
   for (pattern in patterns) {
@@ -37,6 +50,13 @@ findPatterns <- function(patterns, sequence, frame = c(0,1,2), max_dist = NULL, 
   return(matches)
 }
 
+#' Match to GRanges
+#' @param matches integer vector, indices
+#' @param ref_granges GRanges
+#' @return GRanges object
+#' @importFrom GenomeInfoDb seqnames
+#' @importFrom GenomicRanges GRanges
+#' @keywords internal
 matchToGRanges <- function(matches, ref_granges) {
   indexes <- getIndexes(ref_granges = ref_granges)
   starts <- indexes[matches]
@@ -55,7 +75,11 @@ matchWrapper <- function(patterns, ref_granges,sequence, frame = c(0,1,2), max_d
   }
 }
 
-
+#' Get antisense
+#'
+#' @importFrom BiocGenerics strand strand<-
+#' @return a GRangesList
+#' @keywords internal
 antisense <- function(grl) {
   gr <- unlistGrl(grl)
   pos_pointer <- strandBool(gr)
@@ -66,7 +90,13 @@ antisense <- function(grl) {
 
 }
 
-
+#' Trim overlaps
+#'
+#' @param overlaps GRanges
+#' @param target_range GRanges
+#' @return GRanges
+#' @importFrom BiocGenerics start<- end<-
+#' @keywords internal
 trimOverlaps <- function(overlaps, target_range) {
   tr <- unlistGrl(target_range)
   start_indices <- start(overlaps) < min(start(tr))
@@ -113,6 +143,7 @@ colour_bars <- function(overlaps, target_range) {
 
 #'
 #' @import data.table
+#' @importFrom Biostrings width
 #' @keywords internal
 getRelativeFrames <- function(overlaps) {
   dt <- data.table(names = names(overlaps),

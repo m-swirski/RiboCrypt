@@ -38,6 +38,7 @@ automateTicksX <- function(plot) {
 #' @param x a a ggplot argument
 #' @param ... additional arguments for ggplotly
 #' @return a ggplotly object
+#' @keywords internal
 ggplotlyHover <- function(x, ...) {
   gg <- plotly::ggplotly(x, ...)
   gg$x$data <- lapply(gg$x$data, function(x) {

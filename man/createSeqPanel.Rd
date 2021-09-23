@@ -19,6 +19,9 @@ createSeqPanel(
 
 \item{custom_motif}{character vector, default NULL.}
 }
+\value{
+a ggplot object
+}
 \description{
 Create sequence panel for RiboCrypt
 }

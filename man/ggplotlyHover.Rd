@@ -17,3 +17,4 @@ a ggplotly object
 \description{
 Call ggplotly with hoveron defined
 }
+\keyword{internal}

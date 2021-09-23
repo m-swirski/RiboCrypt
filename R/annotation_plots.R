@@ -4,6 +4,7 @@
 #' @param stop_codons character vector, default c("TAA", "TAG", "TGA")
 #' @param custom_motif character vector, default NULL.
 #' @import ggplot2
+#' @return a ggplot object
 #' @keywords internal
 createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"), frame = 1,
                            custom_motif = NULL) {
@@ -50,6 +51,7 @@ createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA"
 
 #'
 #' @import ORFik
+#' @importFrom GenomicRanges ranges resize
 #' @keywords internal
 createGeneModelPanel <- function(target_range, annotation, frame=1) {
   overlaps <- subsetByOverlaps(annotation, target_range)

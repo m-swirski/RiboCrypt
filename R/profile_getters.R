@@ -1,10 +1,13 @@
 getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
+  count <- NULL; genes <- NULL # Avoid data.table warning
   if (kmers == 1) {
-    footprints <- coveragePerTiling(grl, subsetByOverlaps(footprints, grl), as.data.table = TRUE, withFrames=TRUE, is.sorted = T)
+    footprints <- coveragePerTiling(grl, subsetByOverlaps(footprints, grl), as.data.table = TRUE,
+                                    withFrames=TRUE, is.sorted = TRUE)
     footprints$frame <- as.factor(footprints$frame)
   } else{
     extended_range <- grl %>% extendLeaders(kmers * 3) %>% extendTrailers(kmers * 3)
-    footprints <- coveragePerTiling(extended_range, subsetByOverlaps(footprints, extended_range), as.data.table = TRUE, withFrames=TRUE, is.sorted = T)
+    footprints <- coveragePerTiling(extended_range, subsetByOverlaps(footprints, extended_range),
+                                    as.data.table = TRUE, withFrames=TRUE, is.sorted = TRUE)
     footprints$frame <- as.factor(footprints$frame)
     footprints$count <- as.numeric(footprints$count)
     footprints$genes <- as.factor(footprints$genes)
@@ -14,12 +17,24 @@ getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
   }
   return(footprints)
 }
+
+#' Get coverage profile
+#'
+#' @param grl a GRangesList
+#' @param reads GRanges
+#' @param kmers 1
+#' @param kmers_type "mean"
+#' @return data.table of coverage
+#' @importFrom dplyr `%>%`
+#' @keywords internal
 getCoverageProfile <- function(grl, reads, kmers = 1, kmers_type = "mean") {
   if (kmers == 1) {
-    coverage <- coveragePerTiling(grl, subsetByOverlaps(reads, grl), as.data.table = TRUE, is.sorted = T)
+    coverage <- coveragePerTiling(grl, subsetByOverlaps(reads, grl), as.data.table = TRUE, is.sorted = TRUE)
   } else {
+    count <- NULL; genes <- NULL # Avoid data.table warning
     extended_range <- grl %>% extendLeaders(kmers * 3) %>% extendTrailers(kmers * 3)
-    coverage <- coveragePerTiling(extended_range, subsetByOverlaps(reads, extended_range), as.data.table = TRUE, is.sorted = T)
+    coverage <- coveragePerTiling(extended_range, subsetByOverlaps(reads, extended_range),
+                                  as.data.table = TRUE, is.sorted = TRUE)
     coverage$count <- as.numeric(coverage$count)
     coverage$genes <- as.factor(coverage$genes)
     coverage <- coverage[,count := get(paste("froll",kmers_type, sep = ""))(count, kmers, fill = 0, align = "center"), by = genes]
@@ -30,6 +45,7 @@ getCoverageProfile <- function(grl, reads, kmers = 1, kmers_type = "mean") {
 }
 
 getStackProfile <- function(grl, footprints, kmers, kmers_type = "mean") {
+  count <- NULL # Avoid data.table warning
   profile <- getRiboProfile(grl, footprints, kmers, kmers_type = kmers_type)
   maxpos <- max(profile$position)
   profile <- profile[,.(count = rep(count, 3), new_position = c(position, position + 1, position + 2)),.(position,frame)]

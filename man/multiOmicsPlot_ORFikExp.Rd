@@ -59,7 +59,7 @@ Alternative:  Character vector of length 1 or length of "reads" list argument.}
 
 \item{kmers_type}{character, function used for kmers sliding window. default: "mean", alternative: "sum"}
 
-\item{ylabels}{character, default \code{bamVarName(df)}. Name of libraries in "reads" list arugment.}
+\item{ylabels}{character, default \code{bamVarName(df)}. Name of libraries in "reads" list argument.}
 
 \item{proportions}{numeric, default NULL. Width of plot.}
 
@@ -67,7 +67,7 @@ Alternative:  Character vector of length 1 or length of "reads" list argument.}
 
 \item{height}{numeric, default NULL. Height of plot.}
 
-\item{plot_name}{= character, default "default" (will create name from target_range name).
+\item{plot_name}{character, default "default" (will create name from target_range name).
 Alternative: custom name for region.}
 
 \item{plot_title}{character, default NULL. A title for plot.}
@@ -87,4 +87,14 @@ the plot object
 }
 \description{
 Customizable html plots for visualizing genomic data.
+}
+\examples{
+library(ORFik)
+df <- ORFik.template.experiment()[3,] #Use third library in experiment only
+if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
+  cds <- loadRegion(df, "cds")
+  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
+                        reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
+                        frames_type = "columns")
+}
 }

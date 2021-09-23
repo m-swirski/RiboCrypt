@@ -12,7 +12,7 @@ vignette: >
 # Introduction
 
 Welcome to the `RiboCrypt` package. 
-`RiboCrypt` is an R package for
+`RiboCrypt` is an R package for interactive visualization in genomics
 
 This vignette will walk you through usage with examples. 
 

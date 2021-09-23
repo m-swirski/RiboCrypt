@@ -13,7 +13,9 @@ createSeqPanel(
 )
 }
 \arguments{
-\item{start_codons}{character vector, default c("TAA", "TAG", "TGA")}
+\item{start_codons}{character vector, default "ATG"}
+
+\item{stop_codons}{character vector, default c("TAA", "TAG", "TGA")}
 
 \item{custom_motif}{character vector, default NULL.}
 }

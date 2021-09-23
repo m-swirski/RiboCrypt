@@ -19,7 +19,7 @@ createSinglePlot <- function(target_range,reads,withFrames, colors, kmers = 1, k
       geom_line(aes(y = count, x = position,color = frame), size = 0.5)
     } else if (type == "stacks") {
       profile_plot <- profile_plot +
-        geom_area(aes(y = count, x = position,fill = frame), size = 0.1, alpha = 0.8, col = "black", position = "identity")
+        geom_area(aes(y = count, x = position,fill = frame), size = 0.1, alpha = 0.8, col = "black")
       } else if (type == "columns") {
       profile_plot <- profile_plot +
         geom_col(aes(y = count, x = position, fill = frame))

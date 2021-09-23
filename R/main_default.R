@@ -1,12 +1,12 @@
 #' Multi-omics plot using list input
 #'
 #' Customizable html plots for visualizing genomic data.
-#' @param target_range the target region, a \code{\link{GRangesList}} or \code{\link{GRanges}} object
+#' @param target_range the target region, a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object
 #' @param annotation the whole annotation which your target is a subset,
-#' a \code{\link{GRangesList}} or \code{\link{GRanges}} object
+#' a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object
 #' @param reference_sequence the genome reference,
-#' a \code{\link{FaFile}} or \code{\link{FaFile}} convertible object
-#' @param reads the NGS libraries, as a list of \code{\link{GRanges}} with or without score column for replicates.
+#' a \code{\link[Rsamtools]{FaFile}} or \code{\link[Rsamtools]{FaFile}} convertible object
+#' @param reads the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
 #' @param withFrames a logical vector, default NULL. Alternative: a length 1 or same length as list length of "reads" argument.
 #' @param frames_type character, default "lines". Alternative:\cr
 #' - columns \cr
@@ -28,7 +28,11 @@
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
 #' @export
-multiOmicsPlot_list <- function(target_range, annotation = target_range, reference_sequence, reads, withFrames = NULL, frames_type = "lines", colors = NULL, kmers = NULL, ylabels = NULL, proportions = NULL, width = NULL, height = NULL,plot_name = "default", plot_title = NULL, display_sequence = FALSE, annotation_names = NULL) {
+multiOmicsPlot_list <- function(target_range, annotation = target_range, reference_sequence,
+                                reads, withFrames = NULL, frames_type = "lines", colors = NULL,
+                                kmers = NULL, ylabels = NULL, proportions = NULL,
+                                width = NULL, height = NULL, plot_name = "default",
+                                plot_title = NULL, display_sequence = FALSE, annotation_names = NULL) {
   seqlevels(target_range) <- seqlevels(annotation)
   target_range <- GRangesList(target_range)
 

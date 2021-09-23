@@ -1,7 +1,7 @@
 #' Create sequence panel for RiboCrypt
 #'
 #' @param start_codons character vector, default "ATG"
-#' @param start_codons character vector, default c("TAA", "TAG", "TGA")
+#' @param stop_codons character vector, default c("TAA", "TAG", "TGA")
 #' @param custom_motif character vector, default NULL.
 #' @import ggplot2
 #' @keywords internal
@@ -142,6 +142,7 @@ nt_bar <- function(seq) {
   p
 }
 
+# Keep for future bars for sequence display
 
 #' #' @importFrom Biostrings nchar
 #' #' @keywords internal

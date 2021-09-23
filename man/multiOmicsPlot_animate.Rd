@@ -23,15 +23,15 @@ multiOmicsPlot_animate(
 )
 }
 \arguments{
-\item{target_range}{the target region, a \code{\link{GRangesList}} or \code{\link{GRanges}} object}
+\item{target_range}{the target region, a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
 
 \item{annotation}{the whole annotation which your target is a subset,
-a \code{\link{GRangesList}} or \code{\link{GRanges}} object}
+a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
 
 \item{reference_sequence}{the genome reference,
-a \code{\link{FaFile}} or \code{\link{FaFile}} convertible object}
+a \code{\link[Rsamtools]{FaFile}} or \code{\link[Rsamtools]{FaFile}} convertible object}
 
-\item{reads}{the NGS libraries, as a list of \code{\link{GRanges}} with or without score column for replicates.}
+\item{reads}{the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.}
 
 \item{withFrames}{a logical vector, default NULL. Alternative: a length 1 or same length as list length of "reads" argument.}
 

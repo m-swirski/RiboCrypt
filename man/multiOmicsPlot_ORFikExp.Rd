@@ -29,17 +29,17 @@ multiOmicsPlot_ORFikExp(
 )
 }
 \arguments{
-\item{target_range}{the target region, a \code{\link{GRangesList}} or \code{\link{GRanges}} object}
+\item{target_range}{the target region, a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
 
 \item{annotation}{the whole annotation which your target is a subset,
-a \code{\link{GRangesList}} or \code{\link{GRanges}} object}
+a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
 
-\item{df}{an ORFik \code{\link{experiment}} or a list containing ORFik experiments.
+\item{df}{an ORFik \code{\link[ORFik]{experiment}} or a list containing ORFik experiments.
 Usually a list when you have split Ribo-seq and RNA-seq etc.}
 
-\item{reference_sequence}{the genome reference, default findFa(df)}
+\item{reference_sequence}{the genome reference, default ORFik::findFa(df)}
 
-\item{reads}{the NGS libraries, as a list of \code{\link{GRanges}} with or without score column for replicates.
+\item{reads}{the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
 Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full")}}
 
 \item{withFrames}{a logical vector, default
@@ -76,7 +76,9 @@ Alternative: custom name for region.}
 
 \item{annotation_names}{character, default NULL. Alternative naming for annotation.}
 
-\item{start_codons}{character vector, default c("TAA", "TAG", "TGA")}
+\item{start_codons}{character vector, default "ATG"}
+
+\item{stop_codons}{character vector, default c("TAA", "TAG", "TGA")}
 
 \item{custom_motif}{character vector, default NULL.}
 }

@@ -2,10 +2,10 @@
 #'
 #' Customizable html plots for visualizing genomic data.
 #' @inheritParams multiOmicsPlot_list
-#' @param df an ORFik \code{\link{experiment}} or a list containing ORFik experiments.
+#' @param df an ORFik \code{\link[ORFik]{experiment}} or a list containing ORFik experiments.
 #' Usually a list when you have split Ribo-seq and RNA-seq etc.
-#' @param reference_sequence the genome reference, default findFa(df)
-#' @param reads the NGS libraries, as a list of \code{\link{GRanges}} with or without score column for replicates.
+#' @param reference_sequence the genome reference, default ORFik::findFa(df)
+#' @param reads the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
 #' Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full")}
 #' @param withFrames a logical vector, default
 #' \code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU")}
@@ -17,7 +17,6 @@
 #' @param colors character, default NULL (automatic colouring). If "withFrames" argument
 #' is TRUE, colors are set to to c("red", "green", "blue") for the 3 frames.
 #' Alternative:  Character vector of length 1 or length of "reads" list argument.
-#' @param kmers numeric (integer), bin positions into kmers.
 #' @param kmers_type character, function used for kmers sliding window. default: "mean", alternative: "sum"
 #' @param ylabels character, default \code{bamVarName(df)}. Name of libraries in "reads" list arugment.
 #' @param proportions numeric, default NULL. Width of plot.

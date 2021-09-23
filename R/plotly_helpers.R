@@ -9,7 +9,7 @@ automateTicks <- function(plot) {
 }
 
 automateTicksLetters <- function(plot) {
-  suppressWarnings(plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>% toWebGL())
+  suppressWarnings(plot %>% ggplotlyHover(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>% toWebGL())
 }
 
 
@@ -33,3 +33,17 @@ automateTicksX <- function(plot) {
   ) %>% style(hoverinfo = "none")
 
 }
+
+#' Call ggplotly with hoveron defined
+#' @param x a a ggplot argument
+#' @param ... additional arguments for ggplotly
+#' @return a ggplotly object
+ggplotlyHover <- function(x, ...) {
+  gg <- plotly::ggplotly(x, ...)
+  gg$x$data <- lapply(gg$x$data, function(x) {
+    x$hoveron <- NULL
+    x
+  })
+  return(gg)
+}
+

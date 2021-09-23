@@ -110,7 +110,7 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
                                titleX = TRUE)
   } else {
     letters <- nt_bar(target_seq)
-    plots <- c(plots, list(automateTicks(letters),automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
+    plots <- c(plots, list(automateTicksLetters(letters),automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
                                nrows = length(reads) + 3,

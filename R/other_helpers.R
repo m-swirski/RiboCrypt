@@ -55,27 +55,6 @@ matchWrapper <- function(patterns, ref_granges,sequence, frame = c(0,1,2), max_d
   }
 }
 
-#' @importFrom Biostrings nchar
-#' @keywords internal
-nt_bar <- function(seq) {
-  nc <- Biostrings::nchar(seq)
-  position <- 1:nc
-  chars <- Biostrings::strsplit(as.character(seq),"")[[1]]
-  colors <- c("#619CFF","#F8766D","#00BA38")[position %% 3 + 1]
-  nt_df <- data.frame(nucleotide = chars,
-                      colors = colors,
-                      position = position,
-                      y = rep(0,nc))
-  p = ggplot(nt_df, aes(x = position, y=y)) +
-    geom_text(label = chars, color = colors, position = "identity") +
-    # geom_point(color = colors,shape = chars) +
-    theme(axis.title = element_blank(),
-          axis.ticks = element_blank(),
-          axis.text = element_blank()) +
-    theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-    scale_x_continuous(expand = c(0,0))
-  p
-}
 
 antisense <- function(grl) {
   gr <- unlistGrl(grl)

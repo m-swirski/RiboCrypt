@@ -8,6 +8,11 @@ automateTicks <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE, tooltip=c("position")) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE))
 }
 
+automateTicksLetters <- function(plot) {
+  suppressWarnings(plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>% toWebGL())
+}
+
+
 automateTicksGMP <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>%
     style(hoverinfo = "none")

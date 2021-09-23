@@ -1,0 +1,28 @@
+TODO
+-----------------------
+  General:
+  o merge multiOmicsPlot to one method call (function call)
+  o interactive QC report
+
+  Visuals:
+  o TE plots
+  o DE plots
+  o two strands support
+
+  Annotation:
+  o on demand rendering of underlying sequence (nucleotide and aminoacid)
+  o add codon and aa information as hoverinfo; mind multiple tracks - there is no need to add codon information for each track, it should be tethered to the x position.
+  o start codon context score track
+  o codon usage track
+  o phyloP (conservation) track
+  o Ka/Ks support
+
+  UI:
+  o deploy shiny
+  o add support of config file for argument handling
+  o allow for data export as .csv
+
+  Data management:
+  o replicate and sample merging
+  o access and navigation over large number of experiments - hierarchical access i.e. by organism
+  o searchable metadata tables for studies

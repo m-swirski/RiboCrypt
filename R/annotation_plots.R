@@ -119,3 +119,53 @@ createGeneModelPanel <- function(target_range, annotation, frame=1) {
   }
   return(list(result_plot, lines_locations))
 }
+
+#' @importFrom Biostrings nchar
+#' @keywords internal
+nt_bar <- function(seq) {
+  nc <- Biostrings::nchar(seq)
+  position <- 1:nc
+  chars <- Biostrings::strsplit(as.character(seq),"")[[1]]
+  colors <- c("#619CFF","#F8766D","#00BA38")[position %% 3 + 1]
+  nt_df <- data.frame(nucleotide = chars,
+                      colors = colors,
+                      position = position,
+                      y = rep(0,nc))
+  p = ggplot(nt_df, aes(x = position, y=y)) +
+    geom_text(label = chars, color = colors, position = "identity") +
+    # geom_point(color = colors,shape = chars) +
+    theme(axis.title = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text = element_blank()) +
+    theme(plot.margin = unit(c(0,0,0,0), "pt"))+
+    scale_x_continuous(expand = c(0,0))
+  p
+}
+
+
+#' #' @importFrom Biostrings nchar
+#' #' @keywords internal
+#' nt_bar <- function(seq) {
+#'   nc <- Biostrings::nchar(seq)
+#'   position <- 1:nc
+#'   chars <- Biostrings::strsplit(as.character(seq),"")[[1]]
+#'   col_idx <- match(chars, c("A","T","C","G"))
+#'   nt_cols <- c("yellow", "green", "red", "blue")[col_idx]
+#'   colors <- c("#619CFF","#F8766D","#00BA38")[position %% 3 + 1]
+#'   nt_df <- data.frame(nucleotide = chars,
+#'                       colors = colors,
+#'                       nt_cols = nt_cols,
+#'                       start = c(1, position[-1] - 0.5),
+#'                       end = c(position[-nc] + 0.5, nc),
+#'                       y1 = 0,
+#'                       y2 = 1)
+#'   p = ggplot(nt_df) +
+#'     geom_rect(aes(ymin = 0, ymax = 1, xmin = start, xmax = end), fill = nt_cols) +
+#'     # geom_text(aes(y = 0.5, x = position),label = chars, color = colors, position = "identity")  +
+#'     theme(axis.title = element_blank(),
+#'           axis.ticks = element_blank(),
+#'           axis.text = element_blank()) +
+#'     theme(plot.margin = unit(c(0,0,0,0), "pt"))+
+#'     scale_x_continuous(expand = c(0,0))
+#'   p
+#' }

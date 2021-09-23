@@ -44,7 +44,7 @@ createSinglePlot <- function(target_range, reads, withFrames, colors, kmers = 1,
 }
 
 
-#profiles <- mapply(function(x,y,z) getProfileAnimate(target_range, x, y, z), reads, withFrames, kmerss,  SIMPLIFY = FALSE)
+#profiles <- mapply(function(x,y,z) getProfileAnimate(target_range, x, y, z), reads, withFrames, kmers,  SIMPLIFY = FALSE)
 
 getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines){
   count <- NULL # Avoid data.table warning

@@ -24,7 +24,8 @@ multiOmicsPlot_list(
   annotation_names = NULL,
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
-  custom_motif = NULL
+  custom_motif = NULL,
+  BPPARAM = bpparam()
 )
 }
 \arguments{
@@ -75,6 +76,10 @@ Alternative: custom name for region.}
 \item{stop_codons}{character vector, default c("TAA", "TAG", "TGA")}
 
 \item{custom_motif}{character vector, default NULL.}
+
+\item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
+To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
+You can also add a time remaining bar, for a more detailed pipeline.}
 }
 \value{
 the plot object

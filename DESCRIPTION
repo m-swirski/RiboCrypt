@@ -28,7 +28,8 @@ Imports:
   Biostrings,
   GenomeInfoDb,
   BiocGenerics,
-  rlang
+  rlang,
+  BiocParallel
 Suggests:
   testthat,
   rmarkdown,

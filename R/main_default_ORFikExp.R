@@ -34,7 +34,7 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
                                     ylabels = bamVarName(df), proportions = NULL, width = NULL, height = NULL,
                                     plot_name = "default", plot_title = NULL, display_sequence = FALSE,
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                    custom_motif = NULL) {
+                                    custom_motif = NULL, BPPARAM = bpparam()) {
   multiOmicsController()
   target_seq <- extractTranscriptSeqs(reference_sequence, target_range)
   seq_panel <- createSeqPanel(target_seq[[1]], start_codons = start_codons,
@@ -45,8 +45,8 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
   gene_model_panel <- createGeneModelPanel(target_range, annotation)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
-  plots <- mapply(function(x,y,z,c,g) createSinglePlot(target_range, x,y,z,c,kmers_type, g, lines, type = frames_type), reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE)
-
+  plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(target_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
+                    reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
   if (!display_sequence){
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,

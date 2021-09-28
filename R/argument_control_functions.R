@@ -1,5 +1,5 @@
 multiOmicsController <- function(){
-  with(caller_env(),{
+  with(rlang::caller_env(),{
 seqlevels(target_range) <- seqlevels(annotation)
 target_range <- GRangesList(target_range)
 

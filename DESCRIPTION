@@ -13,8 +13,8 @@ Description: R Package for interactive visualization and browsing NGS data.
 biocViews: Software, Sequencing, RiboSeq, RNASeq,
 Encoding: UTF-8
 LazyData: true
-BugReports: https://github.com/Miswi/RiboCrypt/issues
-URL: https://github.com/Miswi/RiboCrypt
+BugReports: https://github.com/m-swirski/RiboCrypt/issues
+URL: https://github.com/m-swirski/RiboCrypt
 Depends:
   R (>= 3.6.0),
   ORFik (>= 1.13.12)

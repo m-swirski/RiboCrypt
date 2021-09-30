@@ -143,6 +143,9 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
 }
 
 #' Multi-omics animation using list input
+#'
+#' The animation will move with a play butten, there is
+#' 1 transition per library given.
 #' @inheritParams multiOmicsPlot_list
 #' @return the plot object
 #' @export
@@ -231,7 +234,7 @@ multiOmicsPlot_animate <- function(target_range, annotation = target_range, refe
     multiomics_plot <- subplot(plots,
                                margin = 0,
                                nrows = 3,
-                               heights = c(0.8,0.05, 0.15),
+                               heights = c(0.8, 0.05, 0.15),
                                shareX = TRUE,
                                titleY = TRUE,
                                titleX = TRUE)

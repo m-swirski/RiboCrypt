@@ -74,7 +74,8 @@ Alternative: custom name for region.}
 the plot object
 }
 \description{
-Multi-omics animation using list input
+The animation will move with a play butten, there is
+1 transition per library given.
 }
 \examples{
 library(ORFik)

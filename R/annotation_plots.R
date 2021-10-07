@@ -52,6 +52,7 @@ createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA"
 #'
 #' @import ORFik
 #' @importFrom GenomicRanges ranges resize
+#' @importFrom IRanges subsetByOverlaps IRangesList
 #' @keywords internal
 createGeneModelPanel <- function(target_range, annotation, frame=1) {
   overlaps <- subsetByOverlaps(annotation, target_range)

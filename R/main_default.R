@@ -1,8 +1,9 @@
 #' Multi-omics plot using list input
 #'
 #' Customizable html plots for visualizing genomic data.
-#' @param target_range the target region, a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object
-#' @param annotation the whole annotation which your target is a subset,
+#' @param target_range the whole region to visualize,
+#'  a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object
+#' @param annotation the whole annotation which your target region is a subset,
 #' a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object
 #' @param reference_sequence the genome reference,
 #' a \code{\link[Rsamtools]{FaFile}} or \code{\link[Rsamtools]{FaFile}} convertible object

@@ -30,9 +30,10 @@ multiOmicsPlot_ORFikExp(
 )
 }
 \arguments{
-\item{target_range}{the target region, a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
+\item{target_range}{the whole region to visualize,
+a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
 
-\item{annotation}{the whole annotation which your target is a subset,
+\item{annotation}{the whole annotation which your target region is a subset,
 a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
 
 \item{df}{an ORFik \code{\link[ORFik]{experiment}} or a list containing ORFik experiments.

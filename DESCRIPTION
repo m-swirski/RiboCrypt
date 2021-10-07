@@ -17,7 +17,7 @@ BugReports: https://github.com/m-swirski/RiboCrypt/issues
 URL: https://github.com/m-swirski/RiboCrypt
 Depends:
   R (>= 3.6.0),
-  ORFik (>= 1.12.13)
+  ORFik (>= 1.13.12)
 Imports:
   GenomicFeatures,
   GenomicRanges,

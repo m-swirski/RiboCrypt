@@ -56,6 +56,7 @@ findPatterns <- function(patterns, sequence, frame = c(0,1,2), max_dist = NULL, 
 #' @return GRanges object
 #' @importFrom GenomeInfoDb seqnames
 #' @importFrom GenomicRanges GRanges
+#' @importFrom IRanges IRanges
 #' @keywords internal
 matchToGRanges <- function(matches, ref_granges) {
   indexes <- getIndexes(ref_granges = ref_granges)

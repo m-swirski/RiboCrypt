@@ -7,7 +7,7 @@
             } else {
                 distance = ed["width"]
             }
-            if (distance < 50) {
+            if (distance <= 50 && active == 0) {
                 let seqLength = elem.data[1].x.length;
                 let seqTrace = {
                     "text": elem.data[1].text.map(

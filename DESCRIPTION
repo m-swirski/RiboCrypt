@@ -29,7 +29,9 @@ Imports:
   GenomeInfoDb,
   BiocGenerics,
   rlang,
-  BiocParallel
+  BiocParallel,
+  here,
+  htmlwidgets
 Suggests:
   testthat,
   rmarkdown,

@@ -1,31 +1,40 @@
 (elem, data) => {
-    var active = 0;
+    let isSequenceVisible = 0;
+    let replacedTrace = null;
     elem.on('plotly_relayout',
         (ed) => {
             if ("xaxis.range[0]" in ed && "xaxis.range[1]" in ed) {
-                distance = ed["xaxis.range[1]"] - ed["xaxis.range[0]"]
+                start = Math.floor(ed["xaxis.range[0]"]);
+                end = Math.ceil(ed["xaxis.range[1]"]);
             } else {
-                distance = ed["width"]
+                start = 0;
+                end = Math.ceil(ed["width"]);
             }
-            if (distance <= 50 && active == 0) {
-                let seqLength = elem.data[1].x.length;
-                let seqTrace = {
-                    "text": elem.data[1].text.map(
+            let distance = end - start;
+            if (distance <= 50 && isSequenceVisible == 0) {
+                let sequencePositions = elem.data[1].x;
+                let sequenceText = elem.data[1].text;
+                let sequenceTrace = {
+                    "x": sequencePositions,
+                    "y": Array(sequencePositions.length).fill(0.5),
+                    "text": sequenceText.map(
                         (x) => { return x.split("<br />")[2].split(": ")[1] }
                     ),
-                    "x": elem.data[1].x,
                     "xaxis": "x",
-                    "y": Array(seqLength).fill(0),
                     "yaxis": "y2",
                     "mode": "text"
                 };
-                Plotly.addTraces(elem, seqTrace);
-                active = 1;
+                replacedTrace = elem.data[5];
+                Plotly.deleteTraces(elem, 5);
+                Plotly.addTraces(elem, sequenceTrace, 5);
+                isSequenceVisible = 1;
             }
-            if (distance > 50 && active == 1) {
-                Plotly.deleteTraces(elem, -1);
+            if (distance > 50 && isSequenceVisible == 1) {
+                Plotly.deleteTraces(elem, 5);
+                Plotly.addTraces(elem, replacedTrace, 5);
+                replacedTrace = null;
+                isSequenceVisible = 0;
             }
-            console.log(elem.data);
         }
     )
 }

@@ -47,6 +47,12 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
   gene_model_panel <- gene_model_panel[[1]]
   plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(target_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
                     reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+  nt_area <- ggplot() +
+  theme(axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank()) +
+  theme(plot.margin = unit(c(0,0,0,0), "pt"))+
+  scale_x_continuous(expand = c(0,0))
   if (!display_sequence){
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
@@ -57,8 +63,7 @@ multiOmicsPlot_ORFikExp <- function(target_range, annotation = target_range, df,
                                titleY = TRUE,
                                titleX = TRUE)
   } else {
-    letters <- nt_bar(target_seq)
-    plots <- c(plots, list(automateTicksLetters(letters),automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
+    plots <- c(plots, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
                                nrows = length(reads) + 3,

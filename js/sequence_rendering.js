@@ -1,6 +1,5 @@
-(elem, data) => {
+(elem, _, data) => {
     let isSequenceVisible = 0;
-    let replacedTrace = null;
     elem.on('plotly_relayout',
         (ed) => {
             if ("xaxis.range[0]" in ed && "xaxis.range[1]" in ed) {
@@ -12,27 +11,23 @@
             }
             let distance = end - start;
             if (distance <= 50 && isSequenceVisible == 0) {
-                let sequencePositions = elem.data[1].x;
-                let sequenceText = elem.data[1].text;
-                let sequenceTrace = {
-                    "x": sequencePositions,
-                    "y": Array(sequencePositions.length).fill(0.5),
-                    "text": sequenceText.map(
-                        (x) => { return x.split("<br />")[2].split(": ")[1] }
-                    ),
-                    "xaxis": "x",
-                    "yaxis": "y2",
-                    "mode": "text"
-                };
-                replacedTrace = elem.data[5];
-                Plotly.deleteTraces(elem, 5);
-                Plotly.addTraces(elem, sequenceTrace, 5);
+                let sequenceIndex = ["frame0", "frame1", "frame2"];
+                let sequenceTraces = sequenceIndex.map((val, idx) => {
+                    return {
+                        "x": Array.from(data[val], (_, i) => i + idx),
+                        "y": Array.from(data[val], (_) => 0.5),
+                        "text": data[val],
+                        "textfont": { "color": data["colors"][idx] },
+                        "xaxis": "x",
+                        "yaxis": "y2",
+                        "mode": "text",
+                    }
+                });
+                Plotly.addTraces(elem, sequenceTraces);
                 isSequenceVisible = 1;
             }
             if (distance > 50 && isSequenceVisible == 1) {
-                Plotly.deleteTraces(elem, 5);
-                Plotly.addTraces(elem, replacedTrace, 5);
-                replacedTrace = null;
+                Plotly.deleteTraces(elem, [-1]);
                 isSequenceVisible = 0;
             }
         }

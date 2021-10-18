@@ -23,9 +23,6 @@
                         "mode": "text",
                     }
                 });
-                console.log(elem.data);
-                console.log(data);
-                console.log(sequenceTraces);
                 Plotly.addTraces(elem, sequenceTraces);
                 isSequenceVisible = 1;
             }

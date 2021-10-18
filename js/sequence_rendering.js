@@ -14,7 +14,7 @@
                 let sequenceIndex = ["frame0", "frame1", "frame2"];
                 let sequenceTraces = sequenceIndex.map((val, idx) => {
                     return {
-                        "x": Array.from(data[val], (_, i) => i + idx),
+                        "x": Array.from(data[val], (_, i) => i * 3 + idx + 1),
                         "y": Array.from(data[val], (_) => 0.5),
                         "text": data[val],
                         "textfont": { "color": data["colors"][idx] },
@@ -23,11 +23,14 @@
                         "mode": "text",
                     }
                 });
+                console.log(elem.data);
+                console.log(data);
+                console.log(sequenceTraces);
                 Plotly.addTraces(elem, sequenceTraces);
                 isSequenceVisible = 1;
             }
             if (distance > 50 && isSequenceVisible == 1) {
-                Plotly.deleteTraces(elem, [-1]);
+                Plotly.deleteTraces(elem, [-3, -2, -1]);
                 isSequenceVisible = 0;
             }
         }

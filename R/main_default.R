@@ -229,7 +229,7 @@ multiOmicsPlot_animate <- function(target_range, annotation = target_range, refe
 
   plot <- getPlotAnimate(profiles, withFrames = withFrames[1], colors = colors[1], ylabels = ylabels[1], lines = lines)
 
-  plots <- list(plot, automateTicks(gene_model_panel), automateTicksX(seq_panel))
+  plots <- list(plot, automateTicksGMP(gene_model_panel), automateTicksX(seq_panel))
 
   if (!display_sequence){
     multiomics_plot <- subplot(plots,

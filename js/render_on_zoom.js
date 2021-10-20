@@ -11,7 +11,7 @@
                 end = Math.ceil(ed["width"]);
             }
             let distance = end - start;
-            data.forEach(traceDef, index => {
+            data.forEach((traceDef, index) => {
                 if (distance <= traceDef["distance"] && isTraceVisible[index] == 0) {
                     let traceToAdd = {
                         "x": traceDef["x"],

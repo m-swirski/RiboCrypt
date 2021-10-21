@@ -67,24 +67,16 @@ df[which(df$condition == "Mutant"),]
 ```
 # Creating browser window
 
-Browser window is created with `multiOmicsPlot` functions. First, lets have a look at a single Ribo-seq profile made with a single library (cds is extended by 30 bases). In the resulting plot you can zoom in and inspect coverage:
+Browser window is created with `multiOmicsPlot` functions. The function displays libraries subsetted from experiment (df) from top to down. First, lets have a look at a single library of each type (cds is extended by 30 bases). In the resulting plot you can zoom in and inspect coverage:
 
 ```{r eval = TRUE, echo = TRUE, message = FALSE}
 
-  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[11,],
+  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[c(1,5,9,13),],
                         frames_type = "columns", custom_motif = "CTG")
  
 ```
 
 From top to down, we see Ribo-seq coverage, displayed as columns with the three frames color-coded according to the bottom panel: the three rectangles represent reading frames with sequence features denoted by vertical lines: white for AUG codons and black for stop codons. Custom motifs can be displayed in purple with custom_motif argument. Middle panel is gene model schematic, note that cds frame is also color-coded to match reading frame.
-
-If entire experiment is used, all libraries are displayed, what can make the browsing window too crowded to be clear.
-```{r eval = TRUE, echo = TRUE, message = FALSE}
-
-  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df,
-                        frames_type = "columns")
- 
-```
 
 Now, we can plot just the ribosome footprints (RFPs), with display changed to lines, instead of columns:
 

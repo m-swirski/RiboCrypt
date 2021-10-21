@@ -1,7 +1,7 @@
 Package: RiboCrypt
 Type: Package
 Title: Interactive visualization in genomics
-Version: 0.99.7
+Version: 0.99.8
 Authors@R: c(
   person(given = "Michal", family = "Swirski", email = "michal.swirski@uw.edu.pl", role = c("aut", "cre")),
   person(given = "Haakon", family = "Tjeldnes", email = "hauken_heyken@hotmail.com", role = c("ctb")))
@@ -38,5 +38,5 @@ Suggests:
   BiocStyle, 
   BSgenome,
   BSgenome.Hsapiens.UCSC.hg19
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 VignetteBuilder: knitr

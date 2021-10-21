@@ -153,3 +153,35 @@ getRelativeFrames <- function(overlaps) {
   dt[, rel_frame := c(0,-cum_width %% 3)[1:length(width)], names]
   return(dt$rel_frame)
 }
+
+#' An ORFik experiment to see how it looks
+#'
+#' Toy-data created to resemble human genes:\cr
+#' Number of genes: 6\cr
+#' Ribo-seq: 2 libraries
+#' RNA-seq: 2 libraries
+#' CAGE: 1 library
+#' PAS (poly-A): 1 library
+#' @param as.temp logical, default FALSE, load as ORFik experiment.
+#' If TRUE, loads as data.frame template of the experiment.
+#' @return an ORFik experiment
+#' @export
+#' @family ORFik_experiment
+#' @examples
+#' ORFik.template.experiment()
+RiboCrypt.template.experiment <- function(as.temp = FALSE) {
+  dir <- system.file("extdata/Homo_sapiens_sample", "", package = "ORFik")
+  # 2. Pick an experiment name
+  exper <- "ORFik"
+  # 3. Pick .gff/.gtf location
+  txdb <- system.file("extdata/Homo_sapiens_sample", "Homo_sapiens_dummy.gtf.db", package = "ORFik")
+  fa <- system.file("extdata/Homo_sapiens_sample", "Homo_sapiens_dummy.fasta", package = "ORFik")
+  template <- create.experiment(dir = dir, saveDir = NULL,
+                                exper, txdb = txdb, fa = fa,
+                                organism = "Homo sapiens",
+                                author = "Tjeldnes",
+                                viewTemplate = FALSE, types = "ofst")
+  # read experiment
+  if (as.temp) return(template)
+  return(read.experiment(template))
+}

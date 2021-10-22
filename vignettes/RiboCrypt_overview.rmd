@@ -82,7 +82,7 @@ Now, we can plot just the ribosome footprints (RFPs), with display changed to li
 
 ```{r eval = TRUE, echo = TRUE, message = FALSE}
 
-  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[which(df$libtype == "RFP"),],
+  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[which(df$libtype == "RFP")[1],],
                         frames_type = "lines")
  
 ```
@@ -91,7 +91,7 @@ Line display is intuitive, but Ribo-seq coverage tends to be very serrated - lin
 
 ```{r eval = TRUE, echo = TRUE, message = FALSE}
 
-  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[which(df$libtype == "RFP"),],
+  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[which(df$libtype == "RFP")[1],],
                         frames_type = "lines", kmers = 6)
  
 ```
@@ -100,7 +100,7 @@ We can now explore the stacked area reading frame display. It's especially usefu
 
 ```{r eval = TRUE, echo = TRUE, message = FALSE}
 
-  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[which(df$libtype == "RFP"),],
+  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[which(df$libtype == "RFP")[1],],
                         frames_type = "stacks", kmers = 6)
  
 ```

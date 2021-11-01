@@ -1,7 +1,7 @@
 multiOmicsController <- function(){
   with(rlang::caller_env(),{
-seqlevels(target_range) <- seqlevels(annotation)
-target_range <- GRangesList(target_range)
+seqlevels(display_range) <- seqlevels(annotation)
+display_range <- GRangesList(display_range)
 
 # if (is(annotation, "GRangesList")) annotation <- unlist(annotation)
 

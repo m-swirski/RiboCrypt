@@ -76,6 +76,17 @@ matchWrapper <- function(patterns, ref_granges,sequence, frame = c(0,1,2), max_d
   }
 }
 
+flankPerGroup <- function(grl) {
+  dt <- as.data.table(grl)
+  dt$group <- NULL
+  dt <- dt[, .(start = min(start), end = max(end), seqnames = seqnames[1], strand = strand[1]), by = group_name]
+  rownames(dt) <- dt$group_name
+  dt$group_name <- NULL
+  gr <- GRanges(dt)
+  grl <- groupGRangesBy(gr)
+  return(grl)
+}
+
 #' Get antisense
 #'
 #' @importFrom BiocGenerics strand strand<-
@@ -94,12 +105,12 @@ antisense <- function(grl) {
 #' Trim overlaps
 #'
 #' @param overlaps GRanges
-#' @param target_range GRanges
+#' @param display_range GRanges
 #' @return GRanges
 #' @importFrom BiocGenerics start<- end<-
 #' @keywords internal
-trimOverlaps <- function(overlaps, target_range) {
-  tr <- unlistGrl(target_range)
+trimOverlaps <- function(overlaps, display_range) {
+  tr <- unlistGrl(display_range)
   start_indices <- start(overlaps) < min(start(tr))
   end_indices <- end(overlaps) > max(end(tr))
   if (TRUE %in% start_indices) {
@@ -123,17 +134,17 @@ selectCols <- function(cols, locations) {
 }
 
 
-colour_bars <- function(overlaps, target_range) {
-  if (as.logical(strand(target_range[[1]][1]) == "+")) {
+colour_bars <- function(overlaps, display_range) {
+  if (as.logical(strand(display_range[[1]][1]) == "+")) {
     ov_starts <- start(overlaps)
-    target_start <- min(start(target_range))
+    target_start <- min(start(display_range))
     frames <- ov_starts - target_start
     frames <- frames + overlaps$rel_frame
     colors <- c("#F8766D","#00BA38","#619CFF")[frames %% 3 + 1]
     return(colors)
   } else{
     ov_starts <- end(overlaps)
-    target_start <- max(end(target_range))
+    target_start <- max(end(display_range))
     frames <- ov_starts - target_start
     frames <- frames - overlaps$rel_frame
     frames <- - frames

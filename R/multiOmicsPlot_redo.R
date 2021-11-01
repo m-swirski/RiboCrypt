@@ -27,22 +27,37 @@
 #'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
 #'                         frames_type = "columns")
 #' }
-multiOmicsPlot_ORFikExp <- function(display_range, annotation = display_range, df, reference_sequence = findFa(df),
+multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
                                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
+                                    viewMode = c("tx", "genomic")[1],
+                                    custom_regions = "NULL",
                                     withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
                                     frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
                                     ylabels = bamVarName(df), proportions = NULL, width = NULL, height = NULL,
                                     plot_name = "default", plot_title = NULL, display_sequence = FALSE,
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                     custom_motif = NULL, BPPARAM = bpparam()) {
-  multiOmicsController()
+
+   if (viewMode == "genomic") {
+    display_range <- flankPerGroup(display_range)
+}
+
+  if (class(annotation) == "character") annotation <- loadRegion(df, part = annotation)
+   multiOmicsController()
+
+
+
+  if (class(display_range) == "character") {
+    display_range <- loadRegion(df, part = "tx", names.keep = display_range)
+  }
+
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel <- createSeqPanel(target_seq[[1]], start_codons = start_codons,
                               stop_codons = stop_codons, custom_motif = custom_motif)
 
 
 
-  gene_model_panel <- createGeneModelPanel(display_range, annotation)
+  gene_model_panel <- createGeneModelPanel(display_range, annotation, custom_regions = custom_regions)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
   plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),

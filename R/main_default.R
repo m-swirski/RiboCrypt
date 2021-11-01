@@ -1,7 +1,7 @@
 #' Multi-omics plot using list input
 #'
 #' Customizable html plots for visualizing genomic data.
-#' @param target_range the whole region to visualize,
+#' @param display_range the whole region to visualize,
 #'  a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object
 #' @param annotation the whole annotation which your target region is a subset,
 #' a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object
@@ -22,7 +22,7 @@
 #' @param proportions numeric, default NULL. Width of plot.
 #' @param width numeric, default NULL. Width of plot.
 #' @param height numeric, default NULL. Height of plot.
-#' @param plot_name = character, default "default" (will create name from target_range name).
+#' @param plot_name = character, default "default" (will create name from display_range name).
 #' Alternative: custom name for region.
 #' @param plot_title character, default NULL. A title for plot.
 #' @param display_sequence logical, default FALSE. If TRUE, display nucleotide sequence in plot.
@@ -44,7 +44,7 @@
 #'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
 #'                         frames_type = "columns")
 #' }
-multiOmicsPlot_list <- function(target_range, annotation = target_range, reference_sequence,
+multiOmicsPlot_list <- function(display_range, annotation = display_range, reference_sequence,
                                 reads, withFrames = NULL, frames_type = "lines", colors = NULL,
                                 kmers = NULL, kmers_type = c("mean", "sum")[1],
                                 ylabels = NULL, proportions = NULL,
@@ -52,8 +52,8 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
                                 plot_title = NULL, display_sequence = FALSE, annotation_names = NULL,
                                 start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                 custom_motif = NULL, BPPARAM = bpparam()) {
-  seqlevels(target_range) <- seqlevels(annotation)
-  target_range <- GRangesList(target_range)
+  seqlevels(display_range) <- seqlevels(annotation)
+  display_range <- GRangesList(display_range)
 
   # if (is(annotation, "GRangesList")) annotation <- unlist(annotation)
 
@@ -100,15 +100,15 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
   }
 
 
-  target_seq <- extractTranscriptSeqs(reference_sequence, target_range)
+  target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel <- createSeqPanel(target_seq[[1]])
 
 
 
-  gene_model_panel <- createGeneModelPanel(target_range, annotation)
+  gene_model_panel <- createGeneModelPanel(display_range, annotation)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
-  plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(target_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
+  plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
                     reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
 
 
@@ -136,7 +136,7 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
   multiomics_plot <- multiomics_plot %>% plotly::config(
     toImageButtonOptions = list(
       format = "svg",
-      filename = ifelse(plot_name == "default",names(target_range),plot_name),
+      filename = ifelse(plot_name == "default",names(display_range),plot_name),
       width = width,
       height = height))
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
@@ -159,7 +159,7 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
 #'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
 #'                         frames_type = "columns")
 #' }
-multiOmicsPlot_animate <- function(target_range, annotation = target_range, reference_sequence,
+multiOmicsPlot_animate <- function(display_range, annotation = display_range, reference_sequence,
                                    reads, withFrames = NULL, colors = NULL,
                                    kmers = NULL, kmers_type = c("mean", "sum")[1],
                                    ylabels = NULL, proportions = NULL,
@@ -167,8 +167,8 @@ multiOmicsPlot_animate <- function(target_range, annotation = target_range, refe
                                    plot_title = NULL, display_sequence = FALSE, annotation_names = NULL,
                                    start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                    custom_motif = NULL) {
-  seqlevels(target_range) <- seqlevels(annotation)
-  target_range <- GRangesList(target_range)
+  seqlevels(display_range) <- seqlevels(annotation)
+  display_range <- GRangesList(display_range)
 
 
   # if (is(annotation, "GRangesList")) annotation <- unlist(annotation)
@@ -215,15 +215,15 @@ multiOmicsPlot_animate <- function(target_range, annotation = target_range, refe
   }
 
 
-  target_seq <- extractTranscriptSeqs(reference_sequence, target_range)
+  target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel <- createSeqPanel(target_seq[[1]], frame=1:length(reads))
 
 
-  gene_model_panel <- createGeneModelPanel(target_range, annotation, frame = 1:length(reads))
+  gene_model_panel <- createGeneModelPanel(display_range, annotation, frame = 1:length(reads))
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
 
-  profiles <- mapply(function(x,y,z) getProfileAnimate(target_range, x, y, z, kmers_type), reads, withFrames, kmers,  SIMPLIFY = FALSE)
+  profiles <- mapply(function(x,y,z) getProfileAnimate(display_range, x, y, z, kmers_type), reads, withFrames, kmers,  SIMPLIFY = FALSE)
 
   profiles <- rbindlist(profiles, idcol = "file")
 
@@ -257,7 +257,7 @@ multiOmicsPlot_animate <- function(target_range, annotation = target_range, refe
   multiomics_plot <- multiomics_plot %>% plotly::config(
     toImageButtonOptions = list(
       format = "svg",
-      filename = ifelse(plot_name == "default",names(target_range),plot_name),
+      filename = ifelse(plot_name == "default",names(display_range),plot_name),
       width = width,
       height = height))
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)

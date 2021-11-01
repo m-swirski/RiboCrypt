@@ -127,7 +127,7 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   }
   custom_region_names <- which(names(lines_locations) %in% names(custom_regions))
   names(lines_locations) <- rep("black", length(lines_locations))
-  names(lines_locations)[custom_region_names] <- "grey"
+  names(lines_locations)[custom_region_names] <- "orange4"
   return(list(result_plot, lines_locations))
 }
 

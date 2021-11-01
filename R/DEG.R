@@ -1,7 +1,7 @@
 DEG_plot <- function(dt) {
   dt <- highlight_key(dt, ~id, "Select a transcript")
 
-  gg <- ggplot(dt, aes(x = rna, y = rfp, color = Regulation, frame = variable)) +
+  gg <- ggplot(dt, aes(x = rna, y = rfp, color = Regulation, frame = variable, id = id)) +
     geom_vline(aes(xintercept = 0), color = "red")+
     geom_hline(aes(yintercept = 0), color = "red") +
     geom_abline(slope = 1, intercept = 0, color = "grey", linetype = 2)+

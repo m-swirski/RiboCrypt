@@ -30,7 +30,9 @@ Imports:
   ggplot2,
   IRanges,
   plotly,
-  rlang
+  rlang,
+  here,
+  htmlwidgets
 Suggests:
   testthat,
   rmarkdown,

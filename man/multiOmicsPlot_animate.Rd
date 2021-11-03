@@ -5,8 +5,8 @@
 \title{Multi-omics animation using list input}
 \usage{
 multiOmicsPlot_animate(
-  target_range,
-  annotation = target_range,
+  display_range,
+  annotation = display_range,
   reference_sequence,
   reads,
   withFrames = NULL,
@@ -27,7 +27,7 @@ multiOmicsPlot_animate(
 )
 }
 \arguments{
-\item{target_range}{the whole region to visualize,
+\item{display_range}{the whole region to visualize,
 a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
 
 \item{annotation}{the whole annotation which your target region is a subset,
@@ -56,7 +56,7 @@ Alternative:  Character vector of length 1 or length of "reads" list argument.}
 
 \item{height}{numeric, default NULL. Height of plot.}
 
-\item{plot_name}{= character, default "default" (will create name from target_range name).
+\item{plot_name}{= character, default "default" (will create name from display_range name).
 Alternative: custom name for region.}
 
 \item{plot_title}{character, default NULL. A title for plot.}

@@ -4,12 +4,12 @@
 \alias{trimOverlaps}
 \title{Trim overlaps}
 \usage{
-trimOverlaps(overlaps, target_range)
+trimOverlaps(overlaps, display_range)
 }
 \arguments{
 \item{overlaps}{GRanges}
 
-\item{target_range}{GRanges}
+\item{display_range}{GRanges}
 }
 \value{
 GRanges

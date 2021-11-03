@@ -5,11 +5,13 @@
 \title{Multi-omics plot using ORFik experiment input}
 \usage{
 multiOmicsPlot_ORFikExp(
-  target_range,
-  annotation = target_range,
+  display_range,
   df,
+  annotation = "cds",
   reference_sequence = findFa(df),
   reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
+  viewMode = c("tx", "genomic")[1],
+  custom_regions = "NULL",
   withFrames = libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU"),
   frames_type = "lines",
   colors = NULL,
@@ -30,14 +32,14 @@ multiOmicsPlot_ORFikExp(
 )
 }
 \arguments{
-\item{target_range}{the whole region to visualize,
-a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
-
-\item{annotation}{the whole annotation which your target region is a subset,
+\item{display_range}{the whole region to visualize,
 a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
 
 \item{df}{an ORFik \code{\link[ORFik]{experiment}} or a list containing ORFik experiments.
 Usually a list when you have split Ribo-seq and RNA-seq etc.}
+
+\item{annotation}{the whole annotation which your target region is a subset,
+a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
 
 \item{reference_sequence}{the genome reference, default ORFik::findFa(df)}
 
@@ -69,7 +71,7 @@ Alternative:  Character vector of length 1 or length of "reads" list argument.}
 
 \item{height}{numeric, default NULL. Height of plot.}
 
-\item{plot_name}{character, default "default" (will create name from target_range name).
+\item{plot_name}{character, default "default" (will create name from display_range name).
 Alternative: custom name for region.}
 
 \item{plot_title}{character, default NULL. A title for plot.}

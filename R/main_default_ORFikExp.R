@@ -30,7 +30,7 @@
 multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
                                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
                                     viewMode = c("tx", "genomic")[1],
-                                    custom_regions = "NULL",
+                                    custom_regions = NULL,
                                     withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
                                     frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
                                     ylabels = bamVarName(df), proportions = NULL, width = NULL, height = NULL,

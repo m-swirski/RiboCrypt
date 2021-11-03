@@ -50,7 +50,7 @@ Now load the experiment and load the coding sequences (cds). Here, we use ORFik 
 https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikExperiment.html
 
 ```{r eval = TRUE, echo = TRUE, message = FALSE}
- df <- RiboCrypt.template.experiment()
+ df <- ORFik.template.experiment()
  cds <- loadRegion(df, "cds")
  cds # gene annotation
  df # let's look at libraries the experiment contains

@@ -11,7 +11,7 @@ multiOmicsPlot_redo(
   reference_sequence = findFa(df),
   reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
   viewMode = c("tx", "genomic")[1],
-  custom_regions = "NULL",
+  custom_regions = NULL,
   withFrames = libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU"),
   frames_type = "lines",
   colors = NULL,
@@ -45,6 +45,14 @@ a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges
 
 \item{reads}{the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
 Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full")}}
+
+\item{viewMode}{character, default "tx" (transcript coordinates, first position is 1)\cr
+Alternative: "genomic" (genomic coordinates, first position is first position in
+\code{display_range} argument).}
+
+\item{custom_regions}{a GRangesList or NULL, default: NULL.
+The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
+a different color.}
 
 \item{withFrames}{a logical vector, default
 \code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU")}

@@ -9,6 +9,8 @@ multiOmicsPlot_list(
   annotation = display_range,
   reference_sequence,
   reads,
+  viewMode = c("tx", "genomic")[1],
+  custom_regions = NULL,
   withFrames = NULL,
   frames_type = "lines",
   colors = NULL,
@@ -25,6 +27,7 @@ multiOmicsPlot_list(
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
+  AA_code = Biostrings::GENETIC_CODE,
   BPPARAM = bpparam()
 )
 }
@@ -39,6 +42,14 @@ a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges
 a \code{\link[Rsamtools]{FaFile}} or \code{\link[Rsamtools]{FaFile}} convertible object}
 
 \item{reads}{the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.}
+
+\item{viewMode}{character, default "tx" (transcript coordinates, first position is 1)\cr
+Alternative: "genomic" (genomic coordinates, first position is first position in
+\code{display_range} argument).}
+
+\item{custom_regions}{a GRangesList or NULL, default: NULL.
+The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
+a different color.}
 
 \item{withFrames}{a logical vector, default NULL. Alternative: a length 1 or same length as list length of "reads" argument.}
 
@@ -77,6 +88,10 @@ Alternative: custom name for region.}
 \item{stop_codons}{character vector, default c("TAA", "TAG", "TGA")}
 
 \item{custom_motif}{character vector, default NULL.}
+
+\item{AA_code}{Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
+See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
+\code{Biostrings::getGeneticCode("11")}}
 
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
 To see number of threads used, do \code{BiocParallel::bpparam()$workers}.

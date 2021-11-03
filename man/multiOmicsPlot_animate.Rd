@@ -23,7 +23,9 @@ multiOmicsPlot_animate(
   annotation_names = NULL,
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
-  custom_motif = NULL
+  custom_motif = NULL,
+  AA_code = Biostrings::GENETIC_CODE,
+  BPPARAM = bpparam()
 )
 }
 \arguments{
@@ -70,6 +72,14 @@ Alternative: custom name for region.}
 \item{stop_codons}{character vector, default c("TAA", "TAG", "TGA")}
 
 \item{custom_motif}{character vector, default NULL.}
+
+\item{AA_code}{Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
+See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
+\code{Biostrings::getGeneticCode("11")}}
+
+\item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
+To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
+You can also add a time remaining bar, for a more detailed pipeline.}
 }
 \value{
 the plot object

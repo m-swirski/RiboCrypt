@@ -37,23 +37,16 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
                                     plot_name = "default", plot_title = NULL, display_sequence = FALSE,
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                     custom_motif = NULL, BPPARAM = bpparam()) {
-
-  if (class(display_range) == "character") {
+  # Load ranges if defined as character
+  if (is(display_range, "character")) {
     display_range <- loadRegion(df, part = "tx", names.keep = display_range)
   }
-
+  if (is(annotation, "character")) annotation <- loadRegion(df, part = annotation)
 
   if (viewMode == "genomic") {
     display_range <- flankPerGroup(display_range)
   }
-
-  if (class(annotation) == "character") annotation <- loadRegion(df, part = annotation)
-
   multiOmicsController()
-
-
-
-
 
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel <- createSeqPanel(target_seq[[1]], start_codons = start_codons,

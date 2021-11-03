@@ -8,6 +8,12 @@
 #' @param reference_sequence the genome reference,
 #' a \code{\link[Rsamtools]{FaFile}} or \code{\link[Rsamtools]{FaFile}} convertible object
 #' @param reads the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
+#' @param viewMode character, default "tx" (transcript coordinates, first position is 1)\cr
+#' Alternative: "genomic" (genomic coordinates, first position is first position in
+#' \code{display_range} argument).
+#' @param custom_regions a GRangesList or NULL, default: NULL.
+#'  The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
+#'  a different color.
 #' @param withFrames a logical vector, default NULL. Alternative: a length 1 or same length as list length of "reads" argument.
 #' @param frames_type character, default "lines". Alternative:\cr
 #' - columns \cr
@@ -30,10 +36,14 @@
 #' @param BPPARAM how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
 #'  To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
 #'  You can also add a time remaining bar, for a more detailed pipeline.
+#' @param AA_code Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
+#' See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
+#' \code{Biostrings::getGeneticCode("11")}
 #' @inheritParams createSeqPanel
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
 #' @importFrom BiocParallel bpparam bpmapply
+#' @importFrom Biostrings GENETIC_CODE
 #' @export
 #' @examples
 #' library(ORFik)
@@ -45,13 +55,16 @@
 #'                         frames_type = "columns")
 #' }
 multiOmicsPlot_list <- function(display_range, annotation = display_range, reference_sequence,
-                                reads, withFrames = NULL, frames_type = "lines", colors = NULL,
+                                reads, viewMode = c("tx", "genomic")[1], custom_regions = NULL,
+                                withFrames = NULL,
+                                frames_type = "lines", colors = NULL,
                                 kmers = NULL, kmers_type = c("mean", "sum")[1],
                                 ylabels = NULL, proportions = NULL,
                                 width = NULL, height = NULL, plot_name = "default",
                                 plot_title = NULL, display_sequence = FALSE, annotation_names = NULL,
                                 start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                custom_motif = NULL, BPPARAM = bpparam()) {
+                                custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
+                                BPPARAM = bpparam()) {
   seqlevels(display_range) <- seqlevels(annotation)
   display_range <- GRangesList(display_range)
 
@@ -166,7 +179,8 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
                                    width = NULL, height = NULL,plot_name = "default",
                                    plot_title = NULL, display_sequence = FALSE, annotation_names = NULL,
                                    start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                   custom_motif = NULL) {
+                                   custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
+                                   BPPARAM = bpparam()) {
   seqlevels(display_range) <- seqlevels(annotation)
   display_range <- GRangesList(display_range)
 
@@ -223,11 +237,15 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
 
-  profiles <- mapply(function(x,y,z) getProfileAnimate(display_range, x, y, z, kmers_type), reads, withFrames, kmers,  SIMPLIFY = FALSE)
+  # profiles <- mapply(function(x,y,z) getProfileAnimate(display_range, x, y, z, kmers_type),
+  #                    reads, withFrames, kmers,  SIMPLIFY = FALSE)
+  profiles <- bpmapply(function(x,y,z) getProfileAnimate(display_range, x, y, z, kmers_type),
+                        reads, withFrames, kmers,  SIMPLIFY = FALSE, BPPARAM = BPPARAM)
 
   profiles <- rbindlist(profiles, idcol = "file")
 
-  plot <- getPlotAnimate(profiles, withFrames = withFrames[1], colors = colors[1], ylabels = ylabels[1], lines = lines)
+  plot <- getPlotAnimate(profiles, withFrames = withFrames[1],
+                         colors = colors[1], ylabels = ylabels[1], lines = lines)
 
   plots <- list(plot, automateTicksGMP(gene_model_panel), automateTicksX(seq_panel))
 

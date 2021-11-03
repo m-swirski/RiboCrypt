@@ -5,11 +5,13 @@
 \title{Multi-omics plot using ORFik experiment input}
 \usage{
 multiOmicsPlot_ORFikExp(
-  target_range,
-  annotation = target_range,
+  display_range,
   df,
+  annotation = "cds",
   reference_sequence = findFa(df),
   reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
+  viewMode = c("tx", "genomic")[1],
+  custom_regions = NULL,
   withFrames = libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU"),
   frames_type = "lines",
   colors = NULL,
@@ -26,23 +28,32 @@ multiOmicsPlot_ORFikExp(
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
+  AA_code = Biostrings::GENETIC_CODE,
   BPPARAM = bpparam()
 )
 }
 \arguments{
-\item{target_range}{the whole region to visualize,
-a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
-
-\item{annotation}{the whole annotation which your target region is a subset,
+\item{display_range}{the whole region to visualize,
 a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
 
 \item{df}{an ORFik \code{\link[ORFik]{experiment}} or a list containing ORFik experiments.
 Usually a list when you have split Ribo-seq and RNA-seq etc.}
 
+\item{annotation}{the whole annotation which your target region is a subset,
+a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object}
+
 \item{reference_sequence}{the genome reference, default ORFik::findFa(df)}
 
 \item{reads}{the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
 Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full")}}
+
+\item{viewMode}{character, default "tx" (transcript coordinates, first position is 1)\cr
+Alternative: "genomic" (genomic coordinates, first position is first position in
+\code{display_range} argument).}
+
+\item{custom_regions}{a GRangesList or NULL, default: NULL.
+The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
+a different color.}
 
 \item{withFrames}{a logical vector, default
 \code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU")}
@@ -69,7 +80,7 @@ Alternative:  Character vector of length 1 or length of "reads" list argument.}
 
 \item{height}{numeric, default NULL. Height of plot.}
 
-\item{plot_name}{character, default "default" (will create name from target_range name).
+\item{plot_name}{character, default "default" (will create name from display_range name).
 Alternative: custom name for region.}
 
 \item{plot_title}{character, default NULL. A title for plot.}
@@ -83,6 +94,10 @@ Alternative: custom name for region.}
 \item{stop_codons}{character vector, default c("TAA", "TAG", "TGA")}
 
 \item{custom_motif}{character vector, default NULL.}
+
+\item{AA_code}{Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
+See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
+\code{Biostrings::getGeneticCode("11")}}
 
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
 To see number of threads used, do \code{BiocParallel::bpparam()$workers}.

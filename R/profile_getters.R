@@ -55,12 +55,12 @@ getStackProfile <- function(grl, footprints, kmers, kmers_type = "mean") {
 }
 
 
-getProfileAnimate <- function(target_range, reads, withFrames, kmers = 1, kmers_type = "mean") {
+getProfileAnimate <- function(display_range, reads, withFrames, kmers = 1, kmers_type = "mean") {
   if (withFrames) {
-    profile <- getRiboProfile(target_range, reads, kmers, kmers_type = kmers_type)
+    profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
 
   } else {
-    profile <- coveragePerTiling(target_range, subsetByOverlaps(reads, target_range), as.data.table = TRUE)
+    profile <- coveragePerTiling(display_range, subsetByOverlaps(reads, display_range), as.data.table = TRUE)
   }
   profile
 }

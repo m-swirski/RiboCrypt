@@ -56,6 +56,7 @@ findPatterns <- function(patterns, sequence, frame = c(0,1,2), max_dist = NULL, 
 #' @return GRanges object
 #' @importFrom GenomeInfoDb seqnames
 #' @importFrom GenomicRanges GRanges
+#' @importFrom IRanges IRanges
 #' @keywords internal
 matchToGRanges <- function(matches, ref_granges) {
   indexes <- getIndexes(ref_granges = ref_granges)
@@ -87,18 +88,17 @@ antisense <- function(grl) {
   strand(gr[!pos_pointer]) <- "+"
   grl <- groupGRangesBy(gr)
   return(grl)
-
 }
 
 #' Trim overlaps
 #'
 #' @param overlaps GRanges
-#' @param target_range GRanges
+#' @param display_range GRanges
 #' @return GRanges
 #' @importFrom BiocGenerics start<- end<-
 #' @keywords internal
-trimOverlaps <- function(overlaps, target_range) {
-  tr <- unlistGrl(target_range)
+trimOverlaps <- function(overlaps, display_range) {
+  tr <- unlistGrl(display_range)
   start_indices <- start(overlaps) < min(start(tr))
   end_indices <- end(overlaps) > max(end(tr))
   if (TRUE %in% start_indices) {
@@ -122,17 +122,17 @@ selectCols <- function(cols, locations) {
 }
 
 
-colour_bars <- function(overlaps, target_range) {
-  if (as.logical(strand(target_range[[1]][1]) == "+")) {
+colour_bars <- function(overlaps, display_range) {
+  if (as.logical(strand(display_range[[1]][1]) == "+")) {
     ov_starts <- start(overlaps)
-    target_start <- min(start(target_range))
+    target_start <- min(start(display_range))
     frames <- ov_starts - target_start
     frames <- frames + overlaps$rel_frame
     colors <- c("#F8766D","#00BA38","#619CFF")[frames %% 3 + 1]
     return(colors)
   } else{
     ov_starts <- end(overlaps)
-    target_start <- max(end(target_range))
+    target_start <- max(end(display_range))
     frames <- ov_starts - target_start
     frames <- frames - overlaps$rel_frame
     frames <- - frames

@@ -1,16 +1,16 @@
-createSinglePlot <- function(target_range, reads, withFrames, colors, kmers = 1,
+createSinglePlot <- function(display_range, reads, withFrames, colors, kmers = 1,
                              kmers_type = "mean", ylabels, lines, type = "lines"){
   count <- NULL # Avoid data.table warning
   if (withFrames) {
 
     if (type %in% c("stacks", "area" )) {
-      profile <- getStackProfile(target_range, reads, kmers, kmers_type = kmers_type)
-    } else profile <- getRiboProfile(target_range, reads, kmers, kmers_type = kmers_type)
+      profile <- getStackProfile(display_range, reads, kmers, kmers_type = kmers_type)
+    } else profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
   } else {
-    profile <- getCoverageProfile(target_range, reads, kmers, kmers_type = kmers_type)
+    profile <- getCoverageProfile(display_range, reads, kmers, kmers_type = kmers_type)
   }
   profile_plot <- ggplot(profile)
-  if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = "black", linetype = 4)
+  if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = names(lines), linetype = 4)
   profile_plot <- profile_plot + geom_hline(yintercept = 0)
   if (!withFrames) {
     profile_plot <- profile_plot +
@@ -44,13 +44,13 @@ createSinglePlot <- function(target_range, reads, withFrames, colors, kmers = 1,
 }
 
 
-#profiles <- mapply(function(x,y,z) getProfileAnimate(target_range, x, y, z), reads, withFrames, kmers,  SIMPLIFY = FALSE)
+#profiles <- mapply(function(x,y,z) getProfileAnimate(display_range, x, y, z), reads, withFrames, kmers,  SIMPLIFY = FALSE)
 
 getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines){
   count <- NULL # Avoid data.table warning
   if (withFrames) {
     profile_plot <- ggplot(profile)
-    if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = "black", linetype = 4)
+    if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = names(lines), linetype = 4)
     profile_plot <- profile_plot +
       geom_line(aes(y = count, x = position,color = frame, frame = file), size = 0.75) +
       theme(legend.position = "none") +
@@ -65,7 +65,7 @@ getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines){
 
   } else {
     profile_plot <- ggplot(profile)
-    if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = "black", linetype = 4)
+    if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = names(lines), linetype = 4)
     profile_plot <- profile_plot +
       geom_area(aes(y = count, x = position, frame = file), fill = colors, position = "identity") +
       ylab(ylabels) +

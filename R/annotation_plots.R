@@ -52,23 +52,29 @@ createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA"
 #'
 #' @import ORFik
 #' @importFrom GenomicRanges ranges resize
+#' @importFrom IRanges subsetByOverlaps IRangesList
 #' @keywords internal
-createGeneModelPanel <- function(target_range, annotation, frame=1) {
-  overlaps <- subsetByOverlaps(annotation, target_range)
-  plot_width <- widthPerGroup(target_range)
+createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regions) {
+  annotation <- c(annotation, custom_regions)
+  overlaps <- subsetByOverlaps(annotation, display_range)
+  plot_width <- widthPerGroup(display_range)
+  onames <-rep(names(overlaps), numExonsPerGroup(overlaps, FALSE))
   overlaps <- unlistGrl(overlaps)
+  names(overlaps) <- onames
   overlaps$rel_frame <- getRelativeFrames(overlaps)
-  overlaps <- subsetByOverlaps(overlaps, target_range)
+  overlaps <- subsetByOverlaps(overlaps, display_range)
 
-  intersections <- trimOverlaps(overlaps,target_range)
+  intersections <- trimOverlaps(overlaps,display_range)
   intersections <- groupGRangesBy(intersections)
 
-  locations <- pmapToTranscriptF(intersections, target_range)
+  locations <- pmapToTranscriptF(intersections, display_range)
   locations <- unlistGrl(locations)
   locations <- ranges(locations)
-  blocks <- sort(c(start(locations) , end(locations)))
+  blocks <- c(start(locations) , end(locations))
+  names(blocks) <- rep(names(locations),2)
+  blocks <- sort(blocks)
   lines_locations <- blocks[!(blocks %in% c(1, plot_width))]
-  cols <- colour_bars(overlaps, target_range)
+  cols <- colour_bars(overlaps, display_range)
   names(cols) <- names(overlaps)
   cols <- selectCols(cols,locations)
   rect_locations <- locations
@@ -85,26 +91,26 @@ createGeneModelPanel <- function(target_range, annotation, frame=1) {
   hjusts <- rep("center", length(labels_locations))
   hjusts[too_close] <- "left"
   hjusts[too_far] <- "right"
-  if (as.logical(strand(target_range[[1]][1]) == "+")) {
+  if (as.logical(strand(display_range[[1]][1]) == "+")) {
     gene_names <- names(locations)
   } else gene_names <- names(locations)
   suppressWarnings({
-  result_plot <- ggplot() +
-    geom_rect(mapping=aes(ymin=0,ymax=1,xmin=start(rect_locations), xmax = end(rect_locations), frame = frame),fill = cols, alpha = 0.5) +
-    ylab("") +
-    xlab("") +
-    theme(axis.title.x = element_blank(),
-          axis.ticks.x = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank()) +
-    theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-    scale_x_continuous(expand = c(0,0)) +
-    scale_y_continuous(expand = c(0,0)) +
-    geom_text(mapping = aes(y=rep(0.5,length(labels_locations), frame = frame) , x = labels_locations, label = gene_names), color = "black", hjust = hjusts)
+    result_plot <- ggplot() +
+      geom_rect(mapping=aes(ymin=0,ymax=1,xmin=start(rect_locations), xmax = end(rect_locations), frame = frame),fill = cols, alpha = 0.5) +
+      ylab("") +
+      xlab("") +
+      theme(axis.title.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.text.x = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank()) +
+      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
+      scale_x_continuous(expand = c(0,0)) +
+      scale_y_continuous(expand = c(0,0)) +
+      geom_text(mapping = aes(y=rep(0.5,length(labels_locations), frame = frame) , x = labels_locations, label = gene_names), color = "black", hjust = hjusts)
   })
   if (length(locations) == 0) {
-    locations <- pmapToTranscriptF(target_range %>% IRangesList(),target_range)
+    locations <- pmapToTranscriptF(display_range %>% IRangesList(),display_range)
     locations <- unlist(locations)
     result_plot <- ggplot() +
       geom_rect(mapping=aes(ymin=0,ymax=1,xmin=start(locations), xmax = end(locations)),fill = "white", alpha = 0.5) +
@@ -119,6 +125,9 @@ createGeneModelPanel <- function(target_range, annotation, frame=1) {
       scale_x_continuous(expand = c(0,0)) +
       scale_y_continuous(expand = c(0,0))
   }
+  custom_region_names <- which(names(lines_locations) %in% names(custom_regions))
+  names(lines_locations) <- rep("black", length(lines_locations))
+  names(lines_locations)[custom_region_names] <- "orange4"
   return(list(result_plot, lines_locations))
 }
 
@@ -143,6 +152,7 @@ nt_bar <- function(seq) {
     scale_x_continuous(expand = c(0,0))
   p
 }
+
 
 # Keep for future bars for sequence display
 

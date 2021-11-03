@@ -1,12 +1,19 @@
 #' Multi-omics plot using list input
 #'
 #' Customizable html plots for visualizing genomic data.
-#' @param target_range the target region, a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object
-#' @param annotation the whole annotation which your target is a subset,
+#' @param display_range the whole region to visualize,
+#'  a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object
+#' @param annotation the whole annotation which your target region is a subset,
 #' a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges}} object
 #' @param reference_sequence the genome reference,
 #' a \code{\link[Rsamtools]{FaFile}} or \code{\link[Rsamtools]{FaFile}} convertible object
 #' @param reads the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
+#' @param viewMode character, default "tx" (transcript coordinates, first position is 1)\cr
+#' Alternative: "genomic" (genomic coordinates, first position is first position in
+#' \code{display_range} argument).
+#' @param custom_regions a GRangesList or NULL, default: NULL.
+#'  The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
+#'  a different color.
 #' @param withFrames a logical vector, default NULL. Alternative: a length 1 or same length as list length of "reads" argument.
 #' @param frames_type character, default "lines". Alternative:\cr
 #' - columns \cr
@@ -21,7 +28,7 @@
 #' @param proportions numeric, default NULL. Width of plot.
 #' @param width numeric, default NULL. Width of plot.
 #' @param height numeric, default NULL. Height of plot.
-#' @param plot_name = character, default "default" (will create name from target_range name).
+#' @param plot_name = character, default "default" (will create name from display_range name).
 #' Alternative: custom name for region.
 #' @param plot_title character, default NULL. A title for plot.
 #' @param display_sequence logical, default FALSE. If TRUE, display nucleotide sequence in plot.
@@ -29,10 +36,14 @@
 #' @param BPPARAM how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
 #'  To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
 #'  You can also add a time remaining bar, for a more detailed pipeline.
+#' @param AA_code Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
+#' See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
+#' \code{Biostrings::getGeneticCode("11")}
 #' @inheritParams createSeqPanel
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
 #' @importFrom BiocParallel bpparam bpmapply
+#' @importFrom Biostrings GENETIC_CODE
 #' @export
 #' @examples
 #' library(ORFik)
@@ -43,16 +54,19 @@
 #'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
 #'                         frames_type = "columns")
 #' }
-multiOmicsPlot_list <- function(target_range, annotation = target_range, reference_sequence,
-                                reads, withFrames = NULL, frames_type = "lines", colors = NULL,
+multiOmicsPlot_list <- function(display_range, annotation = display_range, reference_sequence,
+                                reads, viewMode = c("tx", "genomic")[1], custom_regions = NULL,
+                                withFrames = NULL,
+                                frames_type = "lines", colors = NULL,
                                 kmers = NULL, kmers_type = c("mean", "sum")[1],
                                 ylabels = NULL, proportions = NULL,
                                 width = NULL, height = NULL, plot_name = "default",
                                 plot_title = NULL, display_sequence = FALSE, annotation_names = NULL,
                                 start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                custom_motif = NULL, BPPARAM = bpparam()) {
-  seqlevels(target_range) <- seqlevels(annotation)
-  target_range <- GRangesList(target_range)
+                                custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
+                                BPPARAM = bpparam()) {
+  seqlevels(display_range) <- seqlevels(annotation)
+  display_range <- GRangesList(display_range)
 
   # if (is(annotation, "GRangesList")) annotation <- unlist(annotation)
 
@@ -99,15 +113,15 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
   }
 
 
-  target_seq <- extractTranscriptSeqs(reference_sequence, target_range)
+  target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel <- createSeqPanel(target_seq[[1]])
 
 
 
-  gene_model_panel <- createGeneModelPanel(target_range, annotation)
+  gene_model_panel <- createGeneModelPanel(display_range, annotation)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
-  plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(target_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
+  plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
                     reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
 
 
@@ -135,7 +149,7 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
   multiomics_plot <- multiomics_plot %>% plotly::config(
     toImageButtonOptions = list(
       format = "svg",
-      filename = ifelse(plot_name == "default",names(target_range),plot_name),
+      filename = ifelse(plot_name == "default",names(display_range),plot_name),
       width = width,
       height = height))
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
@@ -158,16 +172,17 @@ multiOmicsPlot_list <- function(target_range, annotation = target_range, referen
 #'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
 #'                         frames_type = "columns")
 #' }
-multiOmicsPlot_animate <- function(target_range, annotation = target_range, reference_sequence,
+multiOmicsPlot_animate <- function(display_range, annotation = display_range, reference_sequence,
                                    reads, withFrames = NULL, colors = NULL,
                                    kmers = NULL, kmers_type = c("mean", "sum")[1],
                                    ylabels = NULL, proportions = NULL,
                                    width = NULL, height = NULL,plot_name = "default",
                                    plot_title = NULL, display_sequence = FALSE, annotation_names = NULL,
                                    start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                   custom_motif = NULL) {
-  seqlevels(target_range) <- seqlevels(annotation)
-  target_range <- GRangesList(target_range)
+                                   custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
+                                   BPPARAM = bpparam()) {
+  seqlevels(display_range) <- seqlevels(annotation)
+  display_range <- GRangesList(display_range)
 
 
   # if (is(annotation, "GRangesList")) annotation <- unlist(annotation)
@@ -214,21 +229,25 @@ multiOmicsPlot_animate <- function(target_range, annotation = target_range, refe
   }
 
 
-  target_seq <- extractTranscriptSeqs(reference_sequence, target_range)
+  target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel <- createSeqPanel(target_seq[[1]], frame=1:length(reads))
 
 
-  gene_model_panel <- createGeneModelPanel(target_range, annotation, frame = 1:length(reads))
+  gene_model_panel <- createGeneModelPanel(display_range, annotation, frame = 1:length(reads))
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
 
-  profiles <- mapply(function(x,y,z) getProfileAnimate(target_range, x, y, z, kmers_type), reads, withFrames, kmers,  SIMPLIFY = FALSE)
+  # profiles <- mapply(function(x,y,z) getProfileAnimate(display_range, x, y, z, kmers_type),
+  #                    reads, withFrames, kmers,  SIMPLIFY = FALSE)
+  profiles <- bpmapply(function(x,y,z) getProfileAnimate(display_range, x, y, z, kmers_type),
+                        reads, withFrames, kmers,  SIMPLIFY = FALSE, BPPARAM = BPPARAM)
 
   profiles <- rbindlist(profiles, idcol = "file")
 
-  plot <- getPlotAnimate(profiles, withFrames = withFrames[1], colors = colors[1], ylabels = ylabels[1], lines = lines)
+  plot <- getPlotAnimate(profiles, withFrames = withFrames[1],
+                         colors = colors[1], ylabels = ylabels[1], lines = lines)
 
-  plots <- list(plot, automateTicks(gene_model_panel), automateTicksX(seq_panel))
+  plots <- list(plot, automateTicksGMP(gene_model_panel), automateTicksX(seq_panel))
 
   if (!display_sequence){
     multiomics_plot <- subplot(plots,
@@ -256,7 +275,7 @@ multiOmicsPlot_animate <- function(target_range, annotation = target_range, refe
   multiomics_plot <- multiomics_plot %>% plotly::config(
     toImageButtonOptions = list(
       format = "svg",
-      filename = ifelse(plot_name == "default",names(target_range),plot_name),
+      filename = ifelse(plot_name == "default",names(display_range),plot_name),
       width = width,
       height = height))
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)

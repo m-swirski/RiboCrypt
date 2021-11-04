@@ -28,7 +28,7 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist) {
                        color = "#00BA38"
                        ),
                   list(x = x3,
-                       text = rendered_seq[x2],
+                       text = rendered_seq[x3],
                        y = rep(0.5, length(x3)),
                        xaxis = "x",
                        yaxis = nt_yaxis,

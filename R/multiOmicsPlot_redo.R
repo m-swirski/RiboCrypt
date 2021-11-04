@@ -34,7 +34,7 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
                                     withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
                                     frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
                                     ylabels = bamVarName(df), proportions = NULL, width = NULL, height = NULL,
-                                    plot_name = "default", plot_title = NULL, display_sequence = FALSE,
+                                    plot_name = "default", plot_title = NULL, display_sequence = FALSE, seq_render_dist = 50,
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                     custom_motif = NULL, BPPARAM = bpparam()) {
   # Load ranges if defined as character
@@ -59,6 +59,8 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
   gene_model_panel <- gene_model_panel[[1]]
   plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
                     reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+  nplots <- length(plots)
+  display_dist <- nchar(target_seq)
 
   nt_area <- ggplot() +
     theme(axis.title = element_blank(),
@@ -94,6 +96,10 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
       width = width,
       height = height))
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
+
+  js_data <- fetch_JS_seq(target_seq = target_seq,nplots = nplots, distance = seq_render_dist, display_dist = display_dist)
+
+  multiomics_plot <- onRender(multiomics_plot, RiboCrypt:::fetchJS("render_on_zoom.js"), js_data)
   return(multiomics_plot)
 }
 

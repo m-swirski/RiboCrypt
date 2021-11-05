@@ -17,16 +17,14 @@
 #' @importFrom GenomicFeatures extractTranscriptSeqs seqlevels<-
 #' @importFrom GenomeInfoDb seqlevels
 #' @importFrom GenomicRanges GRangesList mcols
+#' @importFrom htmlwidgets onRender
 #' @export
 #' @examples
 #' library(ORFik)
 #' df <- ORFik.template.experiment()[3,] #Use third library in experiment only
-#' if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
-#'   cds <- loadRegion(df, "cds")
-#'   multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
-#'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
+#' cds <- loadRegion(df, "cds")
+#' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
 #'                         frames_type = "columns")
-#' }
 multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
                                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
                                     viewMode = c("tx", "genomic")[1],
@@ -47,20 +45,20 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
     display_range <- flankPerGroup(display_range)
   }
   multiOmicsController()
-
+  # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel <- createSeqPanel(target_seq[[1]], start_codons = start_codons,
                               stop_codons = stop_codons, custom_motif = custom_motif)
 
 
-
+  # Get the panel for the annotation track
   gene_model_panel <- createGeneModelPanel(display_range, annotation, custom_regions = custom_regions)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
+  # Get NGS data tracks
   plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
                     reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
   nplots <- length(plots)
-  display_dist <- nchar(target_seq)
 
   nt_area <- ggplot() +
     theme(axis.title = element_blank(),
@@ -69,7 +67,7 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
     theme(plot.margin = unit(c(0,0,0,0), "pt"))+
     scale_x_continuous(expand = c(0,0))
 
-  if (!display_sequence){
+  if (!display_sequence) {
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
@@ -79,7 +77,8 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
                                titleY = TRUE,
                                titleX = TRUE)
   } else {
-    plots <- c(plots, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
+    plots <- c(plots, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel),
+                           automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
                                nrows = length(reads) + 3,
@@ -87,19 +86,21 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
                                shareX = TRUE,
                                titleY = TRUE,
                                titleX = TRUE)
+    # Create sequence zoom logic (javascript)
+    display_dist <- nchar(target_seq)
+    js_data <- fetch_JS_seq(target_seq = target_seq,nplots = nplots,
+                            distance = seq_render_dist, display_dist = display_dist)
+    multiomics_plot <- onRender(multiomics_plot, RiboCrypt:::fetchJS("render_on_zoom.js"), js_data)
   }
 
   multiomics_plot <- multiomics_plot %>% plotly::config(
     toImageButtonOptions = list(
       format = "svg",
-      filename = ifelse(plot_name == "default",names(display_range),plot_name),
+      filename = ifelse(plot_name == "default", names(display_range), plot_name),
       width = width,
       height = height))
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
 
-  js_data <- fetch_JS_seq(target_seq = target_seq,nplots = nplots, distance = seq_render_dist, display_dist = display_dist)
-
-  multiomics_plot <- onRender(multiomics_plot, RiboCrypt:::fetchJS("render_on_zoom.js"), js_data)
   return(multiomics_plot)
 }
 

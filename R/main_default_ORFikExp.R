@@ -21,12 +21,9 @@
 #' @examples
 #' library(ORFik)
 #' df <- ORFik.template.experiment()[3,] #Use third library in experiment only
-#' if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
-#'   cds <- loadRegion(df, "cds")
-#'   multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
-#'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
+#' cds <- loadRegion(df, "cds")
+#' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
 #'                         frames_type = "columns")
-#' }
 multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
                                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
                                     viewMode = c("tx", "genomic")[1],

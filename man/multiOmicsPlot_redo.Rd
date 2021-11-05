@@ -24,6 +24,7 @@ multiOmicsPlot_redo(
   plot_name = "default",
   plot_title = NULL,
   display_sequence = FALSE,
+  seq_render_dist = 50,
   annotation_names = NULL,
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
@@ -107,10 +108,7 @@ Customizable html plots for visualizing genomic data.
 \examples{
 library(ORFik)
 df <- ORFik.template.experiment()[3,] #Use third library in experiment only
-if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
-  cds <- loadRegion(df, "cds")
-  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
-                        reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
+cds <- loadRegion(df, "cds")
+multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
                         frames_type = "columns")
-}
 }

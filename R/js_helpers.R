@@ -7,9 +7,9 @@ fetchJS <- function(script_name) {
 
 fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist) {
   nt_yaxis <- paste("y", nplots + 1, sep = "")
-  x1 <- seq(1,display_dist,3)
-  x2 <- seq(2,display_dist,3)
-  x3 <- seq(3,display_dist,3)
+  x1 <- seq(1, display_dist, 3)
+  x2 <- seq(2, display_dist, 3)
+  x3 <- seq(3, display_dist, 3)
   rendered_seq <- strsplit(as.character(target_seq),"")[[1]]
   js_data <- list(list(x = x1,
                        text =  rendered_seq[x1],

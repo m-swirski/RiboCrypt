@@ -6,35 +6,26 @@ fetchJS <- function(script_name) {
 }
 
 fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist) {
+  fr_colors <- c("#F8766D","#00BA38", "#619CFF")
   nt_yaxis <- paste("y", nplots + 1, sep = "")
-  x1 <- seq(1, display_dist, 3)
-  x2 <- seq(2, display_dist, 3)
-  x3 <- seq(3, display_dist, 3)
+  aa_yaxis <- paste("y", nplots + 3, sep = "")
+  nts <- sapply(1:3, function(x) seq(x, display_dist, 3))
   rendered_seq <- strsplit(as.character(target_seq),"")[[1]]
-  js_data <- list(list(x = x1,
-                       text =  rendered_seq[x1],
-                       y = rep(0.5, length(x1)),
-                       xaxis = "x",
-                       yaxis = nt_yaxis,
-                       distance = distance,
-                       color = "#F8766D"
-                       ),
-                  list(x = x2,
-                       text = rendered_seq[x2],
-                       y = rep(0.5,length(x2)),
-                       xaxis = "x",
-                       yaxis = nt_yaxis,
-                       distance = distance,
-                       color = "#00BA38"
-                       ),
-                  list(x = x3,
-                       text = rendered_seq[x3],
-                       y = rep(0.5, length(x3)),
-                       xaxis = "x",
-                       yaxis = nt_yaxis,
-                       distance = distance,
-                       color = "#619CFF"
-                       ))
+  aas <- lapply(1:3, function(x) suppressWarnings(strsplit(as.character(translate(target_seq[[1]][x:display_dist])), "")[[1]]))
+  nts_js_data <- lapply(1:3, function(fr) list(x = nts[[fr]],
+                                               text = rendered_seq[nts[[fr]]],
+                                               y = rep(0.5, length(nts[[fr]])),
+                                               xaxis = "x",
+                                               yaxis = nt_yaxis,
+                                               distance = distance,
+                                               color = fr_colors[fr]))
+  aa_js_data <- lapply(1:3, function(fr) list(x = nts[[fr]][seq_along(aas[[fr]])],
+                                              text = aas[[fr]],
+                                              y = rep(2.4 - fr, length(aas[[fr]])),
+                                              xaxis = "x",
+                                              yaxis = aa_yaxis,
+                                              distance = distance * 2,
+                                              color = "grey45"))
 
-  js_data
+  return(c(nts_js_data, aa_js_data))
 }

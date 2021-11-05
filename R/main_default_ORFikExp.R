@@ -35,16 +35,8 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                     custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
                                     BPPARAM = bpparam()) {
-  # Load ranges if defined as character
-  if (is(display_range, "character")) {
-    display_range <- loadRegion(df, part = "tx", names.keep = display_range)
-  }
-  if (is(annotation, "character")) annotation <- loadRegion(df, part = annotation)
-
-  if (viewMode == "genomic") {
-    display_range <- flankPerGroup(display_range)
-  }
-  multiOmicsController() # Default controller
+  # Input validation
+  multiOmicsController()
 
 
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)

@@ -8,9 +8,10 @@
 #' @param reference_sequence the genome reference,
 #' a \code{\link[Rsamtools]{FaFile}} or \code{\link[Rsamtools]{FaFile}} convertible object
 #' @param reads the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
-#' @param viewMode character, default "tx" (transcript coordinates, first position is 1)\cr
+#' @param viewMode character, default "tx" (transcript coordinates, first position is 1,
+#' exons are merged into a single sequence)\cr
 #' Alternative: "genomic" (genomic coordinates, first position is first position in
-#' \code{display_range} argument).
+#' \code{display_range} argument. Introns are displayed).
 #' @param custom_regions a GRangesList or NULL, default: NULL.
 #'  The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
 #'  a different color.
@@ -33,12 +34,12 @@
 #' @param plot_title character, default NULL. A title for plot.
 #' @param display_sequence logical, default FALSE. If TRUE, display nucleotide sequence in plot.
 #' @param annotation_names character, default NULL. Alternative naming for annotation.
-#' @param BPPARAM how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
-#'  To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
-#'  You can also add a time remaining bar, for a more detailed pipeline.
 #' @param AA_code Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
 #' See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
 #' \code{Biostrings::getGeneticCode("11")}
+#' @param BPPARAM how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
+#'  To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
+#'  You can also add a time remaining bar, for a more detailed pipeline.
 #' @inheritParams createSeqPanel
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs

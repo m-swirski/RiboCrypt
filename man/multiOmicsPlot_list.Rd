@@ -43,9 +43,10 @@ a \code{\link[Rsamtools]{FaFile}} or \code{\link[Rsamtools]{FaFile}} convertible
 
 \item{reads}{the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.}
 
-\item{viewMode}{character, default "tx" (transcript coordinates, first position is 1)\cr
+\item{viewMode}{character, default "tx" (transcript coordinates, first position is 1,
+exons are merged into a single sequence)\cr
 Alternative: "genomic" (genomic coordinates, first position is first position in
-\code{display_range} argument).}
+\code{display_range} argument. Introns are displayed).}
 
 \item{custom_regions}{a GRangesList or NULL, default: NULL.
 The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have

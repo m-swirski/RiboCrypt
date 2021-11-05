@@ -29,6 +29,7 @@ multiOmicsPlot_redo(
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
+  AA_code = Biostrings::GENETIC_CODE,
   BPPARAM = bpparam()
 )
 }
@@ -47,9 +48,10 @@ a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges
 \item{reads}{the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
 Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full")}}
 
-\item{viewMode}{character, default "tx" (transcript coordinates, first position is 1)\cr
+\item{viewMode}{character, default "tx" (transcript coordinates, first position is 1,
+exons are merged into a single sequence)\cr
 Alternative: "genomic" (genomic coordinates, first position is first position in
-\code{display_range} argument).}
+\code{display_range} argument. Introns are displayed).}
 
 \item{custom_regions}{a GRangesList or NULL, default: NULL.
 The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
@@ -87,6 +89,9 @@ Alternative: custom name for region.}
 
 \item{display_sequence}{logical, default FALSE. If TRUE, display nucleotide sequence in plot.}
 
+\item{seq_render_dist}{integer, default 50. At which distance will sequence tracks be displayed,
+default means zoom levels spans maximum this number of nucleotides.}
+
 \item{annotation_names}{character, default NULL. Alternative naming for annotation.}
 
 \item{start_codons}{character vector, default "ATG"}
@@ -94,6 +99,10 @@ Alternative: custom name for region.}
 \item{stop_codons}{character vector, default c("TAA", "TAG", "TGA")}
 
 \item{custom_motif}{character vector, default NULL.}
+
+\item{AA_code}{Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
+See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
+\code{Biostrings::getGeneticCode("11")}}
 
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
 To see number of threads used, do \code{BiocParallel::bpparam()$workers}.

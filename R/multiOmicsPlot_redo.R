@@ -13,6 +13,8 @@
 #' @param ylabels character, default \code{bamVarName(df)}. Name of libraries in "reads" list argument.
 #' @param plot_name character, default "default" (will create name from display_range name).
 #' Alternative: custom name for region.
+#' @param seq_render_dist integer, default 50. At which distance will sequence tracks be displayed,
+#' default means zoom levels spans maximum this number of nucleotides.
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs seqlevels<-
 #' @importFrom GenomeInfoDb seqlevels
@@ -26,24 +28,17 @@
 #' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
 #'                         frames_type = "columns")
 multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
-                                    reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
-                                    viewMode = c("tx", "genomic")[1],
-                                    custom_regions = NULL,
-                                    withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
-                                    frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
-                                    ylabels = bamVarName(df), proportions = NULL, width = NULL, height = NULL,
-                                    plot_name = "default", plot_title = NULL, display_sequence = FALSE, seq_render_dist = 50,
-                                    annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                    custom_motif = NULL, BPPARAM = bpparam()) {
-  # Load ranges if defined as character
-  if (is(display_range, "character")) {
-    display_range <- loadRegion(df, part = "tx", names.keep = display_range)
-  }
-  if (is(annotation, "character")) annotation <- loadRegion(df, part = annotation)
-
-  if (viewMode == "genomic") {
-    display_range <- flankPerGroup(display_range)
-  }
+                                reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
+                                viewMode = c("tx", "genomic")[1],
+                                custom_regions = NULL,
+                                withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
+                                frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
+                                ylabels = bamVarName(df), proportions = NULL, width = NULL, height = NULL,
+                                plot_name = "default", plot_title = NULL, display_sequence = FALSE, seq_render_dist = 50,
+                                annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
+                                custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
+                                BPPARAM = bpparam()) {
+  # Input validation
   multiOmicsController()
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
@@ -89,7 +84,8 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
     # Create sequence zoom logic (javascript)
     display_dist <- nchar(target_seq)
     js_data <- fetch_JS_seq(target_seq = target_seq,nplots = nplots,
-                            distance = seq_render_dist, display_dist = display_dist)
+                            distance = seq_render_dist, display_dist = display_dist,
+                            AA_code = AA_code)
     multiomics_plot <- onRender(multiomics_plot, RiboCrypt:::fetchJS("render_on_zoom.js"), js_data)
   }
 

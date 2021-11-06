@@ -5,14 +5,18 @@ fetchJS <- function(script_name) {
   paste(lines, sep = "", collapse = "")
 }
 
-fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist, AA_code) {
+fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist, aa_letter_code = "one_letter") {
   fr_colors <- c("#F8766D","#00BA38", "#619CFF")
   nt_yaxis <- paste("y", nplots + 1, sep = "")
   aa_yaxis <- paste("y", nplots + 3, sep = "")
   nts <- sapply(1:3, function(x) seq(x, display_dist, 3))
   rendered_seq <- strsplit(as.character(target_seq),"")[[1]]
-  aas <- lapply(1:3, function(x) suppressWarnings(strsplit(as.character(translate(target_seq[[1]][x:display_dist],
-                                                                                  genetic.code = AA_code)), "")[[1]]))
+  aas <- lapply(1:3, function(x) suppressWarnings(strsplit(as.character(translate(target_seq[[1]][x:display_dist])), "")[[1]]))
+  if (aa_letter_code == "three_letters") {
+    aa_code <- AMINO_ACID_CODE
+    aa_code["*"] <- "*"
+    aas <- lapply(aas, function(x) aa_code[match(x, names(aa_code))] )
+  }
   nts_js_data <- lapply(1:3, function(fr) list(x = nts[[fr]],
                                                text = rendered_seq[nts[[fr]]],
                                                y = rep(0.5, length(nts[[fr]])),
@@ -25,7 +29,7 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist, AA_cod
                                               y = rep(2.4 - fr, length(aas[[fr]])),
                                               xaxis = "x",
                                               yaxis = aa_yaxis,
-                                              distance = distance * 2,
+                                              distance = distance,
                                               color = "grey45"))
 
   return(c(nts_js_data, aa_js_data))

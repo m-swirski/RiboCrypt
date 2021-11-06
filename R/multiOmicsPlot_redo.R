@@ -1,3 +1,4 @@
+
 #' Multi-omics plot using ORFik experiment input
 #'
 #' Customizable html plots for visualizing genomic data.
@@ -12,9 +13,8 @@
 #' Alternative: a length 1 or same length as list length of "reads" argument.
 #' @param ylabels character, default \code{bamVarName(df)}. Name of libraries in "reads" list argument.
 #' @param plot_name character, default "default" (will create name from display_range name).
-#' Alternative: custom name for region.
-#' @param seq_render_dist integer, default 50. At which distance will sequence tracks be displayed,
-#' default means zoom levels spans maximum this number of nucleotides.
+#' @param seq_render_dist integer, default  50. The sequences will appear after zooming below this threshold.
+#' @param aa_letter_code character, when set to "three_letters", three letter aminoacid code is used. One letter by default.
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs seqlevels<-
 #' @importFrom GenomeInfoDb seqlevels
@@ -35,10 +35,18 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
                                 frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
                                 ylabels = bamVarName(df), proportions = NULL, width = NULL, height = NULL,
                                 plot_name = "default", plot_title = NULL, display_sequence = FALSE, seq_render_dist = 50,
+                                aa_letter_code = c("one_letter", "three_letters")[1],
                                 annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
-                                BPPARAM = bpparam()) {
-  # Input validation
+                                custom_motif = NULL, BPPARAM = bpparam()) {
+  # Load ranges if defined as character
+  if (is(display_range, "character")) {
+    display_range <- loadRegion(df, part = "tx", names.keep = display_range)
+  }
+  if (is(annotation, "character")) annotation <- loadRegion(df, part = annotation)
+
+  if (viewMode == "genomic") {
+    display_range <- flankPerGroup(display_range)
+  }
   multiOmicsController()
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
@@ -84,8 +92,7 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
     # Create sequence zoom logic (javascript)
     display_dist <- nchar(target_seq)
     js_data <- fetch_JS_seq(target_seq = target_seq,nplots = nplots,
-                            distance = seq_render_dist, display_dist = display_dist,
-                            AA_code = AA_code)
+                            distance = seq_render_dist, display_dist = display_dist, aa_letter_code = aa_letter_code)
     multiomics_plot <- onRender(multiomics_plot, RiboCrypt:::fetchJS("render_on_zoom.js"), js_data)
   }
 
@@ -99,4 +106,3 @@ multiOmicsPlot_redo <- function(display_range, df, annotation = "cds",reference_
 
   return(multiomics_plot)
 }
-

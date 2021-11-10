@@ -25,11 +25,11 @@ multiOmicsPlot_redo(
   plot_title = NULL,
   display_sequence = FALSE,
   seq_render_dist = 50,
+  aa_letter_code = c("one_letter", "three_letters")[1],
   annotation_names = NULL,
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
-  AA_code = Biostrings::GENETIC_CODE,
   BPPARAM = bpparam()
 )
 }
@@ -82,15 +82,15 @@ Alternative:  Character vector of length 1 or length of "reads" list argument.}
 
 \item{height}{numeric, default NULL. Height of plot.}
 
-\item{plot_name}{character, default "default" (will create name from display_range name).
-Alternative: custom name for region.}
+\item{plot_name}{character, default "default" (will create name from display_range name).}
 
 \item{plot_title}{character, default NULL. A title for plot.}
 
 \item{display_sequence}{logical, default FALSE. If TRUE, display nucleotide sequence in plot.}
 
-\item{seq_render_dist}{integer, default 50. At which distance will sequence tracks be displayed,
-default means zoom levels spans maximum this number of nucleotides.}
+\item{seq_render_dist}{integer, default  50. The sequences will appear after zooming below this threshold.}
+
+\item{aa_letter_code}{character, when set to "three_letters", three letter aminoacid code is used. One letter by default.}
 
 \item{annotation_names}{character, default NULL. Alternative naming for annotation.}
 
@@ -99,10 +99,6 @@ default means zoom levels spans maximum this number of nucleotides.}
 \item{stop_codons}{character vector, default c("TAA", "TAG", "TGA")}
 
 \item{custom_motif}{character vector, default NULL.}
-
-\item{AA_code}{Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
-See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
-\code{Biostrings::getGeneticCode("11")}}
 
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
 To see number of threads used, do \code{BiocParallel::bpparam()$workers}.

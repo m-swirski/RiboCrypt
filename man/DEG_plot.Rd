@@ -4,7 +4,18 @@
 \alias{DEG_plot}
 \title{Differential expression plots (1D or 2D)}
 \usage{
-DEG_plot(dt, draw_non_regulated = FALSE)
+DEG_plot(
+  dt,
+  draw_non_regulated = FALSE,
+  xlim = ifelse(two_dimensions, "bidir.max", "auto"),
+  ylim = "bidir.max",
+  xlab = ifelse(two_dimensions, "RNA fold change (log2)", "Mean counts (log2)"),
+  ylab = ifelse(two_dimensions, "RFP fold change (log2)", "Fold change (log2)"),
+  two_dimensions = ifelse("LFC" \%in\% colnames(dt), FALSE, TRUE),
+  color.values = c(`No change` = "black", Significant = "red", Buffering = "purple",
+    `mRNA abundance` = "darkgreen", Expression = "blue", Forwarded = "yellow", Inverse =
+    "aquamarine", Translation = "orange4")
+)
 }
 \arguments{
 \item{dt}{a data.table with results from a differential
@@ -13,6 +24,30 @@ expression run. Normally from: \code{ORFik::DTEG.analysis(df1, df2)}}
 \item{draw_non_regulated}{logical, default FALSE.
 Should non-regulated rows be included in the plot?
 Will make the plot faster to render if skipped (FALSE)}
+
+\item{xlim}{numeric vector or character preset, default:
+\code{ifelse(two_dimensions, "bidir.max", "auto")}
+(Equal in both + / - direction, using max value + 0.5 of
+meanCounts(in 1d) / rna(in 2d) column of dt).
+If you want ggplot to decide limit, set to "auto". For numeric vector,
+specify min and max x limit: like c(-5, 5)}
+
+\item{ylim}{numeric vector or character preset, default: "bidir.max"
+(Equal in both + / - direction, using max value + 0.5 of
+LFC(in 1d) / rfp(in 2d) column of dt).
+If you want ggplot to decide limit, set to "auto". For numeric vector,
+specify min and max x limit: like c(-5, 5)}
+
+\item{xlab}{character, default:
+\code{ifelse(two_dimensions, "RNA fold change (log2)", "Mean counts (log2)")}}
+
+\item{ylab}{character, default:
+\code{ifelse(two_dimensions, "RFP fold change (log2)",  "Fold change (log2)")}}
+
+\item{two_dimensions}{logical, default:
+\code{ifelse("LFC" \%in\% colnames(dt), FALSE, TRUE)}
+Is this two dimensional, like: Ribo-seq vs RNA-seq. Alternative, FALSE: Then
+Log fold change vs mean counts}
 }
 \value{
 plotly object
@@ -21,8 +56,17 @@ plotly object
 Gives you interactive 1D or 2D DE plots
 }
 \examples{
+# Load experiment
 df <- ORFik.template.experiment()
-dt <- DTEG.analysis(df[df$libtype == "RFP",], df[df$libtype == "RNA",],
+# 1 Dimensional analysis
+dt <- DEG.analysis(df[df$libtype == "RNA",],
                     output.dir = NULL)
-#DEG_plot(dt, draw_non_regulated = TRUE)
+dt$Regulation[1] <- "Significant" # Fake sig level
+DEG_plot(dt, draw_non_regulated = TRUE)
+# 2 Dimensional analysis
+dt_2d <- DTEG.analysis(df[df$libtype == "RFP",], df[df$libtype == "RNA",],
+                    output.dir = NULL)
+dt_2d$Regulation[4] <- "Translation" # Fake sig level
+dt_2d$Regulation[5] <- "Buffering" # Fake sig level
+DEG_plot(dt_2d, draw_non_regulated = TRUE)
 }

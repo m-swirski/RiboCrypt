@@ -47,7 +47,40 @@ createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA"
 }
 
 
+#'
+#' @keywords internal
+overlaps_to_layers <- function(overlaps) {
 
+  v <- unique(overlaps[,2][[1]])
+
+  indexes <- vector(mode = "list", length = length(v))
+  names(indexes) <- as.character(v)
+
+  for (x in seq(nrow(overlaps))) {
+    indexes[[as.character(overlaps[x,2])]] <-  c(indexes[[as.character(overlaps[x,2])]], get_current_index(indexes[[as.character(overlaps[x,1])]])  )
+  }
+  sapply(indexes, get_current_index)
+}
+
+#'
+#' @keywords internal
+get_current_index <- function(v) {
+  min(which(!(1:(max(c(0,v)+1)) %in% c(0,v))))
+}
+
+#'
+#' @keywords internal
+geneTrackLayer <- function(grl) {
+
+  grl_flanks <- flankPerGroup(grl)
+  overlaps <- as.data.table(findOverlaps(grl_flanks, grl_flanks))
+  overlaps <- overlaps[subjectHits > queryHits, ]
+  layers <- overlaps_to_layers(overlaps)
+  all_layers <- rep(1, length(grl))
+  all_layers[as.numeric(names(layers))] <- layers
+  all_layers <- rep(all_layers, numExonsPerGroup(grl))
+  return(all_layers)
+}
 
 #'
 #' @import ORFik
@@ -55,10 +88,18 @@ createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA"
 #' @importFrom IRanges subsetByOverlaps IRangesList
 #' @keywords internal
 createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regions) {
-  annotation <- c(annotation, custom_regions)
+
+  if (!is.null(custom_regions)) {
+    same_names <- names(custom_regions) %in% names(annotation)
+    names(custom_regions)[same_names] <- paste(names(custom_regions)[same_names], "_1", sep="")
+    annotation <- c(annotation, custom_regions)
+  }
   overlaps <- subsetByOverlaps(annotation, display_range)
+
+
+
   plot_width <- widthPerGroup(display_range)
-  onames <-rep(names(overlaps), numExonsPerGroup(overlaps, FALSE))
+  onames <- rep(names(overlaps), numExonsPerGroup(overlaps, FALSE))
   overlaps <- unlistGrl(overlaps)
   names(overlaps) <- onames
   overlaps$rel_frame <- getRelativeFrames(overlaps)
@@ -66,6 +107,10 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
 
   intersections <- trimOverlaps(overlaps,display_range)
   intersections <- groupGRangesBy(intersections)
+
+  layers <- geneTrackLayer(intersections)
+
+
 
   locations <- pmapToTranscriptF(intersections, display_range)
   locations <- unlistGrl(locations)
@@ -96,7 +141,7 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   } else gene_names <- names(locations)
   suppressWarnings({
     result_plot <- ggplot() +
-      geom_rect(mapping=aes(ymin=0,ymax=1,xmin=start(rect_locations), xmax = end(rect_locations), frame = frame),fill = cols, alpha = 0.5) +
+      geom_rect(mapping=aes(ymin=0 - layers,ymax = 1 - layers,xmin=start(rect_locations), xmax = end(rect_locations), frame = frame),fill = cols, alpha = 0.5) +
       ylab("") +
       xlab("") +
       theme(axis.title.x = element_blank(),
@@ -107,7 +152,7 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
       theme(plot.margin = unit(c(0,0,0,0), "pt"))+
       scale_x_continuous(expand = c(0,0)) +
       scale_y_continuous(expand = c(0,0)) +
-      geom_text(mapping = aes(y=rep(0.5,length(labels_locations), frame = frame) , x = labels_locations, label = gene_names), color = "black", hjust = hjusts)
+      geom_text(mapping = aes(y = 0.5 - layers, frame = frame, x = labels_locations, label = gene_names), color = "black", hjust = hjusts)
   })
   if (length(locations) == 0) {
     locations <- pmapToTranscriptF(display_range %>% IRangesList(),display_range)

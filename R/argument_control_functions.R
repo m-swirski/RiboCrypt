@@ -49,19 +49,16 @@ multiOmicsController <- function() {
   if (!(length(ylabels)  %in% c(1, length(reads)))) stop("length of ylabels must be 0, 1 or the same as reads list")
   if (length(ylabels) == 1) ylabels <- rep(ylabels, length(reads))
 
-  if (length(proportions) == 0) proportions <- 1
-  if (!(length(proportions)  %in% c(1, length(reads)))) stop("length of proportions must be 0, 1 or the same as reads list")
-  if (length(proportions) == 1) proportions <- rep(proportions, length(reads))
-
-  if (!display_sequence) {
-    max_sum <- 1  - sum(0.03,0.1)
-    proportions <- proportions / (sum(proportions) / max_sum)
-    proportions <- c(proportions, c(0.03,0.1))
-  } else {
-    max_sum <- 1  - sum(0.035, 0.03,0.1)
-    proportions <- proportions / (sum(proportions) / max_sum)
-    proportions <- c(proportions, c(0.035, 0.03,0.1))
-  }
+  if (length(lib_proportions) == 0) lib_proportions <- 1
+  if (!(length(lib_proportions)  %in% c(1, length(reads)))) stop("length of lib_proportions must be 0, 1 or the same as reads list")
+  if (length(lib_proportions) == 1) lib_proportions <- rep(lib_proportions, length(reads))
+  lib_proportions <- lib_proportions / sum(lib_proportions)
+  if (length(annotation_proportions) == 0) {
+    if (display_sequence == "none") {
+      annotation_proportions <- c(0.35,0.65)
+    } else annotation_proportions <- c(0.2,0.2,0.6)
+  } else annotation_proportions <- annotation_proportions / sum(annotation_proportions)
+  proportions <- c(lib_proportions * lib_to_annotation_proportions[1], annotation_proportions * lib_to_annotation_proportions[2])
   }
   )
 }

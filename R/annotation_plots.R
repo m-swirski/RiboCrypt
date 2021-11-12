@@ -75,11 +75,18 @@ geneTrackLayer <- function(grl) {
   grl_flanks <- flankPerGroup(grl)
   overlaps <- as.data.table(findOverlaps(grl_flanks, grl_flanks))
   overlaps <- overlaps[subjectHits > queryHits, ]
+
+  if (nrow(overlaps) == 0) {
+    all_layers <- rep(1, length(grl))
+    all_layers <- rep(all_layers, numExonsPerGroup(grl))
+    return(all_layers)
+  } else {
   layers <- overlaps_to_layers(overlaps)
   all_layers <- rep(1, length(grl))
   all_layers[as.numeric(names(layers))] <- layers
   all_layers <- rep(all_layers, numExonsPerGroup(grl))
   return(all_layers)
+  }
 }
 
 #'
@@ -88,7 +95,6 @@ geneTrackLayer <- function(grl) {
 #' @importFrom IRanges subsetByOverlaps IRangesList
 #' @keywords internal
 createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regions) {
-
   if (!is.null(custom_regions)) {
     same_names <- names(custom_regions) %in% names(annotation)
     names(custom_regions)[same_names] <- paste(names(custom_regions)[same_names], "_1", sep="")
@@ -96,7 +102,7 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   }
   overlaps <- subsetByOverlaps(annotation, display_range)
 
-
+  if (length(overlaps) > 0) {
 
   plot_width <- widthPerGroup(display_range)
   onames <- rep(names(overlaps), numExonsPerGroup(overlaps, FALSE))
@@ -139,6 +145,9 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   if (as.logical(strand(display_range[[1]][1]) == "+")) {
     gene_names <- names(locations)
   } else gene_names <- names(locations)
+  custom_region_names <- which(names(lines_locations) %in% names(custom_regions))
+  names(lines_locations) <- rep("black", length(lines_locations))
+  names(lines_locations)[custom_region_names] <- "orange4"
   suppressWarnings({
     result_plot <- ggplot() +
       geom_rect(mapping=aes(ymin=0 - layers,ymax = 1 - layers,xmin=start(rect_locations), xmax = end(rect_locations), frame = frame),fill = cols, alpha = 0.5) +
@@ -154,7 +163,7 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
       scale_y_continuous(expand = c(0,0)) +
       geom_text(mapping = aes(y = 0.5 - layers, frame = frame, x = labels_locations, label = gene_names), color = "black", hjust = hjusts)
   })
-  if (length(locations) == 0) {
+  } else {
     locations <- pmapToTranscriptF(display_range %>% IRangesList(),display_range)
     locations <- unlist(locations)
     result_plot <- ggplot() +
@@ -169,10 +178,9 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
       theme(plot.margin = unit(c(0,0,0,0), "pt"))+
       scale_x_continuous(expand = c(0,0)) +
       scale_y_continuous(expand = c(0,0))
+    lines_locations <- NULL
   }
-  custom_region_names <- which(names(lines_locations) %in% names(custom_regions))
-  names(lines_locations) <- rep("black", length(lines_locations))
-  names(lines_locations)[custom_region_names] <- "orange4"
+
   return(list(result_plot, lines_locations))
 }
 

@@ -68,9 +68,9 @@ get_current_index <- function(v) {
   min(which(!(1:(max(c(0,v)+1)) %in% c(0,v))))
 }
 
-#'
+#' How many rows does the gene track need
 #' @keywords internal
-geneTrackLayer <- function(grl) {
+geneTrackLayer <- function(grl, viewMode) {
 
   grl_flanks <- flankPerGroup(grl)
   overlaps <- as.data.table(findOverlaps(grl_flanks, grl_flanks))
@@ -84,7 +84,9 @@ geneTrackLayer <- function(grl) {
   layers <- overlaps_to_layers(overlaps)
   all_layers <- rep(1, length(grl))
   all_layers[as.numeric(names(layers))] <- layers
-  all_layers <- rep(all_layers, numExonsPerGroup(grl))
+  if (viewMode == "genomic") {
+    all_layers <- rep(all_layers, numExonsPerGroup(grl))
+  }
   return(all_layers)
   }
 }
@@ -94,7 +96,9 @@ geneTrackLayer <- function(grl) {
 #' @importFrom GenomicRanges ranges resize
 #' @importFrom IRanges subsetByOverlaps IRangesList
 #' @keywords internal
-createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regions) {
+createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regions, viewMode) {
+  # TODO: Explain sections of this function, or split in sub functions
+  # It is too complicated right now.
   if (!is.null(custom_regions)) {
     same_names <- names(custom_regions) %in% names(annotation)
     names(custom_regions)[same_names] <- paste(names(custom_regions)[same_names], "_1", sep="")
@@ -114,9 +118,7 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   intersections <- trimOverlaps(overlaps,display_range)
   intersections <- groupGRangesBy(intersections)
 
-  layers <- geneTrackLayer(intersections)
-
-
+  layers <- geneTrackLayer(intersections, viewMode)
 
   locations <- pmapToTranscriptF(intersections, display_range)
   locations <- unlistGrl(locations)
@@ -142,15 +144,19 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   hjusts <- rep("center", length(labels_locations))
   hjusts[too_close] <- "left"
   hjusts[too_far] <- "right"
-  if (as.logical(strand(display_range[[1]][1]) == "+")) {
-    gene_names <- names(locations)
-  } else gene_names <- names(locations)
+  # TODO: remove when verified this is not needed
+  # if (as.logical(strand(display_range[[1]][1]) == "+")) {
+  #   gene_names <- names(locations)
+  # } else gene_names <- names(locations)
+  gene_names <- names(locations)
   custom_region_names <- which(names(lines_locations) %in% names(custom_regions))
   names(lines_locations) <- rep("black", length(lines_locations))
   names(lines_locations)[custom_region_names] <- "orange4"
   suppressWarnings({
     result_plot <- ggplot() +
-      geom_rect(mapping=aes(ymin=0 - layers,ymax = 1 - layers,xmin=start(rect_locations), xmax = end(rect_locations), frame = frame),fill = cols, alpha = 0.5) +
+      geom_rect(mapping=aes(ymin=0 - layers, ymax = 1 - layers, xmin=start(rect_locations),
+                            xmax = end(rect_locations), frame = frame),
+                fill = cols, alpha = 0.5) +
       ylab("") +
       xlab("") +
       theme(axis.title.x = element_blank(),

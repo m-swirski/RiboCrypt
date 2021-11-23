@@ -63,7 +63,8 @@ Alternative: custom name for region.}
 
 \item{plot_title}{character, default NULL. A title for plot.}
 
-\item{display_sequence}{logical, default FALSE. If TRUE, display nucleotide sequence in plot.}
+\item{display_sequence}{character/logical, default \code{c("both","nt", "aa", "none")[1]}.
+If TRUE or "both", display nucleotide and aa sequence in plot.}
 
 \item{annotation_names}{character, default NULL. Alternative naming for annotation.}
 

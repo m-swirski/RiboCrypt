@@ -17,12 +17,16 @@ multiOmicsPlot_list(
   kmers = NULL,
   kmers_type = c("mean", "sum")[1],
   ylabels = NULL,
-  proportions = NULL,
+  lib_to_annotation_proportions = c(0.8, 0.2),
+  lib_proportions = NULL,
+  annotation_proportions = NULL,
   width = NULL,
   height = NULL,
   plot_name = "default",
   plot_title = NULL,
-  display_sequence = FALSE,
+  display_sequence = c("both", "nt", "aa", "none")[1],
+  seq_render_dist = 100,
+  aa_letter_code = c("one_letter", "three_letters")[1],
   annotation_names = NULL,
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
@@ -69,7 +73,11 @@ Alternative:  Character vector of length 1 or length of "reads" list argument.}
 
 \item{ylabels}{character, default NULL. Name of libraries in "reads" list arugment.}
 
-\item{proportions}{numeric, default NULL. Width of plot.}
+\item{lib_to_annotation_proportions}{numeric vector of length 2. relative sizes of profiles and annotation.}
+
+\item{lib_proportions}{numeric vector of length equal to displayed libs. Relative sizes of profiles displayed}
+
+\item{annotation_proportions}{numeric vector of length 3 (seq displayed), or 2 (seq not displayed). Relative sizes of annotation tracks.}
 
 \item{width}{numeric, default NULL. Width of plot.}
 
@@ -80,7 +88,12 @@ Alternative: custom name for region.}
 
 \item{plot_title}{character, default NULL. A title for plot.}
 
-\item{display_sequence}{logical, default FALSE. If TRUE, display nucleotide sequence in plot.}
+\item{display_sequence}{character/logical, default \code{c("both","nt", "aa", "none")[1]}.
+If TRUE or "both", display nucleotide and aa sequence in plot.}
+
+\item{seq_render_dist}{integer, default  100. The sequences will appear after zooming below this threshold.}
+
+\item{aa_letter_code}{character, when set to "three_letters", three letter amino acid code is used. One letter by default.}
 
 \item{annotation_names}{character, default NULL. Alternative naming for annotation.}
 
@@ -97,6 +110,8 @@ See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, d
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
 To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
 You can also add a time remaining bar, for a more detailed pipeline.}
+
+\item{proportions}{numeric, default NULL. Width of plot.}
 }
 \value{
 the plot object

@@ -5,7 +5,8 @@ fetchJS <- function(script_name) {
   paste(lines, sep = "", collapse = "")
 }
 
-fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist, aa_letter_code = "one_letter") {
+fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
+                         aa_letter_code = "one_letter") {
   fr_colors <- c("#F8766D","#00BA38", "#619CFF")
   nt_yaxis <- paste("y", nplots + 1, sep = "")
   aa_yaxis <- paste("y", nplots + 3, sep = "")

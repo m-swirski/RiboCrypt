@@ -32,8 +32,14 @@
 #' @param plot_name = character, default "default" (will create name from display_range name).
 #' Alternative: custom name for region.
 #' @param plot_title character, default NULL. A title for plot.
-#' @param display_sequence logical, default FALSE. If TRUE, display nucleotide sequence in plot.
+#' @param display_sequence character/logical, default \code{c("both","nt", "aa", "none")[1]}.
+#' If TRUE or "both", display nucleotide and aa sequence in plot.
 #' @param annotation_names character, default NULL. Alternative naming for annotation.
+#' @param seq_render_dist integer, default  100. The sequences will appear after zooming below this threshold.
+#' @param aa_letter_code character, when set to "three_letters", three letter amino acid code is used. One letter by default.
+#' @param lib_to_annotation_proportions numeric vector of length 2. relative sizes of profiles and annotation.
+#' @param lib_proportions numeric vector of length equal to displayed libs. Relative sizes of profiles displayed
+#' @param annotation_proportions numeric vector of length 3 (seq displayed), or 2 (seq not displayed). Relative sizes of annotation tracks.
 #' @param AA_code Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
 #' See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
 #' \code{Biostrings::getGeneticCode("11")}
@@ -60,74 +66,35 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                 withFrames = NULL,
                                 frames_type = "lines", colors = NULL,
                                 kmers = NULL, kmers_type = c("mean", "sum")[1],
-                                ylabels = NULL, proportions = NULL,
+                                ylabels = NULL, lib_to_annotation_proportions = c(0.8,0.2),
+                                lib_proportions = NULL, annotation_proportions = NULL,
                                 width = NULL, height = NULL, plot_name = "default",
-                                plot_title = NULL, display_sequence = FALSE, annotation_names = NULL,
+                                plot_title = NULL,
+                                display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 100,
+                                aa_letter_code = c("one_letter", "three_letters")[1],
+                                annotation_names = NULL,
                                 start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                 custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
                                 BPPARAM = bpparam()) {
-  seqlevels(display_range) <- seqlevels(annotation)
-  display_range <- GRangesList(display_range)
-
-  # if (is(annotation, "GRangesList")) annotation <- unlist(annotation)
-
-  if (!is.null(annotation_names)) {
-    if (length(annotation_names) == 1){
-      if (annotation_names %in% annotation) {
-        names(annotation) <- mcols(annotation)[[annotation_names]]
-      } else stop(wmsg("wrong annotation_names argument"))
-    } else if (length(annotation_names) == length(annotation)) {
-      names(annotation) <- annotation_names
-    } else stop(wmsg("wrong annotation_names argument"))
-  }
-
-  if(!is(reads, "list")) reads <- list(reads)
-
-  if (length(withFrames) == 0) withFrames <- FALSE
-  if (!(length(withFrames)  %in% c(1, length(reads)))) stop("length of withFrames must be 0, 1 or the same as reads list")
-  if (length(withFrames) == 1) withFrames <- rep(withFrames, length(reads))
-
-  if (length(colors) == 0) colors <- 1:length(reads)
-  if (!(length(colors)  %in% c(1, length(reads)))) stop("length of colors must be 0, 1 or the same as reads list")
-  if (length(colors) == 1) colors <- rep(colors, length(reads))
-
-  if (length(kmers) == 0) kmers <- 1
-  if (!(length(kmers)  %in% c(1, length(reads)))) stop("length of kmers must be 0, 1 or the same as reads list")
-  if (length(kmers) == 1) kmers <- rep(kmers, length(reads))
-
-  if (length(ylabels) == 0) ylabels <- as.character(1:length(reads))
-  if (!(length(ylabels)  %in% c(1, length(reads)))) stop("length of ylabels must be 0, 1 or the same as reads list")
-  if (length(ylabels) == 1) ylabels <- rep(ylabels, length(reads))
-
-  if (length(proportions) == 0) proportions <- 1
-  if (!(length(proportions)  %in% c(1, length(reads)))) stop("length of proportions must be 0, 1 or the same as reads list")
-  if (length(proportions) == 1) proportions <- rep(proportions, length(reads))
-
-  if (!display_sequence) {
-    max_sum <- 1  - sum(0.03,0.1)
-    proportions <- proportions / (sum(proportions) / max_sum)
-    proportions <- c(proportions, c(0.03,0.1))
-  } else {
-    max_sum <- 1  - sum(0.035, 0.03,0.1)
-    proportions <- proportions / (sum(proportions) / max_sum)
-    proportions <- c(proportions, c(0.035, 0.03,0.1))
-  }
-
-
+  multiOmicsController()
+  # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
-  seq_panel <- createSeqPanel(target_seq[[1]])
+  seq_panel <- createSeqPanel(target_seq[[1]], start_codons = start_codons,
+                              stop_codons = stop_codons, custom_motif = custom_motif)
 
 
 
-  gene_model_panel <- createGeneModelPanel(display_range, annotation)
+  gene_model_panel <- createGeneModelPanel(display_range, annotation,
+                                           custom_regions = custom_regions,
+                                           viewMode = viewMode)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
   plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
                     reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
 
 
-  if (!display_sequence){
-    plots <- c(plots, list(automateTicks(gene_model_panel), automateTicksX(seq_panel)))
+  if (display_sequence %in% c("none", FALSE)) { # plotly subplot without sequence track
+    plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
                                nrows = length(reads) + 2,
@@ -135,9 +102,17 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                shareX = TRUE,
                                titleY = TRUE,
                                titleX = TRUE)
-  } else {
-    letters <- nt_bar(target_seq)
-    plots <- c(plots, list(automateTicksLetters(letters),automateTicks(gene_model_panel), automateTicksX(seq_panel)))
+  } else { # plotly subplot with sequence track
+    nplots <- length(plots)
+    nt_area <- ggplot() +
+      theme(axis.title = element_blank(),
+            axis.ticks = element_blank(),
+            axis.text = element_blank()) +
+      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
+      scale_x_continuous(expand = c(0,0))
+
+    plots <- c(plots, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel),
+                           automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
                                nrows = length(reads) + 3,
@@ -145,15 +120,21 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                shareX = TRUE,
                                titleY = TRUE,
                                titleX = TRUE)
+    # Create sequence zoom logic (javascript)
+    display_dist <- nchar(target_seq)
+    js_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
+                            distance = seq_render_dist, display_dist = display_dist, aa_letter_code = aa_letter_code)
+    multiomics_plot <- onRender(multiomics_plot, RiboCrypt:::fetchJS("render_on_zoom.js"), js_data)
   }
 
   multiomics_plot <- multiomics_plot %>% plotly::config(
     toImageButtonOptions = list(
       format = "svg",
-      filename = ifelse(plot_name == "default",names(display_range),plot_name),
+      filename = ifelse(plot_name == "default", names(display_range), plot_name),
       width = width,
       height = height))
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
+
   return(multiomics_plot)
 }
 

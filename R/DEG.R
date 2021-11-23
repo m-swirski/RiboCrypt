@@ -25,6 +25,10 @@
 #' \code{ifelse(two_dimensions, "RNA fold change (log2)", "Mean counts (log2)")}
 #' @param ylab character, default:
 #' \code{ifelse(two_dimensions, "RFP fold change (log2)",  "Fold change (log2)")}
+#' @param color.values named character vector, default: \code{c("No change" = "black", "Significant" = "red",
+#'  "Buffering" = "purple", "mRNA abundance" = "darkgreen",
+#'  "Expression" = "blue", "Forwarded" = "yellow",
+#'  "Inverse" = "aquamarine", "Translation" = "orange4")}
 #' @return plotly object
 #' @export
 #' @examples

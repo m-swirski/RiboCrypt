@@ -13,11 +13,6 @@
 #' Alternative: a length 1 or same length as list length of "reads" argument.
 #' @param ylabels character, default \code{bamVarName(df)}. Name of libraries in "reads" list argument.
 #' @param plot_name character, default "default" (will create name from display_range name).
-#' @param seq_render_dist integer, default  50. The sequences will appear after zooming below this threshold.
-#' @param aa_letter_code character, when set to "three_letters", three letter aminoacid code is used. One letter by default.
-#' @param lib_to_annotation_proportions numeric vector of length 2. relative sizes of profiles and annotation.
-#' @param lib_proportions numeric vector of length equal to displayed libs. Relative sizes of profiles displayed
-#' @param annotation_proportions numeric vector of length 3 (seq displayed), or 2 (seq not displayed). Relative sizes of annotation tracks.
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs seqlevels<-
 #' @importFrom GenomeInfoDb seqlevels
@@ -36,20 +31,13 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                 custom_regions = NULL,
                                 withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
                                 frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
-                                ylabels = bamVarName(df), lib_to_annotation_proportions = c(0.8,0.2),lib_proportions = NULL, annotation_proportions = NULL,width = NULL, height = NULL,
-                                plot_name = "default", plot_title = NULL, display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 50,
+                                ylabels = bamVarName(df), lib_to_annotation_proportions = c(0.8,0.2),lib_proportions = NULL,
+                                annotation_proportions = NULL,width = NULL, height = NULL,
+                                plot_name = "default", plot_title = NULL,
+                                display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 100,
                                 aa_letter_code = c("one_letter", "three_letters")[1],
                                 annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                 custom_motif = NULL, BPPARAM = bpparam()) {
-  # Load ranges if defined as character
-  if (is(display_range, "character")) {
-    display_range <- loadRegion(df, part = "tx", names.keep = display_range)
-  }
-  if (is(annotation, "character")) annotation <- loadRegion(df, part = annotation)
-
-  if (viewMode == "genomic") {
-    display_range <- flankPerGroup(display_range)
-  }
   multiOmicsController()
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
@@ -58,22 +46,16 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
 
 
   # Get the panel for the annotation track
-  gene_model_panel <- createGeneModelPanel(display_range, annotation, custom_regions = custom_regions)
+  gene_model_panel <- createGeneModelPanel(display_range, annotation,
+                                           custom_regions = custom_regions,
+                                           viewMode = viewMode)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
   # Get NGS data tracks
   plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
                     reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
-  nplots <- length(plots)
 
-  nt_area <- ggplot() +
-    theme(axis.title = element_blank(),
-          axis.ticks = element_blank(),
-          axis.text = element_blank()) +
-    theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-    scale_x_continuous(expand = c(0,0))
-
-  if (!display_sequence) {
+  if (display_sequence %in% c("none", FALSE)) { # plotly subplot without sequence track
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
@@ -82,7 +64,15 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                shareX = TRUE,
                                titleY = TRUE,
                                titleX = TRUE)
-  } else {
+  } else { # plotly subplot with sequence track
+    nplots <- length(plots)
+    nt_area <- ggplot() +
+      theme(axis.title = element_blank(),
+            axis.ticks = element_blank(),
+            axis.text = element_blank()) +
+      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
+      scale_x_continuous(expand = c(0,0))
+
     plots <- c(plots, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel),
                            automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
@@ -94,7 +84,7 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                titleX = TRUE)
     # Create sequence zoom logic (javascript)
     display_dist <- nchar(target_seq)
-    js_data <- fetch_JS_seq(target_seq = target_seq,nplots = nplots,
+    js_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
                             distance = seq_render_dist, display_dist = display_dist, aa_letter_code = aa_letter_code)
     multiomics_plot <- onRender(multiomics_plot, RiboCrypt:::fetchJS("render_on_zoom.js"), js_data)
   }

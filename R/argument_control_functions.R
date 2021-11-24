@@ -54,7 +54,7 @@ multiOmicsController <- function() {
   if (length(lib_proportions) == 1) lib_proportions <- rep(lib_proportions, length(reads))
   lib_proportions <- lib_proportions / sum(lib_proportions)
   if (length(annotation_proportions) == 0) {
-    if (display_sequence == "none") {
+    if (display_sequence %in% c("none", FALSE)) {
       annotation_proportions <- c(0.35,0.65)
     } else annotation_proportions <- c(0.2,0.2,0.6)
   } else annotation_proportions <- annotation_proportions / sum(annotation_proportions)

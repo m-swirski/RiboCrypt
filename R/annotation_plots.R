@@ -78,7 +78,9 @@ geneTrackLayer <- function(grl, viewMode) {
 
   if (nrow(overlaps) == 0) {
     all_layers <- rep(1, length(grl))
-    all_layers <- rep(all_layers, numExonsPerGroup(grl))
+    if (viewMode == "genomic") {
+      all_layers <- rep(all_layers, numExonsPerGroup(grl))
+    }
     return(all_layers)
   } else {
   layers <- overlaps_to_layers(overlaps)

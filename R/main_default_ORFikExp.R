@@ -20,8 +20,8 @@
 #' @importFrom htmlwidgets onRender
 #' @export
 #' @examples
-#' library(ORFik)
-#' df <- ORFik.template.experiment()[3,] #Use third library in experiment only
+#' library(RiboCrypt)
+#' df <- ORFik.template.experiment()[9,] #Use third library in experiment only
 #' cds <- loadRegion(df, "cds")
 #' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
 #'                         frames_type = "columns")

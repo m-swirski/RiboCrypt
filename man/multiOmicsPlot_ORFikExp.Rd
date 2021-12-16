@@ -12,6 +12,8 @@ multiOmicsPlot_ORFikExp(
   reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
   viewMode = c("tx", "genomic")[1],
   custom_regions = NULL,
+  leader_extension = 0,
+  trailer_extension = 0,
   withFrames = libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU"),
   frames_type = "lines",
   colors = NULL,

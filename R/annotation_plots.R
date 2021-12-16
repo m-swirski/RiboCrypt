@@ -70,7 +70,7 @@ get_current_index <- function(v) {
 
 #' How many rows does the gene track need
 #' @keywords internal
-geneTrackLayer <- function(grl, viewMode) {
+geneTrackLayer <- function(grl) {
 
   grl_flanks <- flankPerGroup(grl)
   overlaps <- as.data.table(findOverlaps(grl_flanks, grl_flanks))
@@ -78,17 +78,13 @@ geneTrackLayer <- function(grl, viewMode) {
 
   if (nrow(overlaps) == 0) {
     all_layers <- rep(1, length(grl))
-    if (viewMode == "genomic") {
-      all_layers <- rep(all_layers, numExonsPerGroup(grl))
-    }
+    all_layers <- rep(all_layers, numExonsPerGroup(grl))
     return(all_layers)
   } else {
   layers <- overlaps_to_layers(overlaps)
   all_layers <- rep(1, length(grl))
   all_layers[as.numeric(names(layers))] <- layers
-  if (viewMode == "genomic") {
-    all_layers <- rep(all_layers, numExonsPerGroup(grl))
-  }
+  all_layers <- rep(all_layers, numExonsPerGroup(grl))
   return(all_layers)
   }
 }
@@ -106,7 +102,8 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
     names(custom_regions)[same_names] <- paste(names(custom_regions)[same_names], "_1", sep="")
     annotation <- c(annotation, custom_regions)
   }
-  overlaps <- subsetByOverlaps(annotation, display_range)
+  overlaps <- subsetByOverlaps(annotation, display_range,
+                               type = ifelse(viewMode == "tx", "within", "any"))
 
   if (length(overlaps) > 0) {
 
@@ -120,9 +117,9 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   intersections <- trimOverlaps(overlaps,display_range)
   intersections <- groupGRangesBy(intersections)
 
-  layers <- geneTrackLayer(intersections, viewMode)
-
   locations <- pmapToTranscriptF(intersections, display_range)
+  layers <- geneTrackLayer(locations)
+
   locations <- unlistGrl(locations)
   locations <- ranges(locations)
   blocks <- c(start(locations) , end(locations))
@@ -164,7 +161,7 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
       theme(axis.title.x = element_blank(),
             axis.ticks.x = element_blank(),
             axis.text.x = element_blank(),
-            axis.text.y = element_blank(),
+            # axis.text.y = element_blank(),
             axis.ticks.y = element_blank()) +
       theme(plot.margin = unit(c(0,0,0,0), "pt"))+
       scale_x_continuous(expand = c(0,0)) +

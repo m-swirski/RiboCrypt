@@ -32,7 +32,8 @@ Imports:
   plotly,
   rlang,
   here,
-  htmlwidgets
+  htmlwidgets,
+  shiny
 Suggests:
   testthat,
   rmarkdown,

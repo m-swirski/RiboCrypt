@@ -4,7 +4,7 @@
 \alias{geneTrackLayer}
 \title{How many rows does the gene track need}
 \usage{
-geneTrackLayer(grl, viewMode)
+geneTrackLayer(grl)
 }
 \description{
 How many rows does the gene track need

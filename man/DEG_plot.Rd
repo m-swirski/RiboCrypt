@@ -48,6 +48,11 @@ specify min and max x limit: like c(-5, 5)}
 \code{ifelse("LFC" \%in\% colnames(dt), FALSE, TRUE)}
 Is this two dimensional, like: Ribo-seq vs RNA-seq. Alternative, FALSE: Then
 Log fold change vs mean counts}
+
+\item{color.values}{named character vector, default: \code{c("No change" = "black", "Significant" = "red",
+"Buffering" = "purple", "mRNA abundance" = "darkgreen",
+"Expression" = "blue", "Forwarded" = "yellow",
+"Inverse" = "aquamarine", "Translation" = "orange4")}}
 }
 \value{
 plotly object

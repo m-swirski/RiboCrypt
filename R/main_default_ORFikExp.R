@@ -29,6 +29,7 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                 reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
                                 viewMode = c("tx", "genomic")[1],
                                 custom_regions = NULL,
+                                leader_extension = 0, trailer_extension = 0,
                                 withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
                                 frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
                                 ylabels = bamVarName(df), lib_to_annotation_proportions = c(0.8,0.2),lib_proportions = NULL,
@@ -52,6 +53,15 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
   # Get NGS data tracks
+  force(display_range)
+  force(kmers_type)
+  force(lines)
+  force(frames_type)
+  force(reads)
+  force(withFrames)
+  force(colors)
+  force(kmers)
+  force(ylabels)
   plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
                     reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
 

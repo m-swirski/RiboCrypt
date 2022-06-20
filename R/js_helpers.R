@@ -10,7 +10,7 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
   fr_colors <- c("#F8766D","#00BA38", "#619CFF")
   nt_yaxis <- paste("y", nplots + 1, sep = "")
   aa_yaxis <- paste("y", nplots + 3, sep = "")
-  nts <- sapply(1:3, function(x) seq(x, display_dist, 3))
+  nts <- lapply(1:3, function(x) seq(x, display_dist, 3))
   rendered_seq <- strsplit(as.character(target_seq),"")[[1]]
   aas <- lapply(1:3, function(x) suppressWarnings(strsplit(as.character(translate(target_seq[[1]][x:display_dist])), "")[[1]]))
   if (aa_letter_code == "three_letters") {

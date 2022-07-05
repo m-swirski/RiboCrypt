@@ -8,7 +8,7 @@ RiboCrypt_app <- function() {
     sidebarLayout(
       sidebarPanel(
         tabsetPanel(id = "tabset",
-                    tabPanel("browser",
+                    tabPanel("Browser",
                              selectizeInput(
                                inputId = "dff",
                                label = "Select an experiment",
@@ -55,7 +55,7 @@ RiboCrypt_app <- function() {
         actionButton("go", "Plot")
       ),
       mainPanel(
-        plotlyOutput(outputId = "c")
+        plotlyOutput(outputId = "c", height = "40%")
       )
     )
   )
@@ -81,8 +81,8 @@ RiboCrypt_app <- function() {
       updateSelectizeInput(
         inputId = "dff",
         choices = experimentList(),
-        selected = experimentList()[1],
-      )
+        selected = experimentList()[1]
+        )
     })
     observeEvent(cds, {
       updateSelectizeInput(inputId = 'gene',
@@ -96,7 +96,7 @@ RiboCrypt_app <- function() {
         inputId = "library",
         choices = libs(),
         selected = libs()[min(length(libs()), 9)]
-      )
+        )
     }, ignoreNULL = TRUE)
     # Initialize button
     v <- reactiveValues(doPlot = FALSE)
@@ -109,33 +109,32 @@ RiboCrypt_app <- function() {
     # Main plot
     output$c <- renderPlotly({
       if (v$doPlot == FALSE) return()
-      isolate ({
-        gc()
-        stopifnot(is(cds(), "GRangesList"))
-        stopifnot(is(libs(), "character"))
-        stopifnot(is(df(), "experiment"))
-        stopifnot(is(input$gene, "character"))
-        print("Inside plotly")
-        paste("Input gene", input$gene)
-        # Init display and lib at start run, else it crash now
-        display_region <- if (input$gene %in% c("", "NULL")) {
-          names(cds()[1])
-        } else input$gene
-        libs_to_pick <- if (is.null(input$library)) {
-          libs()[1]
-        } else input$library
-        dff <- df()[which(libs() %in% libs_to_pick),]
-        RiboCrypt::multiOmicsPlot_ORFikExp(display_range = display_region,
-                                           df = dff,
-                                           display_sequence = "nt",
-                                           reads = force(outputLibs(dff, type = "pshifted", output.mode = "envirlist", naming = "full")),
-                                           trailer_extension = input$extendTrailers,
-                                           leader_extension = input$extendLeaders,
-                                           annotation = "cds",
-                                           viewMode = ifelse(input$viewMode, "genomic","tx"),
-                                           kmers = input$kmer,
-                                           frames_type = input$frames_type)
-      })
+      gc()
+      stopifnot(is(cds(), "GRangesList"))
+      stopifnot(is(libs(), "character"))
+      stopifnot(is(df(), "experiment"))
+      stopifnot(is(input$gene, "character"))
+      print("Inside plotly")
+      paste("Input gene", input$gene)
+      # Init display and lib at start run, else it crash now
+      display_region <- if (input$gene %in% c("", "NULL")) {
+        names(cds()[1])
+      } else input$gene
+      libs_to_pick <- if (is.null(input$library)) {
+        libs()[1]
+      } else input$library
+      dff <- df()[which(libs() %in% libs_to_pick),]
+      RiboCrypt::multiOmicsPlot_ORFikExp(display_range = display_region,
+                                         df = dff,
+                                         display_sequence = "nt",
+                                         reads = force(outputLibs(dff, type = "pshifted", output.mode = "envirlist", naming = "full")),
+                                         trailer_extension = input$extendTrailers,
+                                         leader_extension = input$extendLeaders,
+                                         annotation = "cds",
+                                         viewMode = ifelse(input$viewMode, "genomic","tx"),
+                                         kmers = input$kmer,
+                                         frames_type = input$frames_type,
+                                         custom_regions = )
     })
   }
   shinyApp(ui, server)

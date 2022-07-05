@@ -61,47 +61,52 @@ RiboCrypt_app <- function() {
   )
 
   server <- function(input, output, ...) {
-    print("Start")
-    # Init variables
-    exp.list <- list.experiments()$name
-    d <- read.experiment(exp.list[1])
-    last.ex <- reactiveVal(exp.list[1])
-    cd <- loadRegion(d)
-    lib <- bamVarName(d)
-    # Init reactive variables
-    df <- reactiveVal(d)
-    cds <- reactiveVal(cd)
-    libs <- reactiveVal(lib)
-    print("Init done variables")
-    # Init input boxes
-    updateSelectizeInput(inputId = 'gene',
-                         choices = names(cd),
-                         selected = names(cd[1]),
-                         server = TRUE
-    )
-    updateSelectizeInput(
-      inputId = "library",
-      choices = lib,
-      selected = lib[min(length(lib), 9)]
-    )
-    updateSelectizeInput(
-      inputId = "dff",
-      choices = exp.list,
-      selected = exp.list[1],
-    )
-    print("Init done Selectize")
-
+    # Initialize variables
+    experimentList <- reactive(list.experiments()$name)
+    df <- reactive(read.experiment(input$dff))
+    cds <- reactive({
+      dep <- df()
+      if (!is.null(dep)) {
+        loadRegion(dep) 
+      } else { NULL }
+    })
+    libs <- reactive({
+      dep <- df()
+      if (!is.null(dep)) {
+        bamVarName(dep) 
+      } else { NULL }
+    })
+    # Initialize input boxes
+    observeEvent(experimentList, {
+      updateSelectizeInput(
+        inputId = "dff",
+        choices = experimentList(),
+        selected = experimentList()[1],
+      )
+    })
+    observeEvent(cds, {
+      updateSelectizeInput(inputId = 'gene',
+                           choices = names(cds()),
+                           selected = names(cds())[1],
+                           server = TRUE
+                           )
+    }, ignoreNULL = TRUE)
+    observeEvent(libs, {
+      updateSelectizeInput(
+        inputId = "library",
+        choices = libs(),
+        selected = libs()[min(length(libs()), 9)]
+      )
+    }, ignoreNULL = TRUE)
+    # Initialize button
     v <- reactiveValues(doPlot = FALSE)
-
     observeEvent(input$go, {
       # 0 will be coerced to FALSE
       # 1+ will be coerced to TRUE
       v$doPlot <- input$go
     })
 
-
-
-    # Plot and updates
+    # Main plot
     output$c <- renderPlotly({
       if (v$doPlot == FALSE) return()
       isolate ({
@@ -119,32 +124,7 @@ RiboCrypt_app <- function() {
         libs_to_pick <- if (is.null(input$library)) {
           libs()[1]
         } else input$library
-
         dff <- df()[which(libs() %in% libs_to_pick),]
-        show(dff)
-        observeEvent(input$dff, {
-          cat("Changed experiment")
-          if (input$dff != "" & input$dff != last.ex()) {
-            print(input$dff)
-            df(read.experiment(input$dff))
-            last.ex(input$dff)
-            cds(loadRegion(df()))
-            libs(bamVarName(df()))
-
-            updateSelectizeInput(
-              inputId = 'gene',
-              choices = names(cds()),
-              selected = names(cds()[1]),
-              server = TRUE
-            )
-            updateSelectizeInput(
-              inputId = "library",
-              choices = libs(),
-              selected = libs()[min(length(lib), 9)]
-            )
-          }
-        }, ignoreInit = TRUE)
-
         RiboCrypt::multiOmicsPlot_ORFikExp(display_range = display_region,
                                            df = dff,
                                            display_sequence = "nt",
@@ -158,8 +138,6 @@ RiboCrypt_app <- function() {
       })
     })
   }
-
-
   shinyApp(ui, server)
 }
 

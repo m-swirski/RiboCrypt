@@ -1,4 +1,3 @@
-
 #' Create RiboCrypt app
 #' @return RiboCrypt shiny app
 #' @export
@@ -49,11 +48,12 @@ RiboCrypt_app <- function() {
         actionButton("go", "Plot")
         ),
       mainPanel(
-        plotlyOutput(outputId = "c", height = "40%")
+        plotlyOutput(outputId = "c"),
+        uiOutput("variableUi")
       )
     )
   )
-
+  
   server <- function(input, output, ...) {
     # Initialize experiment list
     experimentList <- reactive(list.experiments()$name)
@@ -94,7 +94,7 @@ RiboCrypt_app <- function() {
         selected = libs()[min(length(libs()), 9)]
         )
     }, ignoreNULL = TRUE)
-
+  
     # Main plot
     display_region <- eventReactive(input$go, {
       if (input$gene %in% c("", "NULL")) {
@@ -109,8 +109,8 @@ RiboCrypt_app <- function() {
     })
     customRegions <- eventReactive(input$go, {
       if(isTRUE(input$useCustomRegions)) {
-        # TODO
-        NULL
+        orfs_flt <- fread("~/filtered_ORF.csv")
+        orfs_flt_grl <- GRanges(orfs_flt) %>% groupGRangesBy(.,.$names)
       } else { NULL }
     })
     output$c <- renderPlotly({
@@ -133,8 +133,21 @@ RiboCrypt_app <- function() {
                                            frames_type = input$frames_type,
                                            custom_regions = customRegions())
         })
+    
+    # Setup for structure viewer
+    output$dynamic <- renderNGLVieweR({
+      paste("~", input$selectedRegion, "ranked_0.pdb", sep = "/") %>% NGLVieweR() %>% addRepresentation("cartoon")
+    })
+    output$variableUi <- renderUI({
+      if (!is.null(input$selectedRegion) && !is.null(customRegions())) {
+        actionButton("dynamicClose", "Close")
+        NGLVieweROutput("dynamic")
+        } else {}
+      })
   }
+  
   shinyApp(ui, server)
 }
+
 
 

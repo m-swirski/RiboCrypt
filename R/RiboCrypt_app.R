@@ -45,7 +45,7 @@ RiboCrypt_app <- function() {
                              checkboxInput("useCustomRegions", label = "Use custom regions", value = FALSE)
                              ),
                     ),
-        actionButton("go", "Plot")
+        actionButton("go", "Plot"),
         ),
       mainPanel(
         plotlyOutput(outputId = "c"),
@@ -135,13 +135,26 @@ RiboCrypt_app <- function() {
         })
     
     # Setup for structure viewer
+    dynamicVisible <- reactiveVal(FALSE)
+    observeEvent(input$selectedRegion, {
+      if (!is.null(input$selectedRegion) && !is.null(customRegions())) {
+        dynamicVisible(TRUE)
+      } else {
+        dynamicVisible(FALSE)
+      }
+    })
+    observeEvent(input$dynamicClose, {
+      dynamicVisible(FALSE)
+    })
     output$dynamic <- renderNGLVieweR({
       paste("~", input$selectedRegion, "ranked_0.pdb", sep = "/") %>% NGLVieweR() %>% addRepresentation("cartoon")
     })
     output$variableUi <- renderUI({
-      if (!is.null(input$selectedRegion) && !is.null(customRegions())) {
-        actionButton("dynamicClose", "Close")
-        NGLVieweROutput("dynamic")
+      if (dynamicVisible()) {
+        fluidRow(
+          actionButton("dynamicClose", "Close"),
+          NGLVieweROutput("dynamic")
+        )
         } else {}
       })
   }

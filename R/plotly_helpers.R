@@ -15,7 +15,7 @@ automateTicksLetters <- function(plot) {
 
 automateTicksGMP <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>%
-    style(hoverinfo = "none")
+    style(hoverinfo = "text")
 }
 #'
 #' @rawNamespace import(plotly, except = c(config, last_plot))

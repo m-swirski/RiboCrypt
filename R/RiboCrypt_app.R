@@ -1,4 +1,3 @@
-
 #' Create RiboCrypt app
 #' @return RiboCrypt shiny app
 #' @export
@@ -8,7 +7,7 @@ RiboCrypt_app <- function() {
     sidebarLayout(
       sidebarPanel(
         tabsetPanel(id = "tabset",
-                    tabPanel("browser",
+                    tabPanel("Browser",
                              selectizeInput(
                                inputId = "dff",
                                label = "Select an experiment",
@@ -38,129 +37,130 @@ RiboCrypt_app <- function() {
                                multiple = FALSE
                              ),
                              sliderInput("kmer", "K-mer length", min = 1, max = 20, value = 1)
-                    )
-                    ,
-                             tabPanel("Navigate",
-                             numericInput("extendLeaders",
-                               "5' extension",
-                               0
-                             ), numericInput("extendTrailers",
-                                             "3' extension",
-                                             0),
-                             checkboxInput("viewMode", label = "Genomic View", value = FALSE),
-                                             ),
-
                     ),
-
-        actionButton("go", "Plot")
-      ),
+                    tabPanel("Navigate",
+                             numericInput("extendLeaders", "5' extension", 0),
+                             numericInput("extendTrailers", "3' extension", 0),
+                             checkboxInput("viewMode", label = "Genomic View", value = FALSE),
+                             checkboxInput("useCustomRegions", label = "Use custom regions", value = FALSE)
+                             ),
+                    ),
+        actionButton("go", "Plot"),
+        ),
       mainPanel(
-        plotlyOutput(outputId = "c")
+        plotlyOutput(outputId = "c"),
+        uiOutput("variableUi")
       )
     )
   )
-
+  
   server <- function(input, output, ...) {
-    print("Start")
-    # Init variables
-    exp.list <- list.experiments()$name
-    d <- read.experiment(exp.list[1])
-    last.ex <- reactiveVal(exp.list[1])
-    cd <- loadRegion(d)
-    lib <- bamVarName(d)
-    # Init reactive variables
-    df <- reactiveVal(d)
-    cds <- reactiveVal(cd)
-    libs <- reactiveVal(lib)
-    print("Init done variables")
-    # Init input boxes
-    updateSelectizeInput(inputId = 'gene',
-                         choices = names(cd),
-                         selected = names(cd[1]),
-                         server = TRUE
-    )
-    updateSelectizeInput(
-      inputId = "library",
-      choices = lib,
-      selected = lib[min(length(lib), 9)]
-    )
-    updateSelectizeInput(
-      inputId = "dff",
-      choices = exp.list,
-      selected = exp.list[1],
-    )
-    print("Init done Selectize")
-
-    v <- reactiveValues(doPlot = FALSE)
-
-    observeEvent(input$go, {
-      # 0 will be coerced to FALSE
-      # 1+ will be coerced to TRUE
-      v$doPlot <- input$go
+    # Initialize experiment list
+    experimentList <- reactive(list.experiments()$name)
+    # Initialize experiment selector
+    observeEvent(experimentList, {
+      updateSelectizeInput(
+        inputId = "dff",
+        choices = experimentList(),
+        selected = experimentList()[1]
+      )
     })
-
-
-
-    # Plot and updates
+    # Initialize variables
+    df <- reactive(read.experiment(input$dff))
+    cds <- reactive({
+      dep <- df()
+      if (!is.null(dep)) {
+        loadRegion(dep) 
+      } else { NULL }
+    })
+    libs <- reactive({
+      dep <- df()
+      if (!is.null(dep)) {
+        bamVarName(dep) 
+      } else { NULL }
+    })
+    # Initialize remaining selectors
+    observeEvent(cds, {
+      updateSelectizeInput(inputId = 'gene',
+                           choices = names(cds()),
+                           selected = names(cds())[1],
+                           server = TRUE
+                           )
+    }, ignoreNULL = TRUE)
+    observeEvent(libs, {
+      updateSelectizeInput(
+        inputId = "library",
+        choices = libs(),
+        selected = libs()[min(length(libs()), 9)]
+        )
+    }, ignoreNULL = TRUE)
+  
+    # Main plot
+    display_region <- eventReactive(input$go, {
+      if (input$gene %in% c("", "NULL")) {
+        names(cds()[1])
+      } else { input$gene }
+    })
+    dff <- eventReactive(input$go, {
+      libs_to_pick <- if (is.null(input$library)) {
+        libs()[1]
+      } else { input$library }
+      df()[which(libs() %in% libs_to_pick),]
+    })
+    customRegions <- eventReactive(input$go, {
+      if(isTRUE(input$useCustomRegions)) {
+        orfs_flt <- fread("~/filtered_ORF.csv")
+        orfs_flt_grl <- GRanges(orfs_flt) %>% groupGRangesBy(.,.$names)
+      } else { NULL }
+    })
     output$c <- renderPlotly({
-      if (v$doPlot == FALSE) return()
-      isolate ({
+      isolate({
         gc()
         stopifnot(is(cds(), "GRangesList"))
         stopifnot(is(libs(), "character"))
         stopifnot(is(df(), "experiment"))
         stopifnot(is(input$gene, "character"))
-        print("Inside plotly")
-        paste("Input gene", input$gene)
-        # Init display and lib at start run, else it crash now
-        display_region <- if (input$gene %in% c("", "NULL")) {
-          names(cds()[1])
-        } else input$gene
-        libs_to_pick <- if (is.null(input$library)) {
-          libs()[1]
-        } else input$library
-
-        dff <- df()[which(libs() %in% libs_to_pick),]
-        show(dff)
-        observeEvent(input$dff, {
-          cat("Changed experiment")
-          if (input$dff != "" & input$dff != last.ex()) {
-            print(input$dff)
-            df(read.experiment(input$dff))
-            last.ex(input$dff)
-            cds(loadRegion(df()))
-            libs(bamVarName(df()))
-
-            updateSelectizeInput(
-              inputId = 'gene',
-              choices = names(cds()),
-              selected = names(cds()[1]),
-              server = TRUE
-            )
-            updateSelectizeInput(
-              inputId = "library",
-              choices = libs(),
-              selected = libs()[min(length(lib), 9)]
-            )
-          }
-        }, ignoreInit = TRUE)
-
-        RiboCrypt::multiOmicsPlot_ORFikExp(display_range = display_region,
-                                           df = dff,
+        })
+      RiboCrypt::multiOmicsPlot_ORFikExp(display_range = display_region(),
+                                           df = dff(),
                                            display_sequence = "nt",
-                                           reads = force(outputLibs(dff, type = "pshifted", output.mode = "envirlist", naming = "full")),
+                                           reads = force(outputLibs(dff(), type = "pshifted", output.mode = "envirlist", naming = "full")),
                                            trailer_extension = input$extendTrailers,
                                            leader_extension = input$extendLeaders,
                                            annotation = "cds",
                                            viewMode = ifelse(input$viewMode, "genomic","tx"),
                                            kmers = input$kmer,
-                                           frames_type = input$frames_type)
-      })
+                                           frames_type = input$frames_type,
+                                           custom_regions = customRegions())
+        })
+    
+    # Setup for structure viewer
+    dynamicVisible <- reactiveVal(FALSE)
+    observeEvent(input$selectedRegion, {
+      if (!is.null(input$selectedRegion) && !is.null(customRegions())) {
+        dynamicVisible(TRUE)
+      } else {
+        dynamicVisible(FALSE)
+      }
     })
+    observeEvent(input$dynamicClose, {
+      dynamicVisible(FALSE)
+    })
+    output$dynamic <- renderNGLVieweR({
+      paste("~", input$selectedRegion, "ranked_0.pdb", sep = "/") %>% NGLVieweR() %>% addRepresentation("cartoon")
+    })
+    output$variableUi <- renderUI({
+      if (dynamicVisible()) {
+        fluidRow(
+          actionButton("dynamicClose", "Close"),
+          NGLVieweROutput("dynamic")
+        )
+        } else {}
+      })
   }
-
-
+  
   shinyApp(ui, server)
 }
+
 
 

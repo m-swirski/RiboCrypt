@@ -94,9 +94,12 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                titleX = TRUE)
     # Create sequence zoom logic (javascript)
     display_dist <- nchar(target_seq)
-    js_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
+    render_on_zoom_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
                             distance = seq_render_dist, display_dist = display_dist, aa_letter_code = aa_letter_code)
-    multiomics_plot <- onRender(multiomics_plot, RiboCrypt:::fetchJS("render_on_zoom.js"), js_data)
+    select_region_on_click_data <- list(nplots = nplots)
+    multiomics_plot <- multiomics_plot %>% 
+      onRender(RiboCrypt:::fetchJS("render_on_zoom.js"), render_on_zoom_data) %>% 
+      onRender(RiboCrypt:::fetchJS("select_region_on_click.js"), select_region_on_click_data)
   }
 
   multiomics_plot <- multiomics_plot %>% plotly::config(

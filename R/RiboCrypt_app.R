@@ -96,22 +96,32 @@ RiboCrypt_app <- function() {
     }, ignoreNULL = TRUE)
   
     # Main plot
-    display_region <- eventReactive(input$go, {
-      if (input$gene %in% c("", "NULL")) {
-        names(cds()[1])
-      } else { input$gene }
-    })
-    dff <- eventReactive(input$go, {
-      libs_to_pick <- if (is.null(input$library)) {
-        libs()[1]
-      } else { input$library }
-      df()[which(libs() %in% libs_to_pick),]
-    })
-    customRegions <- eventReactive(input$go, {
-      if(isTRUE(input$useCustomRegions)) {
-        orfs_flt <- fread("~/custom_regions.csv")
-        orfs_flt_grl <- GRanges(orfs_flt) %>% groupGRangesBy(.,.$names)
-      } else { NULL }
+    mainPlotControls <- eventReactive(input$go, {
+      display_region <- {
+        if (input$gene %in% c("", "NULL")) {
+          names(cds()[1])
+        } else { input$gene }
+      }
+      dff <- {
+        libs_to_pick <- if (is.null(input$library)) {
+          libs()[1]
+        } else { input$library }
+        df()[which(libs() %in% libs_to_pick),]
+      }
+      customRegions <- {
+        if(isTRUE(input$useCustomRegions)) {
+          orfs_flt <- fread("~/custom_regions.csv")
+          orfs_flt_grl <- GRanges(orfs_flt) %>% groupGRangesBy(.,.$names)
+        } else { NULL }
+      }
+      reactiveValues(dff = dff,
+                     display_region = display_region, 
+                     customRegions = customRegions, 
+                     extendTrailers = input$extendTrailers, 
+                     extendLeaders = input$extendLeaders,
+                     viewMode = input$viewMode,
+                     kmerLength = input$kmer,
+                     frames_type = input$frames_type)
     })
     output$c <- renderPlotly({
       isolate({
@@ -121,17 +131,17 @@ RiboCrypt_app <- function() {
         stopifnot(is(df(), "experiment"))
         stopifnot(is(input$gene, "character"))
         })
-      RiboCrypt::multiOmicsPlot_ORFikExp(display_range = display_region(),
-                                           df = dff(),
+      RiboCrypt::multiOmicsPlot_ORFikExp(display_range = mainPlotControls()$display_region,
+                                           df = mainPlotControls()$dff,
                                            display_sequence = "nt",
-                                           reads = force(outputLibs(dff(), type = "pshifted", output.mode = "envirlist", naming = "full")),
-                                           trailer_extension = input$extendTrailers,
-                                           leader_extension = input$extendLeaders,
+                                           reads = force(outputLibs(mainPlotControls()$dff, type = "pshifted", output.mode = "envirlist", naming = "full")),
+                                           trailer_extension = mainPlotControls()$extendTrailers,
+                                           leader_extension = mainPlotControls()$extendLeaders,
                                            annotation = "cds",
-                                           viewMode = ifelse(input$viewMode, "genomic","tx"),
-                                           kmers = input$kmer,
-                                           frames_type = input$frames_type,
-                                           custom_regions = customRegions())
+                                           viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
+                                           kmers = mainPlotControls()$kmerLength,
+                                           frames_type = mainPlotControls()$frames_type,
+                                           custom_regions = mainPlotControls()$customRegions)
         })
     
     # Setup for structure viewer

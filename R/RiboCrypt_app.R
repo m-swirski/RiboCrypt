@@ -144,24 +144,36 @@ RiboCrypt_app <- function() {
                                            custom_regions = mainPlotControls()$customRegions)
         })
     
-    # Setup for structure viewer
+    # Setup variables needed for structure viewer
+    selectedRegion <- reactiveVal(NULL)
     dynamicVisible <- reactiveVal(FALSE)
+    # When user clicks on region
+    # start displaying structure viewer
+    # and set selected structure to one which was clicked
     observeEvent(input$selectedRegion, {
-      if (!is.null(input$selectedRegion) && !is.null(customRegions())) {
+      if (!is.null(input$selectedRegion) && !is.null(mainPlotControls()$customRegions)) {
+        selectedRegion(input$selectedRegion)
         dynamicVisible(TRUE)
       } else {
+        selectedRegion(NULL)
         dynamicVisible(FALSE)
       }
     })
+    # When user clicks close button
+    # stop displaying structure viewer 
+    # and set selected structure to NULL
     observeEvent(input$dynamicClose, {
+      selectedRegion(NULL)
       dynamicVisible(FALSE)
     })
+    # NGL viewer widget
     output$dynamic <- renderNGLVieweR({
-      paste("~", "sequences", input$selectedRegion, "ranked_0.pdb", sep = "/") %>%
+      paste("~", "sequences", selectedRegion(), "ranked_0.pdb", sep = "/") %>%
         NGLVieweR() %>%
         stageParameters(backgroundColor = "white") %>% 
         addRepresentation("cartoon")
     })
+    # Variable UI logic
     output$variableUi <- renderUI({
       if (dynamicVisible()) {
         fluidRow(

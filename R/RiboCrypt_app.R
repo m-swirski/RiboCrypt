@@ -147,7 +147,7 @@ RiboCrypt_app <- function() {
       dynamicVisible(FALSE)
     })
     output$dynamic <- renderNGLVieweR({
-      paste("~", input$selectedRegion, "ranked_0.pdb", sep = "/") %>%
+      paste("~", "sequences", input$selectedRegion, "ranked_0.pdb", sep = "/") %>%
         NGLVieweR() %>%
         stageParameters(backgroundColor = "white") %>% 
         addRepresentation("cartoon")

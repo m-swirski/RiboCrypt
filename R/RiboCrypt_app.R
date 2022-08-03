@@ -109,7 +109,7 @@ RiboCrypt_app <- function() {
     })
     customRegions <- eventReactive(input$go, {
       if(isTRUE(input$useCustomRegions)) {
-        orfs_flt <- fread("~/filtered_ORF.csv")
+        orfs_flt <- fread("~/custom_regions.csv")
         orfs_flt_grl <- GRanges(orfs_flt) %>% groupGRangesBy(.,.$names)
       } else { NULL }
     })

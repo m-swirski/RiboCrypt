@@ -38,7 +38,7 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                 display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 100,
                                 aa_letter_code = c("one_letter", "three_letters")[1],
                                 annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                custom_motif = NULL, BPPARAM = bpparam()) {
+                                custom_motif = NULL, BPPARAM = BiocParallel::SerialParam()) {
   multiOmicsController()
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
@@ -62,8 +62,14 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
   force(colors)
   force(kmers)
   force(ylabels)
-  plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
-                    reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+  if (is(BPPARAM, "SerialParam")) {
+    plots <- mapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
+                      reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE)
+  } else {
+    plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
+                      reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+  }
+
 
   if (display_sequence %in% c("none", FALSE)) { # plotly subplot without sequence track
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
@@ -97,8 +103,8 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
     render_on_zoom_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
                             distance = seq_render_dist, display_dist = display_dist, aa_letter_code = aa_letter_code)
     select_region_on_click_data <- list(nplots = nplots)
-    multiomics_plot <- multiomics_plot %>% 
-      onRender(RiboCrypt:::fetchJS("render_on_zoom.js"), render_on_zoom_data) %>% 
+    multiomics_plot <- multiomics_plot %>%
+      onRender(RiboCrypt:::fetchJS("render_on_zoom.js"), render_on_zoom_data) %>%
       onRender(RiboCrypt:::fetchJS("select_region_on_click.js"), select_region_on_click_data)
   }
 

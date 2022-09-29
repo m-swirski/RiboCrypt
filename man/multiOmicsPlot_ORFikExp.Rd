@@ -34,7 +34,7 @@ multiOmicsPlot_ORFikExp(
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
-  BPPARAM = bpparam()
+  BPPARAM = BiocParallel::SerialParam()
 )
 }
 \arguments{

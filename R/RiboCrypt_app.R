@@ -1,7 +1,7 @@
 #' Create RiboCrypt app
+#' @import shiny
 #' @return RiboCrypt shiny app
 #' @export
-
 RiboCrypt_app <- function() {
   ui <- fluidPage(
     sidebarLayout(
@@ -53,7 +53,7 @@ RiboCrypt_app <- function() {
       )
     )
   )
-  
+
   server <- function(input, output, ...) {
     # Initialize experiment list
     experimentList <- reactive(list.experiments()$name)
@@ -70,13 +70,13 @@ RiboCrypt_app <- function() {
     cds <- reactive({
       dep <- df()
       if (!is.null(dep)) {
-        loadRegion(dep) 
+        loadRegion(dep)
       } else { NULL }
     })
     libs <- reactive({
       dep <- df()
       if (!is.null(dep)) {
-        bamVarName(dep) 
+        bamVarName(dep)
       } else { NULL }
     })
     # Initialize remaining selectors
@@ -94,7 +94,7 @@ RiboCrypt_app <- function() {
         selected = libs()[min(length(libs()), 9)]
         )
     }, ignoreNULL = TRUE)
-  
+
     # Main plot
     mainPlotControls <- eventReactive(input$go, {
       display_region <- {
@@ -115,9 +115,9 @@ RiboCrypt_app <- function() {
         } else { NULL }
       }
       reactiveValues(dff = dff,
-                     display_region = display_region, 
-                     customRegions = customRegions, 
-                     extendTrailers = input$extendTrailers, 
+                     display_region = display_region,
+                     customRegions = customRegions,
+                     extendTrailers = input$extendTrailers,
                      extendLeaders = input$extendLeaders,
                      viewMode = input$viewMode,
                      kmerLength = input$kmer,
@@ -131,10 +131,11 @@ RiboCrypt_app <- function() {
         stopifnot(is(df(), "experiment"))
         stopifnot(is(input$gene, "character"))
         })
+      read_type <- ifelse(dir.exists(file.path(dirname(df$filepath[1]), "cov_RLE")), "cov", "pshifted")
       RiboCrypt::multiOmicsPlot_ORFikExp(display_range = mainPlotControls()$display_region,
                                            df = mainPlotControls()$dff,
                                            display_sequence = "nt",
-                                           reads = force(outputLibs(mainPlotControls()$dff, type = "pshifted", output.mode = "envirlist", naming = "full")),
+                                           reads = force(outputLibs(mainPlotControls()$dff, type = read_type, output.mode = "envirlist", naming = "full", BPPARAM = BiocParallel::SerialParam())),
                                            trailer_extension = mainPlotControls()$extendTrailers,
                                            leader_extension = mainPlotControls()$extendLeaders,
                                            annotation = "cds",
@@ -143,7 +144,7 @@ RiboCrypt_app <- function() {
                                            frames_type = mainPlotControls()$frames_type,
                                            custom_regions = mainPlotControls()$customRegions)
         })
-    
+
     # Setup variables needed for structure viewer
     selectedRegion <- reactiveVal(NULL)
     dynamicVisible <- reactiveVal(FALSE)
@@ -160,7 +161,7 @@ RiboCrypt_app <- function() {
       }
     })
     # When user clicks close button
-    # stop displaying structure viewer 
+    # stop displaying structure viewer
     # and set selected structure to NULL
     observeEvent(input$dynamicClose, {
       selectedRegion(NULL)
@@ -170,7 +171,7 @@ RiboCrypt_app <- function() {
     output$dynamic <- renderNGLVieweR({
       paste("~", "sequences", selectedRegion(), "ranked_0.pdb", sep = "/") %>%
         NGLVieweR() %>%
-        stageParameters(backgroundColor = "white") %>% 
+        stageParameters(backgroundColor = "white") %>%
         addRepresentation("cartoon")
     })
     # Variable UI logic
@@ -183,7 +184,7 @@ RiboCrypt_app <- function() {
         } else {}
       })
   }
-  
+
   shinyApp(ui, server)
 }
 

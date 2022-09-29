@@ -9,7 +9,8 @@ multiOmicsPlot_ORFikExp(
   df,
   annotation = "cds",
   reference_sequence = findFa(df),
-  reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
+  reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full",
+    BPPARAM = BiocParallel::SerialParam()),
   viewMode = c("tx", "genomic")[1],
   custom_regions = NULL,
   leader_extension = 0,
@@ -49,8 +50,11 @@ a \code{\link[GenomicRanges]{GRangesList}} or \code{\link[GenomicRanges]{GRanges
 
 \item{reference_sequence}{the genome reference, default ORFik::findFa(df)}
 
-\item{reads}{the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
-Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full")}}
+\item{reads}{the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}}
+with or without 'score' column for replicates. Can also be a covRle object
+of precomputed coverage.
+Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist",
+naming = "full", BPPARAM = BiocParallel::SerialParam())}}
 
 \item{viewMode}{character, default "tx" (transcript coordinates, first position is 1,
 exons are merged into a single sequence)\cr

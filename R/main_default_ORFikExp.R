@@ -6,8 +6,11 @@
 #' @param df an ORFik \code{\link[ORFik]{experiment}} or a list containing ORFik experiments.
 #' Usually a list when you have split Ribo-seq and RNA-seq etc.
 #' @param reference_sequence the genome reference, default ORFik::findFa(df)
-#' @param reads the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.
-#' Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full")}
+#' @param reads the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}}
+#' with or without 'score' column for replicates. Can also be a covRle object
+#' of precomputed coverage.
+#' Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist",
+#' naming = "full", BPPARAM = BiocParallel::SerialParam())}
 #' @param withFrames a logical vector, default
 #' \code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU")}
 #' Alternative: a length 1 or same length as list length of "reads" argument.
@@ -26,7 +29,8 @@
 #' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
 #'                         frames_type = "columns")
 multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
-                                reads = outputLibs(df, type = "pshifted", output.mode = "envirlist", naming = "full"),
+                                reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+                                                   naming = "full", BPPARAM = BiocParallel::SerialParam()),
                                 viewMode = c("tx", "genomic")[1],
                                 custom_regions = NULL,
                                 leader_extension = 0, trailer_extension = 0,

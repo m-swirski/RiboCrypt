@@ -62,7 +62,7 @@ RiboCrypt_app <- function() {
     libs <- reactive(bamVarName(df()))
 
     # Gene selector
-    observeEvent(cds, {
+    observeEvent(cds(), {
       updateSelectizeInput(
         inputId = 'gene',
         choices = names(cds()),
@@ -72,7 +72,7 @@ RiboCrypt_app <- function() {
     })
 
     # Library selector
-    observeEvent(libs, {
+    observeEvent(libs(), {
       updateSelectizeInput(
         inputId = "library",
         choices = libs(),

@@ -152,3 +152,14 @@ getRelativeFrames <- function(overlaps) {
   dt[, rel_frame := c(0,-cum_width %% 3)[1:length(width)], names]
   return(dt$rel_frame)
 }
+
+
+realA <- function(y,z,Ea,Eb,Ec) {
+  eq <- matrix(c(1 - y - z,z,y,
+                 y,1 - y - z, z,
+                 z,y,1 - y - z), 3,3, byrow = TRUE
+  )
+  sol <- c(Ea, Eb, Ec)
+  solve(eq,sol)
+}
+

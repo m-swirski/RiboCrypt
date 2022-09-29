@@ -12,8 +12,8 @@ RiboCrypt_app <- function() {
                              selectizeInput(
                                inputId = "dff",
                                label = "Select an experiment",
-                               choices = "",
-                               selected = "",
+                               choices = list.experiments()$name,
+                               selected = head(list.experiments()$name),
                                multiple = FALSE
                              ),
                              selectizeInput(
@@ -44,10 +44,10 @@ RiboCrypt_app <- function() {
                              numericInput("extendTrailers", "3' extension", 0),
                              checkboxInput("viewMode", label = "Genomic View", value = FALSE),
                              checkboxInput("useCustomRegions", label = "Use custom regions", value = FALSE)
-                             ),
                     ),
-        actionButton("go", "Plot"),
         ),
+        actionButton("go", "Plot"),
+      ),
       mainPanel(
         plotlyOutput(outputId = "c"),
         uiOutput("variableUi")
@@ -56,45 +56,29 @@ RiboCrypt_app <- function() {
   )
 
   server <- function(input, output, ...) {
-    # Initialize experiment list
-    experimentList <- reactive(list.experiments()$name)
-    # Initialize experiment selector
-    observeEvent(experimentList, {
+    # Loading selected experiment and related data
+    df <- reactive(read.experiment(input$dff))
+    cds <- reactive(loadRegion(df()))
+    libs <- reactive(bamVarName(df()))
+
+    # Gene selector
+    observeEvent(cds, {
       updateSelectizeInput(
-        inputId = "dff",
-        choices = experimentList(),
-        selected = experimentList()[1]
+        inputId = 'gene',
+        choices = names(cds()),
+        selected = names(cds())[1],
+        server = TRUE
       )
     })
-    # Initialize variables
-    df <- reactive(read.experiment(input$dff))
-    cds <- reactive({
-      dep <- df()
-      if (!is.null(dep)) {
-        loadRegion(dep)
-      } else { NULL }
-    })
-    libs <- reactive({
-      dep <- df()
-      if (!is.null(dep)) {
-        bamVarName(dep)
-      } else { NULL }
-    })
-    # Initialize remaining selectors
-    observeEvent(cds, {
-      updateSelectizeInput(inputId = 'gene',
-                           choices = names(cds()),
-                           selected = names(cds())[1],
-                           server = TRUE
-                           )
-    }, ignoreNULL = TRUE)
+
+    # Library selector
     observeEvent(libs, {
       updateSelectizeInput(
         inputId = "library",
         choices = libs(),
         selected = libs()[min(length(libs()), 9)]
-        )
-    }, ignoreNULL = TRUE)
+      )
+    })
 
     # Main plot
     mainPlotControls <- eventReactive(input$go, {
@@ -125,14 +109,8 @@ RiboCrypt_app <- function() {
                      frames_type = input$frames_type)
     })
     output$c <- renderPlotly({
-      isolate({
-        gc()
-        stopifnot(is(cds(), "GRangesList"))
-        stopifnot(is(libs(), "character"))
-        stopifnot(is(df(), "experiment"))
-        stopifnot(is(input$gene, "character"))
-        })
-      read_type <- ifelse(dir.exists(file.path(dirname(df$filepath[1]), "cov_RLE")), "cov", "pshifted")
+      read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE")),
+                          "cov", "pshifted")
       RiboCrypt::multiOmicsPlot_ORFikExp(display_range = mainPlotControls()$display_region,
                                            df = mainPlotControls()$dff,
                                            display_sequence = "nt",

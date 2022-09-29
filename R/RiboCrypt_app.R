@@ -1,5 +1,6 @@
 #' Create RiboCrypt app
 #' @import shiny
+#' @importFrom NGLVieweR renderNGLVieweR
 #' @return RiboCrypt shiny app
 #' @export
 RiboCrypt_app <- function() {

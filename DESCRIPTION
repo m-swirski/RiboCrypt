@@ -29,6 +29,7 @@ Imports:
   GenomicRanges,
   ggplot2,
   IRanges,
+  NGLVieweR,
   plotly,
   rlang,
   here,

@@ -58,15 +58,16 @@ RiboCrypt_app <- function() {
   server <- function(input, output, ...) {
     # Loading selected experiment and related data
     df <- reactive(read.experiment(input$dff))
-    cds <- reactive(loadRegion(df()))
+    tx <- reactive(loadRegion(df()))
+    cds <- reactive(loadRegion(df(), part = "cds"))
     libs <- reactive(bamVarName(df()))
 
     # Gene selector
-    observeEvent(cds(), {
+    observeEvent(tx(), {
       updateSelectizeInput(
         inputId = 'gene',
-        choices = names(cds()),
-        selected = names(cds())[1],
+        choices = names(tx()),
+        selected = names(tx())[1],
         server = TRUE
       )
     })
@@ -84,7 +85,7 @@ RiboCrypt_app <- function() {
     mainPlotControls <- eventReactive(input$go, {
       display_region <- {
         if (input$gene %in% c("", "NULL")) {
-          names(cds()[1])
+          names(tx()[1])
         } else { input$gene }
       }
       dff <- {
@@ -111,13 +112,14 @@ RiboCrypt_app <- function() {
     output$c <- renderPlotly({
       read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE")),
                           "cov", "pshifted")
+      message("Using type: ", read_type)
       RiboCrypt::multiOmicsPlot_ORFikExp(display_range = mainPlotControls()$display_region,
                                            df = mainPlotControls()$dff,
                                            display_sequence = "nt",
                                            reads = force(outputLibs(mainPlotControls()$dff, type = read_type, output.mode = "envirlist", naming = "full", BPPARAM = BiocParallel::SerialParam())),
                                            trailer_extension = mainPlotControls()$extendTrailers,
                                            leader_extension = mainPlotControls()$extendLeaders,
-                                           annotation = "cds",
+                                           annotation = cds(), # TODO; THIS IS WRONG; GIVES ERROR; FIX!
                                            viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
                                            kmers = mainPlotControls()$kmerLength,
                                            frames_type = mainPlotControls()$frames_type,

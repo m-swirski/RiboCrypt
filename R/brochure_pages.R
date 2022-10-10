@@ -23,34 +23,10 @@ browser_page <- function(nav_links) {
           sidebarPanel(
             tabsetPanel(id = "tabset",
                         tabPanel("Browser",
-                                 selectizeInput(
-                                   inputId = "dff",
-                                   label = "Select an experiment",
-                                   choices = list.experiments()$name,
-                                   selected = head(list.experiments()$name),
-                                   multiple = FALSE
-                                 ),
-                                 selectizeInput(
-                                   inputId = "gene",
-                                   choices = "",
-                                   selected = "",
-                                   label = "Select a gene",
-                                   multiple = FALSE
-                                 ),
-                                 selectizeInput(
-                                   inputId = "library",
-                                   label = "Select libraries",
-                                   choices = "",
-                                   selected = "",
-                                   multiple = TRUE
-                                 ),
-                                 selectizeInput(
-                                   inputId = "frames_type",
-                                   label = "Select frames display type",
-                                   choices = c("lines", "columns", "stacks", "area"),
-                                   selected = "lines",
-                                   multiple = FALSE
-                                 ),
+                                 experiment_input_select(list.experiments()$name),
+                                 gene_input_select(),
+                                 library_input_select(),
+                                 frame_type_select(),
                                  sliderInput("kmer", "K-mer length", min = 1, max = 20, value = 1)
                         ),
                         tabPanel("Navigate",
@@ -114,6 +90,15 @@ browser_page <- function(nav_links) {
             orfs_flt_grl <- GRanges(orfs_flt) %>% groupGRangesBy(.,.$names)
           } else { NULL }
         }
+        cds_display <- {
+          if (input$gene %in% c("", "NULL")) {
+            cds()[0]
+          } else {
+            if (input$gene %in% names(cds())) {
+              cds()[input$gene]
+            } else cds()[0]
+          }
+        }
         reactiveValues(dff = dff,
                        display_region = display_region,
                        customRegions = customRegions,
@@ -121,7 +106,8 @@ browser_page <- function(nav_links) {
                        extendLeaders = input$extendLeaders,
                        viewMode = input$viewMode,
                        kmerLength = input$kmer,
-                       frames_type = input$frames_type)
+                       frames_type = input$frames_type,
+                       cds_display = cds_display)
       })
       output$c <- renderPlotly({
         read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE")),
@@ -133,7 +119,7 @@ browser_page <- function(nav_links) {
                                            reads = force(outputLibs(mainPlotControls()$dff, type = read_type, output.mode = "envirlist", naming = "full", BPPARAM = BiocParallel::SerialParam())),
                                            trailer_extension = mainPlotControls()$extendTrailers,
                                            leader_extension = mainPlotControls()$extendLeaders,
-                                           annotation = cds(), # TODO; THIS IS WRONG; GIVES ERROR; FIX!
+                                           annotation = mainPlotControls()$cds_display, # TODO; THIS IS WRONG; GIVES ERROR; FIX!
                                            viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
                                            kmers = mainPlotControls()$kmerLength,
                                            frames_type = mainPlotControls()$frames_type,
@@ -192,35 +178,26 @@ heatmap_page <- function(nav_links) {
           sidebarPanel(
             tabsetPanel(id = "tabset",
                         tabPanel("heatmap",
+                                 experiment_input_select(list.experiments()$name),
+                                 gene_input_select(),
+                                 library_input_select(),
                                  selectizeInput(
-                                   inputId = "dff",
-                                   label = "Select an experiment",
-                                   choices = list.experiments()$name,
-                                   selected = head(list.experiments()$name),
+                                   inputId = "region",
+                                   label = "View region",
+                                   choices = c("Start codon", "Stop codon"),
+                                   selected = "Start codon",
                                    multiple = FALSE
                                  ),
                                  selectizeInput(
-                                   inputId = "gene",
-                                   choices = "",
-                                   selected = "",
-                                   label = "Select a gene",
+                                   inputId = "normalization",
+                                   label = "Normalization",
+                                   choices = c("transcriptNormalized", "zscore", "sum", "log10sum"),
+                                   selected = "transcriptNormalized",
                                    multiple = FALSE
                                  ),
-                                 selectizeInput(
-                                   inputId = "library",
-                                   label = "Select libraries",
-                                   choices = "",
-                                   selected = "",
-                                   multiple = TRUE
-                                 ),
-                                 selectizeInput(
-                                   inputId = "frames_type",
-                                   label = "Select frames display type",
-                                   choices = c("lines", "columns", "stacks", "area"),
-                                   selected = "lines",
-                                   multiple = FALSE
-                                 ),
-                                 sliderInput("kmer", "K-mer length", min = 1, max = 20, value = 1)
+                                 numericInput("readlength_min", "Min Readlength", 26),
+                                 numericInput("readlength_max", "Max Readlength", 34)
+
                         ),
                         tabPanel("Navigate",
                                  numericInput("extendLeaders", "5' extension", 30),
@@ -241,16 +218,17 @@ heatmap_page <- function(nav_links) {
     server <- function(input, output, ...) {
       # Loading selected experiment and related data
       df <- reactive(read.experiment(input$dff))
-      tx <- reactive(loadRegion(df(), part = "mrna"))
-      cds <- reactive(loadRegion(df(), part = "cds"))
+      valid_genes_subset <- reactive(filterTranscripts(df()))
+      tx <- reactive(loadRegion(df(), part = "mrna", names.keep = valid_genes_subset()))
+      cds <- reactive(loadRegion(df(), part = "cds", names.keep = valid_genes_subset()))
       libs <- reactive(bamVarName(df()))
 
       # Gene selector
       observeEvent(tx(), {
         updateSelectizeInput(
           inputId = 'gene',
-          choices = names(tx()),
-          selected = names(tx())[1],
+          choices = c("all", names(tx())),
+          selected = "all",
           server = TRUE
         )
       })
@@ -268,7 +246,7 @@ heatmap_page <- function(nav_links) {
       mainPlotControls <- eventReactive(input$go, {
         display_region <- {
           if (input$gene %in% c("", "NULL")) {
-            names(tx()[1])
+            "all"
           } else { input$gene }
         }
         dff <- {
@@ -284,17 +262,15 @@ heatmap_page <- function(nav_links) {
           } else { NULL }
         }
         cds_display <- {
-          print("TX")
-          print(names(tx()[1]))
-          print("CDS")
-          print(names(cds()[1]))
           if (input$gene %in% c("", "NULL")) {
-            GRangesList()
+            cds()[0]
           } else {
-            if (input$gene %in% names(cds())) {
+            if ("all" %in% input$gene) {
+              cds()
+            } else if (input$gene %in% names(cds())) {
               cds()[input$gene]
-            } else GRangesList()
-            }
+            } else cds()[0]
+          }
         }
         reactiveValues(dff = dff,
                        display_region = display_region,
@@ -302,28 +278,41 @@ heatmap_page <- function(nav_links) {
                        extendTrailers = input$extendTrailers,
                        extendLeaders = input$extendLeaders,
                        viewMode = input$viewMode,
-                       kmerLength = input$kmer,
-                       frames_type = input$frames_type,
-                       cds_display = cds_display)
+                       cds_display = cds_display,
+                       region = input$region,
+                       readlength_min = input$readlength_min,
+                       readlength_max = input$readlength_max,
+                       normalization = input$normalization)
       })
       output$c <- renderPlotly({
-        read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE")),
-                            "cov", "pshifted")
-        message("Using type: ", read_type)
+        message("-- Plot region: ", mainPlotControls()$region)
+        # read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE")),
+        #                     "cov", "pshifted")
+        read_type <- "pshifted"
+        message("-- Using type: ", ifelse(read_type == "pshifted", "ofst", "cov"))
+
         if (length(mainPlotControls()$cds_display) > 0) {
           print("This is a mRNA")
           force(outputLibs(mainPlotControls()$dff, type = read_type, output.mode = "envir", naming = "full", BPPARAM = BiocParallel::SerialParam()))
-
-          dt <- coveragePerTiling(startRegion(mainPlotControls()$cds_display, mainPlotControls()$cds_display, is.sorted = TRUE,
-                                              upstream = mainPlotControls()$extendLeaders,
-                                              downstream = mainPlotControls()$extendTrailers),
-                                  reads = get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff)),
-                                  fraction = 28, as.data.table = TRUE)
+          # Pick start or stop region
+          if (mainPlotControls()$region == "Start codon") {
+            region <- groupGRangesBy(startSites(mainPlotControls()$cds_display, TRUE, TRUE, TRUE))
+          } else {
+            region <- groupGRangesBy(stopSites(mainPlotControls()$cds_display, TRUE, TRUE, TRUE))
+          }
+          class(region)
+          print(get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff)))
+          dt <- windowPerReadLength(region, tx()[names(region)],
+                                    reads = get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff)),
+                                    pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
+                                    downstream = mainPlotControls()$extendTrailers - 1,
+                                    scoring = mainPlotControls()$normalization,
+                                    acceptedLengths = seq(mainPlotControls()$readlength_min, mainPlotControls()$readlength_max),
+                                    drop.zero.dt = TRUE, append.zeroes = TRUE)
+          print(dt)
           print("Coverage calculated")
-          dt <- coverageScorings(dt, scoring = "transcriptNormalized")
-          print("Coverage scoring done")
-          print(class(coverageHeatMap(dt, scoring = "transcriptNormalized")))
-          return(subplot(list(coverageHeatMap(dt, scoring = "transcriptNormalized"))))
+          return(subplot(list(coverageHeatMap(dt, scoring = mainPlotControls()$normalization,
+                                              legendPos = "bottom"))))
         } else {
           print("This is not a mRNA")
           return(NULL)

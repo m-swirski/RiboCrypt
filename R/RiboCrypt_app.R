@@ -9,34 +9,10 @@ RiboCrypt_app <- function() {
       sidebarPanel(
         tabsetPanel(id = "tabset",
                     tabPanel("Browser",
-                             selectizeInput(
-                               inputId = "dff",
-                               label = "Select an experiment",
-                               choices = list.experiments()$name,
-                               selected = head(list.experiments()$name),
-                               multiple = FALSE
-                             ),
-                             selectizeInput(
-                               inputId = "gene",
-                               choices = "",
-                               selected = "",
-                               label = "Select a gene",
-                               multiple = FALSE
-                             ),
-                             selectizeInput(
-                               inputId = "library",
-                               label = "Select libraries",
-                               choices = "",
-                               selected = "",
-                               multiple = TRUE
-                             ),
-                             selectizeInput(
-                               inputId = "frames_type",
-                               label = "Select frames display type",
-                               choices = c("lines", "columns", "stacks", "area"),
-                               selected = "lines",
-                               multiple = FALSE
-                             ),
+                             experiment_input_select(list.experiments()$name),
+                             gene_input_select(),
+                             library_input_select(),
+                             frame_type_select(),
                              sliderInput("kmer", "K-mer length", min = 1, max = 20, value = 1)
                     ),
                     tabPanel("Navigate",

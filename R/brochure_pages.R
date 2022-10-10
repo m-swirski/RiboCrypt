@@ -13,7 +13,7 @@ landing_page <- function(nav_links) {
   )
 }
 
-browser_page <- function(nav_links) {
+browser_page <- function(nav_links, validate.experiments = TRUE) {
   page(
     href = "/browser",
     ui = function(request) {
@@ -23,7 +23,7 @@ browser_page <- function(nav_links) {
           sidebarPanel(
             tabsetPanel(id = "tabset",
                         tabPanel("Browser",
-                                 experiment_input_select(list.experiments()$name),
+                                 experiment_input_select(list.experiments(validate = validate.experiments)$name),
                                  gene_input_select(),
                                  library_input_select(),
                                  frame_type_select(),
@@ -168,7 +168,7 @@ browser_page <- function(nav_links) {
   )
 }
 
-heatmap_page <- function(nav_links) {
+heatmap_page <- function(nav_links, validate.experiments = TRUE) {
   page(
     href = "/heatmap",
     ui = function(request) {
@@ -178,7 +178,7 @@ heatmap_page <- function(nav_links) {
           sidebarPanel(
             tabsetPanel(id = "tabset",
                         tabPanel("heatmap",
-                                 experiment_input_select(list.experiments()$name),
+                                 experiment_input_select(list.experiments(validate = validate.experiments)$name),
                                  gene_input_select(),
                                  library_input_select(),
                                  selectizeInput(

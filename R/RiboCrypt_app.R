@@ -1,15 +1,18 @@
 #' Create RiboCrypt app
+#'
+#' @param validate.experiments logical, default TRUE. Check integrity of all experiments
+#' before you start, set to FALSE if you do not care of this to be TRUE.
 #' @import shiny
 #' @importFrom NGLVieweR renderNGLVieweR
 #' @return RiboCrypt shiny app
 #' @export
-RiboCrypt_app <- function() {
+RiboCrypt_app <- function(validate.experiments = TRUE) {
   ui <- fluidPage(
     sidebarLayout(
       sidebarPanel(
         tabsetPanel(id = "tabset",
                     tabPanel("Browser",
-                             experiment_input_select(list.experiments()$name),
+                             experiment_input_select(list.experiments(validate = validate.experiments)$name),
                              gene_input_select(),
                              library_input_select(),
                              frame_type_select(),

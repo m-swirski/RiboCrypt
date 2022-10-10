@@ -6,7 +6,7 @@
 #'
 
 
-RiboCrypt_app_brochure <- function() {
+RiboCrypt_app_brochure <- function(validate.experiments = TRUE) {
   nav_links <- tags$ul(
     tags$li(
       tags$a(href = "/", "home"),
@@ -19,14 +19,14 @@ RiboCrypt_app_brochure <- function() {
     )
   )
   brochureApp(
-    if(!requireNamespace("brochure")) stop("devtools::install_github('ColinFey/brochure'"),
+    if(!requireNamespace("brochure")) stop("devtools::install_github('ColinFay/brochure')"),
     ## Pages
     # Main menu
     landing_page(nav_links),
     # Genome / Transcriptome browser
-    browser_page(nav_links),
+    browser_page(nav_links, validate.experiments),
     # Heatmap browser
-    heatmap_page(nav_links)
+    heatmap_page(nav_links, validate.experiments)
   )
 }
 

@@ -4,7 +4,7 @@
 \alias{RiboCrypt_app_brochure}
 \title{Create RiboCrypt app}
 \usage{
-RiboCrypt_app_brochure()
+RiboCrypt_app_brochure(validate.experiments = TRUE)
 }
 \value{
 RiboCrypt shiny app

@@ -4,7 +4,11 @@
 \alias{RiboCrypt_app}
 \title{Create RiboCrypt app}
 \usage{
-RiboCrypt_app()
+RiboCrypt_app(validate.experiments = TRUE)
+}
+\arguments{
+\item{validate.experiments}{logical, default TRUE. Check integrity of all experiments
+before you start, set to FALSE if you do not care of this to be TRUE.}
 }
 \value{
 RiboCrypt shiny app

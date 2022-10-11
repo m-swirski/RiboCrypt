@@ -218,6 +218,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
     server <- function(input, output, ...) {
       # Loading selected experiment and related data
       df <- reactive(read.experiment(input$dff))
+      # TODO: make sure to update valid genes, when 5' and 3' extension is updated!
       valid_genes_subset <- reactive(filterTranscripts(df()))
       tx <- reactive(loadRegion(df(), part = "mrna", names.keep = valid_genes_subset()))
       cds <- reactive(loadRegion(df(), part = "cds", names.keep = valid_genes_subset()))

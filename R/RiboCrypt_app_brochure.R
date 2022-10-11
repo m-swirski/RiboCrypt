@@ -7,6 +7,11 @@
 
 
 RiboCrypt_app_brochure <- function(validate.experiments = TRUE) {
+  if(!requireNamespace("brochure")) {
+    message("To run the brochure app, please install brochure using: ")
+    stop("devtools::install_github('ColinFay/brochure')")
+  } else library(brochure)
+
   nav_links <- tags$ul(
     tags$li(
       tags$a(href = "/", "home"),
@@ -19,7 +24,6 @@ RiboCrypt_app_brochure <- function(validate.experiments = TRUE) {
     )
   )
   brochureApp(
-    if(!requireNamespace("brochure")) stop("devtools::install_github('ColinFay/brochure')"),
     ## Pages
     # Main menu
     landing_page(nav_links),

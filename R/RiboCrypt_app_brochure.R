@@ -1,11 +1,12 @@
 #' Create RiboCrypt app
+#' @param validate.experiments logical, default TRUE, set to FALSE
+#' to allow starting the app with malformed experiments, be careful
+#' will crash if you try to load that experiment!
 #' @import shiny
 #' @importFrom NGLVieweR renderNGLVieweR
 #' @return RiboCrypt shiny app
 #' @export
 #'
-
-
 RiboCrypt_app_brochure <- function(validate.experiments = TRUE) {
   if(!requireNamespace("brochure")) {
     message("To run the brochure app, please install brochure using: ")

@@ -201,9 +201,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
                         ),
                         tabPanel("Navigate",
                                  numericInput("extendLeaders", "5' extension", 30),
-                                 numericInput("extendTrailers", "3' extension", 30),
-                                 checkboxInput("viewMode", label = "Genomic View", value = FALSE),
-                                 checkboxInput("useCustomRegions", label = "Use custom regions", value = FALSE)
+                                 numericInput("extendTrailers", "3' extension", 30)
                         ),
             ),
             actionButton("go", "Plot"),
@@ -256,12 +254,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
           } else { input$library }
           df()[which(libs() %in% libs_to_pick),]
         }
-        customRegions <- {
-          if(isTRUE(input$useCustomRegions)) {
-            orfs_flt <- fread("~/custom_regions.csv")
-            orfs_flt_grl <- GRanges(orfs_flt) %>% groupGRangesBy(.,.$names)
-          } else { NULL }
-        }
+
         cds_display <- {
           if (input$gene %in% c("", "NULL")) {
             cds()[0]
@@ -275,7 +268,6 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
         }
         reactiveValues(dff = dff,
                        display_region = display_region,
-                       customRegions = customRegions,
                        extendTrailers = input$extendTrailers,
                        extendLeaders = input$extendLeaders,
                        viewMode = input$viewMode,
@@ -287,14 +279,14 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
       })
       output$c <- renderPlotly({
         message("-- Plot region: ", mainPlotControls()$region)
-        # read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE")),
-        #                     "cov", "pshifted")
-        read_type <- "pshifted"
-        message("-- Using type: ", ifelse(read_type == "pshifted", "ofst", "cov"))
+        read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE_List")),
+                            "covl", "pshifted")
+        message("-- Using type: ", ifelse(read_type == "pshifted", "ofst", "covl"))
 
         if (length(mainPlotControls()$cds_display) > 0) {
           print("This is a mRNA")
           force(outputLibs(mainPlotControls()$dff, type = read_type, output.mode = "envir", naming = "full", BPPARAM = BiocParallel::SerialParam()))
+          message("-- Data loading complete")
           # Pick start or stop region
           if (mainPlotControls()$region == "Start codon") {
             region <- groupGRangesBy(startSites(mainPlotControls()$cds_display, TRUE, TRUE, TRUE))
@@ -302,7 +294,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
             region <- groupGRangesBy(stopSites(mainPlotControls()$cds_display, TRUE, TRUE, TRUE))
           }
           class(region)
-          print(get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff)))
+          print(class(get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff))))
           dt <- windowPerReadLength(region, tx()[names(region)],
                                     reads = get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff)),
                                     pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
@@ -310,7 +302,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
                                     scoring = mainPlotControls()$normalization,
                                     acceptedLengths = seq(mainPlotControls()$readlength_min, mainPlotControls()$readlength_max),
                                     drop.zero.dt = TRUE, append.zeroes = TRUE)
-          print(dt)
+          print(paste("Number of rows in dt:", nrow(dt)))
           print("Coverage calculated")
           return(subplot(list(coverageHeatMap(dt, scoring = mainPlotControls()$normalization,
                                               legendPos = "bottom"))))
@@ -318,45 +310,6 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
           print("This is not a mRNA")
           return(NULL)
         }
-      })
-
-      # Setup variables needed for structure viewer
-      selectedRegion <- reactiveVal(NULL)
-      dynamicVisible <- reactiveVal(FALSE)
-      # When user clicks on region
-      # start displaying structure viewer
-      # and set selected structure to one which was clicked
-      observeEvent(input$selectedRegion, {
-        if (!is.null(input$selectedRegion) && !is.null(mainPlotControls()$customRegions)) {
-          selectedRegion(input$selectedRegion)
-          dynamicVisible(TRUE)
-        } else {
-          selectedRegion(NULL)
-          dynamicVisible(FALSE)
-        }
-      })
-      # When user clicks close button
-      # stop displaying structure viewer
-      # and set selected structure to NULL
-      observeEvent(input$dynamicClose, {
-        selectedRegion(NULL)
-        dynamicVisible(FALSE)
-      })
-      # NGL viewer widget
-      output$dynamic <- renderNGLVieweR({
-        paste("~", "sequences", selectedRegion(), "ranked_0.pdb", sep = "/") %>%
-          NGLVieweR() %>%
-          stageParameters(backgroundColor = "white") %>%
-          addRepresentation("cartoon")
-      })
-      # Variable UI logic
-      output$variableUi <- renderUI({
-        if (dynamicVisible()) {
-          fluidRow(
-            actionButton("dynamicClose", "Close"),
-            NGLVieweROutput("dynamic")
-          )
-        } else {}
       })
     }
   )

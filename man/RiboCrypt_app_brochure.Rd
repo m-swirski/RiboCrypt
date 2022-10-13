@@ -6,6 +6,11 @@
 \usage{
 RiboCrypt_app_brochure(validate.experiments = TRUE)
 }
+\arguments{
+\item{validate.experiments}{logical, default TRUE, set to FALSE
+to allow starting the app with malformed experiments, be careful
+will crash if you try to load that experiment!}
+}
 \value{
 RiboCrypt shiny app
 }

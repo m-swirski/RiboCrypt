@@ -24,14 +24,16 @@ RiboCrypt_app_brochure <- function(validate.experiments = TRUE) {
       tags$a(href = "/heatmap", "heatmap"),
     )
   )
+  envirs <- c(browser_env = new.env(), heatmap_env = new.env())
+
   brochureApp(
     ## Pages
     # Main menu
     landing_page(nav_links),
     # Genome / Transcriptome browser
-    browser_page(nav_links, validate.experiments),
+    browser_page(nav_links, validate.experiments, envirs[["browser_env"]]),
     # Heatmap browser
-    heatmap_page(nav_links, validate.experiments)
+    heatmap_page(nav_links, validate.experiments, envirs[["heatmap_env"]])
   )
 }
 

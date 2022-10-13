@@ -13,7 +13,8 @@ landing_page <- function(nav_links) {
   )
 }
 
-browser_page <- function(nav_links, validate.experiments = TRUE) {
+browser_page <- function(nav_links, validate.experiments = TRUE,
+                         envir = .GlobalEnv) {
   page(
     href = "/browser",
     ui = function(request) {
@@ -47,7 +48,7 @@ browser_page <- function(nav_links, validate.experiments = TRUE) {
     },
     server <- function(input, output, ...) {
       # Loading selected experiment and related data
-      df <- reactive(read.experiment(input$dff))
+      df <- reactive(read.experiment(input$dff, output.env = envir))
       tx <- reactive(loadRegion(df()))
       cds <- reactive(loadRegion(df(), part = "cds"))
       libs <- reactive(bamVarName(df()))
@@ -113,7 +114,8 @@ browser_page <- function(nav_links, validate.experiments = TRUE) {
         read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE")),
                             "cov", "pshifted")
         message("Using type: ", read_type)
-        RiboCrypt::multiOmicsPlot_ORFikExp(display_range = mainPlotControls()$display_region,
+        time_before <- Sys.time()
+        a <- RiboCrypt::multiOmicsPlot_ORFikExp(display_range = mainPlotControls()$display_region,
                                            df = mainPlotControls()$dff,
                                            display_sequence = "nt",
                                            reads = force(outputLibs(mainPlotControls()$dff, type = read_type, output.mode = "envirlist", naming = "full", BPPARAM = BiocParallel::SerialParam())),
@@ -124,6 +126,8 @@ browser_page <- function(nav_links, validate.experiments = TRUE) {
                                            kmers = mainPlotControls()$kmerLength,
                                            frames_type = mainPlotControls()$frames_type,
                                            custom_regions = mainPlotControls()$customRegions)
+        cat("lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
+        return(a)
       })
 
       # Setup variables needed for structure viewer
@@ -168,7 +172,8 @@ browser_page <- function(nav_links, validate.experiments = TRUE) {
   )
 }
 
-heatmap_page <- function(nav_links, validate.experiments = TRUE) {
+heatmap_page <- function(nav_links, validate.experiments = TRUE,
+                         envir = .GlobalEnv) {
   page(
     href = "/heatmap",
     ui = function(request) {
@@ -215,7 +220,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
     },
     server <- function(input, output, ...) {
       # Loading selected experiment and related data
-      df <- reactive(read.experiment(input$dff))
+      df <- reactive(read.experiment(input$dff, output.env = envir))
       # TODO: make sure to update valid genes, when 5' and 3' extension is updated!
       valid_genes_subset <- reactive(filterTranscripts(df()))
       tx <- reactive(loadRegion(df(), part = "mrna", names.keep = valid_genes_subset()))
@@ -241,7 +246,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
         )
       })
 
-      # Main plot
+      # Main plot, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go, {
         display_region <- {
           if (input$gene %in% c("", "NULL")) {
@@ -282,10 +287,13 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
         read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE_List")),
                             "covl", "pshifted")
         message("-- Using type: ", ifelse(read_type == "pshifted", "ofst", "covl"))
-
+        message("Environment: ")
+        print(envExp(mainPlotControls()$dff))
         if (length(mainPlotControls()$cds_display) > 0) {
           print("This is a mRNA")
+          time_before <- Sys.time()
           force(outputLibs(mainPlotControls()$dff, type = read_type, output.mode = "envir", naming = "full", BPPARAM = BiocParallel::SerialParam()))
+          cat("Library loading: "); print(round(Sys.time() - time_before, 2))
           message("-- Data loading complete")
           # Pick start or stop region
           if (mainPlotControls()$region == "Start codon") {
@@ -295,6 +303,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
           }
           class(region)
           print(class(get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff))))
+          time_before <- Sys.time()
           dt <- windowPerReadLength(region, tx()[names(region)],
                                     reads = get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff)),
                                     pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
@@ -303,7 +312,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE) {
                                     acceptedLengths = seq(mainPlotControls()$readlength_min, mainPlotControls()$readlength_max),
                                     drop.zero.dt = TRUE, append.zeroes = TRUE)
           print(paste("Number of rows in dt:", nrow(dt)))
-          print("Coverage calculated")
+          cat("Coverage calc: "); print(round(Sys.time() - time_before, 2))
           return(subplot(list(coverageHeatMap(dt, scoring = mainPlotControls()$normalization,
                                               legendPos = "bottom"))))
         } else {

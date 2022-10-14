@@ -13,7 +13,6 @@ getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
     footprints$frame <- as.factor(footprints$frame)
   } else{
     extended_range <- grl %>% extendLeaders(kmers * 3) %>% extendTrailers(kmers * 3)
-    if (is())
     footprints <- coveragePerTiling(extended_range,
                                     if(not_coverage) {
                                       subsetByOverlaps(footprints, grl)}

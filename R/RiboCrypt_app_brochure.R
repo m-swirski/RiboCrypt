@@ -22,6 +22,9 @@ RiboCrypt_app_brochure <- function(validate.experiments = TRUE) {
     ),
     tags$li(
       tags$a(href = "/heatmap", "heatmap"),
+    ),
+    tags$li(
+      tags$a(href = "/metadata", "metadata"),
     )
   )
   envirs <- c(browser_env = new.env(), heatmap_env = new.env())
@@ -33,7 +36,9 @@ RiboCrypt_app_brochure <- function(validate.experiments = TRUE) {
     # Genome / Transcriptome browser
     browser_page(nav_links, validate.experiments, envirs[["browser_env"]]),
     # Heatmap browser
-    heatmap_page(nav_links, validate.experiments, envirs[["heatmap_env"]])
+    heatmap_page(nav_links, validate.experiments, envirs[["heatmap_env"]]),
+    #metadata download and display
+    metadata_page(nav_links)
   )
 }
 

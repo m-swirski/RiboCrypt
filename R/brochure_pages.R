@@ -329,3 +329,40 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE,
 #                                     downstream = 5), reads = get(bamVarName(df, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(df)), fraction = 28, as.data.table = TRUE)
 # dt <- coverageScorings(dt, scoring = "transcriptNormalized")
 # ORFik:::coverageHeatMap(dt)
+
+metadata_page <- function(nav_links) {
+  page(
+    href = "/metadata",
+    ui <- function(request) {
+      fluidPage(
+        nav_links,
+        titlePanel("Metadata search page"),
+        sidebarLayout(
+          sidebarPanel(
+            textInput("accession", "Study accession number (SRP/GEO/PRJNA)")
+            ,
+            actionButton("go", "Plot"),
+          ),
+          mainPanel(
+            textOutput("abstract"),
+            dataTableOutput("metadata")
+          )
+        )
+      )
+    },
+    server <- function(input, output, session) {
+      md <- eventReactive(input$go,{
+        abstract <- capture.output({
+          meta_dt <- download.SRA.metadata(input$accession)
+        })
+        reactiveValues(abstract = abstract,
+                       meta_dt = meta_dt)
+      })
+      output$abstract <- renderText(md()$abstract)
+      output$metadata <- renderDataTable(md()$meta_dt)
+
+    }
+
+  )
+}
+

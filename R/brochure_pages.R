@@ -1,4 +1,4 @@
-landing_page <- function(nav_links) {
+start_page <- function(nav_links) {
   page(
     href = "/",
     ui = function(request) {
@@ -8,7 +8,26 @@ landing_page <- function(nav_links) {
       )
     },
     server = function(input, output, session) {
+      # observe({
+      #   print(reactiveValuesToList(session$clientData)$url_pathname)
+      # })
+    }
+  )
+}
 
+landing_page <- function(nav_links) {
+  page(
+    href = nav_links$rel_paths["home"],
+    ui = function(request) {
+      fluidPage(
+        h1("Welcome to RiboCrypt!"),
+        nav_links
+      )
+    },
+    server = function(input, output, session) {
+      # observe({
+      #   print(reactiveValuesToList(session$clientData)$url_pathname)
+      # })
     }
   )
 }
@@ -16,7 +35,7 @@ landing_page <- function(nav_links) {
 browser_page <- function(nav_links, validate.experiments = TRUE,
                          envir = .GlobalEnv) {
   page(
-    href = "/browser",
+    href = nav_links$rel_paths["browser"],
     ui = function(request) {
       fluidPage(
         nav_links,
@@ -175,7 +194,7 @@ browser_page <- function(nav_links, validate.experiments = TRUE,
 heatmap_page <- function(nav_links, validate.experiments = TRUE,
                          envir = .GlobalEnv) {
   page(
-    href = "/heatmap",
+    href = nav_links$rel_paths["heatmap"],
     ui = function(request) {
       fluidPage(
         nav_links,
@@ -332,7 +351,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE,
 
 metadata_page <- function(nav_links) {
   page(
-    href = "/metadata",
+    href = nav_links$rel_paths["metadata"],
     ui <- function(request) {
       fluidPage(
         nav_links,

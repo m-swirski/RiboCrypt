@@ -1,23 +1,8 @@
-start_page <- function(nav_links) {
-  page(
-    href = "/",
-    ui = function(request) {
-      fluidPage(
-        h1("Welcome to RiboCrypt!"),
-        nav_links
-      )
-    },
-    server = function(input, output, session) {
-      # observe({
-      #   print(reactiveValuesToList(session$clientData)$url_pathname)
-      # })
-    }
-  )
-}
+
 
 landing_page <- function(nav_links) {
   page(
-    href = nav_links$rel_paths["home"],
+    href = "/",
     ui = function(request) {
       fluidPage(
         h1("Welcome to RiboCrypt!"),

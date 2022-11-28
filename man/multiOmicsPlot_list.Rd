@@ -11,6 +11,8 @@ multiOmicsPlot_list(
   reads,
   viewMode = c("tx", "genomic")[1],
   custom_regions = NULL,
+  leader_extension = 0,
+  trailer_extension = 0,
   withFrames = NULL,
   frames_type = "lines",
   colors = NULL,
@@ -31,7 +33,6 @@ multiOmicsPlot_list(
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
-  AA_code = Biostrings::GENETIC_CODE,
   BPPARAM = bpparam()
 )
 }
@@ -103,15 +104,15 @@ If TRUE or "both", display nucleotide and aa sequence in plot.}
 
 \item{custom_motif}{character vector, default NULL.}
 
-\item{AA_code}{Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
-See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
-\code{Biostrings::getGeneticCode("11")}}
-
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
 To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
 You can also add a time remaining bar, for a more detailed pipeline.}
 
 \item{proportions}{numeric, default NULL. Width of plot.}
+
+\item{AA_code}{Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
+See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
+\code{Biostrings::getGeneticCode("11")}}
 }
 \value{
 the plot object

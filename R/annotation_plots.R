@@ -28,7 +28,7 @@ createSeqPanel <- function(sequence, start_codons = "ATG", stop_codons = c("TAA"
     geom_rect(aes(ymin = -1, ymax = 0, xmin = 1, xmax = length(sequence), frame = frame), fill = "#619CFF") +
     ylab("frame") +
     xlab("position [nt]") +
-    theme(plot.margin = unit(c(0,0,0,0), "pt")) +
+    theme(plot.margin = unit(c(0,0,0,0), "pt"), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
     scale_y_continuous(breaks = c(-0.5,0.5, 1.5), labels = c("2","1", "0"), expand = c(0,0)) + scale_x_continuous(expand = c(0,0))
   if (length(starts_0) > 0) fig <- fig + geom_segment(aes(y = 1 , yend = 2, x = starts_0, xend = starts_0), frame = frame, col = "white")
   if (length(stops_0) > 0) fig <- fig + geom_segment(aes(y = 1, yend = 2, x = stops_0, xend = stops_0), frame = frame)
@@ -104,6 +104,16 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   }
   overlaps <- subsetByOverlaps(annotation, display_range,
                                type = ifelse(viewMode == "tx", "within", "any"))
+  # Default theme
+  base_gg <- ggplot() + ylab("") + xlab("") +
+    theme(axis.title.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          plot.margin = unit(c(0,0,0,0), "pt")) +
+    scale_x_continuous(expand = c(0,0)) +
+    scale_y_continuous(expand = c(0,0))
 
   if (length(overlaps) > 0) {
 
@@ -152,37 +162,19 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   names(lines_locations) <- rep("black", length(lines_locations))
   names(lines_locations)[custom_region_names] <- "orange4"
   suppressWarnings({
-    result_plot <- ggplot() +
+    result_plot <- base_gg +
       geom_rect(mapping=aes(ymin=0 - layers, ymax = 1 - layers, xmin=start(rect_locations),
                             xmax = end(rect_locations), frame = frame),
                 fill = cols, alpha = 0.5) +
-      ylab("") +
-      xlab("") +
-      theme(axis.title.x = element_blank(),
-            axis.ticks.x = element_blank(),
-            axis.text.x = element_blank(),
-            # axis.text.y = element_blank(),
-            axis.ticks.y = element_blank()) +
-      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-      scale_x_continuous(expand = c(0,0)) +
-      scale_y_continuous(expand = c(0,0)) +
-      geom_text(mapping = aes(y = 0.5 - layers, frame = frame, x = labels_locations, label = gene_names), color = "black", hjust = hjusts)
+      geom_text(mapping = aes(y = 0.5 - layers, frame = frame, x = labels_locations,
+                              label = gene_names), color = "black", hjust = hjusts)
   })
   } else {
     locations <- pmapToTranscriptF(display_range %>% IRangesList(),display_range)
     locations <- unlist(locations)
-    result_plot <- ggplot() +
-      geom_rect(mapping=aes(ymin=0,ymax=1,xmin=start(locations), xmax = end(locations)),fill = "white", alpha = 0.5) +
-      ylab("") +
-      xlab("") +
-      theme(axis.title.x = element_blank(),
-            axis.ticks.x = element_blank(),
-            axis.text.x = element_blank(),
-            axis.text.y = element_blank(),
-            axis.ticks.y = element_blank()) +
-      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-      scale_x_continuous(expand = c(0,0)) +
-      scale_y_continuous(expand = c(0,0))
+    result_plot <- base_gg +
+      geom_rect(mapping=aes(ymin=0,ymax=1,xmin=start(locations), xmax = end(locations)),
+                fill = "white", alpha = 0.5)
     lines_locations <- NULL
   }
 

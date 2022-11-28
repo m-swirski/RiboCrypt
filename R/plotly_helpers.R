@@ -14,7 +14,7 @@ automateTicksLetters <- function(plot) {
 
 
 automateTicksGMP <- function(plot) {
-  plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>%
+  plot %>% ggplotly(dynamicTicks = TRUE, tooltip = "gene_names") %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>%
     style(hoverinfo = "text")
 }
 #'

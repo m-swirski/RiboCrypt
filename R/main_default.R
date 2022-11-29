@@ -15,6 +15,8 @@
 #' @param custom_regions a GRangesList or NULL, default: NULL.
 #'  The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
 #'  a different color.
+#' @param leader_extension integer, default 0. (How much to extend view upstream)
+#' @param trailer_extension integer, default 0. (How much to extend view downstream)
 #' @param withFrames a logical vector, default NULL. Alternative: a length 1 or same length as list length of "reads" argument.
 #' @param frames_type character, default "lines". Alternative:\cr
 #' - columns \cr
@@ -43,8 +45,8 @@
 #' @param AA_code Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
 #' See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
 #' \code{Biostrings::getGeneticCode("11")}
-#' @param BPPARAM how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
-#'  To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
+#' @param BPPARAM how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
+#'  To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.
 #'  You can also add a time remaining bar, for a more detailed pipeline.
 #' @inheritParams createSeqPanel
 #' @return the plot object
@@ -53,14 +55,14 @@
 #' @importFrom Biostrings GENETIC_CODE
 #' @export
 #' @examples
-#' library(ORFik)
-#' df <- ORFik.template.experiment()[3,] #Use third library in experiment only
-#' if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
-#'   cds <- loadRegion(df, "cds")
-#'   multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
-#'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
-#'                         frames_type = "columns")
-#' }
+#' library(RiboCrypt)
+#' df <- ORFik.template.experiment()[9:10,]
+#' cds <- loadRegion(df, "cds")
+#' mrna <- loadRegion(df, "mrna")
+#' multiOmicsPlot_list(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
+#'                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
+#'                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+#'                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
 multiOmicsPlot_list <- function(display_range, annotation = display_range, reference_sequence,
                                 reads, viewMode = c("tx", "genomic")[1], custom_regions = NULL,
                                 leader_extension = 0, trailer_extension = 0,
@@ -76,7 +78,7 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                 annotation_names = NULL,
                                 start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                 custom_motif = NULL,
-                                BPPARAM = bpparam()) {
+                                BPPARAM = BiocParallel::SerialParam()) {
 
   multiOmicsPlot_internal(display_range, df = NULL, annotation,reference_sequence,
     reads,
@@ -103,76 +105,44 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
 #' @return the plot object
 #' @export
 #' @examples
-#' library(ORFik)
-#' df <- ORFik.template.experiment()[3,] #Use third library in experiment only
-#' if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
-#'   cds <- loadRegion(df, "cds")
-#'   multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
-#'                         reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
-#'                         frames_type = "columns")
-#' }
+#' library(RiboCrypt)
+#' df <- ORFik.template.experiment()[9:10,]
+#' cds <- loadRegion(df, "cds")
+#' mrna <- loadRegion(df, "mrna")
+#' multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
+#'                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
+#'                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+#'                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
 multiOmicsPlot_animate <- function(display_range, annotation = display_range, reference_sequence,
-                                   reads, withFrames = NULL, colors = NULL,
+                                   reads, viewMode = c("tx", "genomic")[1], custom_regions = NULL,
+                                   leader_extension = 0, trailer_extension = 0,
+                                   withFrames = NULL,
+                                   frames_type = "lines", colors = NULL,
                                    kmers = NULL, kmers_type = c("mean", "sum")[1],
-                                   ylabels = NULL, proportions = NULL,
-                                   width = NULL, height = NULL,plot_name = "default",
-                                   plot_title = NULL, display_sequence = FALSE, annotation_names = NULL,
+                                   ylabels = NULL, lib_to_annotation_proportions = c(0.8,0.2),
+                                   lib_proportions = NULL, annotation_proportions = NULL,
+                                   width = NULL, height = NULL, plot_name = "default",
+                                   plot_title = NULL,
+                                   display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 100,
+                                   aa_letter_code = c("one_letter", "three_letters")[1],
+                                   annotation_names = NULL,
                                    start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                   custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
-                                   BPPARAM = bpparam()) {
-  seqlevels(display_range) <- seqlevels(annotation)
-  display_range <- GRangesList(display_range)
-
-
-  # if (is(annotation, "GRangesList")) annotation <- unlist(annotation)
-  if (!is.null(annotation_names)) {
-    if (length(annotation_names) == 1){
-      if (annotation_names %in% annotation) {
-        names(annotation) <- mcols(annotation)[[annotation_names]]
-      } else stop(wmsg("wrong annotation_names argument"))
-    } else if (length(annotation_names) == length(annotation)) {
-      names(annotation) <- annotation_names
-    } else stop(wmsg("wrong annotation_names argument"))
-  }
-
-  if(!is(reads, "list")) reads <- list(reads)
-
-  if (length(withFrames) == 0) withFrames <- FALSE
-  if (!(length(withFrames)  %in% c(1, length(reads)))) stop("length of withFrames must be 0, 1 or the same as reads list")
-  if (length(withFrames) == 1) withFrames <- rep(withFrames, length(reads))
-
-  if (length(colors) == 0) colors <- 1:length(reads)
-  if (!(length(colors)  %in% c(1, length(reads)))) stop("length of colors must be 0, 1 or the same as reads list")
-  if (length(colors) == 1) colors <- rep(colors, length(reads))
-
-  if (length(kmers) == 0) kmers <- 1
-  if (!(length(kmers)  %in% c(1, length(reads)))) stop("length of kmers must be 0, 1 or the same as reads list")
-  if (length(kmers) == 1) kmers <- rep(kmers, length(reads))
-
-  if (length(ylabels) == 0) ylabels <- as.character(1:length(reads))
-  if (!(length(ylabels)  %in% c(1, length(reads)))) stop("length of ylabels must be 0, 1 or the same as reads list")
-  if (length(ylabels) == 1) ylabels <- rep(ylabels, length(reads))
-
-  if (length(proportions) == 0) proportions <- 1
-  if (!(length(proportions)  %in% c(1, length(reads)))) stop("length of proportions must be 0, 1 or the same as reads list")
-  if (length(proportions) == 1) proportions <- rep(proportions, length(reads))
-
-  if (!display_sequence) {
-    max_sum <- 1  - sum(0.03,0.1)
-    proportions <- proportions / (sum(proportions) / max_sum)
-    proportions <- c(proportions, c(0.03,0.1))
-  } else {
-    max_sum <- 1  - sum(0.035, 0.03,0.1)
-    proportions <- proportions / (sum(proportions) / max_sum)
-    proportions <- c(proportions, c(0.035, 0.03,0.1))
-  }
-
-
+                                   custom_motif = NULL,
+                                   BPPARAM = BiocParallel::SerialParam()) {
+  multiOmicsController()
+  # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
-  seq_panel <- createSeqPanel(target_seq[[1]], frame=1:length(reads))
+  read_names <- names(reads) # Names for frames for seq panels
+  seq_panel <- createSeqPanel(target_seq[[1]], start_codons = start_codons,
+                              stop_codons = stop_codons, custom_motif = custom_motif,
+                              frame = read_names)
 
 
-  gene_model_panel <- createGeneModelPanel(display_range, annotation, frame = 1:length(reads))
+  # Get the panel for the annotation track
+  gene_model_panel <- createGeneModelPanel(display_range, annotation,
+                                           custom_regions = custom_regions,
+                                           viewMode = viewMode,
+                                           frame = read_names)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
 
@@ -183,34 +153,36 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
 
   profiles <- rbindlist(profiles, idcol = "file")
 
-  plot <- getPlotAnimate(profiles, withFrames = withFrames[1],
-                         colors = colors[1], ylabels = ylabels[1], lines = lines)
+  plot <- list(getPlotAnimate(profiles, withFrames = withFrames[1],
+                         colors = colors[1], ylabels = ylabels[1], lines = lines))
 
-  plots <- list(plot, automateTicksGMP(gene_model_panel), automateTicksX(seq_panel))
-
-  if (!display_sequence){
+  if (display_sequence %in% c("none", FALSE)){
+    plots <- c(plot, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
                                nrows = 3,
                                heights = c(0.8, 0.05, 0.15),
                                shareX = TRUE,
-                               titleY = TRUE,
-                               titleX = TRUE)
-    multiomics_plot <- lineDeSimplify(multiomics_plot)
+                               titleY = TRUE, titleX = TRUE)
   } else {
-    letters <- nt_bar(target_seq)
-    multiomics_plot <- subplot(c(plots,
-                                 automateTicks(letters)),
+    nplots <- length(plot)
+    nt_area <- ggplot() +
+      theme(axis.title = element_blank(),
+            axis.ticks = element_blank(),
+            axis.text = element_blank()) +
+      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
+      scale_x_continuous(expand = c(0,0))
+    plots <- c(plot, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel),
+                           automateTicksX(seq_panel)))
+    multiomics_plot <- subplot(plots,
                                margin = 0,
-                               nrows = length(reads) + 3,
-                               heights = proportions,
+                               nrows = 4,
+                               heights = c(0.7, 0.05,  0.15, 0.1),
                                shareX = TRUE,
                                titleY = TRUE,
                                titleX = TRUE)
-    multiomics_plot <- lineDeSimplify(multiomics_plot)
-
   }
-
+  multiomics_plot <- lineDeSimplify(multiomics_plot)
   multiomics_plot <- multiomics_plot %>% plotly::config(
     toImageButtonOptions = list(
       format = "svg",
@@ -219,5 +191,4 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
       height = height))
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
   return(multiomics_plot)
-
 }

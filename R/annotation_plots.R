@@ -105,7 +105,7 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   overlaps <- subsetByOverlaps(annotation, display_range,
                                type = ifelse(viewMode == "tx", "within", "any"))
   # Default theme
-  base_gg <- ggplot() + ylab("") + xlab("") +
+  base_gg <- ggplot(frame = frame) + ylab("") + xlab("") +
     theme(axis.title.x = element_blank(),
           axis.ticks.x = element_blank(),
           axis.text.x = element_blank(),
@@ -164,9 +164,9 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   suppressWarnings({
     result_plot <- base_gg +
       geom_rect(mapping=aes(ymin=0 - layers, ymax = 1 - layers, xmin=start(rect_locations),
-                            xmax = end(rect_locations), frame = frame),
+                            xmax = end(rect_locations)),
                 fill = cols, alpha = 0.5) +
-      geom_text(mapping = aes(y = 0.5 - layers, frame = frame, x = labels_locations,
+      geom_text(mapping = aes(y = 0.5 - layers, x = labels_locations,
                               label = gene_names), color = "black", hjust = hjusts)
   })
   } else {

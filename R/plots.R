@@ -48,32 +48,26 @@ createSinglePlot <- function(display_range, reads, withFrames, colors, kmers = 1
 
 getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines){
   count <- NULL # Avoid data.table warning
+  profile_plot <- ggplot(profile) +
+    ylab(ylabels) +
+    theme(axis.title.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank(),
+          plot.margin = unit(c(0,0,0,0), "pt")) +
+    scale_x_continuous(expand = c(0,0))
+
   if (withFrames) {
-    profile_plot <- ggplot(profile)
     if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = names(lines), linetype = 4)
     profile_plot <- profile_plot +
-      geom_line(aes(y = count, x = position,color = frame, frame = file), size = 0.75) +
+      geom_line(aes(y = count, x = position, color = frame, frame = file), size = 0.75) +
       theme(legend.position = "none") +
-      ylab(ylabels) +
-      xlab("position [nt]") +
-      theme(plot.margin = unit(c(0,0,0,0), "pt")) +
-      scale_x_continuous(expand = c(0,0)) +
-      theme(axis.title.x = element_blank(),
-            axis.ticks.x = element_blank(),
-            axis.text.x = element_blank())
+      xlab("position [nt]")
     profile_plot <- automateTicks(profile_plot)
 
   } else {
-    profile_plot <- ggplot(profile)
     if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = names(lines), linetype = 4)
     profile_plot <- profile_plot +
-      geom_area(aes(y = count, x = position, frame = file), fill = colors, position = "identity") +
-      ylab(ylabels) +
-      theme(axis.title.x = element_blank(),
-            axis.ticks.x = element_blank(),
-            axis.text.x = element_blank()) +
-      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-      scale_x_continuous(expand = c(0,0))
+      geom_area(aes(y = count, x = position, frame = file), fill = colors, position = "identity")
     profile_plot <- automateTicksRNA(profile_plot)
   }
   profile_plot

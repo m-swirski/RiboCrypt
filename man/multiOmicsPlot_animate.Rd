@@ -9,23 +9,31 @@ multiOmicsPlot_animate(
   annotation = display_range,
   reference_sequence,
   reads,
+  viewMode = c("tx", "genomic")[1],
+  custom_regions = NULL,
+  leader_extension = 0,
+  trailer_extension = 0,
   withFrames = NULL,
+  frames_type = "lines",
   colors = NULL,
   kmers = NULL,
   kmers_type = c("mean", "sum")[1],
   ylabels = NULL,
-  proportions = NULL,
+  lib_to_annotation_proportions = c(0.8, 0.2),
+  lib_proportions = NULL,
+  annotation_proportions = NULL,
   width = NULL,
   height = NULL,
   plot_name = "default",
   plot_title = NULL,
-  display_sequence = FALSE,
+  display_sequence = c("both", "nt", "aa", "none")[1],
+  seq_render_dist = 100,
+  aa_letter_code = c("one_letter", "three_letters")[1],
   annotation_names = NULL,
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
-  AA_code = Biostrings::GENETIC_CODE,
-  BPPARAM = bpparam()
+  BPPARAM = BiocParallel::SerialParam()
 )
 }
 \arguments{
@@ -40,7 +48,25 @@ a \code{\link[Rsamtools]{FaFile}} or \code{\link[Rsamtools]{FaFile}} convertible
 
 \item{reads}{the NGS libraries, as a list of \code{\link[GenomicRanges]{GRanges}} with or without score column for replicates.}
 
+\item{viewMode}{character, default "tx" (transcript coordinates, first position is 1,
+exons are merged into a single sequence)\cr
+Alternative: "genomic" (genomic coordinates, first position is first position in
+\code{display_range} argument. Introns are displayed).}
+
+\item{custom_regions}{a GRangesList or NULL, default: NULL.
+The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
+a different color.}
+
+\item{leader_extension}{integer, default 0. (How much to extend view upstream)}
+
+\item{trailer_extension}{integer, default 0. (How much to extend view downstream)}
+
 \item{withFrames}{a logical vector, default NULL. Alternative: a length 1 or same length as list length of "reads" argument.}
+
+\item{frames_type}{character, default "lines". Alternative:\cr
+- columns \cr
+- stacks \cr
+- area}
 
 \item{colors}{character, default NULL (automatic colouring). If "withFrames" argument
 is TRUE, colors are set to to c("red", "green", "blue") for the 3 frames.
@@ -52,7 +78,11 @@ Alternative:  Character vector of length 1 or length of "reads" list argument.}
 
 \item{ylabels}{character, default NULL. Name of libraries in "reads" list arugment.}
 
-\item{proportions}{numeric, default NULL. Width of plot.}
+\item{lib_to_annotation_proportions}{numeric vector of length 2. relative sizes of profiles and annotation.}
+
+\item{lib_proportions}{numeric vector of length equal to displayed libs. Relative sizes of profiles displayed}
+
+\item{annotation_proportions}{numeric vector of length 3 (seq displayed), or 2 (seq not displayed). Relative sizes of annotation tracks.}
 
 \item{width}{numeric, default NULL. Width of plot.}
 
@@ -66,6 +96,10 @@ Alternative: custom name for region.}
 \item{display_sequence}{character/logical, default \code{c("both","nt", "aa", "none")[1]}.
 If TRUE or "both", display nucleotide and aa sequence in plot.}
 
+\item{seq_render_dist}{integer, default  100. The sequences will appear after zooming below this threshold.}
+
+\item{aa_letter_code}{character, when set to "three_letters", three letter amino acid code is used. One letter by default.}
+
 \item{annotation_names}{character, default NULL. Alternative naming for annotation.}
 
 \item{start_codons}{character vector, default "ATG"}
@@ -74,12 +108,8 @@ If TRUE or "both", display nucleotide and aa sequence in plot.}
 
 \item{custom_motif}{character vector, default NULL.}
 
-\item{AA_code}{Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
-See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
-\code{Biostrings::getGeneticCode("11")}}
-
-\item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
-To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
+\item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
+To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.
 You can also add a time remaining bar, for a more detailed pipeline.}
 }
 \value{
@@ -90,12 +120,12 @@ The animation will move with a play butten, there is
 1 transition per library given.
 }
 \examples{
-library(ORFik)
-df <- ORFik.template.experiment()[3,] #Use third library in experiment only
-if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
-  cds <- loadRegion(df, "cds")
-  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
-                        reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
-                        frames_type = "columns")
-}
+library(RiboCrypt)
+df <- ORFik.template.experiment()[9:10,]
+cds <- loadRegion(df, "cds")
+mrna <- loadRegion(df, "mrna")
+multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
+                    frames_type = "columns", leader_extension = 30, trailer_extension = 30,
+                    reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+                                  naming = "full", BPPARAM = BiocParallel::SerialParam()))
 }

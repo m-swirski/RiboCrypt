@@ -79,6 +79,8 @@ getProfileAnimate <- function(display_range, reads, withFrames, kmers = 1, kmers
     profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
 
   } else {
+    not_coverage <- is(reads, "GenomicRanges") |
+      is(reads, "GAlignments") | is(reads, "GAlignmentPairs")
     profile <- coveragePerTiling(display_range, if(not_coverage) {
       subsetByOverlaps(reads, display_range)}
       else {reads}, as.data.table = TRUE)

@@ -14,6 +14,13 @@ RiboCrypt_app_brochure(
 \item{validate.experiments}{logical, default TRUE, set to FALSE
 to allow starting the app with malformed experiments, be careful
 will crash if you try to load that experiment!}
+
+\item{options}{list of arguments, default
+\code{list("launch.browser" = ifelse(interactive(), TRUE, FALSE))}}
+
+\item{base.url}{character, default "". To set base url for interactive
+session over a connection or localhost, do not touch if you do not know what
+you are doing!}
 }
 \value{
 RiboCrypt shiny app

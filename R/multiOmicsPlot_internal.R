@@ -52,8 +52,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                                nrows = length(reads) + 2,
                                heights = proportions,
                                shareX = TRUE,
-                               titleY = TRUE,
-                               titleX = TRUE)
+                               titleY = TRUE, titleX = TRUE)
   } else { # plotly subplot with sequence track
     nplots <- length(plots)
     nt_area <- ggplot() +
@@ -70,16 +69,15 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                                nrows = length(reads) + 3,
                                heights = proportions,
                                shareX = TRUE,
-                               titleY = TRUE,
-                               titleX = TRUE)
+                               titleY = TRUE, titleX = TRUE)
     # Create sequence zoom logic (javascript)
     display_dist <- nchar(target_seq)
     render_on_zoom_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
                                         distance = seq_render_dist, display_dist = display_dist, aa_letter_code = aa_letter_code)
     select_region_on_click_data <- list(nplots = nplots)
     multiomics_plot <- multiomics_plot %>%
-      onRender(RiboCrypt:::fetchJS("render_on_zoom.js"), render_on_zoom_data) %>%
-      onRender(RiboCrypt:::fetchJS("select_region_on_click.js"), select_region_on_click_data)
+      onRender(fetchJS("render_on_zoom.js"), render_on_zoom_data) %>%
+      onRender(fetchJS("select_region_on_click.js"), select_region_on_click_data)
   }
 
   multiomics_plot <- multiomics_plot %>% plotly::config(

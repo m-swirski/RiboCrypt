@@ -2,6 +2,11 @@
 #' @param validate.experiments logical, default TRUE, set to FALSE
 #' to allow starting the app with malformed experiments, be careful
 #' will crash if you try to load that experiment!
+#' @param options list of arguments, default
+#'  \code{list("launch.browser" = ifelse(interactive(), TRUE, FALSE))}
+#' @param base.url character, default "". To set base url for interactive
+#' session over a connection or localhost, do not touch if you do not know what
+#' you are doing!
 #' @import shiny
 #' @importFrom NGLVieweR renderNGLVieweR
 #' @return RiboCrypt shiny app
@@ -43,7 +48,6 @@ RiboCrypt_app_brochure <- function(validate.experiments = TRUE,
 
 nav_links_creator <- function(b = "/") {
   if (!is(b, "character")) stop("base.url must be character!")
-  library(shiny)
   paths <- c(home = paste0(".",b),
              browser = paste0(b, "browser"),
              heatmap = paste0(b, "heatmap"),

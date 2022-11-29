@@ -65,6 +65,10 @@ Alternative: "genomic" (genomic coordinates, first position is first position in
 The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
 a different color.}
 
+\item{leader_extension}{integer, default 0. (How much to extend view upstream)}
+
+\item{trailer_extension}{integer, default 0. (How much to extend view downstream)}
+
 \item{withFrames}{a logical vector, default
 \code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU")}
 Alternative: a length 1 or same length as list length of "reads" argument.}
@@ -113,8 +117,8 @@ If TRUE or "both", display nucleotide and aa sequence in plot.}
 
 \item{custom_motif}{character vector, default NULL.}
 
-\item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
-To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
+\item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
+To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.
 You can also add a time remaining bar, for a more detailed pipeline.}
 }
 \value{

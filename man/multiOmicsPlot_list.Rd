@@ -33,7 +33,7 @@ multiOmicsPlot_list(
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
-  BPPARAM = bpparam()
+  BPPARAM = BiocParallel::SerialParam()
 )
 }
 \arguments{
@@ -56,6 +56,10 @@ Alternative: "genomic" (genomic coordinates, first position is first position in
 \item{custom_regions}{a GRangesList or NULL, default: NULL.
 The alternative annotation, like self defined uORFs etc. The vertical annotation bars will have
 a different color.}
+
+\item{leader_extension}{integer, default 0. (How much to extend view upstream)}
+
+\item{trailer_extension}{integer, default 0. (How much to extend view downstream)}
 
 \item{withFrames}{a logical vector, default NULL. Alternative: a length 1 or same length as list length of "reads" argument.}
 
@@ -104,8 +108,8 @@ If TRUE or "both", display nucleotide and aa sequence in plot.}
 
 \item{custom_motif}{character vector, default NULL.}
 
-\item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::bpparam()}.
-To see number of threads used, do \code{BiocParallel::bpparam()$workers}.
+\item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
+To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.
 You can also add a time remaining bar, for a more detailed pipeline.}
 
 \item{proportions}{numeric, default NULL. Width of plot.}
@@ -121,12 +125,12 @@ the plot object
 Customizable html plots for visualizing genomic data.
 }
 \examples{
-library(ORFik)
-df <- ORFik.template.experiment()[3,] #Use third library in experiment only
-if (requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
-  cds <- loadRegion(df, "cds")
-  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
-                        reference_sequence = BSgenome.Hsapiens.UCSC.hg19::Hsapiens,
-                        frames_type = "columns")
-}
+library(RiboCrypt)
+df <- ORFik.template.experiment()[9:10,]
+cds <- loadRegion(df, "cds")
+mrna <- loadRegion(df, "mrna")
+multiOmicsPlot_list(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
+                    frames_type = "columns", leader_extension = 30, trailer_extension = 30,
+                    reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+                                  naming = "full", BPPARAM = BiocParallel::SerialParam()))
 }

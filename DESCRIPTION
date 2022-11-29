@@ -29,11 +29,11 @@ Imports:
   GenomicRanges,
   ggplot2,
   IRanges,
+  here,
+  htmlwidgets,
   NGLVieweR,
   plotly,
   rlang,
-  here,
-  htmlwidgets,
   shiny
 Suggests:
   testthat,

@@ -91,9 +91,12 @@ browser_page <- function(nav_links, validate.experiments = TRUE,
         }
         customRegions <- {
           if(isTRUE(input$useCustomRegions)) {
-            orfs_flt <- fread("~/custom_regions.csv")
-            orfs_flt_grl <- GRanges(orfs_flt) %>% groupGRangesBy(.,.$names)
-          } else { NULL }
+            protein_structure_path <- file.path(dirname(df()@fafile), "protein_structure_predictions", "custom_regions.csv")
+            if (file.exists(protein_structure_path)) {
+              orfs_flt <- fread(protein_structure_path)
+              orfs_flt_grl <- GRanges(orfs_flt) %>% groupGRangesBy(.,.$names)
+            } else NULL
+          } else NULL
         }
         cds_display <- {
           if (input$gene %in% c("", "NULL")) {
@@ -158,10 +161,16 @@ browser_page <- function(nav_links, validate.experiments = TRUE,
       })
       # NGL viewer widget
       output$dynamic <- renderNGLVieweR({
-        paste("~", "sequences", selectedRegion(), "ranked_0.pdb", sep = "/") %>%
-          NGLVieweR() %>%
-          stageParameters(backgroundColor = "white") %>%
-          addRepresentation("cartoon")
+        protein_structure_dir <- file.path(dirname(df()@fafile), "protein_structure_predictions")
+        protein_structure_path <- file.path(protein_structure_dir, "custom_regions.csv")
+        if (file.exists(protein_structure_path)) {
+          pdb_file <- file.path(protein_structure_dir, "sequences", selectedRegion(), "ranked_0.pdb")
+          if(file.exists(pdb_file)) {
+            pdb_file %>% NGLVieweR() %>%
+              stageParameters(backgroundColor = "white") %>%
+              addRepresentation("cartoon")
+          } else NULL # TODO: Add user feedback if not found
+        }
       })
       # Variable UI logic
       output$variableUi <- renderUI({
@@ -226,7 +235,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE,
       # Loading selected experiment and related data
       df <- reactive(read.experiment(input$dff, output.env = envir))
       # TODO: make sure to update valid genes, when 5' and 3' extension is updated!
-      valid_genes_subset <- reactive(filterTranscripts(df()))
+      valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE))
       tx <- reactive(loadRegion(df(), part = "mrna", names.keep = valid_genes_subset()))
       cds <- reactive(loadRegion(df(), part = "cds", names.keep = valid_genes_subset()))
       libs <- reactive(bamVarName(df()))
@@ -306,10 +315,10 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE,
             region <- groupGRangesBy(stopSites(mainPlotControls()$cds_display, TRUE, TRUE, TRUE))
           }
           class(region)
-          print(class(get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff))))
+          #print(class(get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff))))
           time_before <- Sys.time()
           dt <- windowPerReadLength(region, tx()[names(region)],
-                                    reads = get(bamVarName(mainPlotControls()$dff, skip.condition = FALSE, skip.replicate = FALSE)[1], envir = envExp(mainPlotControls()$dff)),
+                                    reads = get(bamVarName(mainPlotControls()$dff, FALSE, FALSE, FALSE, FALSE)[1], envir = envExp(mainPlotControls()$dff)),
                                     pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
                                     downstream = mainPlotControls()$extendTrailers - 1,
                                     scoring = mainPlotControls()$normalization,
@@ -320,7 +329,7 @@ heatmap_page <- function(nav_links, validate.experiments = TRUE,
           return(subplot(list(coverageHeatMap(dt, scoring = mainPlotControls()$normalization,
                                               legendPos = "bottom"))))
         } else {
-          print("This is not a mRNA")
+          print("This is not a mRNA / valid mRNA")
           return(NULL)
         }
       })
@@ -369,4 +378,3 @@ metadata_page <- function(nav_links) {
 
   )
 }
-

@@ -16,8 +16,9 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
   multiOmicsController()
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
-  seq_panel <- createSeqPanel(target_seq[[1]], start_codons = start_codons,
+  seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
                               stop_codons = stop_codons, custom_motif = custom_motif)
+  seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]])
 
 
   # Get the panel for the annotation track

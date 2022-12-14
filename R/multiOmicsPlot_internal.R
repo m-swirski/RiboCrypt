@@ -25,7 +25,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                                            custom_regions = custom_regions,
                                            viewMode = viewMode)
   lines <- gene_model_panel[[2]]
-  gene_model_panel <- gene_model_panel[[1]]
+  gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]])
   # Get NGS data tracks
   force(display_range)
   force(kmers_type)

@@ -107,6 +107,20 @@ browser_page <- function(nav_links, validate.experiments = TRUE,
             } else cds()[0]
           }
         }
+        read_type <- {
+          ifelse(dir.exists(file.path(dirname(dff$filepath[1]), "cov_RLE")), "cov", "pshifted")
+        }
+        reads <- {
+          force(
+            outputLibs(
+              dff,
+              type = read_type,
+              output.mode = "envirlist",
+              naming = "full",
+              BPPARAM = BiocParallel::SerialParam()
+            )
+          )
+        }
         reactiveValues(dff = dff,
                        display_region = display_region,
                        customRegions = customRegions,
@@ -115,7 +129,8 @@ browser_page <- function(nav_links, validate.experiments = TRUE,
                        viewMode = input$viewMode,
                        kmerLength = input$kmer,
                        frames_type = input$frames_type,
-                       cds_display = cds_display)
+                       cds_display = cds_display,
+                       reads = reads)
       })
       output$c <- renderPlotly({
         read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE")),
@@ -125,7 +140,7 @@ browser_page <- function(nav_links, validate.experiments = TRUE,
         a <- RiboCrypt::multiOmicsPlot_ORFikExp(display_range = mainPlotControls()$display_region,
                                            df = mainPlotControls()$dff,
                                            display_sequence = "nt",
-                                           reads = force(outputLibs(mainPlotControls()$dff, type = read_type, output.mode = "envirlist", naming = "full", BPPARAM = BiocParallel::SerialParam())),
+                                           reads = mainPlotControls()$reads,
                                            trailer_extension = mainPlotControls()$extendTrailers,
                                            leader_extension = mainPlotControls()$extendLeaders,
                                            annotation = mainPlotControls()$cds_display, # TODO; THIS IS WRONG; GIVES ERROR; FIX!
@@ -137,20 +152,31 @@ browser_page <- function(nav_links, validate.experiments = TRUE,
         return(a)
       })
 
-      # Setup variables needed for structure viewer
-      selectedRegion <- reactiveVal(NULL)
+      ### NGLVieweR ###
+      
+      # Utilities or computing coloring scheme based on Ribo-Seq results
+      valuesToColors <- function(vals) {
+        palette <- colorRampPalette(c("blue", "green", "yellow", "orange", "red"), bias = 0.5)(1001)
+        palette[(vals / max(vals) * 1000) + 1]
+      }
+      
+      # Setup reactive values needed for structure viewer
       dynamicVisible <- reactiveVal(FALSE)
+      selectedRegion <- reactiveVal(NULL)
+      selectedRegionProfile <- reactive({
+        req(selectedRegion())
+        result <- cds()[names(cds()) == selectedRegion()] %>%
+          getRiboProfile(mainPlotControls()$reads[[1]]) %>%
+          (function (x) { x$count[seq(1, length(x$count), 3)] })()
+      })
+      
       # When user clicks on region
       # start displaying structure viewer
       # and set selected structure to one which was clicked
       observeEvent(input$selectedRegion, {
-        if (!is.null(input$selectedRegion) && !is.null(mainPlotControls()$customRegions)) {
-          selectedRegion(input$selectedRegion)
-          dynamicVisible(TRUE)
-        } else {
-          selectedRegion(NULL)
-          dynamicVisible(FALSE)
-        }
+        req(input$selectedRegion)
+        selectedRegion(input$selectedRegion)
+        dynamicVisible(TRUE)
       })
       # When user clicks close button
       # stop displaying structure viewer
@@ -159,27 +185,41 @@ browser_page <- function(nav_links, validate.experiments = TRUE,
         selectedRegion(NULL)
         dynamicVisible(FALSE)
       })
-      # NGL viewer widget
-      output$dynamic <- renderNGLVieweR({
-        protein_structure_dir <- file.path(dirname(df()@fafile), "protein_structure_predictions")
-        protein_structure_path <- file.path(protein_structure_dir, "custom_regions.csv")
-        if (file.exists(protein_structure_path)) {
-          pdb_file <- file.path(protein_structure_dir, "sequences", selectedRegion(), "ranked_0.pdb")
-          if(file.exists(pdb_file)) {
-            pdb_file %>% NGLVieweR() %>%
-              stageParameters(backgroundColor = "white") %>%
-              addRepresentation("cartoon")
-          } else NULL # TODO: Add user feedback if not found
-        }
+      
+      # When user replots, do the same as when close button is clicked
+      observeEvent(input$go, {
+        selectedRegion(NULL)
+        dynamicVisible(FALSE)
       })
+      
+      # NGL viewer widget
+      protein_structure_dir <- reactive({
+        file.path(dirname(df()@fafile), "protein_structure_predictions")
+      })
+      region_dir <- reactive({
+        file.path(protein_structure_dir(), selectedRegion())
+      })
+      pdb_file <- reactive({
+        file.path(region_dir(), "ranked_0.pdb")
+      })
+      pdb_file_exists <- reactive({
+        req(pdb_file())
+        file.exists(pdb_file())
+      })
+      output$dynamic <- renderNGLVieweR({
+        req(pdb_file_exists(), selectedRegionProfile())
+        pdb_file() %>% NGLVieweR() %>%
+          stageParameters(backgroundColor = "white") %>%
+          onRender(fetchJS("sequence_viewer_coloring.js"), valuesToColors(selectedRegionProfile()))
+      })
+      
       # Variable UI logic
       output$variableUi <- renderUI({
-        if (dynamicVisible()) {
-          fluidRow(
-            actionButton("dynamicClose", "Close"),
-            NGLVieweROutput("dynamic")
-          )
-        } else {}
+        req(dynamicVisible(), pdb_file_exists(), selectedRegionProfile())
+        fluidRow(
+          actionButton("dynamicClose", "Close"),
+          NGLVieweROutput("dynamic")
+        )
       })
     }
   )

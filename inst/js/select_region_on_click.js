@@ -4,8 +4,8 @@
     let point = ed["points"][0];
     let xaxis = point["data"]["xaxis"];
     let yaxis = point["data"]["yaxis"];
-    if (xaxis === "x" && yaxis === targetAxis && "text" in point) {
-      Shiny.setInputValue("selectedRegion", point["text"], {priority: "event"});
+    if (xaxis === "x" && yaxis === targetAxis && "text" in point["data"]) {
+      Shiny.setInputValue("selectedRegion", point["data"]["text"], {priority: "event"});
     } else {
       Shiny.setInputValue("selectedRegion", null);
     }

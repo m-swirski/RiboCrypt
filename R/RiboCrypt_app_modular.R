@@ -322,7 +322,7 @@ heatmap_server <- function(id) {
       # Loading selected experiment and related data
       df <- reactive(read.experiment(input$dff)) #, output.env = envir))
       # TODO: make sure to update valid genes, when 5' and 3' extension is updated!
-      valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE))
+      valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE, minThreeUTR = 0))
       tx <- reactive(loadRegion(df(), part = "mrna", names.keep = valid_genes_subset()))
       cds <- reactive(loadRegion(df(), part = "cds", names.keep = valid_genes_subset()))
       libs <- reactive(bamVarName(df()))

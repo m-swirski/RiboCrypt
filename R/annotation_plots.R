@@ -14,7 +14,7 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
   hits <- lapply(hits, as.data.table)
   hits <- rbindlist(hits, idcol = "col")
   names(hits) <- c("col", "pos")
-  hits[, frames := pos %% 3]
+  hits[, frames := (pos - 1) %% 3]
 
   return(hits)
 

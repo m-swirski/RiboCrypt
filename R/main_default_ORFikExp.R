@@ -42,7 +42,8 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                 display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 100,
                                 aa_letter_code = c("one_letter", "three_letters")[1],
                                 annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                custom_motif = NULL, BPPARAM = BiocParallel::SerialParam()) {
+                                custom_motif = NULL, BPPARAM = BiocParallel::SerialParam(),
+                                input_id = "") {
 
   multiOmicsPlot_internal(display_range, df, annotation,reference_sequence,
                           reads,
@@ -57,6 +58,6 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                           display_sequence, seq_render_dist,
                           aa_letter_code,
                           annotation_names, start_codons, stop_codons,
-                          custom_motif, BPPARAM)
+                          custom_motif, BPPARAM, input_id)
 
 }

@@ -48,7 +48,7 @@
 #' @param BPPARAM how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
 #'  To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.
 #'  You can also add a time remaining bar, for a more detailed pipeline.
-#' @inheritParams createSeqPanel
+#' @inheritParams createSeqPanelPattern
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
 #' @importFrom BiocParallel bpparam bpmapply
@@ -133,9 +133,10 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   read_names <- names(reads) # Names for frames for seq panels
-  seq_panel <- createSeqPanel(target_seq[[1]], start_codons = start_codons,
-                              stop_codons = stop_codons, custom_motif = custom_motif,
-                              frame = read_names)
+  seq_panel <- createSeqPanelPattern(
+    target_seq[[1]], start_codons = start_codons,
+    stop_codons = stop_codons, custom_motif = custom_motif,
+    frame = read_names)
 
 
   # Get the panel for the annotation track

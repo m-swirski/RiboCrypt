@@ -34,7 +34,8 @@ Imports:
   NGLVieweR,
   plotly,
   rlang,
-  shiny
+  shiny,
+  bslib
 Suggests:
   testthat,
   rmarkdown,
@@ -43,5 +44,5 @@ Suggests:
   BSgenome,
   BSgenome.Hsapiens.UCSC.hg19,
   brochure
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
 VignetteBuilder: knitr

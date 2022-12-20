@@ -1,3 +1,5 @@
+#' @importFrom Biostrings nchar
+#'
 multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
                                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
                                                        naming = "full", BPPARAM = BiocParallel::SerialParam()),

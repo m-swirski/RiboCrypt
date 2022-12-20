@@ -155,7 +155,8 @@ browser_server <- function(id) {
           viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
           kmers = mainPlotControls()$kmerLength,
           frames_type = mainPlotControls()$frames_type,
-          custom_regions = mainPlotControls()$customRegions)
+          custom_regions = mainPlotControls()$customRegions,
+          input_id = session$ns("selectedRegion"))
         cat("lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
         return(a)
       })

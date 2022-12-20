@@ -16,6 +16,8 @@
 #' Alternative: a length 1 or same length as list length of "reads" argument.
 #' @param ylabels character, default \code{bamVarName(df)}. Name of libraries in "reads" list argument.
 #' @param plot_name character, default "default" (will create name from display_range name).
+#' @param input_id character path, default: "", id for shiny to disply structures,
+#'  should be "" for local users.
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs seqlevels<-
 #' @importFrom GenomeInfoDb seqlevels

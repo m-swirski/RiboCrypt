@@ -3,7 +3,7 @@
 #' @param validate.experiments logical, default TRUE. Check integrity of all experiments
 #' before you start, set to FALSE if you do not care of this to be TRUE.
 #' @import shiny
-#' @importFrom NGLVieweR renderNGLVieweR
+#' @importFrom NGLVieweR renderNGLVieweR NGLVieweR
 #' @return RiboCrypt shiny app
 #' @export
 RiboCrypt_app <- function(validate.experiments = TRUE) {

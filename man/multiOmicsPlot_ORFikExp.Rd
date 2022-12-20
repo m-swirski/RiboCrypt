@@ -35,7 +35,8 @@ multiOmicsPlot_ORFikExp(
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
-  BPPARAM = BiocParallel::SerialParam()
+  BPPARAM = BiocParallel::SerialParam(),
+  input_id = ""
 )
 }
 \arguments{
@@ -120,6 +121,9 @@ If TRUE or "both", display nucleotide and aa sequence in plot.}
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
 To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.
 You can also add a time remaining bar, for a more detailed pipeline.}
+
+\item{input_id}{character path, default: "", id for shiny to disply structures,
+should be "" for local users.}
 }
 \value{
 the plot object

@@ -14,7 +14,8 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                                     display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 100,
                                     aa_letter_code = c("one_letter", "three_letters")[1],
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                    custom_motif = NULL, BPPARAM = BiocParallel::SerialParam()) {
+                                    custom_motif = NULL, BPPARAM = BiocParallel::SerialParam(),
+                                    input_id = "") {
   multiOmicsController()
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
@@ -77,7 +78,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
     display_dist <- nchar(target_seq)
     render_on_zoom_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
                                         distance = seq_render_dist, display_dist = display_dist, aa_letter_code = aa_letter_code)
-    select_region_on_click_data <- list(nplots = nplots)
+    select_region_on_click_data <- list(nplots = nplots, input_id = input_id)
     multiomics_plot <- multiomics_plot %>%
       onRender(fetchJS("render_on_zoom.js"), render_on_zoom_data) %>%
       onRender(fetchJS("select_region_on_click.js"), select_region_on_click_data)

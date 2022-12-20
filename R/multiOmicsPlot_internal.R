@@ -1,4 +1,4 @@
-#' @importFrom Biostrings nchar
+#' @importFrom Biostrings nchar translate
 #'
 multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
                                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",

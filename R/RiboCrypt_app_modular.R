@@ -438,8 +438,7 @@ heatmap_server <- function(id) {
 #' will crash if you try to load that experiment!
 #' @param options list of arguments, default
 #'  \code{list("launch.browser" = ifelse(interactive(), TRUE, FALSE))}
-#' @import shiny bslib ORFik
-#' @importFrom NGLVieweR renderNGLVieweR
+#' @import shiny bslib ORFik NGLVieweR
 #' @return RiboCrypt shiny app
 #' @export
 #' @examples

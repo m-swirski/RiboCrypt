@@ -452,17 +452,28 @@ RiboCrypt_app_modular <- function(
     validate.experiments = TRUE,
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE))) {
 
-  ui <- navbarPage(
-    lang = "en",
-    title = "RiboCrypt",
-    theme = bslib::bs_theme(
-      version = 5,
-      primary = "#6dbaff", secondary = "#ff7e7e",
-      success = "#c0ffa4", font_scale = 1.2, bootswatch = "zephyr"),
-    browser_ui("browser", validate.experiments = validate.experiments),
-    heatmap_ui("heatmap", validate.experiments = validate.experiments),
-    metadata_ui("metadata")
-  )
+  addResourcePath(prefix = "images",
+                  directoryPath = system.file("images", package = "RiboCrypt"))
+
+  ui <- tagList(
+    tags$head(
+      tags$link(rel = "icon",
+                href = file.path("images", "favicon.ico"),
+                type = "image/x-icon")),
+    navbarPage(
+      lang = "en",
+      windowTitle = "RiboCrypt",
+      title = withTags(
+        a(img(src = file.path("images", "logo.png"),
+              alt = "RiboCrypt",
+              height = 60))),
+      theme = bslib::bs_theme(
+        version = 5,
+        primary = "#6dbaff", secondary = "#ff7e7e",
+        success = "#c0ffa4", font_scale = 1.2, bootswatch = "zephyr"),
+      browser_ui("browser", validate.experiments = validate.experiments),
+      heatmap_ui("heatmap", validate.experiments = validate.experiments),
+      metadata_ui("metadata")))
 
   server <- function(input, output, session) {
     browser_server("browser")

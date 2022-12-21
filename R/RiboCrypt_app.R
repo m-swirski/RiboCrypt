@@ -1,152 +1,56 @@
 #' Create RiboCrypt app
-#'
-#' @param validate.experiments logical, default TRUE. Check integrity of all experiments
-#' before you start, set to FALSE if you do not care of this to be TRUE.
-#' @import shiny
-#' @import NGLVieweR
+#' @param validate.experiments logical, default TRUE, set to FALSE
+#' to allow starting the app with malformed experiments, be careful
+#' will crash if you try to load that experiment!
+#' @param options list of arguments, default
+#'  \code{list("launch.browser" = ifelse(interactive(), TRUE, FALSE))}
+#' @import shiny bslib ORFik NGLVieweR
 #' @return RiboCrypt shiny app
 #' @export
-RiboCrypt_app <- function(validate.experiments = TRUE) {
-  ui <- fluidPage(
-    sidebarLayout(
-      sidebarPanel(
-        tabsetPanel(id = "tabset",
-                    tabPanel("Browser",
-                             experiment_input_select(list.experiments(validate = validate.experiments)$name),
-                             gene_input_select(),
-                             library_input_select(),
-                             frame_type_select(),
-                             sliderInput("kmer", "K-mer length", min = 1, max = 20, value = 1)
-                    ),
-                    tabPanel("Navigate",
-                             numericInput("extendLeaders", "5' extension", 0),
-                             numericInput("extendTrailers", "3' extension", 0),
-                             checkboxInput("viewMode", label = "Genomic View", value = FALSE),
-                             checkboxInput("useCustomRegions", label = "Use custom regions", value = FALSE)
-                    ),
-        ),
-        actionButton("go", "Plot"),
-      ),
-      mainPanel(
-        plotlyOutput(outputId = "c"),
-        uiOutput("variableUi")
-      )
-    )
-  )
+#' @examples
+#'
+#' ## To run in RSTUDIO server using ssh
+#' ## A proxy url path is made, so we need to assign that
+#' ## First run the app, and lcopy url part after port
+#' ## should look something like this: /p/3b3a7b68/
+#'
+RiboCrypt_app <- function(
+    validate.experiments = TRUE,
+    options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE))) {
+  # Load dataset status
+  all_exp <- list.experiments(validate = validate.experiments)
 
-  server <- function(input, output, ...) {
-    # Loading selected experiment and related data
-    df <- reactive(read.experiment(input$dff))
-    tx <- reactive(loadRegion(df()))
-    cds <- reactive(loadRegion(df(), part = "cds"))
-    libs <- reactive(bamVarName(df()))
+  addResourcePath(prefix = "images",
+                  directoryPath = system.file("images", package = "RiboCrypt"))
 
-    # Gene selector
-    observeEvent(tx(), {
-      updateSelectizeInput(
-        inputId = 'gene',
-        choices = names(tx()),
-        selected = names(tx())[1],
-        server = TRUE
-      )
-    })
+  ui <- tagList(
+    tags$head(
+      tags$link(rel = "icon",
+                href = file.path("images", "favicon.ico"),
+                type = "image/x-icon")),
+    navbarPage(
+      lang = "en",
+      windowTitle = "RiboCrypt",
+      title = withTags(
+        a(img(src = file.path("images", "logo.png"),
+              alt = "RiboCrypt",
+              height = 60))),
+      theme = bslib::bs_theme(
+        version = 5,
+        primary = "#6dbaff", secondary = "#ff7e7e",
+        success = "#c0ffa4", font_scale = 1.2, bootswatch = "zephyr"),
+      browser_ui("browser", validate.experiments = validate.experiments),
+      heatmap_ui("heatmap", validate.experiments = validate.experiments),
+      metadata_ui("metadata")))
 
-    # Library selector
-    observeEvent(libs(), {
-      updateSelectizeInput(
-        inputId = "library",
-        choices = libs(),
-        selected = libs()[min(length(libs()), 9)]
-      )
-    })
-
-    # Main plot
-    mainPlotControls <- eventReactive(input$go, {
-      display_region <- {
-        if (input$gene %in% c("", "NULL")) {
-          names(tx()[1])
-        } else { input$gene }
-      }
-      dff <- {
-        libs_to_pick <- if (is.null(input$library)) {
-          libs()[1]
-        } else { input$library }
-        df()[which(libs() %in% libs_to_pick),]
-      }
-      customRegions <- {
-        if(isTRUE(input$useCustomRegions)) {
-          orfs_flt <- fread("~/custom_regions.csv")
-          orfs_flt_grl <- GRanges(orfs_flt) %>% groupGRangesBy(.,.$names)
-        } else { NULL }
-      }
-      reactiveValues(dff = dff,
-                     display_region = display_region,
-                     customRegions = customRegions,
-                     extendTrailers = input$extendTrailers,
-                     extendLeaders = input$extendLeaders,
-                     viewMode = input$viewMode,
-                     kmerLength = input$kmer,
-                     frames_type = input$frames_type)
-    })
-    output$c <- renderPlotly({
-      read_type <- ifelse(dir.exists(file.path(dirname(mainPlotControls()$dff$filepath[1]), "cov_RLE")),
-                          "cov", "pshifted")
-      message("Using type: ", read_type)
-      RiboCrypt::multiOmicsPlot_ORFikExp(display_range = mainPlotControls()$display_region,
-                                           df = mainPlotControls()$dff,
-                                           display_sequence = "nt",
-                                           reads = force(outputLibs(mainPlotControls()$dff, type = read_type, output.mode = "envirlist", naming = "full", BPPARAM = BiocParallel::SerialParam())),
-                                           trailer_extension = mainPlotControls()$extendTrailers,
-                                           leader_extension = mainPlotControls()$extendLeaders,
-                                           annotation = cds(), # TODO; THIS IS WRONG; GIVES ERROR; FIX!
-                                           viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
-                                           kmers = mainPlotControls()$kmerLength,
-                                           frames_type = mainPlotControls()$frames_type,
-                                           custom_regions = mainPlotControls()$customRegions)
-        })
-
-    # Setup variables needed for structure viewer
-    selectedRegion <- reactiveVal(NULL)
-    dynamicVisible <- reactiveVal(FALSE)
-    # When user clicks on region
-    # start displaying structure viewer
-    # and set selected structure to one which was clicked
-    observeEvent(input$selectedRegion, {
-      if (!is.null(input$selectedRegion) && !is.null(mainPlotControls()$customRegions)) {
-        selectedRegion(input$selectedRegion)
-        dynamicVisible(TRUE)
-      } else {
-        selectedRegion(NULL)
-        dynamicVisible(FALSE)
-      }
-    })
-    # When user clicks close button
-    # stop displaying structure viewer
-    # and set selected structure to NULL
-    observeEvent(input$dynamicClose, {
-      selectedRegion(NULL)
-      dynamicVisible(FALSE)
-    })
-    # NGL viewer widget
-    output$dynamic <- renderNGLVieweR({
-      paste("~", "sequences", selectedRegion(), "ranked_0.pdb", sep = "/") %>%
-        NGLVieweR() %>%
-        stageParameters(backgroundColor = "white") %>%
-        addRepresentation("cartoon")
-    })
-    # Variable UI logic
-    output$variableUi <- renderUI({
-      if (dynamicVisible()) {
-        fluidRow(
-          actionButton("dynamicClose", "Close"),
-          NGLVieweROutput("dynamic")
-        )
-        } else {}
-      })
+  server <- function(input, output, session) {
+    browser_server("browser", all_experiments = all_exp)
+    heatmap_server("heatmap", all_experiments = all_exp)
+    metadata_server("metadata")
   }
 
-  shinyApp(ui, server)
+  shinyApp(ui, server, options = options)
 }
 
 
-
+RiboCrypt_app_modular <- RiboCrypt_app

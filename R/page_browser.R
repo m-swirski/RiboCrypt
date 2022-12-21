@@ -118,7 +118,7 @@ browser_server <- function(id, all_experiments) {
           reads = mainPlotControls()$reads,
           trailer_extension = mainPlotControls()$extendTrailers,
           leader_extension = mainPlotControls()$extendLeaders,
-          annotation = mainPlotControls()$cds_display,
+          #annotation = mainPlotControls()$cds_display,
           viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
           kmers = mainPlotControls()$kmerLength,
           frames_type = mainPlotControls()$frames_type,

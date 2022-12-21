@@ -28,7 +28,6 @@
 #' @param kmers numeric (integer), bin positions into kmers.
 #' @param kmers_type character, function used for kmers sliding window. default: "mean", alternative: "sum"
 #' @param ylabels character, default NULL. Name of libraries in "reads" list arugment.
-#' @param proportions numeric, default NULL. Width of plot.
 #' @param width numeric, default NULL. Width of plot.
 #' @param height numeric, default NULL. Height of plot.
 #' @param plot_name = character, default "default" (will create name from display_range name).
@@ -77,7 +76,7 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                 aa_letter_code = c("one_letter", "three_letters")[1],
                                 annotation_names = NULL,
                                 start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                custom_motif = NULL,
+                                custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
                                 BPPARAM = BiocParallel::SerialParam()) {
 
   multiOmicsPlot_internal(display_range, df = NULL, annotation,reference_sequence,
@@ -109,10 +108,10 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
 #' df <- ORFik.template.experiment()[9:10,]
 #' cds <- loadRegion(df, "cds")
 #' mrna <- loadRegion(df, "mrna")
-#' multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
-#'                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
-#'                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
-#'                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
+#' # multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
+#' #                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
+#' #                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+#' #                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
 multiOmicsPlot_animate <- function(display_range, annotation = display_range, reference_sequence,
                                    reads, viewMode = c("tx", "genomic")[1], custom_regions = NULL,
                                    leader_extension = 0, trailer_extension = 0,

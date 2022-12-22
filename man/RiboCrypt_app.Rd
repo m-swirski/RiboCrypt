@@ -4,15 +4,30 @@
 \alias{RiboCrypt_app}
 \title{Create RiboCrypt app}
 \usage{
-RiboCrypt_app(validate.experiments = TRUE)
+RiboCrypt_app(
+  validate.experiments = TRUE,
+  options = list(launch.browser = ifelse(interactive(), TRUE, FALSE))
+)
 }
 \arguments{
-\item{validate.experiments}{logical, default TRUE. Check integrity of all experiments
-before you start, set to FALSE if you do not care of this to be TRUE.}
+\item{validate.experiments}{logical, default TRUE, set to FALSE
+to allow starting the app with malformed experiments, be careful
+will crash if you try to load that experiment!}
+
+\item{options}{list of arguments, default
+\code{list("launch.browser" = ifelse(interactive(), TRUE, FALSE))}}
 }
 \value{
 RiboCrypt shiny app
 }
 \description{
 Create RiboCrypt app
+}
+\examples{
+
+## To run in RSTUDIO server using ssh
+## A proxy url path is made, so we need to assign that
+## First run the app, and lcopy url part after port
+## should look something like this: /p/3b3a7b68/
+
 }

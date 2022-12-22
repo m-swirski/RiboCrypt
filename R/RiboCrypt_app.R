@@ -19,7 +19,8 @@ RiboCrypt_app <- function(
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE))) {
   # Load dataset status
   all_exp <- list.experiments(validate = validate.experiments)
-
+  browser_env <- new.env()
+  heatmap_env <- new.env()
   addResourcePath(prefix = "images",
                   directoryPath = system.file("images", package = "RiboCrypt"))
 
@@ -39,13 +40,13 @@ RiboCrypt_app <- function(
         version = 5,
         primary = "#6dbaff", secondary = "#ff7e7e",
         success = "#c0ffa4", font_scale = 1.2, bootswatch = "zephyr"),
-      browser_ui("browser", validate.experiments = validate.experiments),
-      heatmap_ui("heatmap", validate.experiments = validate.experiments),
+      browser_ui("browser", all_exp = all_exp),
+      heatmap_ui("heatmap", all_exp = all_exp),
       metadata_ui("metadata")))
 
   server <- function(input, output, session) {
-    browser_server("browser", all_experiments = all_exp)
-    heatmap_server("heatmap", all_experiments = all_exp)
+    browser_server("browser", all_exp, browser_env)
+    heatmap_server("heatmap", all_exp, heatmap_env)
     metadata_server("metadata")
   }
 

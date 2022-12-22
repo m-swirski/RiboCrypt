@@ -1,5 +1,4 @@
-browser_ui = function(id, label = "Browser", validate.experiments = T,
-                      all_exp = list.experiments(validate = validate.experiments)) {
+browser_ui = function(id, label = "Browser", all_exp) {
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
@@ -33,7 +32,7 @@ browser_ui = function(id, label = "Browser", validate.experiments = T,
   )
 }
 
-browser_server <- function(id, all_experiments) {
+browser_server <- function(id, all_experiments, env) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
@@ -42,7 +41,7 @@ browser_server <- function(id, all_experiments) {
       experiments <- all_exp$name
       # Set reactive values
       org <- reactive(input$genome)
-      df <- reactive(read.experiment(input$dff)) #, output.env = envir))
+      df <- reactive(read.experiment(input$dff, output.env = env)) #, output.env = envir))
       tx <- reactive(loadRegion(df()))
       cds <- reactive(loadRegion(df(), part = "cds"))
       libs <- reactive(bamVarName(df()))
@@ -87,10 +86,7 @@ browser_server <- function(id, all_experiments) {
         dff <- observed_exp_subset(isolate(input$library), libs, df)
         customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
 
-        read_type <- {
-          ifelse(dir.exists(file.path(dirname(dff$filepath[1]), "cov_RLE")), "cov", "pshifted")
-        }
-        reads <- {load_reads(dff, read_type)}
+        reads <- load_reads(dff, "cov")
         reactiveValues(dff = dff,
                        display_region = display_region,
                        customRegions = customRegions,
@@ -104,12 +100,6 @@ browser_server <- function(id, all_experiments) {
       })
 
       output$c <- renderPlotly({
-        filepath1 <- mainPlotControls()$dff$filepath[1]
-        read_type <- ifelse(dir.exists(
-          file.path(dirname(filepath1), "cov_RLE")),
-          "cov", "pshifted")
-        message("Using type: ", read_type)
-
         time_before <- Sys.time()
         a <- RiboCrypt::multiOmicsPlot_ORFikExp(
           display_range = mainPlotControls()$display_region,

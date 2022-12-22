@@ -124,8 +124,8 @@ library(RiboCrypt)
 df <- ORFik.template.experiment()[9:10,]
 cds <- loadRegion(df, "cds")
 mrna <- loadRegion(df, "mrna")
-multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
-                    frames_type = "columns", leader_extension = 30, trailer_extension = 30,
-                    reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
-                                  naming = "full", BPPARAM = BiocParallel::SerialParam()))
+# multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
+#                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
+#                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+#                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
 }

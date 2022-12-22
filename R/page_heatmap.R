@@ -1,5 +1,4 @@
-heatmap_ui <- function(id, label = "Heatmap", validate.experiments = T,
-                       all_exp = list.experiments(validate = validate.experiments)) {
+heatmap_ui <- function(id, label = "Heatmap", all_exp) {
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
@@ -27,7 +26,7 @@ heatmap_ui <- function(id, label = "Heatmap", validate.experiments = T,
   )
 }
 
-heatmap_server <- function(id, all_experiments) {
+heatmap_server <- function(id, all_experiments, env) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
@@ -36,7 +35,7 @@ heatmap_server <- function(id, all_experiments) {
       experiments <- all_exp$name
       # Set reactive values
       org <- reactive(input$genome)
-      df <- reactive(read.experiment(input$dff)) #, output.env = envir))
+      df <- reactive(read.experiment(input$dff, output.env = env)) #, output.env = envir))
       # TODO: make sure to update valid genes, when 5' and 3' extension is updated!
       valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE, minThreeUTR = 0))
       tx <- reactive(loadRegion(df(), part = "mrna", names.keep = valid_genes_subset()))
@@ -80,6 +79,12 @@ heatmap_server <- function(id, all_experiments) {
         display_region <- observed_gene_heatmap(isolate(input$gene), tx)
         cds_display <- observed_cds_heatmap(isolate(input$gene),cds)
         dff <- observed_exp_subset(isolate(input$library), libs, df)
+
+
+        time_before <- Sys.time()
+        reads <- load_reads(dff, "covl")
+        cat("Library loading: "); print(round(Sys.time() - time_before, 2))
+        message("-- Data loading complete")
         reactiveValues(dff = dff,
                        display_region = display_region,
                        extendTrailers = input$extendTrailers,
@@ -89,32 +94,19 @@ heatmap_server <- function(id, all_experiments) {
                        region = input$region,
                        readlength_min = input$readlength_min,
                        readlength_max = input$readlength_max,
-                       normalization = input$normalization)
+                       normalization = input$normalization,
+                       reads = reads)
       })
       output$c <- renderPlotly({
         message("-- Plot region: ", mainPlotControls()$region)
-        filepath1 <- mainPlotControls()$dff$filepath[1]
-        read_type <- ifelse(dir.exists(file.path(dirname(filepath1), "cov_RLE_List")),
-                            "covl", "pshifted")
-        message("-- Using type: ", ifelse(read_type == "pshifted", "ofst", "covl"))
-        message("Environment: ")
-        print(envExp(mainPlotControls()$dff))
         if (length(mainPlotControls()$cds_display) > 0) {
           print("This is a mRNA")
-          time_before <- Sys.time()
-          force(outputLibs(
-            mainPlotControls()$dff,
-            type = read_type,
-            output.mode = "envir",
-            naming = "full",
-            BPPARAM = BiocParallel::SerialParam()))
-          cat("Library loading: "); print(round(Sys.time() - time_before, 2))
-          message("-- Data loading complete")
+          print(class(mainPlotControls()$reads[[1]]))
           # Pick start or stop region
           region <- observed_cds_point(mainPlotControls)
           time_before <- Sys.time()
           dt <- windowPerReadLength(region, tx()[names(region)],
-                                    reads = get(bamVarName(mainPlotControls()$dff, FALSE, FALSE, FALSE, FALSE)[1], envir = envExp(mainPlotControls()$dff)),
+                                    reads = mainPlotControls()$reads[[1]],
                                     pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
                                     downstream = mainPlotControls()$extendTrailers - 1,
                                     scoring = mainPlotControls()$normalization,

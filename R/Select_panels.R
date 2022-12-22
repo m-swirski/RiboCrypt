@@ -14,7 +14,7 @@ experiment_input_select <- function(names, ns) {
     inputId = ns("dff"),
     label = "Select an experiment",
     choices = names,
-    selected = head(names, 1),
+    selected = "",
     multiple = FALSE
   )
 }

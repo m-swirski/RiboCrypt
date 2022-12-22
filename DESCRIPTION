@@ -35,6 +35,7 @@ Imports:
   plotly,
   rlang,
   shiny,
+  shinycssloaders,
   bslib
 Suggests:
   testthat,

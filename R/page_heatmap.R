@@ -21,7 +21,7 @@ heatmap_ui <- function(id, label = "Heatmap", all_exp) {
                    numericInput(ns("extendTrailers"), "3' extension", 30)), ),
         actionButton(ns("go"), "Plot", icon = icon("rocket")), ),
       mainPanel(
-        plotlyOutput(outputId = ns("c")),
+        plotlyOutput(outputId = ns("c")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
         uiOutput(ns("variableUi"))))
   )
 }

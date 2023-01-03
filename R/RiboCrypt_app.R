@@ -7,6 +7,7 @@
 #' @import shiny bslib ORFik NGLVieweR
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
+#' @importFrom knitr knit
 #' @return RiboCrypt shiny app
 #' @export
 #' @examples

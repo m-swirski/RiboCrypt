@@ -49,10 +49,10 @@ Each experiment usually have multiple libraries. Select which one
 to display, by default if you select multiple libraries they will be shown
 under each other.
 5. Select frames display type: 
-  -lines (single line, most clear for middle distance (> 100 nt))
-  -columns (single point bars, most clear for single nt resolution)
-  -stacks (Area under curve, stacked, most clear for long distance (> 1000 nt))
-  -area (Area under curve, with alpha (see-through), most clear for long distance (> 1000 nt))
+ - lines (single line, most clear for middle distance (> 100 nt))
+ - columns (single point bars, most clear for single nt resolution)
+ - stacks (Area under curve, stacked, most clear for long distance (> 1000 nt))
+ - area (Area under curve, with alpha (see-through), most clear for long distance (> 1000 nt))
 6. K-mer length:
 When looking at a large region (> 100nt), pure coverage can usually be hard to inspect.
 Using K-mer length > 1 (9 is a good starting point to try), you can easily look at

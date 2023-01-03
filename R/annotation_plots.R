@@ -3,17 +3,16 @@
 #' @param start_codons character vector, default "ATG"
 #' @param stop_codons character vector, default c("TAA", "TAG", "TGA")
 #' @param custom_motif character vector, default NULL.
-#' @import ggplot2
 #' @return a ggplot object
 #' @keywords internal
 createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"), frame = 1,
                            custom_motif = NULL) {
-
   hits <- lapply(list(start_codons, stop_codons, custom_motif), function(x) matchMultiplePatterns(x, sequence))
   names(hits) <- c("white", "black", "purple")
   hits <- lapply(hits, as.data.table)
   hits <- rbindlist(hits, idcol = "col")
   names(hits) <- c("col", "pos")
+  pos <- NULL # avoid dt warning
   hits[, frames := (pos - 1) %% 3]
 
   return(hits)
@@ -58,6 +57,7 @@ get_current_index <- function(v) {
 
 #' How many rows does the gene track need
 #' @keywords internal
+
 geneTrackLayer <- function(grl) {
 
   grl_flanks <- flankPerGroup(grl)

@@ -110,7 +110,7 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
    #vis <- ifelse(unique(dt$Regulation) == "", TRUE, "legendonly") #add_trace(visible = vis)
    select <- highlight(
      ggplotly(gg, tooltip = hovertip) %>%
-       layout(autosize = T) %>% toWebGL() %>% partial_bundle(),
+       layout(autosize = TRUE) %>% toWebGL() %>% partial_bundle(),
      on = c('plotly_selected'), off = c('plotly_deselect'),
      selectize = TRUE, persistent = FALSE
    )

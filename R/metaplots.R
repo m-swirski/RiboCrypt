@@ -6,8 +6,14 @@ unlistToExtremities <- function(grl) {
   return(GRanges(dt))
 }
 
-
-distanceToFollowing <- function(grl,grl2 = grl, ignore.strand = FALSE) {
+#' Distance to following range
+#'
+#' @param grl a GRangesList
+#' @param grl2 a GRangesList, default 'grl'
+#' @param ignore.strand logical, default FALSE
+#' @importFrom IRanges precede follow distance
+#' @return numeric vector of distance
+distanceToFollowing <- function(grl, grl2 = grl, ignore.strand = FALSE) {
   stops <- stopRegion(grl,downstream = 0, upstream = 0) %>% unlistGrl
   starts <- grl2 %>% unlistToExtremities()
   if (!ignore.strand){
@@ -92,6 +98,7 @@ stopCoverage <- function(reads, grl, upstream = 200, downstream = 500,min_upstre
   numbering <- distance(grl %>% stopRegion(upstream = 0, downstream = 0) %>% unlistGrl, startRegion(stopWindow,upstream = 0, downstream = 0) %>% unlistGrl)
   cov <- coveragePerTiling(stopWindow, reads, as.data.table = TRUE)
   numbering <- numbering + 2
+  genes <- NULL # avoid BiocCheck warning
   cov[,position := position - numbering[genes]]
   return(cov)
 }
@@ -100,6 +107,7 @@ startCoverage <- function(reads, grl, upstream = 500, downstream = 200, min_upst
   numbering <- distance(startRegion(grl, upstream = 0, downstream = 0) %>% unlistGrl, startRegion(startWindow,upstream = 0, downstream = 0) %>% unlistGrl)
   cov <- coveragePerTiling(startWindow, reads, as.data.table = TRUE)
   numbering <- numbering + 2
+  genes <- NULL # avoid BiocCheck warning
   cov[,position := position - numbering[genes]]
   return(cov)
 }

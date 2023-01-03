@@ -4,7 +4,7 @@
 #' will crash if you try to load that experiment!
 #' @param options list of arguments, default
 #'  \code{list("launch.browser" = ifelse(interactive(), TRUE, FALSE))}
-#' @import shiny bslib ORFik NGLVieweR
+#' @import shiny bslib ORFik NGLVieweR ggplot2
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
 #' @importFrom knitr knit
@@ -26,54 +26,54 @@ RiboCrypt_app <- function(
   heatmap_env <- new.env()
   addResourcePath(prefix = "images",
                   directoryPath = system.file("images", package = "RiboCrypt"))
+  addResourcePath(prefix = "rmd",
+                  directoryPath = system.file("rmd", package = "RiboCrypt"))
 
   ui <- tagList(
-    tags$head(
-      tags$link(rel = "icon",
-                href = file.path("images", "favicon.ico"),
-                type = "image/x-icon")),
+    rc_header(),
     navbarPage(
       lang = "en",
       windowTitle = "RiboCrypt",
-      title = withTags(
-        a(img(src = file.path("images", "logo.png"),
-              alt = "RiboCrypt",
-              height = 60))),
-      theme = bslib::bs_theme(
-        version = 5,
-        primary = "#6dbaff", secondary = "#ff7e7e",
-        success = "#c0ffa4", font_scale = 1.2, bootswatch = "zephyr"),
+      title = rc_title(),
+      theme = rc_theme(),
       browser_ui("browser", all_exp = all_exp),
       heatmap_ui("heatmap", all_exp = all_exp),
       metadata_ui("metadata"),
-      tabPanel(
-        title = "tutorial", icon = icon("question"),
-        uiOutput('tutorial'))
-      )
+      tutorial_ui("tutorial")
     )
+  )
 
   server <- function(input, output, session) {
     browser_server("browser", all_exp, browser_env)
     heatmap_server("heatmap", all_exp, heatmap_env)
     metadata_server("metadata")
-
-    output$tutorial <- renderUI({
-      tutorial <- HTML(markdown::mark_html(
-        knitr::knit(
-          system.file("rmd", "tutorial.rmd", package = "RiboCrypt"),
-          quiet = TRUE),
-        options = list(base64_images = T, standalone = F, toc = F)))
-
-      fluidPage(
-        fluidRow(
-          column(10, tutorial, offset = 1)
-        )
-      )
-    })
+    tutorial_server("tutorial")
   }
 
   shinyApp(ui, server, options = options)
 }
 
-
 RiboCrypt_app_modular <- RiboCrypt_app
+
+
+rc_header <- function() {
+  tags$head(
+    tags$link(rel = "icon",
+              href = file.path("images", "favicon.ico"),
+              type = "image/x-icon"))
+}
+
+rc_theme <- function() {
+  bslib::bs_theme(
+    version = 5,
+    primary = "#6dbaff", secondary = "#ff7e7e",
+    success = "#c0ffa4", font_scale = 1.2, bootswatch = "zephyr")
+}
+
+rc_title <- function() {
+  withTags(
+    a(img(src = file.path("images", "logo.png"),
+          alt = "RiboCrypt",
+          height = 60)))
+}
+

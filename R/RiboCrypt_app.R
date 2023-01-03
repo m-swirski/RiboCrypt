@@ -43,12 +43,31 @@ RiboCrypt_app <- function(
         success = "#c0ffa4", font_scale = 1.2, bootswatch = "zephyr"),
       browser_ui("browser", all_exp = all_exp),
       heatmap_ui("heatmap", all_exp = all_exp),
-      metadata_ui("metadata")))
+      metadata_ui("metadata"),
+      tabPanel(
+        title = "tutorial", icon = icon("question"),
+        uiOutput('tutorial'))
+      )
+    )
 
   server <- function(input, output, session) {
     browser_server("browser", all_exp, browser_env)
     heatmap_server("heatmap", all_exp, heatmap_env)
     metadata_server("metadata")
+
+    output$tutorial <- renderUI({
+      tutorial <- HTML(markdown::mark_html(
+        knitr::knit(
+          system.file("rmd", "tutorial.rmd", package = "RiboCrypt"),
+          quiet = TRUE),
+        options = list(base64_images = T, standalone = F, toc = F)))
+
+      fluidPage(
+        fluidRow(
+          column(10, tutorial, offset = 1)
+        )
+      )
+    })
   }
 
   shinyApp(ui, server, options = options)

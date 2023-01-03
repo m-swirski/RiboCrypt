@@ -6,6 +6,7 @@
 #'  \code{list("launch.browser" = ifelse(interactive(), TRUE, FALSE))}
 #' @import shiny bslib ORFik NGLVieweR
 #' @importFrom shinycssloaders withSpinner
+#' @importFrom markdown mark_html
 #' @return RiboCrypt shiny app
 #' @export
 #' @examples

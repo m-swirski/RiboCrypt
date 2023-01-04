@@ -115,6 +115,7 @@ startCoverage <- function(reads, grl, upstream = 500, downstream = 200, min_upst
 getMetaCoverage <- function(reads, grl, outward = 500, inward = 200, min_outward_distance = 200, min_inward_distance = 50, min_ext = 25, transcriptNormalize = TRUE, withFrames = TRUE,...) {
   start_cov <- startCoverage(reads, grl, upstream = outward, downstream = inward, min_upstream_dist = min_outward_distance, min_downstream_dist = min_inward_distance, min_ext = min_ext,...)
   stop_cov <- stopCoverage(reads,grl, upstream = inward, downstream = outward , min_upstream_dist = min_inward_distance, min_downstream_dist = min_outward_distance, min_ext = min_ext,...)
+  genes <- type <- count <- NULL # avoid BiocCheck warning
   if (transcriptNormalize) {
     # total_counts <- rbind(start_cov,stop_cov)[,.(count = sum(count)), by = genes]$count
     start_wind <- getStartWindow(grl, upstream = outward + as.integer(outward/2), downstream = inward, min_upstream_dist = min_outward_distance, min_downstream_dist = min_inward_distance, min_ext = min_ext,...)
@@ -122,10 +123,9 @@ getMetaCoverage <- function(reads, grl, outward = 500, inward = 200, min_outward
     start_counts <- countOverlapsW(start_wind, reads, weight = "score")
     stop_counts <- countOverlapsW(stop_wind, reads, weight = "score")
     total_counts <- start_counts + stop_counts
-    total_counts <- pmax(total_counts,1)
+    total_counts <- pmax(total_counts, 1)
     start_cov[, count := count / total_counts[genes]]
     stop_cov[, count := count / total_counts[genes]]
-
   }
 
   start_meta <- start_cov[,.(count = sum(count)), by = position]
@@ -148,6 +148,7 @@ metaPlot <- function(reads, grl, outward = 500, inward = 200, min_outward_distan
   metaCov <- getMetaCoverage(reads, grl, outward, inward, min_outward_distance, min_inward_distance, min_ext, transcriptNormalize=transcriptNormalize, withFrames=withFrames,...)
   mybreaks <- c(outward/2 + 1, outward + 1, outward + inward/2 + 1, outward + 1.5 * inward + 2,outward + 2*inward + 2, 1.5 * outward + 2 * inward + 2)
   myticks <- metaCov$position[mybreaks]
+  count <- NULL # Avoid warning
   if (withFrames) {
     ggplot(metaCov) +
       geom_line(aes(y = count, x = index, color = frames), size = 0.75) +
@@ -174,6 +175,7 @@ threePlots <- function(TSS,PAS,RNA, grl, outward = 500, inward = 200, min_outwar
   myticks <- metaCovTSS$position[mybreaks]
   endlines <- metaCovTSS[position == 0]$index
   midline <- nrow(metaCovTSS) / 2
+  count <- NULL # Avoid warning
   metaCov[,count := count/max(count), by = seqType]
 
 
@@ -197,6 +199,7 @@ fourPlots <- function(ribo, TSS,PAS,RNA, grl, outward = 500, inward = 200, min_o
   metaCovRNA <- getMetaCoverage(RNA, grl, outward, inward, min_outward_distance=0, min_inward_distance=0, min_ext=0, transcriptNormalize=transcriptNormalize, withFrames=withFrames,...)[,seqType := 'RNA']
   metaCov <- rbind(metaCovRibo, metaCovTSS,metaCovPAS, metaCovRNA)
   mybreaks <- c(outward/2 + 1, outward + 1, outward + inward/2 + 1, outward + 1.5 * inward + 2,outward + 2*inward + 2, 1.5 * outward + 2 * inward + 2)
+  count <- NULL # Avoid warning
   myticks <- metaCovTSS$position[mybreaks]
   endlines <- metaCovTSS[position == 0]$index
   midline <- nrow(metaCovTSS) / 2
@@ -256,7 +259,7 @@ fivePlots <- function(ribo, TSS,PAS,RNA, grl, outward = 500, inward = 200, min_o
   metaCovReadlength <- readLengthMeta(ribo,grl, outward = outward, inward = inward, min_outward_distance = min_outward_distance, min_inward_distance = min_inward_distance, min_ext = min_ext, transcriptNormalize = transcriptNormalize)
 
   metaCovReadlength$index <- 1:nrow(metaCovReadlength)
-
+  count <- NULL # Avoid warning
   mybreaks <- c(outward/2 + 1, outward + 1, outward + inward/2 + 1, outward + 1.5 * inward + 2,outward + 2*inward + 2, 1.5 * outward + 2 * inward + 2)
   myticks <- metaCovTSS$position[mybreaks]
   endlines <- metaCovTSS[position == 0]$index
@@ -289,7 +292,6 @@ fivePlots <- function(ribo, TSS,PAS,RNA, grl, outward = 500, inward = 200, min_o
     theme(legend.position = "none") +
     ylab(NULL)
 
-  browser()
 
   ratio_plot <- ggplot(metaCovReadlength) +
     geom_vline(xintercept = endlines, linetype = 2) +
@@ -314,5 +316,4 @@ fivePlots <- function(ribo, TSS,PAS,RNA, grl, outward = 500, inward = 200, min_o
     toImageButtonOptions = list(format = "svg"))
 
   return(multiomics_plot)
-
 }

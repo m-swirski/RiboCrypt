@@ -6,6 +6,12 @@
 \usage{
 geneTrackLayer(grl)
 }
+\arguments{
+\item{grl}{a GRangesList}
+}
+\value{
+numeric, the track row index
+}
 \description{
 How many rows does the gene track need
 }

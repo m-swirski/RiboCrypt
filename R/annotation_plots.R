@@ -20,6 +20,7 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
 }
 
 plotSeqPanel <- function(hits, sequence, frame = 1) {
+  pos <- NULL # avoid dt warning
   fig <- ggplot() +
     geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3), frame = frame),
               fill = c("#F8766D","#00BA38","#619CFF" )) +
@@ -56,10 +57,12 @@ get_current_index <- function(v) {
 }
 
 #' How many rows does the gene track need
+#'
+#' @importFrom IRanges findOverlaps
+#' @param grl a GRangesList
+#' @return numeric, the track row index
 #' @keywords internal
-
 geneTrackLayer <- function(grl) {
-
   grl_flanks <- flankPerGroup(grl)
   overlaps <- as.data.table(findOverlaps(grl_flanks, grl_flanks))
   overlaps <- overlaps[subjectHits > queryHits, ]
@@ -67,14 +70,13 @@ geneTrackLayer <- function(grl) {
   if (nrow(overlaps) == 0) {
     all_layers <- rep(1, length(grl))
     all_layers <- rep(all_layers, numExonsPerGroup(grl))
-    return(all_layers)
   } else {
-  layers <- overlaps_to_layers(overlaps)
-  all_layers <- rep(1, length(grl))
-  all_layers[as.numeric(names(layers))] <- layers
-  all_layers <- rep(all_layers, numExonsPerGroup(grl))
-  return(all_layers)
+    layers <- overlaps_to_layers(overlaps)
+    all_layers <- rep(1, length(grl))
+    all_layers[as.numeric(names(layers))] <- layers
+    all_layers <- rep(all_layers, numExonsPerGroup(grl))
   }
+  return(all_layers)
 }
 
 #'

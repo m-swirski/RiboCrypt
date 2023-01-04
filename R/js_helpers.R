@@ -5,6 +5,16 @@ fetchJS <- function(script_name) {
   paste(lines, sep = "", collapse = "")
 }
 
+#' Fetch Javascript sequence
+#'
+#' @param target_seq the target sequence
+#' @param nplots number of plots
+#' @param distance numeric, default 50.
+#' @param display_dist display distance
+#' @param aa_letter_code "one_letter"
+#' @return a list of 2 lists, the nt list (per frame, total 3)
+#'  and AA list (per frame, total 3)
+#' @importFrom Biostrings AMINO_ACID_CODE
 fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
                          aa_letter_code = "one_letter") {
   fr_colors <- c("#F8766D","#00BA38", "#619CFF")

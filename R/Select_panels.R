@@ -1,3 +1,9 @@
+#' Select box for organism
+#'
+#' @param genomes name of genomes, returned from list.experiments()
+#' @param ns the ID, for shiny session
+#' @importFrom Biostrings head
+#' @return selectizeInput object
 organism_input_select <- function(genomes, ns) {
   #genomes <- stringr::str_to_sentence(gsub("_", " ", list.genomes()$name))
   selectizeInput(

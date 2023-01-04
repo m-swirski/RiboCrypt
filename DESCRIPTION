@@ -29,7 +29,6 @@ Imports:
   GenomicRanges,
   ggplot2,
   IRanges,
-  here,
   htmlwidgets,
   knitr,
   markdown,

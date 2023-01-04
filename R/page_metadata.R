@@ -4,12 +4,13 @@ metadata_ui <- function(id, label = "metadata") {
            h2("Metadata search page"),
            sidebarLayout(
              sidebarPanel(
-               textInput(ns("accession"), "Study accession number (SRP/GEO/PRJNA)"),
+               textInput(ns("accession"), "Study accession number (SRP/GEO/PRJNA)",
+                         "GSE13750"),
                actionButton(ns("go"), "Plot", icon = icon("rocket")),
              ),
              mainPanel(
                textOutput(ns("abstract")),
-               dataTableOutput(ns("metadata"))
+               dataTableOutput(ns("metadata")) %>% shinycssloaders::withSpinner(color="#0dc5c1")
              )
            )
   )

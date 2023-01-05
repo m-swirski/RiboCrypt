@@ -15,7 +15,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                                     aa_letter_code = c("one_letter", "three_letters")[1],
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                     custom_motif = NULL, BPPARAM = BiocParallel::SerialParam(),
-                                    input_id = "") {
+                                    input_id = "", summary_track = FALSE) {
   multiOmicsController()
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
@@ -48,8 +48,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
     profiles <- bpmapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
                       reads, withFrames, kmers, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
   }
-  
-  
+
   if (is(BPPARAM, "SerialParam")) {
     plots <- mapply(function(x,y,z,c) createSinglePlot(x,y,z,c, lines, type = frames_type),
                     profiles, withFrames, colors, ylabels, SIMPLIFY = FALSE)
@@ -57,18 +56,28 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
     plots <- bpmapply(function(x,y,z,c) createSinglePlot(x,y,z,c,kmers_type, g, lines, type = frames_type),
                       profiles, withFrames, colors, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
   }
-
+  nplots <- length(plots)
+  
+  
+  if (summary_track) {
+    summary_profile <- rbindlist(profiles)
+    summary_profile <- summary_profile[,.(count = sum(count)), by = position]
+    summary_profile$frame <- profiles[[1]]$frame
+    summary_plot <- createSinglePlot(summary_profile, all(withFrames), colors, "summary", lines, type = frames_type)
+    nplots <- nplots + 1
+    plots[[nplots]] <- summary_plot
+    plots <- rev(plots)
+  }
 
   if (display_sequence %in% c("none", FALSE)) { # plotly subplot without sequence track
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
-                               nrows = length(reads) + 2,
+                               nrows = nplots+ 2,
                                heights = proportions,
                                shareX = TRUE,
                                titleY = TRUE, titleX = TRUE)
   } else { # plotly subplot with sequence track
-    nplots <- length(plots)
     nt_area <- ggplot() +
       theme(axis.title = element_blank(),
             axis.ticks = element_blank(),
@@ -80,7 +89,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                            automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
-                               nrows = length(reads) + 3,
+                               nrows = nplots + 3,
                                heights = proportions,
                                shareX = TRUE,
                                titleY = TRUE, titleX = TRUE)

@@ -61,6 +61,8 @@ multiOmicsController <- function() {
     } else annotation_proportions <- c(0.2,0.2,0.6)
   } else annotation_proportions <- annotation_proportions / sum(annotation_proportions)
   proportions <- c(lib_proportions * lib_to_annotation_proportions[1], annotation_proportions * lib_to_annotation_proportions[2])
+  if (summary_track) proportions <- c(0.2, proportions * 0.8)
   }
+
   )
 }

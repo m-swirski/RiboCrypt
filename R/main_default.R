@@ -77,7 +77,7 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                 annotation_names = NULL,
                                 start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                 custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
-                                BPPARAM = BiocParallel::SerialParam()) {
+                                BPPARAM = BiocParallel::SerialParam(), summary_track = FALSE) {
 
   multiOmicsPlot_internal(display_range, df = NULL, annotation,reference_sequence,
     reads,
@@ -92,7 +92,7 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
     display_sequence, seq_render_dist,
     aa_letter_code,
     annotation_names, start_codons, stop_codons,
-    custom_motif, BPPARAM)
+    custom_motif, BPPARAM, summary_track)
 
 }
 

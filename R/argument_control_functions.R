@@ -49,6 +49,7 @@ multiOmicsController <- function() {
   if (length(ylabels) == 0) ylabels <- as.character(1:length(reads))
   if (!(length(ylabels)  %in% c(1, length(reads)))) stop("length of ylabels must be 0, 1 or the same as reads list")
   if (length(ylabels) == 1) ylabels <- rep(ylabels, length(reads))
+  if (length(ylabels) > 5) ylabels <- 1:length(reads)
 
   if (length(lib_proportions) == 0) lib_proportions <- 1
   if (!(length(lib_proportions)  %in% c(1, length(reads)))) stop("length of lib_proportions must be 0, 1 or the same as reads list")

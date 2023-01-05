@@ -1,14 +1,13 @@
-createSinglePlot <- function(display_range, reads, withFrames, colors, kmers = 1,
-                             kmers_type = "mean", ylabels, lines, type = "lines"){
+createSinglePlot <- function(profile, withFrames, colors, ylabels, lines, type = "lines"){
   count <- NULL # Avoid data.table warning
-  if (withFrames) {
-
-    if (type %in% c("stacks", "area" )) {
-      profile <- getStackProfile(display_range, reads, kmers, kmers_type = kmers_type)
-    } else profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
-  } else {
-    profile <- getCoverageProfile(display_range, reads, kmers, kmers_type = kmers_type)
-  }
+  # if (withFrames) {
+  # 
+  #   if (type %in% c("stacks", "area" )) {
+  #     profile <- getStackProfile(display_range, reads, kmers, kmers_type = kmers_type)
+  #   } else profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
+  # } else {
+  #   profile <- getCoverageProfile(display_range, reads, kmers, kmers_type = kmers_type)
+  # }
   profile_plot <- ggplot(profile)
   if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = names(lines), linetype = 4)
   profile_plot <- profile_plot + geom_hline(yintercept = 0)

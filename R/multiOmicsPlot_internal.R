@@ -40,12 +40,22 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
   force(colors)
   force(kmers)
   force(ylabels)
+  
   if (is(BPPARAM, "SerialParam")) {
-    plots <- mapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
-                    reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE)
+    profiles <- mapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
+                    reads, withFrames, kmers, SIMPLIFY = FALSE)
   } else {
-    plots <- bpmapply(function(x,y,z,c,g) createSinglePlot(display_range, x,y,z,c,kmers_type, g, lines, type = frames_type),
-                      reads, withFrames, colors, kmers, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+    profiles <- bpmapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
+                      reads, withFrames, kmers, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+  }
+  
+  
+  if (is(BPPARAM, "SerialParam")) {
+    plots <- mapply(function(x,y,z,c) createSinglePlot(x,y,z,c, lines, type = frames_type),
+                    profiles, withFrames, colors, ylabels, SIMPLIFY = FALSE)
+  } else {
+    plots <- bpmapply(function(x,y,z,c) createSinglePlot(x,y,z,c,kmers_type, g, lines, type = frames_type),
+                      profiles, withFrames, colors, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
   }
 
 

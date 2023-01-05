@@ -16,7 +16,7 @@ heatmap_ui <- function(id, label = "Heatmap", all_exp) {
                    normalization_input_select(ns),
                    numericInput(ns("readlength_min"), "Min Readlength", 26),
                    numericInput(ns("readlength_max"), "Max Readlength", 34)),
-          tabPanel("Navigate",
+          tabPanel("Settings",
                    numericInput(ns("extendLeaders"), "5' extension", 30),
                    numericInput(ns("extendTrailers"), "3' extension", 30)), ),
         actionButton(ns("go"), "Plot", icon = icon("rocket")), ),

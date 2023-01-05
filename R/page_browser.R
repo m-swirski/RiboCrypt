@@ -15,11 +15,13 @@ browser_ui = function(id, label = "Browser", all_exp) {
                    frame_type_select(ns),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20, value = 1)
           ),
-          tabPanel("Navigate",
+          tabPanel("Settings",
                    numericInput(ns("extendLeaders"), "5' extension", 0),
                    numericInput(ns("extendTrailers"), "3' extension", 0),
                    checkboxInput(ns("viewMode"), label = "Genomic View", value = FALSE),
-                   checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = FALSE)
+                   checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = FALSE),
+                   checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
+                   frame_type_select(ns, "summary_track_type", "Select summary display type")
           ),
         ),
         actionButton(ns("go"), "Plot", icon = icon("rocket")),
@@ -92,6 +94,8 @@ browser_server <- function(id, all_experiments, env) {
                        customRegions = customRegions,
                        extendTrailers = input$extendTrailers,
                        extendLeaders = input$extendLeaders,
+                       summary_track = input$summary_track,
+                       summary_track_type = input$summary_track_type,
                        viewMode = input$viewMode,
                        kmerLength = input$kmer,
                        frames_type = input$frames_type,
@@ -113,7 +117,10 @@ browser_server <- function(id, all_experiments, env) {
           kmers = mainPlotControls()$kmerLength,
           frames_type = mainPlotControls()$frames_type,
           custom_regions = mainPlotControls()$customRegions,
-          input_id = session$ns("selectedRegion"))
+          input_id = session$ns("selectedRegion"),
+          summary_track = mainPlotControls()$summary_track,
+          summary_track_type = mainPlotControls()$summary_track_type
+          )
         cat("lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
         return(a)
       })

@@ -45,11 +45,12 @@ library_input_select <- function(ns) {
   )
 }
 
-frame_type_select <- function(ns) {
+frame_type_select <- function(ns, name = "frames_type",
+                              label = "Select frames display type") {
   selectizeInput(
-    inputId = ns("frames_type"),
-    label = "Select frames display type",
-    choices = c("lines", "columns", "stacks", "area"),
+    inputId = ns(name),
+    label = label,
+    choices = c("lines", "columns", "stacks", "area", "heatmap"),
     selected = "lines",
     multiple = FALSE
   )

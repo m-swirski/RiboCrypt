@@ -34,7 +34,8 @@ multiOmicsPlot_list(
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
   AA_code = Biostrings::GENETIC_CODE,
-  BPPARAM = BiocParallel::SerialParam()
+  BPPARAM = BiocParallel::SerialParam(),
+  summary_track = FALSE
 )
 }
 \arguments{

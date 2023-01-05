@@ -15,7 +15,8 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                                     aa_letter_code = c("one_letter", "three_letters")[1],
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                     custom_motif = NULL, BPPARAM = BiocParallel::SerialParam(),
-                                    input_id = "", summary_track = FALSE) {
+                                    input_id = "", summary_track = FALSE,
+                                    summary_track_type = frames_type) {
   multiOmicsController()
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
@@ -40,7 +41,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
   force(colors)
   force(kmers)
   force(ylabels)
-  
+
   if (is(BPPARAM, "SerialParam")) {
     profiles <- mapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
                     reads, withFrames, kmers, SIMPLIFY = FALSE)
@@ -57,13 +58,15 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                       profiles, withFrames, colors, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
   }
   nplots <- length(plots)
-  
-  
+
+
   if (summary_track) {
+    #browser()
     summary_profile <- rbindlist(profiles)
     summary_profile <- summary_profile[,.(count = sum(count)), by = position]
-    summary_profile$frame <- profiles[[1]]$frame
-    summary_plot <- createSinglePlot(summary_profile, all(withFrames), colors, "summary", lines, type = frames_type)
+    summary_profile[, frame := profiles[[1]]$frame]
+    summary_plot <- createSinglePlot(summary_profile, all(withFrames), colors[1], "summary", lines,
+                                     type = summary_track_type)
     nplots <- nplots + 1
     plots[[nplots]] <- summary_plot
     plots <- rev(plots)

@@ -36,7 +36,9 @@ multiOmicsPlot_ORFikExp(
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
   BPPARAM = BiocParallel::SerialParam(),
-  input_id = ""
+  input_id = "",
+  summary_track = FALSE,
+  summary_track_type = frames_type
 )
 }
 \arguments{
@@ -124,6 +126,12 @@ You can also add a time remaining bar, for a more detailed pipeline.}
 
 \item{input_id}{character path, default: "", id for shiny to disply structures,
 should be "" for local users.}
+
+\item{summary_track}{logical, default FALSE. Display a top track, that is the sum
+of all tracks.}
+
+\item{summary_track_type}{character, default is same as 'frames_type'
+argument}
 }
 \value{
 the plot object

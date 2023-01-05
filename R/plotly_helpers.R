@@ -5,31 +5,37 @@ lineDeSimplify <- function(plot) {
 }
 
 automateTicks <- function(plot) {
-  plot %>% ggplotly(dynamicTicks = TRUE, tooltip=c("position")) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE))
+  plot %>% ggplotly(dynamicTicks = TRUE, tooltip=c("position")) %>%
+    plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE))
 }
 
 automateTicksLetters <- function(plot) {
-  suppressWarnings(plot %>% ggplotlyHover(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>% toWebGL())
+  suppressWarnings(plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
+                     plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>%
+                     toWebGL())
 }
 
 
 automateTicksGMP <- function(plot) {
-  plot %>% ggplotly(dynamicTicks = TRUE, tooltip = "gene_names") %>% plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>%
+  plot %>% ggplotly(dynamicTicks = TRUE, tooltip = "gene_names") %>%
+    plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>%
     style(hoverinfo = "text")
 }
 #'
 #' @rawNamespace import(plotly, except = c(config, last_plot))
 #' @keywords internal
 automateTicksRNA <- function(plot) {
-  plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(yaxis=list(autorange = FALSE,nticks=3),xaxis=list(autorange=FALSE))
+  plot %>% ggplotly(dynamicTicks = TRUE) %>%
+    plotly::layout(yaxis=list(autorange = FALSE,nticks=3), xaxis=list(autorange=FALSE))
 }
 
 automateTicksX <- function(plot) {
-  plot %>% ggplotly(dynamicTicks = TRUE) %>% plotly::layout(xaxis=list(autorange = FALSE),
-                                                            yaxis=list(autorange=FALSE,
-                                                                       ticktext=list("2","1","0"),
-                                                                       tickvals=list(-0.5,0.5,1.5),
-                                                                       tickmode = "array")
+  plot %>% ggplotly(dynamicTicks = TRUE) %>%
+    plotly::layout(xaxis=list(autorange = FALSE),
+                   yaxis=list(autorange=FALSE,
+                              ticktext=list("2","1","0"),
+                              tickvals=list(-0.5,0.5,1.5),
+                              tickmode = "array")
   ) %>% style(hoverinfo = "none")
 
 }

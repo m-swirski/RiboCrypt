@@ -1,7 +1,7 @@
 createSinglePlot <- function(profile, withFrames, colors, ylabels, lines, type = "lines"){
   profile_plot <- singlePlot_select_plot_type(profile, withFrames, colors,
                                               lines, type)
-  return(singlePlot_add_theme(profile_plot, ylabels))
+  return(singlePlot_add_theme(profile_plot, ylabels, type))
 }
 
 

@@ -1,9 +1,10 @@
-createSinglePlot <- function(profile, withFrames, colors, ylabels, lines, type = "lines",
+createSinglePlot <- function(profile, withFrames, colors, ylabels,
+                             ylabels_full_name = ylabels, lines, type = "lines",
                              flip_ylabel = type == "heatmap", total_libs = 1){
   profile_plot <- singlePlot_select_plot_type(profile, withFrames, colors,
                                               lines, type)
   return(singlePlot_add_theme(profile_plot, ylabels, type, flip_ylabel,
-                              total_libs))
+                              total_libs, ylabels_full_name))
 }
 
 
@@ -42,7 +43,8 @@ make_summary_track <- function(profiles, plots, withFrames, colors, lines, summa
   summary_profile <- rbindlist(profiles)
   summary_profile <- summary_profile[,.(count = sum(count)), by = position]
   summary_profile[, frame := profiles[[1]]$frame]
-  summary_plot <- createSinglePlot(summary_profile, all(withFrames), colors[1], "summary", lines,
+  summary_plot <- createSinglePlot(summary_profile, all(withFrames), colors[1], "summary",
+                                   FALSE, lines,
                                    type = summary_track_type,
                                    flip_ylabel = FALSE)
   plots[[nplots]] <- summary_plot

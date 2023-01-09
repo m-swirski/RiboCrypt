@@ -37,7 +37,8 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
 }
 
 singlePlot_add_theme <- function(profile_plot, ylabels, type,
-                                 flip_ylabel = type == "heatmap", total_libs) {
+                                 flip_ylabel = type == "heatmap", total_libs,
+                                 ylabels_full_name = ylabels) {
   y_text_size <- ifelse(total_libs < 30, 8, 6)
   profile_plot <- profile_plot +
     ylab(ylabels) +
@@ -58,12 +59,14 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
     # browser()
     profile_plot <- automateTicksRNA(profile_plot)
     if (flip_ylabel) {
-      y_text_size <- ifelse(total_libs < 30, 15, ifelse(total_libs < 50, 10, 7))
+      y_text_size <- ifelse(total_libs < 30, 15, ifelse(total_libs < 50, 10,
+                                                        ifelse(total_libs < 60, 7, 5)))
       #browser()
       profile_plot <- profile_plot %>%
         add_annotations(text = ylabels, x = "", y = 0.5,
                         yref = "paper", xref = "paper", showarrow = F,
-                        font = list(size = y_text_size))
+                        font = list(size = y_text_size),
+                        hovertext = ylabels_full_name)
     }
     return(profile_plot)
   }

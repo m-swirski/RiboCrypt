@@ -49,12 +49,13 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
     profiles <- bpmapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
                       reads, withFrames, kmers, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
   }
-
+  browser()
+  total_libs <- length(profiles)
   if (is(BPPARAM, "SerialParam")) {
-    plots <- mapply(function(x,y,z,c) createSinglePlot(x,y,z,c, lines, type = frames_type),
+    plots <- mapply(function(x,y,z,c) createSinglePlot(x,y,z,c, lines, type = frames_type, total_libs),
                     profiles, withFrames, colors, ylabels, SIMPLIFY = FALSE)
   } else {
-    plots <- bpmapply(function(x,y,z,c) createSinglePlot(x,y,z,c,kmers_type, g, lines, type = frames_type),
+    plots <- bpmapply(function(x,y,z,c) createSinglePlot(x,y,z,c, lines, type = frames_type, total_libs),
                       profiles, withFrames, colors, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
   }
   nplots <- length(plots)

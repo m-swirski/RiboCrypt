@@ -1,6 +1,6 @@
 createSinglePlot <- function(profile, withFrames, colors, ylabels,
                              ylabels_full_name = ylabels, lines, type = "lines",
-                             flip_ylabel = type == "heatmap", total_libs = 1){
+                             total_libs = 1, flip_ylabel = type == "heatmap"){
   profile_plot <- singlePlot_select_plot_type(profile, withFrames, colors,
                                               lines, type)
   return(singlePlot_add_theme(profile_plot, ylabels, type, flip_ylabel,

@@ -60,7 +60,8 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
       #browser()
       profile_plot <- profile_plot %>%
         add_annotations(text = ylabels, x = "", y = 0.5,
-                        yref = "paper", xref = "paper", showarrow = F)
+                        yref = "paper", xref = "paper", showarrow = F,
+                        font = list(size = 10))
     }
     return(profile_plot)
   }

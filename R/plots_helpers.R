@@ -36,31 +36,32 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
   return(profile_plot)
 }
 
-singlePlot_add_theme <- function(profile_plot, ylabels, type) {
+singlePlot_add_theme <- function(profile_plot, ylabels, type,
+                                 flip_ylabel = type == "heatmap") {
+  profile_plot <- profile_plot +
+    ylab(ylabels) +
+    theme(axis.title.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.title.y = element_text(size = 8, face = "bold"),
+          axis.text.y = element_text(size = 6),
+          plot.margin = unit(c(0,0,0,0), "pt"),
+          legend.position = "none") +
+    scale_x_continuous(expand = c(0,0))
+
   if (type == "heatmap") {
     profile_plot <- profile_plot +
-      theme(legend.position = "none") +
-      ylab(ylabels) +
-      theme(axis.title.x = element_blank(),
-            axis.ticks.x = element_blank(),
-            axis.text.x = element_blank(),
-            axis.title.y = element_text(size = 8, face = "bold"),
+      theme(axis.title.y = element_blank(),
             axis.ticks.y = element_blank(),
-            axis.text.y = element_blank()) +
-      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-      scale_x_continuous(expand = c(0,0))
-  } else {
-    profile_plot <- profile_plot +
-      theme(legend.position = "none") +
-      ylab(ylabels) +
-      theme(axis.title.x = element_blank(),
-            axis.ticks.x = element_blank(),
-            axis.text.x = element_blank(),
-            axis.title.y = element_text(size = 8, face = "bold"),
-            axis.text.y = element_text(size = 6)) +
-      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-      scale_x_continuous(expand = c(0,0))
+            axis.text.y = element_blank())
+    # browser()
+    profile_plot <- automateTicksRNA(profile_plot)
+    if (flip_ylabel) {
+      profile_plot <- profile_plot %>%
+        add_annotations(text = ylabels, x = 0.5, y = 0.5,
+                        yref = "paper", showarrow = F)
+    }
+    return(profile_plot)
   }
-
   return(automateTicksRNA(profile_plot))
 }

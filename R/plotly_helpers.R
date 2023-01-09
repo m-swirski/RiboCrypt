@@ -54,3 +54,13 @@ ggplotlyHover <- function(x, ...) {
   return(gg)
 }
 
+addToImageButtonOptions <- function(multiomics_plot, filename, width, height,
+                                    format = "svg") {
+  multiomics_plot %>% plotly::config(
+    toImageButtonOptions = list(
+      format = "svg",
+      filename = filename,
+      width = width,
+      height = height))
+}
+

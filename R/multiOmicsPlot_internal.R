@@ -24,13 +24,13 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                               stop_codons = stop_codons, custom_motif = custom_motif)
   seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]])
 
-
   # Get the panel for the annotation track
   gene_model_panel <- createGeneModelPanel(display_range, annotation,
                                            custom_regions = custom_regions,
                                            viewMode = viewMode)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]])
+
   # Get NGS data tracks
   force(display_range)
   force(kmers_type)
@@ -58,61 +58,48 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                       profiles, withFrames, colors, ylabels, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
   }
   nplots <- length(plots)
-
-
   if (summary_track) {
-    #browser()
-    summary_profile <- rbindlist(profiles)
-    summary_profile <- summary_profile[,.(count = sum(count)), by = position]
-    summary_profile[, frame := profiles[[1]]$frame]
-    summary_plot <- createSinglePlot(summary_profile, all(withFrames), colors[1], "summary", lines,
-                                     type = summary_track_type)
     nplots <- nplots + 1
-    plots[[nplots]] <- summary_plot
-    plots <- rev(plots)
+    plots <- make_summary_track(profiles, plots, withFrames, colors,
+                                lines, summary_track_type, nplots)
   }
 
-  if (display_sequence %in% c("none", FALSE)) { # plotly subplot without sequence track
+  without_sequence_track <- display_sequence %in% c("none", FALSE)
+  if (without_sequence_track) { # plotly subplot without sequence track
+    nplots <- nplots+ 2
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
-    multiomics_plot <- subplot(plots,
-                               margin = 0,
-                               nrows = nplots+ 2,
-                               heights = proportions,
-                               shareX = TRUE,
-                               titleY = TRUE, titleX = TRUE)
   } else { # plotly subplot with sequence track
-    nt_area <- ggplot() +
-      theme(axis.title = element_blank(),
-            axis.ticks = element_blank(),
-            axis.text = element_blank()) +
-      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-      scale_x_continuous(expand = c(0,0))
-
+    nplots <- nplots + 3
+    nt_area <- nt_area_template()
     plots <- c(plots, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel),
                            automateTicksX(seq_panel)))
-    multiomics_plot <- subplot(plots,
-                               margin = 0,
-                               nrows = nplots + 3,
-                               heights = proportions,
-                               shareX = TRUE,
-                               titleY = TRUE, titleX = TRUE)
-    # Create sequence zoom logic (javascript)
-    display_dist <- nchar(target_seq)
-    render_on_zoom_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
-                                        distance = seq_render_dist, display_dist = display_dist, aa_letter_code = aa_letter_code)
-    select_region_on_click_data <- list(nplots = nplots, input_id = input_id)
-    multiomics_plot <- multiomics_plot %>%
-      onRender(fetchJS("render_on_zoom.js"), render_on_zoom_data) %>%
-      onRender(fetchJS("select_region_on_click.js"), select_region_on_click_data)
+  }
+  browser()
+  multiomics_plot <- subplot(plots,
+                             margin = 0,
+                             nrows = nplots,
+                             heights = proportions,
+                             shareX = !any(frames_type == "heatmap"),
+                             titleY = TRUE, titleX = TRUE)
+  if (!without_sequence_track) {
+    multiomics_plot <- addJSrender(multiomics_plot, target_seq, nplots, seq_render_dist,
+                                   display_dist, aa_letter_code, input_id)
   }
 
-  multiomics_plot <- multiomics_plot %>% plotly::config(
-    toImageButtonOptions = list(
-      format = "svg",
-      filename = ifelse(plot_name == "default", names(display_range), plot_name),
-      width = width,
-      height = height))
+  filename <- ifelse(plot_name == "default", names(display_range), plot_name)
+  multiomics_plot <-addToImageButtonOptions(multiomics_plot, filename,
+                                            width, height, format = "svg")
+
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
 
   return(multiomics_plot)
+}
+
+nt_area_template <- function() {
+  ggplot() +
+    theme(axis.title = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text = element_blank()) +
+    theme(plot.margin = unit(c(0,0,0,0), "pt"))+
+    scale_x_continuous(expand = c(0,0))
 }

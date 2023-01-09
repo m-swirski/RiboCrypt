@@ -1,7 +1,8 @@
-createSinglePlot <- function(profile, withFrames, colors, ylabels, lines, type = "lines"){
+createSinglePlot <- function(profile, withFrames, colors, ylabels, lines, type = "lines",
+                             flip_ylabel = type == "heatmap"){
   profile_plot <- singlePlot_select_plot_type(profile, withFrames, colors,
                                               lines, type)
-  return(singlePlot_add_theme(profile_plot, ylabels, type))
+  return(singlePlot_add_theme(profile_plot, ylabels, type, flip_ylabel))
 }
 
 
@@ -34,4 +35,16 @@ getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines){
     profile_plot <- automateTicksRNA(profile_plot)
   }
   return(profile_plot)
+}
+
+make_summary_track <- function(profiles, plots, withFrames, colors, lines, summary_track_type, nplots) {
+  summary_profile <- rbindlist(profiles)
+  summary_profile <- summary_profile[,.(count = sum(count)), by = position]
+  summary_profile[, frame := profiles[[1]]$frame]
+  summary_plot <- createSinglePlot(summary_profile, all(withFrames), colors[1], "summary", lines,
+                                   type = summary_track_type,
+                                   flip_ylabel = FALSE)
+  plots[[nplots]] <- summary_plot
+  plots <- rev(plots)
+  return(plots)
 }

@@ -73,8 +73,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
   } else { # plotly subplot with sequence track
     nplots <- nplots + 3
-    nt_area <- nt_area_template()
-    plots <- c(plots, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel),
+    plots <- c(plots, list(automateTicks(nt_area_template()), automateTicksGMP(gene_model_panel),
                            automateTicksX(seq_panel)))
   }
   #browser()
@@ -85,7 +84,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                              shareX = TRUE,
                              titleY = TRUE, titleX = TRUE)
   if (!without_sequence_track) {
-    multiomics_plot <- addJSrender(multiomics_plot, target_seq, nplots, seq_render_dist,
+    multiomics_plot <- addJSrender(multiomics_plot, target_seq, nplots-3, seq_render_dist,
                                    display_dist, aa_letter_code, input_id)
   }
 

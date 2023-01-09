@@ -48,6 +48,7 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
 
 addJSrender <- function(multiomics_plot, target_seq, nplots, seq_render_dist,
                         display_dist, aa_letter_code, input_id) {
+  #browser()
   display_dist <- nchar(target_seq)
   render_on_zoom_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
                                       distance = seq_render_dist, display_dist = display_dist, aa_letter_code = aa_letter_code)
@@ -55,4 +56,5 @@ addJSrender <- function(multiomics_plot, target_seq, nplots, seq_render_dist,
   multiomics_plot <- multiomics_plot %>%
     onRender(fetchJS("render_on_zoom.js"), render_on_zoom_data) %>%
     onRender(fetchJS("select_region_on_click.js"), select_region_on_click_data)
+  return(multiomics_plot)
 }

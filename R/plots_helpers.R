@@ -57,9 +57,10 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
     # browser()
     profile_plot <- automateTicksRNA(profile_plot)
     if (flip_ylabel) {
+      #browser()
       profile_plot <- profile_plot %>%
-        add_annotations(text = ylabels, x = 0.5, y = 0.5,
-                        yref = "paper", showarrow = F)
+        add_annotations(text = ylabels, x = "", y = 0.5,
+                        yref = "paper", xref = "paper", showarrow = F)
     }
     return(profile_plot)
   }

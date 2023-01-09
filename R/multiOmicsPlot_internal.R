@@ -74,12 +74,12 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
     plots <- c(plots, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel),
                            automateTicksX(seq_panel)))
   }
-  browser()
+  #browser()
   multiomics_plot <- subplot(plots,
                              margin = 0,
                              nrows = nplots,
                              heights = proportions,
-                             shareX = !any(frames_type == "heatmap"),
+                             shareX = TRUE,
                              titleY = TRUE, titleX = TRUE)
   if (!without_sequence_track) {
     multiomics_plot <- addJSrender(multiomics_plot, target_seq, nplots, seq_render_dist,

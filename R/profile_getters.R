@@ -75,15 +75,14 @@ getStackProfile <- function(grl, footprints, kmers, kmers_type = "mean") {
 
 getProfileWrapper <- function(display_range, reads, withFrames, kmers = 1,
                               kmers_type = "mean", type = "lines") {
-  
+
   if (withFrames) {
-    
     if (type %in% c("stacks", "area" )) {
       profile <- getStackProfile(display_range, reads, kmers, kmers_type = kmers_type)
     } else profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
   } else {
     profile <- getCoverageProfile(display_range, reads, kmers, kmers_type = kmers_type)
-  }  
+  }
   return(profile)
 }
 
@@ -91,7 +90,7 @@ getProfileWrapper <- function(display_range, reads, withFrames, kmers = 1,
 getProfileAnimate <- function(display_range, reads, withFrames, kmers = 1, kmers_type = "mean") {
   if (withFrames) {
     profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
-    
+
   } else {
     not_coverage <- is(reads, "GenomicRanges") |
       is(reads, "GAlignments") | is(reads, "GAlignmentPairs")

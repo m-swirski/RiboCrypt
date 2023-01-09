@@ -43,11 +43,12 @@ browser_server <- function(id, all_experiments, env) {
       experiments <- all_exp$name
       # Set reactive values
       org <- reactive(input$genome)
-      df <- reactive(read.experiment(input$dff, output.env = env)) #, output.env = envir))
-      tx <- reactive(loadRegion(df()))
+      rv <- reactiveValues(lstval="",curval="") # <- Compare new df to old
+      df <- reactive({print("now update");read.experiment(input$dff, output.env = env)})
+      observeEvent(df(), {rv$lstval <- rv$curval; rv$curval <- df()@txdb})
+      tx <- reactive({req(rv$lstval != rv$curval); loadRegion(df())})
       cds <- reactive(loadRegion(df(), part = "cds"))
       libs <- reactive(bamVarName(df()))
-
 
       observeEvent(org(), {
         orgs_safe <- if (isolate(org()) == "ALL") {

@@ -18,6 +18,24 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                                     input_id = "", summary_track = FALSE,
                                     summary_track_type = frames_type) {
   multiOmicsController()
+  # Get NGS data tracks
+  force(display_range)
+  force(kmers_type)
+  force(frames_type)
+  force(reads)
+  force(withFrames)
+  force(kmers)
+  if (is(BPPARAM, "SerialParam")) {
+    profiles <- mapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
+                       reads, withFrames, kmers, SIMPLIFY = FALSE)
+  } else {
+    profiles <- bpmapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
+                         reads, withFrames, kmers, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+  }
+
+  force(colors)
+  force(lines)
+  force(ylabels)
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
@@ -31,24 +49,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
   lines <- gene_model_panel[[2]]
   gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]])
 
-  # Get NGS data tracks
-  force(display_range)
-  force(kmers_type)
-  force(lines)
-  force(frames_type)
-  force(reads)
-  force(withFrames)
-  force(colors)
-  force(kmers)
-  force(ylabels)
 
-  if (is(BPPARAM, "SerialParam")) {
-    profiles <- mapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
-                    reads, withFrames, kmers, SIMPLIFY = FALSE)
-  } else {
-    profiles <- bpmapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
-                      reads, withFrames, kmers, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
-  }
   #browser()
   total_libs <- length(profiles)
   if (is(BPPARAM, "SerialParam")) {
@@ -95,13 +96,4 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
 
   return(multiomics_plot)
-}
-
-nt_area_template <- function() {
-  ggplot() +
-    theme(axis.title = element_blank(),
-          axis.ticks = element_blank(),
-          axis.text = element_blank()) +
-    theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-    scale_x_continuous(expand = c(0,0))
 }

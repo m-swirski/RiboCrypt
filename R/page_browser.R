@@ -11,6 +11,7 @@ browser_ui = function(id, label = "Browser", all_exp) {
                    organism_input_select(c("ALL", genomes), ns),
                    experiment_input_select(experiments, ns),
                    gene_input_select(ns),
+                   tx_input_select(ns),
                    library_input_select(ns),
                    frame_type_select(ns),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20, value = 1)
@@ -20,6 +21,7 @@ browser_ui = function(id, label = "Browser", all_exp) {
                    numericInput(ns("extendTrailers"), "3' extension", 0),
                    checkboxInput(ns("viewMode"), label = "Genomic View", value = FALSE),
                    checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = FALSE),
+                   checkboxInput(ns("other_tx"), label = "Full annotation", value = FALSE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type")
           ),
@@ -38,96 +40,40 @@ browser_server <- function(id, all_experiments, env) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
-      # Loading selected experiment and related data
+      # Static values
       genomes <- unique(all_exp$organism)
       experiments <- all_exp$name
+
       # Set reactive values
       org <- reactive(input$genome)
-      rv <- reactiveValues(lstval="",curval="") # <- Compare new df to old
-      df <- reactive({print("now update");read.experiment(input$dff, output.env = env)})
-      observeEvent(df(), {rv$lstval <- rv$curval; rv$curval <- df()@txdb})
-      tx <- reactive({req(rv$lstval != rv$curval); loadRegion(df())})
-      cds <- reactive(loadRegion(df(), part = "cds"))
+      rv <- reactiveValues(lstval="",curval="") # Store current and last genome
+      rv_changed <- reactiveVal(NULL) # Did genome change?
+      df <- reactive({print("New experiment loaded");read.experiment(input$dff, output.env = env)})
+      observeEvent(df(), update_rv(rv, df), priority = 2)
+      observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
+        bindEvent(rv$curval)
+      tx <- reactive({loadRegion(df())}) %>%
+        bindEvent(rv_changed(), ignoreNULL = T)
+      cds <- reactive(loadRegion(df(), part = "cds")) %>%
+        bindEvent(rv_changed(), ignoreNULL = T)
+      gene_name_list <- reactive(get_gene_name_categories(df())) %>%
+        bindEvent(rv_changed(), ignoreNULL = T)
       libs <- reactive(bamVarName(df()))
+      # Update main side panels
+      observeEvent(org(), experiment_update_select(org, all_exp, experiments))
+      observeEvent(gene_name_list(), gene_update_select(gene_name_list))
+      observeEvent(input$gene, tx_update_select(isolate(input$gene),
+                      gene_name_list), ignoreNULL = TRUE, ignoreInit = T)
+      observeEvent(libs(), library_update_select(libs))
 
-      observeEvent(org(), {
-        orgs_safe <- if (isolate(org()) == "ALL") {
-          unique(all_exp$organism)
-        } else isolate(org())
-        picks <- experiments[all_exp$organism %in% orgs_safe]
-        updateSelectizeInput(
-          inputId = "dff",
-          choices = picks,
-          selected = picks[1],
-          server = FALSE
-        )
-      })
-
-      # Gene selector
-      observeEvent(tx(), {
-        updateSelectizeInput(
-          inputId = "gene",
-          choices = names(tx()),
-          selected = names(tx())[1],
-          server = TRUE
-        )
-      })
-
-      # Library selector
-      observeEvent(libs(), {
-        updateSelectizeInput(
-          inputId = "library",
-          choices = libs(),
-          selected = libs()[min(length(libs()), 9)]
-        )
-      })
-
+      # Main plot controller, this code is only run if 'plot' is pressed
+      mainPlotControls <- eventReactive(input$go,
+        click_plot_browser_main_controller(input, tx, cds, libs, df))
       # Main plot, this code is only run if 'plot' is pressed
-      mainPlotControls <- eventReactive(input$go, {
-        display_region <- observed_gene(isolate(input$gene), tx)
-        cds_display <- observed_cds(isolate(input$gene),cds)
-        dff <- observed_exp_subset(isolate(input$library), libs, df)
-        customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
-
-        reads <- load_reads(dff, "cov")
-        reactiveValues(dff = dff,
-                       display_region = display_region,
-                       customRegions = customRegions,
-                       extendTrailers = input$extendTrailers,
-                       extendLeaders = input$extendLeaders,
-                       summary_track = input$summary_track,
-                       summary_track_type = input$summary_track_type,
-                       viewMode = input$viewMode,
-                       kmerLength = input$kmer,
-                       frames_type = input$frames_type,
-                       cds_display = cds_display,
-                       reads = reads)
-      })
-
-      output$c <- renderPlotly({
-        time_before <- Sys.time()
-        a <- RiboCrypt::multiOmicsPlot_ORFikExp(
-          display_range = mainPlotControls()$display_region,
-          df = mainPlotControls()$dff,
-          display_sequence = "nt",
-          reads = mainPlotControls()$reads,
-          trailer_extension = mainPlotControls()$extendTrailers,
-          leader_extension = mainPlotControls()$extendLeaders,
-          #annotation = mainPlotControls()$cds_display,
-          viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
-          kmers = mainPlotControls()$kmerLength,
-          frames_type = mainPlotControls()$frames_type,
-          custom_regions = mainPlotControls()$customRegions,
-          input_id = session$ns("selectedRegion"),
-          summary_track = mainPlotControls()$summary_track,
-          summary_track_type = mainPlotControls()$summary_track_type
-          )
-        cat("lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
-        return(a)
-      })
-
-      ### NGLVieweR ###
+      output$c <- renderPlotly(click_plot_browser(mainPlotControls, session))
+      ### NGLVieweR (protein structures) ###
       # TODO: Move as much as possible of protein stuff out of page_browser
+
       # Setup reactive values needed for structure viewer
       dynamicVisible <- reactiveVal(FALSE)
       selectedRegion <- reactiveVal(NULL)
@@ -135,7 +81,7 @@ browser_server <- function(id, all_experiments, env) {
         req(selectedRegion())
         result <- cds()[names(cds()) == selectedRegion()] %>%
           getRiboProfile(mainPlotControls()$reads[[1]]) %>%
-          (function (x) { x$count[seq(1, length(x$count), 3)] })()
+          (function (x) { x$count[seq.int(1, length(x$count), 3)] })()
       })
 
       # When user clicks on region
@@ -163,25 +109,13 @@ browser_server <- function(id, all_experiments, env) {
       pdb_file <- reactive({
         file.path(region_dir(), "ranked_0.pdb")
       })
-      pdb_file_exists <- reactive({
-        req(pdb_file())
-        file.exists(pdb_file())
-      })
-      output$dynamic <- renderNGLVieweR({
-        req(pdb_file_exists(), selectedRegionProfile())
-        pdb_file() %>% NGLVieweR() %>%
-          stageParameters(backgroundColor = "white") %>%
-          onRender(fetchJS("sequence_viewer_coloring.js"), valuesToColors(selectedRegionProfile()))
-      })
+      pdb_file_exists <- reactive(pdb_exists(pdb_file))
+      output$dynamic <- renderNGLVieweR(
+        protein_struct_render(pdb_file_exists, selectedRegionProfile, pdb_file))
       # Variable UI logic
-      output$variableUi <- renderUI({
-        ns <- session$ns
-        req(dynamicVisible(), pdb_file_exists(), selectedRegionProfile())
-        fluidRow(
-          actionButton(ns("dynamicClose"), "Close"),
-          NGLVieweROutput(ns("dynamic"))
-        )
-      })
+      output$variableUi <- renderUI(
+        protein_struct_plot(selectedRegionProfile, dynamicVisible,
+                            pdb_file_exists, session))
     }
   )
 }

@@ -41,6 +41,8 @@
 #' @param lib_to_annotation_proportions numeric vector of length 2. relative sizes of profiles and annotation.
 #' @param lib_proportions numeric vector of length equal to displayed libs. Relative sizes of profiles displayed
 #' @param annotation_proportions numeric vector of length 3 (seq displayed), or 2 (seq not displayed). Relative sizes of annotation tracks.
+#' @param summary_track logical, default FALSE. Display a top track, that is the sum
+#' of all tracks.
 #' @param AA_code Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
 #' See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
 #' \code{Biostrings::getGeneticCode("11")}

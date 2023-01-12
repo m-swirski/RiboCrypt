@@ -11,7 +11,8 @@ heatmap_ui <- function(id, label = "Heatmap", all_exp) {
                    organism_input_select(c("ALL", genomes), ns),
                    experiment_input_select(experiments, ns),
                    gene_input_select(ns),
-                   library_input_select(ns),
+                   tx_input_select(ns),
+                   library_input_select(ns, FALSE),
                    heatmap_region_select(ns),
                    normalization_input_select(ns),
                    numericInput(ns("readlength_min"), "Min Readlength", 26),
@@ -35,49 +36,34 @@ heatmap_server <- function(id, all_experiments, env) {
       experiments <- all_exp$name
       # Set reactive values
       org <- reactive(input$genome)
-      df <- reactive(read.experiment(input$dff, output.env = env)) #, output.env = envir))
-      # TODO: make sure to update valid genes, when 5' and 3' extension is updated!
-      valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE, minThreeUTR = 0))
-      tx <- reactive(loadRegion(df(), part = "mrna", names.keep = valid_genes_subset()))
-      cds <- reactive(loadRegion(df(), part = "cds", names.keep = valid_genes_subset()))
+      rv <- reactiveValues(lstval="",curval="") # Store current and last genome
+      rv_changed <- reactiveVal(NULL) # Did genome change?
+      df <- reactive({print("New experiment loaded");read.experiment(input$dff, output.env = env)})
+      observeEvent(df(), update_rv(rv, df), priority = 2)
+      observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
+        bindEvent(rv$curval)
+      valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE,
+                                                       minThreeUTR = 0)) %>%
+        bindEvent(rv_changed(), ignoreNULL = T)
+      tx <- reactive({loadRegion(df(), part = "mrna", names.keep = valid_genes_subset())}) %>%
+        bindEvent(rv_changed(), ignoreNULL = T)
+      cds <- reactive(loadRegion(df(), part = "cds", names.keep = valid_genes_subset())) %>%
+        bindEvent(rv_changed(), ignoreNULL = T)
+      gene_name_list <- reactive(get_gene_name_categories(df())) %>%
+        bindEvent(rv_changed(), ignoreNULL = T)
       libs <- reactive(bamVarName(df()))
 
-      observeEvent(org(), {
-        orgs_safe <- if (isolate(org()) == "ALL") {
-          unique(all_exp$organism)
-        } else isolate(org())
-        picks <- experiments[all_exp$organism %in% orgs_safe]
-        updateSelectizeInput(
-          inputId = "dff",
-          choices = picks,
-          selected = picks[1],
-          server = FALSE
-        )
-      })
-
-      # Gene selector
-      observeEvent(tx(), {
-        updateSelectizeInput(
-          inputId = 'gene',
-          choices = c("all", names(tx())),
-          selected = "all",
-          server = TRUE
-        )
-      })
-
-      # Library selector
-      observeEvent(libs(), {
-        updateSelectizeInput(
-          inputId = "library",
-          choices = libs(),
-          selected = libs()[min(length(libs()), 9)]
-        )
-      })
+      # Update main side panels
+      observeEvent(org(), experiment_update_select(org, all_exp, experiments))
+      observeEvent(gene_name_list(), gene_update_select_heatmap(gene_name_list))
+      observeEvent(input$gene, tx_update_select(isolate(input$gene),
+                    gene_name_list, "all"), ignoreNULL = TRUE, ignoreInit = T)
+      observeEvent(libs(), library_update_select(libs))
 
       # Main plot, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go, {
-        display_region <- observed_gene_heatmap(isolate(input$gene), tx)
-        cds_display <- observed_cds_heatmap(isolate(input$gene),cds)
+        display_region <- observed_gene_heatmap(isolate(input$tx), tx)
+        cds_display <- observed_cds_heatmap(isolate(input$tx),cds)
         dff <- observed_exp_subset(isolate(input$library), libs, df)
 
 
@@ -98,6 +84,7 @@ heatmap_server <- function(id, all_experiments, env) {
                        reads = reads)
       })
       output$c <- renderPlotly({
+        browser()
         message("-- Plot region: ", mainPlotControls()$region)
         if (length(mainPlotControls()$cds_display) > 0) {
           print("This is a mRNA")

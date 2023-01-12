@@ -117,6 +117,9 @@ See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, d
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
 To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.
 You can also add a time remaining bar, for a more detailed pipeline.}
+
+\item{summary_track}{logical, default FALSE. Display a top track, that is the sum
+of all tracks.}
 }
 \value{
 the plot object

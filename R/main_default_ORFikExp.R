@@ -18,8 +18,6 @@
 #' @param plot_name character, default "default" (will create name from display_range name).
 #' @param input_id character path, default: "", id for shiny to disply structures,
 #'  should be "" for local users.
-#' @param summary_track logical, default FALSE. Display a top track, that is the sum
-#' of all tracks.
 #' @param summary_track_type character, default is same as 'frames_type'
 #'  argument
 #' @return the plot object

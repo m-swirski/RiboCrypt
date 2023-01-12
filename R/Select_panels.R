@@ -20,7 +20,7 @@ experiment_input_select <- function(names, ns) {
     inputId = ns("dff"),
     label = "Select an experiment",
     choices = names,
-    selected = "",
+    selected = NULL,
     multiple = FALSE
   )
 }
@@ -28,20 +28,32 @@ experiment_input_select <- function(names, ns) {
 gene_input_select <- function(ns) {
     selectizeInput(
     inputId = ns("gene"),
-    choices = "",
-    selected = "",
+    choices = NULL,
+    selected = NULL,
     label = "Select a gene",
-    multiple = FALSE
+    multiple = FALSE,
+    options = list(placeholder = 'Insert valid gene')
   )
 }
 
-library_input_select <- function(ns) {
+tx_input_select <- function(ns) {
+  selectizeInput(
+    inputId = ns("tx"),
+    choices = "",
+    selected = "",
+    label = "Select a transcript",
+    multiple = FALSE,
+    options = list(placeholder = 'Insert valid tx')
+  )
+}
+
+library_input_select <- function(ns, multiple = TRUE) {
   selectizeInput(
     inputId = ns("library"),
     label = "Select libraries",
     choices = "",
     selected = "",
-    multiple = TRUE
+    multiple = multiple
   )
 }
 

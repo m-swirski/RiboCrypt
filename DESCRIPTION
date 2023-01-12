@@ -1,10 +1,11 @@
 Package: RiboCrypt
 Type: Package
 Title: Interactive visualization in genomics
-Version: 1.3.2
+Version: 1.3.3
 Authors@R: c(
-  person(given = "Michal", family = "Swirski", email = "michal.swirski@uw.edu.pl", role = c("aut", "cre")),
-  person(given = "Haakon", family = "Tjeldnes", email = "hauken_heyken@hotmail.com", role = c("ctb")))
+  person(given = "Michal", family = "Swirski", email = "michal.swirski@uw.edu.pl", role = c("aut", "cre", "cph")),
+  person(given = "Haakon", family = "Tjeldnes", email = "hauken_heyken@hotmail.com", role = c("aut","ctb")),
+  person(given = "Kornel", family = "Labun", email = "kornellabun@gmail.com", role = c("ctb")))
 License: MIT + file LICENSE
 Description: R Package for interactive visualization and browsing NGS data. 
   It contains a browser for both transcript and genomic coordinate view. 

@@ -41,19 +41,21 @@ are multi species, so sometimes one study have multiple experiments).
 Select which one you want. There also exist merged experiments 
 (all samples merged for the organism, etc)
 3. Select a gene: A gene can be selected currently using:
- - Transcript id (ENSEMBL)
- - Gene id (ENSEMBL) (To be implemented)
- - Gene symbol (hgnc, etc) (To be implemented)
-4. Select libraries
+ - Gene id (ENSEMBL)
+ - Gene symbol (hgnc, etc)
+4. Select a transcript: A transcript isoform of the given gene above, 
+can be selected currently using:
+- Transcript id (ENSEMBL)
+5. Select libraries
 Each experiment usually have multiple libraries. Select which one
 to display, by default if you select multiple libraries they will be shown
 under each other.
-5. Select frames display type: 
+6. Select frames display type: 
  - lines (single line, most clear for middle distance (> 100 nt))
  - columns (single point bars, most clear for single nt resolution)
  - stacks (Area under curve, stacked, most clear for long distance (> 1000 nt))
  - area (Area under curve, with alpha (see-through), most clear for long distance (> 1000 nt))
-6. K-mer length:
+7. K-mer length:
 When looking at a large region (> 100nt), pure coverage can usually be hard to inspect.
 Using K-mer length > 1 (9 is a good starting point to try), you can easily look at
 patterns over larger regions. 
@@ -67,6 +69,9 @@ correct positions in genome, but a lot harder to understand)
 4. Protein structures (If you click the annotation name of a transcript
 in the plot panel it will display the alpha-fold protein colored by the ribo-seq data displayed
 in the plot panel)
+5. Full annotation (display full annotation or just the tx you selected)
+6. Summary top track (Add an additional plot track on top, summarizing all selecte libs)
+7. Select Summary display type (same as frames display type above, but for the summary track)
 
 ## Plot panel
 From the options specified in the display panel, when you press "plot" the data will be displayed.
@@ -102,26 +107,29 @@ select boxes are:
 1. Select an organism: same as for browser
 2. Select an experiment: same as for browser
 3. Select a gene: A gene can be selected currently using:
- - all (all transcripts)
- - Transcript id (ENSEMBL)
+ - all (all genes)
  - Gene id (ENSEMBL) (To be implemented)
  - Gene symbol (hgnc, etc) (To be implemented)
-4. Select libraries
+4. Select a transcript: A transcript isoform of the given gene above, 
+can be selected currently using:
+ - all (all transcripts from all genes (not just the one you selected!))
+ - Transcript id (ENSEMBL)
+5. Select libraries
 Only 1 library can be selected currently in heatmap mode.
-5. View region
+6. View region
 Select one of:
  - Start codon
  - Stop codon
-6. Normalization
+7. Normalization
 Normalization mode for data display, select one of:
  - transcriptNormalized (each gene counts sum to 1)
  - zscore (zscore normalization, will give better overview if 1 readlength
  is extreme)
  - sum (raw sum of counts, is very sensitive to extreme peaks)
  - log10sum (log10 sum of counts, is less sensitive to extreme peaks)
-7. Min Readlength
+8. Min Readlength
  The minimum readlength to display from library
-8. Max readlength 
+9. Max readlength 
  The maximum readlength to display from library
 
 ## Display panel (Navigate)

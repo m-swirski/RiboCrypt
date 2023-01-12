@@ -84,7 +84,6 @@ heatmap_server <- function(id, all_experiments, env) {
                        reads = reads)
       })
       output$c <- renderPlotly({
-        browser()
         message("-- Plot region: ", mainPlotControls()$region)
         if (length(mainPlotControls()$cds_display) > 0) {
           print("This is a mRNA")

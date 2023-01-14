@@ -48,7 +48,7 @@ browser_server <- function(id, all_experiments, env) {
       org <- reactive(input$genome)
       rv <- reactiveValues(lstval="",curval="") # Store current and last genome
       rv_changed <- reactiveVal(NULL) # Did genome change?
-      df <- reactive({print("New experiment loaded");read.experiment(input$dff, output.env = env)})
+      df <- reactive({req(input$dff %in% experiments); print("New experiment loaded");read.experiment(input$dff, output.env = env)})
       observeEvent(df(), update_rv(rv, df), priority = 2)
       observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
         bindEvent(rv$curval)

@@ -100,7 +100,7 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
     display_sequence, seq_render_dist,
     aa_letter_code,
     annotation_names, start_codons, stop_codons,
-    custom_motif, BPPARAM, summary_track, summary_track_type,
+    custom_motif, BPPARAM, "", summary_track, summary_track_type,
     export.format)
 
 }

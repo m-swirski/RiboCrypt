@@ -35,7 +35,9 @@ multiOmicsPlot_list(
   custom_motif = NULL,
   AA_code = Biostrings::GENETIC_CODE,
   BPPARAM = BiocParallel::SerialParam(),
-  summary_track = FALSE
+  summary_track = FALSE,
+  summary_track_type = frames_type,
+  export.format = "svg"
 )
 }
 \arguments{
@@ -120,6 +122,12 @@ You can also add a time remaining bar, for a more detailed pipeline.}
 
 \item{summary_track}{logical, default FALSE. Display a top track, that is the sum
 of all tracks.}
+
+\item{summary_track_type}{character, default is same as 'frames_type'
+argument}
+
+\item{export.format}{character, default: "svg". alternative: "png".
+when you click the top right image button export, what should it export as?}
 }
 \value{
 the plot object

@@ -4,6 +4,10 @@
 #' will crash if you try to load that experiment!
 #' @param options list of arguments, default
 #'  \code{list("launch.browser" = ifelse(interactive(), TRUE, FALSE))}
+#' @param all_exp a data.table, default:
+#' \code{list.experiments(validate = validate.experiments)}. Which experiments
+#' do you want to allow your app to see, default is all in your system config
+#' path.
 #' @import shiny bslib ORFik NGLVieweR ggplot2
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
@@ -19,33 +23,37 @@
 #'
 RiboCrypt_app <- function(
     validate.experiments = TRUE,
-    options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE))) {
-  # Load dataset status
-  all_exp <- list.experiments(validate = validate.experiments)
-  browser_env <- new.env()
-  heatmap_env <- new.env()
+    options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
+    all_exp = list.experiments(validate = validate.experiments)) {
+  # Set environments
+  with_readlengths_env <- new.env()
+  without_readlengths_env <- new.env()
+  #with_cigar_env <- new.env() # Not used for now
   addResourcePath(prefix = "images",
                   directoryPath = system.file("images", package = "RiboCrypt"))
   addResourcePath(prefix = "rmd",
                   directoryPath = system.file("rmd", package = "RiboCrypt"))
 
   ui <- tagList(
-    rc_header(),
+    rc_header_image(),
     navbarPage(
       lang = "en",
       windowTitle = "RiboCrypt",
       title = rc_title(),
       theme = rc_theme(),
       browser_ui("browser", all_exp = all_exp),
-      heatmap_ui("heatmap", all_exp = all_exp),
+      # heatmap_ui("heatmap", all_exp = all_exp),
+      analysis_ui("analysis", all_exp = all_exp),
       metadata_ui("metadata"),
       tutorial_ui("tutorial")
     )
   )
 
   server <- function(input, output, session) {
-    browser_server("browser", all_exp, browser_env)
-    heatmap_server("heatmap", all_exp, heatmap_env)
+    browser_server("browser", all_exp, without_readlengths_env)
+    # heatmap_server("heatmap", all_exp, with_readlengths_env)
+    analysis_server("analysis", all_exp, without_readlengths_env,
+                    with_readlengths_env)
     metadata_server("metadata")
     tutorial_server("tutorial")
   }
@@ -56,7 +64,7 @@ RiboCrypt_app <- function(
 RiboCrypt_app_modular <- RiboCrypt_app
 
 
-rc_header <- function() {
+rc_header_image <- function() {
   tags$head(
     tags$link(rel = "icon",
               href = file.path("images", "favicon.ico"),

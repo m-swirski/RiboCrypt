@@ -38,7 +38,8 @@ multiOmicsPlot_ORFikExp(
   BPPARAM = BiocParallel::SerialParam(),
   input_id = "",
   summary_track = FALSE,
-  summary_track_type = frames_type
+  summary_track_type = frames_type,
+  export.format = "svg"
 )
 }
 \arguments{
@@ -132,6 +133,9 @@ of all tracks.}
 
 \item{summary_track_type}{character, default is same as 'frames_type'
 argument}
+
+\item{export.format}{character, default: "svg". alternative: "png".
+when you click the top right image button export, what should it export as?}
 }
 \value{
 the plot object

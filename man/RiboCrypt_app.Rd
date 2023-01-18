@@ -6,7 +6,8 @@
 \usage{
 RiboCrypt_app(
   validate.experiments = TRUE,
-  options = list(launch.browser = ifelse(interactive(), TRUE, FALSE))
+  options = list(launch.browser = ifelse(interactive(), TRUE, FALSE)),
+  all_exp = list.experiments(validate = validate.experiments)
 )
 }
 \arguments{
@@ -16,6 +17,11 @@ will crash if you try to load that experiment!}
 
 \item{options}{list of arguments, default
 \code{list("launch.browser" = ifelse(interactive(), TRUE, FALSE))}}
+
+\item{all_exp}{a data.table, default:
+\code{list.experiments(validate = validate.experiments)}. Which experiments
+do you want to allow your app to see, default is all in your system config
+path.}
 }
 \value{
 RiboCrypt shiny app

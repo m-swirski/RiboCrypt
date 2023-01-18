@@ -58,7 +58,7 @@ addToImageButtonOptions <- function(multiomics_plot, filename, width, height,
                                     format = "svg") {
   multiomics_plot %>% plotly::config(
     toImageButtonOptions = list(
-      format = "svg",
+      format = format,
       filename = filename,
       width = width,
       height = height))

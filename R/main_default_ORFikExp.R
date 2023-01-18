@@ -18,8 +18,6 @@
 #' @param plot_name character, default "default" (will create name from display_range name).
 #' @param input_id character path, default: "", id for shiny to disply structures,
 #'  should be "" for local users.
-#' @param summary_track_type character, default is same as 'frames_type'
-#'  argument
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs seqlevels<-
 #' @importFrom GenomeInfoDb seqlevels
@@ -48,7 +46,7 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                 annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                 custom_motif = NULL, BPPARAM = BiocParallel::SerialParam(),
                                 input_id = "", summary_track = FALSE,
-                                summary_track_type = frames_type) {
+                                summary_track_type = frames_type, export.format = "svg") {
 
   multiOmicsPlot_internal(display_range, df, annotation,reference_sequence,
                           reads,
@@ -64,6 +62,6 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                           aa_letter_code,
                           annotation_names, start_codons, stop_codons,
                           custom_motif, BPPARAM, input_id, summary_track,
-                          summary_track_type)
+                          summary_track_type, export.format)
 
 }

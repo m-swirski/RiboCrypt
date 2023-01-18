@@ -6,7 +6,7 @@ metadata_ui <- function(id, label = "metadata") {
              sidebarPanel(
                textInput(ns("accession"), "Study accession number (SRP/GEO/PRJNA)",
                          "GSE13750"),
-               actionButton(ns("go"), "Plot", icon = icon("rocket")),
+               actionButton(ns("go"), "Search", icon = icon("magnifying-glass")),
              ),
              mainPanel(
                textOutput(ns("abstract")),

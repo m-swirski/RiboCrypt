@@ -60,7 +60,7 @@ When looking at a large region (> 100nt), pure coverage can usually be hard to i
 Using K-mer length > 1 (9 is a good starting point to try), you can easily look at
 patterns over larger regions. 
 
-## Display panel (Navigate)
+## Display panel (settings)
 Here additional options are shown:
 1. 5' extension (extend viewed window upstream, outside defined region)
 2. 3' extension (extend viewed window downstream, outside defined region)
@@ -72,6 +72,8 @@ in the plot panel)
 5. Full annotation (display full annotation or just the tx you selected)
 6. Summary top track (Add an additional plot track on top, summarizing all selecte libs)
 7. Select Summary display type (same as frames display type above, but for the summary track)
+8. Export format (When you hover the plot top right image button, and click export 
+(the camera button), which format to export as)
 
 ## Plot panel
 From the options specified in the display panel, when you press "plot" the data will be displayed.
@@ -91,8 +93,34 @@ with black bars that is displayed on top of the data track.
  - purple (Custom motifs)
  When zoomed in, the amino acid sequence is displaced within each frame
 
+# analysis
 
-# Heatmap
+Here we collect the analysis possibilities, which are usually
+on whole genome scale.
+
+## codon analysis
+
+This tab displays a heatmap of percentage usage of codons
+over all genes selected, for both A and P sites.
+
+### Display panel (codon)
+
+The display panel shows what can be specified to display, the possible
+select boxes are:
+1. Select an organism: same as for browser
+2. Select an experiment: same as for browser
+3. Select a gene: A gene can be selected currently using:
+ - all (all genes)
+ - Gene id (ENSEMBL) (To be implemented)
+ - Gene symbol (hgnc, etc) (To be implemented)
+4. Select a transcript: A transcript isoform of the given gene above, 
+can be selected currently using:
+ - all (all transcripts from all genes (not just the one you selected!))
+ - Transcript id (ENSEMBL)
+5. Select libraries (multiple allowed)
+6. Codon filter value (Minimum reads in ORF)
+
+## Heatmap
 
 This tab displays a heatmap of coverage per readlength at a specific
 region (like start site of coding sequences) over all genes selected. 
@@ -101,7 +129,7 @@ region (like start site of coding sequences) over all genes selected.
 knitr::include_graphics("../images/tutorial_heatmap_browser.png")
 ```
 
-## Display panel (heatmap)
+### Display panel (heatmap)
 The display panel shows what can be specified to display, the possible
 select boxes are:
 1. Select an organism: same as for browser
@@ -132,12 +160,12 @@ Normalization mode for data display, select one of:
 9. Max readlength 
  The maximum readlength to display from library
 
-## Display panel (Navigate)
+### Display panel (settings)
 Here additional options are shown:
 1. 5' extension (extend viewed window upstream from point, default 30)
 2. 3' extension (extend viewed window downstreamfrom point, default 30)
 
-## Plot panel
+### Plot panel
 From the options specified in the display panel, when you press "plot" the data will be displayed.
 It contains the specific parts:
 
@@ -163,8 +191,8 @@ of all metadata found from the study is displayed.
 # Additional information
 
 ## massiveNGSpipe
-
-The processing pipeline used is massiveNGSpipe which wraps over multiple tools:
+For our webpage the processing pipeline used is massiveNGSpipe 
+which wraps over multiple tools:
 1.  Fastq files are download with ORFik download.sra
 2.  Adapter is detected with either fastqc (sequence detection) and falls
     back to fastp auto detection. 

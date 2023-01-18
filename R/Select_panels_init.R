@@ -25,24 +25,24 @@ experiment_input_select <- function(names, ns) {
   )
 }
 
-gene_input_select <- function(ns) {
+gene_input_select <- function(ns, multiple = FALSE) {
     selectizeInput(
     inputId = ns("gene"),
     choices = NULL,
     selected = NULL,
     label = "Select a gene",
-    multiple = FALSE,
+    multiple = multiple,
     options = list(placeholder = 'Insert valid gene')
   )
 }
 
-tx_input_select <- function(ns) {
+tx_input_select <- function(ns, multiple = FALSE) {
   selectizeInput(
     inputId = ns("tx"),
     choices = "",
     selected = "",
     label = "Select a transcript",
-    multiple = FALSE,
+    multiple = multiple,
     options = list(placeholder = 'Insert valid tx')
   )
 }
@@ -85,6 +85,39 @@ normalization_input_select <- function(ns) {
     choices =
       c("transcriptNormalized", "zscore", "sum", "log10sum"),
     selected = "transcriptNormalized",
+    multiple = FALSE
+  )
+}
+
+codon_score_input_select <- function(ns) {
+  selectizeInput(
+    inputId = ns("codon_score"),
+    label = "Codon score",
+    choices =
+      c("transcriptNormalized", "zscore", "sum", "log10sum"),
+    selected = "transcriptNormalized",
+    multiple = FALSE
+  )
+}
+
+codon_filter_input_select <- function(ns) {
+  numericInput(
+    inputId = ns("codon_filter_value"),
+    label = "Codon filter value",
+    value = 1000,
+    min = 0,
+    max = NA,
+    step = NA
+  )
+}
+
+export_format_of_plot <- function(ns) {
+  selectizeInput(
+    inputId = ns("plot_export_format"),
+    label = "Export format",
+    choices =
+      c("svg", "png"),
+    selected = "svg",
     multiple = FALSE
   )
 }

@@ -16,7 +16,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                     custom_motif = NULL, BPPARAM = BiocParallel::SerialParam(),
                                     input_id = "", summary_track = FALSE,
-                                    summary_track_type = frames_type) {
+                                    summary_track_type = frames_type, export.format = "svg") {
   multiOmicsController()
   # Get NGS data tracks
   force(display_range)
@@ -90,9 +90,8 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
   }
 
   filename <- ifelse(plot_name == "default", names(display_range), plot_name)
-  multiomics_plot <-addToImageButtonOptions(multiomics_plot, filename,
-                                            width, height, format = "svg")
-
+  multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
+                                         width, height, format = export.format)
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
 
   return(multiomics_plot)

@@ -40,12 +40,16 @@
 #' @param aa_letter_code character, when set to "three_letters", three letter amino acid code is used. One letter by default.
 #' @param lib_to_annotation_proportions numeric vector of length 2. relative sizes of profiles and annotation.
 #' @param lib_proportions numeric vector of length equal to displayed libs. Relative sizes of profiles displayed
+#' @param summary_track_type character, default is same as 'frames_type'
+#'  argument
 #' @param annotation_proportions numeric vector of length 3 (seq displayed), or 2 (seq not displayed). Relative sizes of annotation tracks.
 #' @param summary_track logical, default FALSE. Display a top track, that is the sum
 #' of all tracks.
 #' @param AA_code Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
 #' See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
 #' \code{Biostrings::getGeneticCode("11")}
+#' @param export.format character, default: "svg". alternative: "png".
+#' when you click the top right image button export, what should it export as?
 #' @param BPPARAM how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
 #'  To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.
 #'  You can also add a time remaining bar, for a more detailed pipeline.
@@ -79,7 +83,9 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                 annotation_names = NULL,
                                 start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                 custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
-                                BPPARAM = BiocParallel::SerialParam(), summary_track = FALSE) {
+                                BPPARAM = BiocParallel::SerialParam(), summary_track = FALSE,
+                                summary_track_type = frames_type,
+                                export.format = "svg") {
 
   multiOmicsPlot_internal(display_range, df = NULL, annotation,reference_sequence,
     reads,
@@ -94,7 +100,8 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
     display_sequence, seq_render_dist,
     aa_letter_code,
     annotation_names, start_codons, stop_codons,
-    custom_motif, BPPARAM, summary_track)
+    custom_motif, BPPARAM, summary_track, summary_track_type,
+    export.format)
 
 }
 

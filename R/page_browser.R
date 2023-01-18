@@ -23,7 +23,8 @@ browser_ui = function(id, label = "Browser", all_exp) {
                    checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = FALSE),
                    checkboxInput(ns("other_tx"), label = "Full annotation", value = FALSE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
-                   frame_type_select(ns, "summary_track_type", "Select summary display type")
+                   frame_type_select(ns, "summary_track_type", "Select summary display type"),
+                   export_format_of_plot(ns)
           ),
         ),
         actionButton(ns("go"), "Plot", icon = icon("rocket")),
@@ -48,7 +49,7 @@ browser_server <- function(id, all_experiments, env) {
       org <- reactive(input$genome)
       rv <- reactiveValues(lstval="",curval="") # Store current and last genome
       rv_changed <- reactiveVal(NULL) # Did genome change?
-      df <- reactive({req(input$dff %in% experiments); print("New experiment loaded");read.experiment(input$dff, output.env = env)})
+      df <- reactive(get_exp(input$dff, experiments, env))
       observeEvent(df(), update_rv(rv, df), priority = 2)
       observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
         bindEvent(rv$curval)

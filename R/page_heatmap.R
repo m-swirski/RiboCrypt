@@ -44,13 +44,13 @@ heatmap_server <- function(id, all_experiments, env) {
         bindEvent(rv$curval)
       valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE,
                                                        minThreeUTR = 0)) %>%
-        bindEvent(rv_changed(), ignoreNULL = T)
+        bindEvent(rv_changed(), ignoreNULL = TRUE)
       tx <- reactive({loadRegion(df(), part = "mrna", names.keep = valid_genes_subset())}) %>%
-        bindEvent(rv_changed(), ignoreNULL = T)
+        bindEvent(rv_changed(), ignoreNULL = TRUE)
       cds <- reactive(loadRegion(df(), part = "cds", names.keep = valid_genes_subset())) %>%
-        bindEvent(rv_changed(), ignoreNULL = T)
+        bindEvent(rv_changed(), ignoreNULL = TRUE)
       gene_name_list <- reactive(get_gene_name_categories(df())) %>%
-        bindEvent(rv_changed(), ignoreNULL = T)
+        bindEvent(rv_changed(), ignoreNULL = TRUE)
       libs <- reactive(bamVarName(df()))
 
       # Update main side panels

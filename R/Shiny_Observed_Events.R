@@ -70,6 +70,10 @@ update_rv <- function(rv, df) {
 }
 
 update_rv_changed <- function(rv, rv_changed) {
-  {if ((rv$lstval != rv$curval)) {print("rv_changed"); if (rv_changed()) {rv_changed(F)} else (rv_changed(T))}
-    else if (is.null(rv_changed())) {rv_changed(F) }}
+  if ((rv$lstval != rv$curval)) {
+    print("rv_changed")
+    if (rv_changed()) {
+      rv_changed(FALSE)
+    } else rv_changed(TRUE)}
+  else if (is.null(rv_changed())) rv_changed(FALSE)
 }

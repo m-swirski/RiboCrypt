@@ -54,17 +54,17 @@ browser_server <- function(id, all_experiments, env) {
       observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
         bindEvent(rv$curval)
       tx <- reactive({loadRegion(df())}) %>%
-        bindEvent(rv_changed(), ignoreNULL = T)
+        bindEvent(rv_changed(), ignoreNULL = TRUE)
       cds <- reactive(loadRegion(df(), part = "cds")) %>%
-        bindEvent(rv_changed(), ignoreNULL = T)
+        bindEvent(rv_changed(), ignoreNULL = TRUE)
       gene_name_list <- reactive(get_gene_name_categories(df())) %>%
-        bindEvent(rv_changed(), ignoreNULL = T)
+        bindEvent(rv_changed(), ignoreNULL = TRUE)
       libs <- reactive(bamVarName(df()))
       # Update main side panels
       observeEvent(org(), experiment_update_select(org, all_exp, experiments))
       observeEvent(gene_name_list(), gene_update_select(gene_name_list))
       observeEvent(input$gene, tx_update_select(isolate(input$gene),
-                      gene_name_list), ignoreNULL = TRUE, ignoreInit = T)
+                      gene_name_list), ignoreNULL = TRUE, ignoreInit = TRUE)
       observeEvent(libs(), library_update_select(libs))
 
       # Main plot controller, this code is only run if 'plot' is pressed

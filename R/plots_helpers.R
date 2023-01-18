@@ -64,7 +64,7 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
       #browser()
       profile_plot <- profile_plot %>%
         add_annotations(text = ylabels, x = "", y = 0.5,
-                        yref = "paper", xref = "paper", showarrow = F,
+                        yref = "paper", xref = "paper", showarrow = FALSE,
                         font = list(size = y_text_size),
                         hovertext = ylabels_full_name)
     }

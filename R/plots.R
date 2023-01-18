@@ -40,6 +40,7 @@ getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines){
 }
 
 make_summary_track <- function(profiles, plots, withFrames, colors, lines, summary_track_type, nplots) {
+  count <- NULL # avoid bioccheck error
   summary_profile <- rbindlist(profiles)
   summary_profile <- summary_profile[,.(count = sum(count)), by = position]
   summary_profile[, frame := profiles[[1]]$frame]

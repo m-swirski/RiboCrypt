@@ -19,7 +19,8 @@ heatmap_ui <- function(id, label = "Heatmap", all_exp) {
                    numericInput(ns("readlength_max"), "Max Readlength", 34)),
           tabPanel("Settings",
                    numericInput(ns("extendLeaders"), "5' extension", 30),
-                   numericInput(ns("extendTrailers"), "3' extension", 30)), ),
+                   numericInput(ns("extendTrailers"), "3' extension", 30),
+                   checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE)), ),
         actionButton(ns("go"), "Plot", icon = icon("rocket")), ),
       mainPanel(
         plotlyOutput(outputId = ns("c")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
@@ -66,8 +67,8 @@ heatmap_server <- function(id, all_experiments, env) {
       mainPlotControls <- eventReactive(input$go,
               click_plot_heatmap_main_controller(input, tx, cds, libs, df))
 
-      output$c <- renderPlotly({
-        message("-- Plot region: ", mainPlotControls()$region)
+      coverage <- reactive({
+        message("-- Region: ", mainPlotControls()$region)
         if (length(mainPlotControls()$cds_display) > 0) {
           print("This is a mRNA")
           print(class(mainPlotControls()$reads[[1]]))
@@ -89,7 +90,6 @@ heatmap_server <- function(id, all_experiments, env) {
                                      mainPlotControls()$extendTrailers  - 1, "down")
           }
 
-
           time_before <- Sys.time()
           dt <- windowPerReadLength(point, tx(),
                                     reads = mainPlotControls()$reads[[1]],
@@ -101,13 +101,32 @@ heatmap_server <- function(id, all_experiments, env) {
                                     windows = windows)
           print(paste("Number of rows in dt:", nrow(dt)))
           cat("Coverage calc: "); print(round(Sys.time() - time_before, 2))
-          return(subplot(list(coverageHeatMap(dt, scoring = mainPlotControls()$normalization,
-                                              legendPos = "bottom"))))
+          return(dt)
         } else {
           print("This is not a mRNA / valid mRNA")
           return(NULL)
         }
-      })
-    }
+      }) %>%
+        bindCache(mainPlotControls()$extendLeaders, mainPlotControls()$extendTrailers,
+                  mainPlotControls()$normalization, mainPlotControls()$region,
+                  ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
+                  mainPlotControls()$readlength_min,
+                  mainPlotControls()$readlength_max)
+
+    output$c <- renderPlotly({
+      message("-- Plotting heatmap")
+      main_plot <- coverageHeatMap(coverage(), scoring = mainPlotControls()$normalization,
+                                   legendPos = "bottom")
+      plot_list <- if (mainPlotControls()$summary_track) {
+        heights <- c(0.2,0.8)
+        list(pSitePlot(coverage(), forHeatmap = TRUE), main_plot)
+      } else {
+        heights <- 1
+        list(main_plot)
+      }
+      return(subplot(plot_list, nrows = length(plot_list), heights = heights))
+    }) %>%
+      bindEvent(coverage(), ignoreNULL = TRUE)
+  }
   )
 }

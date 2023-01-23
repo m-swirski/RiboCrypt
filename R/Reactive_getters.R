@@ -32,7 +32,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     dff <- observed_exp_subset(isolate(input$library), libs, df)
     customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
 
-    reads <- load_reads(dff, "cov")
+    #reads <- load_reads(dff, "cov")
+    reads <- filepath(dff, "bigwig")
     reactiveValues(dff = dff,
                    display_region = display_region,
                    customRegions = customRegions,
@@ -93,29 +94,7 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df) {
                  readlength_min = input$readlength_min,
                  readlength_max = input$readlength_max,
                  normalization = input$normalization,
-                 reads = reads)
-}
-
-click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df) {
-  display_region <- observed_gene_heatmap(isolate(input$tx), tx)
-  cds_display <- observed_cds_heatmap(isolate(input$tx),cds)
-  dff <- observed_exp_subset(isolate(input$library), libs, df)
-
-
-  time_before <- Sys.time()
-  reads <- load_reads(dff, "covl")
-  cat("Library loading: "); print(round(Sys.time() - time_before, 2))
-  message("-- Data loading complete")
-  reactiveValues(dff = dff,
-                 display_region = display_region,
-                 extendTrailers = input$extendTrailers,
-                 extendLeaders = input$extendLeaders,
-                 viewMode = input$viewMode,
-                 cds_display = cds_display,
-                 region = input$region,
-                 readlength_min = input$readlength_min,
-                 readlength_max = input$readlength_max,
-                 normalization = input$normalization,
+                 summary_track = input$summary_track,
                  reads = reads)
 }
 

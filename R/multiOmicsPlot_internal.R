@@ -33,9 +33,6 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                          reads, withFrames, kmers, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
   }
 
-  force(colors)
-  force(lines)
-  force(ylabels)
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
@@ -51,6 +48,9 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
 
 
   #browser()
+  force(colors)
+  force(lines)
+  force(ylabels)
   total_libs <- length(profiles)
   if (is(BPPARAM, "SerialParam")) {
     plots <- mapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),

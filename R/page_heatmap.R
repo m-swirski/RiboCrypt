@@ -43,7 +43,9 @@ heatmap_server <- function(id, all_experiments, env) {
       observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
         bindEvent(rv$curval)
       valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE,
-                                                       minThreeUTR = 0)) %>%
+                                          minFiveUTR = 0, minThreeUTR = 0)) %>%
+        bindEvent(rv_changed(), ignoreNULL = TRUE)
+      length_table <- reactive(optimizedTranscriptLengths(df(), TRUE, TRUE, FALSE)) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
       tx <- reactive({loadRegion(df(), part = "mrna", names.keep = valid_genes_subset())}) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
@@ -70,15 +72,33 @@ heatmap_server <- function(id, all_experiments, env) {
           print("This is a mRNA")
           print(class(mainPlotControls()$reads[[1]]))
           # Pick start or stop region
-          region <- observed_cds_point(mainPlotControls)
+          point <- observed_cds_point(mainPlotControls)
+          windows <- startRegion(point, tx()[names(point)], TRUE,
+                                 upstream = mainPlotControls()$extendLeaders,
+                                 downstream = mainPlotControls()$extendTrailers - 1)
+          length_table_sub <- length_table()[tx_name %in% names(point),]
+          if (mainPlotControls()$region == "Start codon") {
+            windows <- extend_needed(windows, length_table_sub$utr5_len,
+                                     mainPlotControls()$extendLeaders, "up")
+            windows <- extend_needed(windows, length_table_sub$cds_len,
+                                     mainPlotControls()$extendTrailers - 1, "down")
+          } else {
+            windows <- extend_needed(windows, length_table_sub$cds_len,
+                                     mainPlotControls()$extendLeaders, "up")
+            windows <- extend_needed(windows, length_table_sub$utr3_len,
+                                     mainPlotControls()$extendTrailers  - 1, "down")
+          }
+
+
           time_before <- Sys.time()
-          dt <- windowPerReadLength(region, tx()[names(region)],
+          dt <- windowPerReadLength(point, tx(),
                                     reads = mainPlotControls()$reads[[1]],
                                     pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
                                     downstream = mainPlotControls()$extendTrailers - 1,
                                     scoring = mainPlotControls()$normalization,
                                     acceptedLengths = seq(mainPlotControls()$readlength_min, mainPlotControls()$readlength_max),
-                                    drop.zero.dt = TRUE, append.zeroes = TRUE)
+                                    drop.zero.dt = TRUE, append.zeroes = TRUE,
+                                    windows = windows)
           print(paste("Number of rows in dt:", nrow(dt)))
           cat("Coverage calc: "); print(round(Sys.time() - time_before, 2))
           return(subplot(list(coverageHeatMap(dt, scoring = mainPlotControls()$normalization,

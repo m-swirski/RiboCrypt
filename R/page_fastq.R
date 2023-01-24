@@ -50,12 +50,18 @@ fastq_server <- function(id, all_experiments, relative_dir_to_bam = "../trim") {
             warning("No valid trim directory")
             return(NULL)
           }
+          browser()
           candidates <- list.files(trim_dir, full.names = TRUE, pattern = "html")
+          candidates_base <- gsub(".html$", "", basename(candidates))
           proper_names <- gsub("_Aligned.*", "", ORFik:::remove.file_ext(dff$filepath,basename = TRUE))
           path <- grep(pattern = proper_names, candidates, value = TRUE)
           if (length(path) != 1) {
-            warning("No valid html file found in folder!")
-            return(NULL)
+            hits <- lapply(candidates_base, function(x) grep(x, proper_names))
+            path <- candidates[hits]
+            if (length(path) != 1) {
+              warning("No valid html file found in folder!")
+              return(NULL)
+            }
           }
           print(path)
           addResourcePath("tmpuser", dirname(path))

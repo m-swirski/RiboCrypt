@@ -87,7 +87,6 @@ codon_server <- function(id, all_experiments, env) {
 
       output$c <- renderPlotly({
         message("-- Plotting codon usage")
-        browser()
         score_column <-
         if (input$codon_score == "percentage") {
           coverage()$relative_to_max_score

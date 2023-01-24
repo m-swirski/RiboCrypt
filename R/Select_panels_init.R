@@ -94,8 +94,8 @@ codon_score_input_select <- function(ns) {
     inputId = ns("codon_score"),
     label = "Codon score",
     choices =
-      c("transcriptNormalized", "zscore", "sum", "log10sum"),
-    selected = "transcriptNormalized",
+      c("percentage", "dispersion(NB)", "alpha(DMN)", "sum"),
+    selected = "Percentage",
     multiple = FALSE
   )
 }

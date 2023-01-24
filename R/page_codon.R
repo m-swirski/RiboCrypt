@@ -13,7 +13,8 @@ codon_ui <- function(id, label = "Codon", all_exp) {
                    gene_input_select(ns),
                    tx_input_select(ns),
                    library_input_select(ns),
-                   codon_filter_input_select(ns)
+                   codon_filter_input_select(ns),
+                   codon_score_input_select(ns)
                    )),
         actionButton(ns("go"), "Plot", icon = icon("rocket")), ),
       mainPanel(
@@ -58,8 +59,8 @@ codon_server <- function(id, all_experiments, env) {
       mainPlotControls <- eventReactive(input$go,
                      click_plot_codon_main_controller(input, tx, cds, libs, df))
 
-      output$c <- renderPlotly({
-        message("-- Plot codons: ")
+      coverage <- reactive({
+        message("-- Codon analysis: ")
         if (length(mainPlotControls()$cds_display) > 0) {
           print("This is a mRNA")
           filter_val <- mainPlotControls()$filter_value
@@ -73,13 +74,39 @@ codon_server <- function(id, all_experiments, env) {
                                 min_counts_cds_filter = filter_val)
           print(paste("Number of rows in dt:", nrow(dt)))
           cat("Coverage calc: "); print(round(Sys.time() - time_before, 2))
-          return(subplot(list(codon_usage_plot(dt,
-                              score_column = dt$relative_to_max_score))))
+          return(dt)
         } else {
           print("This is not a mRNA / valid mRNA")
           return(NULL)
         }
-      })
+      }) %>%
+        bindCache(mainPlotControls()$normalization,
+                  ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
+                  mainPlotControls()$filter_value)
+
+
+      output$c <- renderPlotly({
+        message("-- Plotting codon usage")
+        browser()
+        score_column <-
+        if (input$codon_score == "percentage") {
+          coverage()$relative_to_max_score
+        } else if (input$codon_score == "dispersion(NB)") {
+          coverage()$dispersion_txNorm
+        } else if (input$codon_score == "alpha(DMN)") {
+          coverage()$alpha
+        } else if (input$codon_score == "sum") {
+          coverage()$sum
+        }
+        plotly::ggplotly(ggplot(coverage(),
+                                aes(type, seqs, fill = score_column)) +
+                           geom_tile(color = "white") +
+                           scale_fill_gradient2(low = "blue", high = "orange",
+                                                mid = "white") +
+                           theme(axis.text.y = element_text(family = "monospace")) +
+                           facet_wrap(coverage()$variable, ncol = 4))
+      }) %>%
+        bindEvent(coverage(), ignoreNULL = TRUE)
     }
   )
 }

@@ -103,12 +103,13 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df) {
   dff <- observed_exp_subset(isolate(input$library), libs, df)
 
   time_before <- Sys.time()
-  reads <- load_reads(dff, "covl")
+  reads <- load_reads(dff, "cov")
   names(reads) <- ORFik:::name_decider(dff, "full")
   cat("Library loading: "); print(round(Sys.time() - time_before, 2))
   message("-- Data loading complete")
   reactiveValues(dff = dff,
                  cds_display = cds_display,
                  reads = reads,
+                 codon_score = input$codon_score,
                  filter_value = input$codon_filter_value)
 }

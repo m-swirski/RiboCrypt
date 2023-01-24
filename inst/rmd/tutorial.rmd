@@ -165,13 +165,38 @@ Here additional options are shown:
 1. 5' extension (extend viewed window upstream from point, default 30)
 2. 3' extension (extend viewed window downstreamfrom point, default 30)
 
+## Read length (QC)
+
+This tab displays a QC of pshifted coverage per readlength 
+(like start site of coding sequences) over all genes selected. 
+
+### Display panel (Read length QC)
+The display panel shows what can be specified to display, the possible
+select boxes are same as for heatmap above:
+
 ### Plot panel
 From the options specified in the display panel, when you press "plot" the data will be displayed.
 It contains the specific parts:
 
-1. Y-axis: the read lengths
-2. X-axis: the position (in nucleotides)
-3. Color: Per x,y coordinate, color by the count score
+Top plot: Read length relative usage
+1. Y-axis: Score
+3. Color: Per frame (red, green, blue)
+4. Facet box: the read length
+
+Bottom plot:
+Fourier transform (3nt periodicity quality, clean peak means good periodicity)
+
+## Fastq (QC)
+
+This tab displays the fastq QC output from fastp, as a html page.
+
+### Display panel (Read length QC)
+The display panel shows what can be specified to display, you can
+select from organism, study and library.
+
+
+### Plot panel
+Displays the html page.
 
 # metadata
 

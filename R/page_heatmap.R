@@ -124,7 +124,7 @@ heatmap_server <- function(id, all_experiments, env) {
         heights <- 1
         list(main_plot)
       }
-      return(subplot(plot_list, nrows = length(plot_list), heights = heights))
+      return(subplot(plot_list, nrows = length(plot_list), heights = heights, shareX = TRUE))
     }) %>%
       bindEvent(coverage(), ignoreNULL = TRUE)
   }

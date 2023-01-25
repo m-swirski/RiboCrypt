@@ -151,12 +151,14 @@ metaPlot <- function(reads, grl, outward = 500, inward = 200, min_outward_distan
   count <- NULL # Avoid warning
   if (withFrames) {
     ggplot(metaCov) +
-      geom_line(aes(y = count, x = index, color = frames), size = 0.75) +
+      geom_vline(aes(xintercept = inward + outward)) + 
+      geom_col(aes(y = count, x = index, color = frames), size = 0.75) +
       theme(legend.position = "none") +
       ylab("transcript normalized coverage") +
       xlab("relative position [nt]") +
       theme(plot.margin = unit(c(0,0,0,0), "pt")) +
-      scale_x_continuous(expand = c(0,0), breaks = mybreaks, labels = myticks)
+      scale_x_continuous(expand = c(0,0), breaks = mybreaks, labels = myticks) +
+      theme_bw()
   } else {
     ggplot(metaCov)  +
       geom_area(aes(y = count, x = index), fill = col, position = "identity") +

@@ -46,8 +46,10 @@ codon_server <- function(id, all_experiments, env) {
       cds <- reactive(loadRegion(df(), part = "cds", names.keep = valid_genes_subset())) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
       gene_name_list <- reactive(get_gene_name_categories(df())) %>%
+        bindCache(rv$curval) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
       libs <- reactive(bamVarName(df()))
+
       # Update main side panels
       observeEvent(org(), experiment_update_select(org, all_exp, experiments))
       observeEvent(gene_name_list(), gene_update_select_heatmap(gene_name_list))

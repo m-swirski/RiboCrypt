@@ -58,6 +58,7 @@ browser_server <- function(id, all_experiments, env) {
       cds <- reactive(loadRegion(df(), part = "cds")) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
       gene_name_list <- reactive(get_gene_name_categories(df())) %>%
+        bindCache(rv$curval) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
       libs <- reactive(bamVarName(df()))
       # Update main side panels

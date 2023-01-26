@@ -89,6 +89,11 @@ heatmap_server <- function(id, all_experiments, env) {
             windows <- extend_needed(windows, length_table_sub$utr3_len,
                                      mainPlotControls()$extendTrailers  - 1, "down")
           }
+          window_lengths <- widthPerGroup(windows, FALSE)
+          if (length(unique(window_lengths)) > 1) {
+            warning("Some genes hit chromosome boundary, removing them.")
+            windows <- windows[window_lengths == max(window_lengths)]
+          }
 
           time_before <- Sys.time()
           dt <- windowPerReadLength(point, tx(),

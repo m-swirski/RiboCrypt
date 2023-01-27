@@ -1,8 +1,8 @@
 ---
 title: "Tutorial"
 output: 
-  BiocStyle::html_document:
-    self_contained: true
+  html_document:
+    self_contained: false
 ---
 
 
@@ -21,7 +21,7 @@ This tutorial will walk you through usage of the app.
 ORFik, Ribocrypt and massiveNGSpipe as backend.
 
 
-# Browser
+# Browser {#browser}
 The browser is the main coverage plot display page. 
 It contains a click panel on the left side and display panels on the right.
 It displays coverage of NGS data in either transcript coordinates (default),
@@ -35,47 +35,64 @@ knitr::include_graphics("../images/tutorial_browser_browser.png")
 ## Display panel (browser)
 The display panel shows what can be specified to display, the possible
 select boxes are:
-1. Select an organism: Either select "ALL" to keep all experiments, or select a specific organism.
-2. Select an experiment: The experiments contain study names combined with organism (some studies
+
+### Experiment selection {#exp}
+- Select an organism: Either select "ALL" to keep all experiments, or select a specific organism to select display
+only that subset of experiments in experiment select tab.
+- Select an experiment: The experiments contain study names combined with organism (some studies
 are multi species, so sometimes one study have multiple experiments). 
 Select which one you want. There also exist merged experiments 
 (all samples merged for the organism, etc)
-3. Select a gene: A gene can be selected currently using:
- - Gene id (ENSEMBL)
- - Gene symbol (hgnc, etc)
-4. Select a transcript: A transcript isoform of the given gene above, 
+
+### Gene selection {#gene}
+- Select a gene: A gene can be selected currently using:
+  - Gene id (ENSEMBL)
+  - Gene symbol (hgnc, etc)
+- Select a transcript: A transcript isoform of the given gene above, 
 can be selected currently using:
-- Transcript id (ENSEMBL)
-5. Select libraries
+  - Transcript id (ENSEMBL)
+
+### Library selection {#lib}
 Each experiment usually have multiple libraries. Select which one
 to display, by default if you select multiple libraries they will be shown
 under each other.
-6. Select frames display type: 
- - lines (single line, most clear for middle distance (> 100 nt))
- - columns (single point bars, most clear for single nt resolution)
- - stacks (Area under curve, stacked, most clear for long distance (> 1000 nt))
- - area (Area under curve, with alpha (see-through), most clear for long distance (> 1000 nt))
-7. K-mer length:
+Library are by default named:
+- Library type (RFP, RNA etc),
+- Condition (WT, KO (wild type, knock out ) etc)
+- Stage/timepoint (5h, 1d (5 hours, 1 day) etc)
+- fraction (chx, cytosolic (ribosomal inhibitor, cell fraction) etc)
+Resuting in name above could be:
+RFP_WT_5h_chx_cytosolic
+
+### View mode {#linetype}
+- Select frames display type: 
+  - lines (single line, most clear for middle distance (> 100 nt))
+  - columns (single point bars, most clear for single nt resolution)
+  - stacks (Area under curve, stacked, most clear for long distance (> 1000 nt))
+  - area (Area under curve, with alpha (see-through), most clear for long distance (> 1000 nt))
+- K-mer length:
 When looking at a large region (> 100nt), pure coverage can usually be hard to inspect.
 Using K-mer length > 1 (9 is a good starting point to try), you can easily look at
 patterns over larger regions. 
 
 ## Display panel (settings)
 Here additional options are shown:
-1. 5' extension (extend viewed window upstream, outside defined region)
-2. 3' extension (extend viewed window downstream, outside defined region)
-3. Genomic View (Activate/deactivate genomic view, giving splice information and
+
+- 5' extension (extend viewed window upstream, outside defined region)
+- 3' extension (extend viewed window downstream, outside defined region)
+- Genomic View (Activate/deactivate genomic view, giving splice information and
 correct positions in genome, but a lot harder to understand)
-4. Protein structures (If you click the annotation name of a transcript
+- Protein structures (If you click the annotation name of a transcript
 in the plot panel it will display the alpha-fold protein colored by the ribo-seq data displayed
 in the plot panel)
-5. Full annotation (display full annotation or just the tx you selected)
-6. Summary top track (Add an additional plot track on top, summarizing all selecte libs)
-7. Select Summary display type (same as frames display type above, but for the summary track)
-8. Export format (When you hover the plot top right image button, and click export 
+- Full annotation (display full annotation or just the tx you selected)
+- Summary top track (Add an additional plot track on top, summarizing all selecte libs)
+- Select Summary display type (same as frames display type above, but for the summary track)
+- Export format (When you hover the plot top right image button, and click export 
 (the camera button), which format to export as)
 
-## Plot panel
+
+## Plot panel 
 From the options specified in the display panel, when you press "plot" the data will be displayed.
 It contains the specific parts:
 
@@ -120,7 +137,7 @@ can be selected currently using:
 5. Select libraries (multiple allowed)
 6. Codon filter value (Minimum reads in ORF)
 
-## Heatmap
+## Heatmap {#heatmap}
 
 This tab displays a heatmap of coverage per readlength at a specific
 region (like start site of coding sequences) over all genes selected. 

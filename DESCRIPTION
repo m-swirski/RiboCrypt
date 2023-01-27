@@ -20,6 +20,7 @@ Depends:
   R (>= 3.6.0),
   ORFik (>= 1.13.12)
 Imports:
+  bslib,
   BiocGenerics,
   BiocParallel,
   Biostrings,
@@ -38,7 +39,7 @@ Imports:
   rlang,
   shiny,
   shinycssloaders,
-  bslib
+  shinyhelper
 Suggests:
   testthat,
   rmarkdown,

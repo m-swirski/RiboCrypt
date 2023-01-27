@@ -4,15 +4,17 @@
 #' @param ns the ID, for shiny session
 #' @importFrom Biostrings head
 #' @return selectizeInput object
+#' @importFrom shinyhelper helper
 organism_input_select <- function(genomes, ns) {
   #genomes <- stringr::str_to_sentence(gsub("_", " ", list.genomes()$name))
   selectizeInput(
     inputId = ns("genome"),
-    label = "Select an organism",
+    label = "Select an Organism",
     choices = genomes,
     selected = head(genomes, 1),
     multiple = FALSE
-  )
+  ) %>%
+    helper(onclick = "fakeClick('tutorial', 'exp')")
 }
 
 experiment_input_select <- function(names, ns) {
@@ -33,7 +35,8 @@ gene_input_select <- function(ns, multiple = FALSE) {
     label = "Select a gene",
     multiple = multiple,
     options = list(placeholder = 'Insert valid gene')
-  )
+  ) %>%
+    helper(onclick = "fakeClick('tutorial', 'gene')")
 }
 
 tx_input_select <- function(ns, multiple = FALSE) {
@@ -54,7 +57,8 @@ library_input_select <- function(ns, multiple = TRUE) {
     choices = "",
     selected = "",
     multiple = multiple
-  )
+  ) %>%
+    helper(onclick = "fakeClick('tutorial', 'lib')")
 }
 
 frame_type_select <- function(ns, name = "frames_type",
@@ -65,7 +69,8 @@ frame_type_select <- function(ns, name = "frames_type",
     choices = c("lines", "columns", "stacks", "area", "heatmap"),
     selected = "lines",
     multiple = FALSE
-  )
+  ) %>%
+    helper(onclick = "fakeClick('tutorial', 'linetype')")
 }
 
 heatmap_region_select <- function(ns) {

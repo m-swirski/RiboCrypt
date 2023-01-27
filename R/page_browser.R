@@ -8,6 +8,20 @@ browser_ui = function(id, label = "Browser", all_exp) {
       sidebarPanel(
         tabsetPanel(
           tabPanel("Browser",
+                   tabPanel("a", tags$head(tags$script(HTML('
+                        var fakeClick = function(tabName, anchorName) {
+                          var dropdownList = document.getElementsByTagName("a");
+                          for (var i = 0; i < dropdownList.length; i++) {
+                            var link = dropdownList[i];
+                            if(link.getAttribute("data-value") == tabName) {
+                              link.click();
+                              document.getElementById(anchorName).scrollIntoView({
+                                behavior: "smooth"
+                                });
+                            };
+                          }
+                        };
+                                                 ')))),
                    organism_input_select(c("ALL", genomes), ns),
                    experiment_input_select(experiments, ns),
                    gene_input_select(ns),
@@ -27,7 +41,7 @@ browser_ui = function(id, label = "Browser", all_exp) {
                    export_format_of_plot(ns)
           ),
         ),
-        actionButton(ns("go"), "Plot", icon = icon("rocket")),
+         actionButton(ns("go"), "Plot", icon = icon("rocket")),
       ),
       mainPanel(
         plotlyOutput(outputId = ns("c")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
@@ -73,51 +87,8 @@ browser_server <- function(id, all_experiments, env) {
         click_plot_browser_main_controller(input, tx, cds, libs, df))
       # Main plot, this code is only run if 'plot' is pressed
       output$c <- renderPlotly(click_plot_browser(mainPlotControls, session))
-      ### NGLVieweR (protein structures) ###
-      # TODO: Move as much as possible of protein stuff out of page_browser
-
-      # Setup reactive values needed for structure viewer
-      dynamicVisible <- reactiveVal(FALSE)
-      selectedRegion <- reactiveVal(NULL)
-      selectedRegionProfile <- reactive({
-        req(selectedRegion())
-        result <- cds()[names(cds()) == selectedRegion()] %>%
-          getRiboProfile(mainPlotControls()$reads[[1]]) %>%
-          (function (x) { x$count[seq.int(1, length(x$count), 3)] })()
-      })
-
-      # When user clicks on region
-      # start displaying structure viewer
-      # and set selected structure to one which was clicked
-      observeEvent(input$selectedRegion, {
-        req(input$selectedRegion)
-        selectedRegion(input$selectedRegion)
-        dynamicVisible(TRUE)
-      })
-      # When user clicks close button
-      # stop displaying structure viewer
-      # and set selected structure to NULL
-      observeEvent(input$dynamicClose, {
-        selectedRegion(NULL)
-        dynamicVisible(FALSE)
-      })
-      # NGL viewer widget
-      protein_structure_dir <- reactive({
-        file.path(dirname(df()@fafile), "protein_structure_predictions")
-      })
-      region_dir <- reactive({
-        file.path(protein_structure_dir(), selectedRegion())
-      })
-      pdb_file <- reactive({
-        file.path(region_dir(), "ranked_0.pdb")
-      })
-      pdb_file_exists <- reactive(pdb_exists(pdb_file))
-      output$dynamic <- renderNGLVieweR(
-        protein_struct_render(pdb_file_exists, selectedRegionProfile, pdb_file))
-      # Variable UI logic
-      output$variableUi <- renderUI(
-        protein_struct_plot(selectedRegionProfile, dynamicVisible,
-                            pdb_file_exists, session))
+      # source(system.file("R", "Module_Protein_structures.R", package = "RiboCrypt"),  local = TRUE)
+      module_protein(input, output, session)
     }
   )
 }

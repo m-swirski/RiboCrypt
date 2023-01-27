@@ -42,7 +42,6 @@ RiboCrypt_app <- function(
       title = rc_title(),
       theme = rc_theme(),
       browser_ui("browser", all_exp = all_exp),
-      # heatmap_ui("heatmap", all_exp = all_exp),
       analysis_ui("analysis", all_exp = all_exp),
       metadata_ui("metadata"),
       tutorial_ui()
@@ -51,11 +50,9 @@ RiboCrypt_app <- function(
 
   server <- function(input, output, session) {
     browser_server("browser", all_exp, without_readlengths_env)
-    # heatmap_server("heatmap", all_exp, with_readlengths_env)
     analysis_server("analysis", all_exp, without_readlengths_env,
                     with_readlengths_env)
     metadata_server("metadata")
-    # tutorial_server("tutorial")
   }
 
   shinyApp(ui, server, options = options)

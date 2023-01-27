@@ -113,3 +113,29 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df) {
                  codon_score = input$codon_score,
                  filter_value = input$codon_filter_value)
 }
+
+get_fastq_page <- function(input, libs, df, relative_dir) {
+  print("In fastq page")
+  dff <- observed_exp_subset(isolate(input$library), libs, df)
+  trim_dir <- file.path(libFolder(dff), relative_dir)
+  if (!dir.exists(trim_dir)) {
+    warning("No valid trim directory")
+    return(NULL)
+  }
+  candidates <- list.files(trim_dir, full.names = TRUE, pattern = "html")
+  candidates_base <- gsub("report_", "", gsub(".html$", "", basename(candidates)))
+  proper_names <- gsub("_Aligned.*", "", ORFik:::remove.file_ext(dff$filepath,basename = TRUE))
+  path <- grep(pattern = proper_names, candidates, value = TRUE)
+  if (length(path) != 1) {
+    hits <- lapply(candidates_base, function(x) grep(x, proper_names))
+    path <- candidates[unlist(hits)]
+    if (length(path) != 1) {
+      warning("No valid html file found in folder!")
+      return(NULL)
+    }
+  }
+  print(path)
+  addResourcePath("tmpuser", dirname(path))
+  path <- file.path("tmpuser", basename(path))
+  page <- tags$iframe(seamless="seamless", src= path, width=1000, height=900)
+}

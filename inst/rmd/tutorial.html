@@ -186,8 +186,8 @@ explained:</p>
 <p><img src="../images/tutorial_browser_browser.png" width="1000px" height="500px" style="display: block; margin: auto auto auto 0;" /></p>
 <div id="display-panel-browser" class="section level2">
 <h2>Display panel (browser)</h2>
-<p>The display panel shows what can be specified to display, the
-possible select boxes are:</p>
+<p>The display panel shows the primary settings, (study, gene, sample,
+etc), the possible select boxes are:</p>
 <div id="exp" class="section level3">
 <h3>Experiment selection</h3>
 <ul>
@@ -209,7 +209,7 @@ merged experiments (all samples merged for the organism, etc)</li>
 <li>Gene symbol (hgnc, etc)</li>
 </ul></li>
 <li>Select a transcript: A transcript isoform of the given gene above,
-can be selected currently using:
+default is Ensembl canonical isoform. Can be selected using:
 <ul>
 <li>Transcript id (ENSEMBL)</li>
 </ul></li>
@@ -219,11 +219,24 @@ can be selected currently using:
 <h3>Library selection</h3>
 <p>Each experiment usually have multiple libraries. Select which one to
 display, by default if you select multiple libraries they will be shown
-under each other. Library are by default named: - Library type (RFP, RNA
-etc), - Condition (WT, KO (wild type, knock out ) etc) - Stage/timepoint
-(5h, 1d (5 hours, 1 day) etc) - fraction (chx, cytosolic (ribosomal
-inhibitor, cell fraction) etc) Resuting in name above could be:
-RFP_WT_5h_chx_cytosolic</p>
+under each other.</p>
+<p>Library are by default named:</p>
+<ul>
+<li>Library type (RFP, RNA etc),</li>
+<li>Condition (WT, KO (wild type, knock out ) etc)</li>
+<li>Stage/timepoint (5h, 1d (5 hours, 1 day) etc)</li>
+<li>fraction (chx, cytosolic, ATF4 (ribosomal inhibitor, cell fraction,
+gene) etc)</li>
+<li>replicate (technical/biological replicate number (r1, r2, r3))</li>
+</ul>
+<p>The resuting name above could be:</p>
+<ul>
+<li>RFP_WT_5h_chx_cytosolic_r1</li>
+</ul>
+<p>A normal thing to see is that if condition is KO (knockout), the
+fraction column usually contains a gene name (the name of the gene that
+was knocked out) Currently, best way to find SRR run number for
+respective sample is to go to metadata tab and search for the study.</p>
 </div>
 <div id="linetype" class="section level3">
 <h3>View mode</h3>

@@ -27,17 +27,9 @@ codon_server <- function(id, all_experiments, env) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
-      # Loading selected experiment and related data
-      genomes <- unique(all_exp$organism)
-      experiments <- all_exp$name
-      # Set reactive values
-      org <- reactive(input$genome)
-      rv <- reactiveValues(lstval="",curval="") # Store current and last genome
-      rv_changed <- reactiveVal(NULL) # Did genome change?
-      df <- reactive(get_exp(input$dff, experiments, env))
-      observeEvent(df(), update_rv(rv, df), priority = 2)
-      observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
-        bindEvent(rv$curval)
+      # Organism / study objects
+      org_and_study_changed_checker(input, output, session)
+      # Gene objects
       valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE,
                                                        minFiveUTR = 3)) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
@@ -48,14 +40,10 @@ codon_server <- function(id, all_experiments, env) {
       gene_name_list <- reactive(get_gene_name_categories(df())) %>%
         bindCache(rv$curval) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
-      libs <- reactive(bamVarName(df()))
 
       # Update main side panels
-      observeEvent(org(), experiment_update_select(org, all_exp, experiments))
-      observeEvent(gene_name_list(), gene_update_select_heatmap(gene_name_list))
-      observeEvent(input$gene, tx_update_select(isolate(input$gene),
-                                                gene_name_list, "all"), ignoreNULL = TRUE, ignoreInit = TRUE)
-      observeEvent(libs(), library_update_select(libs))
+      all_is_gene <- TRUE
+      study_and_gene_observers(input, output, session)
 
       # Main plot, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,

@@ -47,3 +47,43 @@ output$variableUi <- renderUI(
   }
   )
 }
+
+### NGLVieweR (protein structures) ###
+# TODO: Move as much as possible of protein stuff out of page_browser
+study_and_gene_observers <- function(input, output, session) {
+  with(rlang::caller_env(), {
+    if (!exists("all_is_gene", mode = "logical")) all_is_gene <- FALSE
+    observeEvent(org(), experiment_update_select(org, all_exp, experiments))
+    if (all_is_gene) {
+      observeEvent(gene_name_list(), gene_update_select_heatmap(gene_name_list))
+      observeEvent(input$gene, tx_update_select(isolate(input$gene),
+                                                gene_name_list, "all"),
+                   ignoreNULL = TRUE, ignoreInit = TRUE)
+    } else {
+      observeEvent(gene_name_list(), gene_update_select(gene_name_list))
+      observeEvent(input$gene, tx_update_select(isolate(input$gene),
+                                                gene_name_list),
+                   ignoreNULL = TRUE, ignoreInit = TRUE)
+    }
+    observeEvent(libs(), library_update_select(libs))
+  }
+  )
+}
+
+org_and_study_changed_checker <- function(input, output, session) {
+  with(rlang::caller_env(), {
+    # Static values
+    experiments <- all_exp$name
+    # Set reactive values
+    org <- reactive(input$genome)
+    rv <- reactiveValues(lstval="",curval="") # Store current and last genome
+    rv_changed <- reactiveVal(NULL) # Did genome change?
+    observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
+      bindEvent(rv$curval)
+    df <- reactive(get_exp(input$dff, experiments, env))
+    observeEvent(df(), update_rv(rv, df), priority = 2)
+    libs <- reactive(bamVarName(df()))
+  }
+  )
+}
+

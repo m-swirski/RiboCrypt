@@ -1,5 +1,5 @@
 ---
-title: "Tutorial"
+title: "App Tutorial"
 date: "`r BiocStyle::doc_date()`"
 author: "Michal Swirski & Hakon Tjeldnes"
 output: 

@@ -58,3 +58,20 @@ addJSrender <- function(multiomics_plot, target_seq, nplots, seq_render_dist,
     onRender(fetchJS("select_region_on_click.js"), select_region_on_click_data)
   return(multiomics_plot)
 }
+
+helper_button_redirect_call <- function() {
+  tabPanel("a", tags$head(tags$script(HTML('
+                          var fakeClick = function(tabName, anchorName) {
+                            var dropdownList = document.getElementsByTagName("a");
+                            for (var i = 0; i < dropdownList.length; i++) {
+                              var link = dropdownList[i];
+                              if(link.getAttribute("data-value") == tabName) {
+                                link.click();
+                                document.getElementById(anchorName).scrollIntoView({
+                                  behavior: "smooth"
+                                  });
+                              };
+                            }
+                          };
+        '))))
+}

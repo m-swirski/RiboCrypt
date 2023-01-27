@@ -33,8 +33,8 @@ knitr::include_graphics("../images/tutorial_browser_browser.png")
 ```
 
 ## Display panel (browser)
-The display panel shows what can be specified to display, the possible
-select boxes are:
+The display panel shows the primary settings, (study, gene, sample, etc),
+the possible select boxes are:
 
 ### Experiment selection {#exp}
 - Select an organism: Either select "ALL" to keep all experiments, or select a specific organism to select display
@@ -49,20 +49,30 @@ Select which one you want. There also exist merged experiments
   - Gene id (ENSEMBL)
   - Gene symbol (hgnc, etc)
 - Select a transcript: A transcript isoform of the given gene above, 
-can be selected currently using:
+default is Ensembl canonical isoform. Can be selected using:
   - Transcript id (ENSEMBL)
 
 ### Library selection {#lib}
 Each experiment usually have multiple libraries. Select which one
 to display, by default if you select multiple libraries they will be shown
 under each other.
+
 Library are by default named:
+
 - Library type (RFP, RNA etc),
 - Condition (WT, KO (wild type, knock out ) etc)
 - Stage/timepoint (5h, 1d (5 hours, 1 day) etc)
-- fraction (chx, cytosolic (ribosomal inhibitor, cell fraction) etc)
-Resuting in name above could be:
-RFP_WT_5h_chx_cytosolic
+- fraction (chx, cytosolic, ATF4 (ribosomal inhibitor, cell fraction, gene) etc)
+- replicate (technical/biological replicate number (r1, r2, r3))
+
+The resuting name above could be:
+
+- RFP_WT_5h_chx_cytosolic_r1
+
+A normal thing to see is that if condition is KO (knockout), the fraction column
+usually contains a gene name (the name of the gene that was knocked out)
+Currently, best way to find SRR run number for respective sample is to go to
+metadata tab and search for the study. 
 
 ### View mode {#linetype}
 - Select frames display type: 

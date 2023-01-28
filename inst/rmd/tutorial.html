@@ -314,25 +314,33 @@ displaced within each frame</li>
 </div>
 </div>
 <div id="analysis" class="section level1">
-<h1>analysis</h1>
+<h1>Analysis</h1>
 <p>Here we collect the analysis possibilities, which are usually on
 whole genome scale.</p>
 <div id="codon-analysis" class="section level2">
-<h2>codon analysis</h2>
+<h2>Codon analysis</h2>
 <p>This tab displays a heatmap of percentage usage of codons over all
 genes selected, for both A and P sites.</p>
 <div id="display-panel-codon" class="section level3">
 <h3>Display panel (codon)</h3>
-<p>The display panel shows what can be specified to display, the
-possible select boxes are: 1. Select an organism: same as for browser 2.
-Select an experiment: same as for browser 3. Select a gene: A gene can
-be selected currently using: - all (all genes) - Gene id (ENSEMBL) (To
-be implemented) - Gene symbol (hgnc, etc) (To be implemented) 4. Select
-a transcript: A transcript isoform of the given gene above, can be
-selected currently using: - all (all transcripts from all genes (not
-just the one you selected!)) - Transcript id (ENSEMBL) 5. Select
-libraries (multiple allowed) 6. Codon filter value (Minimum reads in
-ORF)</p>
+<p>Study and gene select works same as for browser specified above. In
+addition to have the option to specify all genes (default). - Select
+libraries (multiple allowed)</p>
+<div id="codonfilt" class="section level4">
+<h4>Filters</h4>
+<ul>
+<li>Codon filter value (Minimum reads in ORF to be included)</li>
+<li>Codon score, all scores are normalized for both codon and count per
+gene level (except for sum):
+<ul>
+<li>percentage (percentage use relative to max codon)</li>
+<li>dispersion(NB) (negative binomial dispersion values)</li>
+<li>alpha(DMN) (Dirichlet-multinomial distribution alpha parameter)</li>
+<li>sum (raw sum, (a very biased estimator, since some codons are used
+much more than others!))</li>
+</ul></li>
+</ul>
+</div>
 </div>
 </div>
 <div id="heatmap" class="section level2">
@@ -343,29 +351,43 @@ selected.</p>
 <p><img src="../images/tutorial_heatmap_browser.png" width="1000px" height="500px" style="display: block; margin: auto auto auto 0;" /></p>
 <div id="display-panel-heatmap" class="section level3">
 <h3>Display panel (heatmap)</h3>
-<p>The display panel shows what can be specified to display, the
-possible select boxes are: 1. Select an organism: same as for browser 2.
-Select an experiment: same as for browser 3. Select a gene: A gene can
-be selected currently using: - all (all genes) - Gene id (ENSEMBL) (To
-be implemented) - Gene symbol (hgnc, etc) (To be implemented) 4. Select
-a transcript: A transcript isoform of the given gene above, can be
-selected currently using: - all (all transcripts from all genes (not
-just the one you selected!)) - Transcript id (ENSEMBL) 5. Select
-libraries Only 1 library can be selected currently in heatmap mode. 6.
-View region Select one of: - Start codon - Stop codon 7. Normalization
-Normalization mode for data display, select one of: -
-transcriptNormalized (each gene counts sum to 1) - zscore (zscore
-normalization, will give better overview if 1 readlength is extreme) -
-sum (raw sum of counts, is very sensitive to extreme peaks) - log10sum
-(log10 sum of counts, is less sensitive to extreme peaks) 8. Min
-Readlength The minimum readlength to display from library 9. Max
-readlength The maximum readlength to display from library</p>
+<p>Study and gene select works same as for browser specified above. In
+addition to have the option to specify all genes (default).</p>
+<ul>
+<li>Select libraries Only 1 library can be selected currently in heatmap
+mode.</li>
+<li>View region Select one of:
+<ul>
+<li>Start codon</li>
+<li>Stop codon</li>
+</ul></li>
+<li>Normalization Normalization mode for data display, select one of:
+<ul>
+<li>transcriptNormalized (each gene counts sum to 1)</li>
+<li>zscore (zscore normalization, will give better overview if 1
+readlength is extreme)</li>
+<li>sum (raw sum of counts, is very sensitive to extreme peaks)</li>
+<li>log10sum (log10 sum of counts, is less sensitive to extreme
+peaks)</li>
+</ul></li>
+<li>Min Readlength The minimum readlength to display from library</li>
+<li>Max readlength The maximum readlength to display from library</li>
+</ul>
 </div>
 <div id="display-panel-settings-1" class="section level3">
 <h3>Display panel (settings)</h3>
-<p>Here additional options are shown: 1. 5’ extension (extend viewed
-window upstream from point, default 30) 2. 3’ extension (extend viewed
-window downstreamfrom point, default 30)</p>
+<p>Here additional options are shown:</p>
+<ul>
+<li><p>5’ extension (extend viewed window upstream from point, default
+30)</p></li>
+<li><p>3’ extension (extend viewed window downstreamfrom point, default
+30)</p></li>
+<li><p>Extension works like this, first extend to transcript
+coordinates.</p></li>
+<li><p>After gene end extend in genomic coordinates</p></li>
+<li><p>If chromosome boundary is reached, remove those genes from the
+full set.</p></li>
+</ul>
 </div>
 </div>
 <div id="read-length-qc" class="section level2">
@@ -402,12 +424,17 @@ select from organism, study and library.</p>
 </div>
 </div>
 <div id="metadata" class="section level1">
-<h1>metadata</h1>
+<h1>Metadata</h1>
 <p>Metadata tab displays information about studies.</p>
 <div id="study-accession-number" class="section level2">
 <h2>Study accession number</h2>
-<p>Here you input a study accession number in the form of either: - SRP
-- GEO (GSE) - PRJNA (PRJ….) - PRJID (Only numbers)</p>
+<p>Here you input a study accession number in the form of either:</p>
+<ul>
+<li>SRP</li>
+<li>GEO (GSE)</li>
+<li>PRJNA (PRJ….)</li>
+<li>PRJID (Only numbers)</li>
+</ul>
 </div>
 <div id="output" class="section level2">
 <h2>Output</h2>
@@ -420,17 +447,32 @@ of all metadata found from the study is displayed.</p>
 <div id="massivengspipe" class="section level2">
 <h2>massiveNGSpipe</h2>
 <p>For our webpage the processing pipeline used is massiveNGSpipe which
-wraps over multiple tools: 1. Fastq files are download with ORFik
-download.sra 2. Adapter is detected with either fastqc (sequence
-detection) and falls back to fastp auto detection. 3. Reads are then
-trimmed with fastp 4. Read are collapsed (get the set of unique reads
-and put duplication count in read header) 5. Reads are aligned with the
-STAR aligner (using the wrapper in ORFik), that supports contamination
-removal. 6. When all samples of study are aligned, an ORFik experiment
-is created that connects each sample to metadata (condition, inhibitor,
-fraction, replicate etc) 7. Bam files are then converted to ORFik ofst
-format 8. These ofst files are then pshifted 9. Faster formats are then
-created (bigwig and covRLE) for faster visualization</p>
+wraps over multiple tools:</p>
+<ol style="list-style-type: decimal">
+<li>Fastq files are download with ORFik download.sra</li>
+<li>Adapter is detected with either fastqc (sequence detection) and
+falls back to fastp auto detection.</li>
+<li>Reads are then trimmed with fastp</li>
+<li>Read are collapsed (get the set of unique reads and put duplication
+count in read header)</li>
+<li>Reads are aligned with the STAR aligner (using the wrapper in
+ORFik), that supports contamination removal. Settings:</li>
+</ol>
+<ul>
+<li>genomic coordinates (to allow both genomic and transcriptomic
+coordinates)</li>
+<li>local alignment (to remove unknown flank effects)</li>
+<li>minimum read size (20nt)</li>
+</ul>
+<ol start="6" style="list-style-type: decimal">
+<li>When all samples of study are aligned, an ORFik experiment is
+created that connects each sample to metadata (condition, inhibitor,
+fraction, replicate etc)</li>
+<li>Bam files are then converted to ORFik ofst format</li>
+<li>These ofst files are then pshifted</li>
+<li>Faster formats are then created (bigwig and covRLE) for faster
+visualization</li>
+</ol>
 </div>
 <div id="introduction-to-ribo-seq" class="section level2">
 <h2>Introduction to Ribo-seq</h2>

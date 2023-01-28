@@ -113,7 +113,8 @@ codon_filter_input_select <- function(ns) {
     min = 0,
     max = NA,
     step = NA
-  )
+  ) %>%
+    helper(onclick = "fakeClick('tutorial', 'codonfilt')")
 }
 
 export_format_of_plot <- function(ns) {

@@ -20,21 +20,32 @@ heatmap_ui <- function(id, label = "Heatmap", all_exp) {
           tabPanel("Settings",
                    numericInput(ns("extendLeaders"), "5' extension", 30),
                    numericInput(ns("extendTrailers"), "3' extension", 30),
-                   checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE)), ),
+                   checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
+                   checkboxInput(ns("p_shifted"), label = "p_shifted", value = TRUE)), ),
         actionButton(ns("go"), "Plot", icon = icon("rocket")), ),
       mainPanel(
-        plotlyOutput(outputId = ns("c")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
-        uiOutput(ns("variableUi"))))
-  )
+        tabsetPanel(type = "tabs",
+                    tabPanel("Heatmap", plotlyOutput(outputId = ns("c"), height = "500px") %>% shinycssloaders::withSpinner(color="#0dc5c1"),
+                             uiOutput(ns("variableUi"))),
+                    tabPanel("Shift table", tableOutput(outputId = ns("shift_table")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))))
+  ))
 }
 
 heatmap_server <- function(id, all_experiments, env) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
-      # Organism / study objects
-      org_and_study_changed_checker(input, output, session)
-      # Gene objects
+      # Loading selected experiment and related data
+      genomes <- unique(all_exp$organism)
+      experiments <- all_exp$name
+      # Set reactive values
+      org <- reactive(input$genome)
+      rv <- reactiveValues(lstval="",curval="") # Store current and last genome
+      rv_changed <- reactiveVal(NULL) # Did genome change?
+      df <- reactive(get_exp(input$dff, experiments, env))
+      observeEvent(df(), update_rv(rv, df), priority = 2)
+      observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
+        bindEvent(rv$curval)
       valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE,
                                           minFiveUTR = 0, minThreeUTR = 0)) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
@@ -46,10 +57,14 @@ heatmap_server <- function(id, all_experiments, env) {
         bindEvent(rv_changed(), ignoreNULL = TRUE)
       gene_name_list <- reactive(get_gene_name_categories(df())) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
+      libs <- reactive(bamVarName(df()))
 
       # Update main side panels
-      all_is_gene <- TRUE
-      study_and_gene_observers(input, output, session)
+      observeEvent(org(), experiment_update_select(org, all_exp, experiments))
+      observeEvent(gene_name_list(), gene_update_select_heatmap(gene_name_list))
+      observeEvent(input$gene, tx_update_select(isolate(input$gene),
+              gene_name_list, "all"), ignoreNULL = TRUE, ignoreInit = TRUE)
+      observeEvent(libs(), library_update_select(libs))
 
       # Main plot, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,
@@ -77,13 +92,10 @@ heatmap_server <- function(id, all_experiments, env) {
             windows <- extend_needed(windows, length_table_sub$utr3_len,
                                      mainPlotControls()$extendTrailers  - 1, "down")
           }
-          window_lengths <- widthPerGroup(windows, FALSE)
-          if (length(unique(window_lengths)) > 1) {
-            warning("Some genes hit chromosome boundary, removing them.")
-            windows <- windows[window_lengths == max(window_lengths)]
-          }
 
           time_before <- Sys.time()
+          # browser()
+
           dt <- windowPerReadLength(point, tx(),
                                     reads = mainPlotControls()$reads[[1]],
                                     pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
@@ -92,6 +104,14 @@ heatmap_server <- function(id, all_experiments, env) {
                                     acceptedLengths = seq(mainPlotControls()$readlength_min, mainPlotControls()$readlength_max),
                                     drop.zero.dt = TRUE, append.zeroes = TRUE,
                                     windows = windows)
+          if (!mainPlotControls()$p_shifted){
+            
+            sdt <- mainPlotControls()$shift_table
+            colnames(sdt)[1] <- "readlength"
+            dt[, position := position + sdt[readlength == fraction]$offsets_start, by = fraction]
+            dt <- dt[position %between% c(- mainPlotControls()$extendLeaders + max(abs(sdt$offsets_start)), 
+                                          mainPlotControls()$extendTrailers - 1 - max(abs(sdt$offsets_start)))]
+          } 
           print(paste("Number of rows in dt:", nrow(dt)))
           cat("Coverage calc: "); print(round(Sys.time() - time_before, 2))
           return(dt)
@@ -117,9 +137,10 @@ heatmap_server <- function(id, all_experiments, env) {
         heights <- 1
         list(main_plot)
       }
-      return(subplot(plot_list, nrows = length(plot_list), heights = heights, shareX = TRUE))
+      return(subplot(plot_list, nrows = length(plot_list), heights = heights, shareX = TRUE, titleY = TRUE))
     }) %>%
       bindEvent(coverage(), ignoreNULL = TRUE)
+    output$shift_table <- renderTable(mainPlotControls()$shift_table)
   }
   )
 }

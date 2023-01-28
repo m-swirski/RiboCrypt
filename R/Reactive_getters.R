@@ -79,15 +79,20 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df) {
   cds_display <- observed_cds_heatmap(isolate(input$tx),cds)
   dff <- observed_exp_subset(isolate(input$library), libs, df)
 
-
+  shift_table <- shifts.load(df())
+  shift_table <- shift_table[[which(isolate(libs()) == isolate(input$library))]]
+  shift_table <- shift_table[fraction %between% c(input$readlength_min, input$readlength_max)]
+  additional_extension <- 0
+  if (!input$p_shifted) additional_extension <- max(abs(shift_table$offsets_start))
   time_before <- Sys.time()
   reads <- load_reads(dff, "covl")
+  
   cat("Library loading: "); print(round(Sys.time() - time_before, 2))
   message("-- Data loading complete")
   reactiveValues(dff = dff,
                  display_region = display_region,
-                 extendTrailers = input$extendTrailers,
-                 extendLeaders = input$extendLeaders,
+                 extendTrailers = input$extendTrailers + additional_extension,
+                 extendLeaders = input$extendLeaders + additional_extension,
                  viewMode = input$viewMode,
                  cds_display = cds_display,
                  region = input$region,
@@ -95,6 +100,8 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df) {
                  readlength_max = input$readlength_max,
                  normalization = input$normalization,
                  summary_track = input$summary_track,
+                 p_shifted = input$p_shifted,
+                 shift_table = shift_table,
                  reads = reads)
 }
 

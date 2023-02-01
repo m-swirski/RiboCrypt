@@ -11,6 +11,7 @@
 #' @import shiny bslib ORFik NGLVieweR ggplot2
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
+#' @importFrom shinyjqui jqui_resizable jqui_draggable
 #' @importFrom knitr knit
 #' @return RiboCrypt shiny app
 #' @export

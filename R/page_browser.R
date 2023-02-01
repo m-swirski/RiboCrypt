@@ -5,7 +5,7 @@ browser_ui = function(id, label = "Browser", all_exp) {
   tabPanel(
     title = "browser", icon = icon("chart-line"),
     sidebarLayout(
-      sidebarPanel(
+      jqui_resizable(jqui_draggable(sidebarPanel(
         tabsetPanel(
           tabPanel("Browser",
                    organism_input_select(c("ALL", genomes), ns),
@@ -29,9 +29,9 @@ browser_ui = function(id, label = "Browser", all_exp) {
           ),
         ),
          actionButton(ns("go"), "Plot", icon = icon("rocket")),
-      ),
+      ))),
       mainPanel(
-        jqui_resizable(plotlyOutput(outputId = ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
+        jqui_resizable(jqui_draggable(plotlyOutput(outputId = ns("c"), height = "500px"))) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
         uiOutput(ns("variableUi"))
       )
     )

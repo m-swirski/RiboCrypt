@@ -35,17 +35,9 @@ heatmap_server <- function(id, all_experiments, env) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
-      # Loading selected experiment and related data
-      genomes <- unique(all_exp$organism)
-      experiments <- all_exp$name
-      # Set reactive values
-      org <- reactive(input$genome)
-      rv <- reactiveValues(lstval="",curval="") # Store current and last genome
-      rv_changed <- reactiveVal(NULL) # Did genome change?
-      df <- reactive(get_exp(input$dff, experiments, env))
-      observeEvent(df(), update_rv(rv, df), priority = 2)
-      observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
-        bindEvent(rv$curval)
+      # Organism / study objects
+      org_and_study_changed_checker(input, output, session)
+      # Gene objects
       valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE,
                                           minFiveUTR = 0, minThreeUTR = 0)) %>%
         bindEvent(rv_changed(), ignoreNULL = TRUE)
@@ -60,66 +52,14 @@ heatmap_server <- function(id, all_experiments, env) {
       libs <- reactive(bamVarName(df()))
 
       # Update main side panels
-      observeEvent(org(), experiment_update_select(org, all_exp, experiments))
-      observeEvent(gene_name_list(), gene_update_select_heatmap(gene_name_list))
-      observeEvent(input$gene, tx_update_select(isolate(input$gene),
-              gene_name_list, "all"), ignoreNULL = TRUE, ignoreInit = TRUE)
-      observeEvent(libs(), library_update_select(libs))
+      all_is_gene <- TRUE
+      study_and_gene_observers(input, output, session)
 
       # Main plot, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,
               click_plot_heatmap_main_controller(input, tx, cds, libs, df))
 
-      coverage <- reactive({
-        message("-- Region: ", mainPlotControls()$region)
-        if (length(mainPlotControls()$cds_display) > 0) {
-          print("This is a mRNA")
-          print(class(mainPlotControls()$reads[[1]]))
-          # Pick start or stop region
-          point <- observed_cds_point(mainPlotControls)
-          windows <- startRegion(point, tx()[names(point)], TRUE,
-                                 upstream = mainPlotControls()$extendLeaders,
-                                 downstream = mainPlotControls()$extendTrailers - 1)
-          length_table_sub <- length_table()[tx_name %in% names(point),]
-          if (mainPlotControls()$region == "Start codon") {
-            windows <- extend_needed(windows, length_table_sub$utr5_len,
-                                     mainPlotControls()$extendLeaders, "up")
-            windows <- extend_needed(windows, length_table_sub$cds_len,
-                                     mainPlotControls()$extendTrailers - 1, "down")
-          } else {
-            windows <- extend_needed(windows, length_table_sub$cds_len,
-                                     mainPlotControls()$extendLeaders, "up")
-            windows <- extend_needed(windows, length_table_sub$utr3_len,
-                                     mainPlotControls()$extendTrailers  - 1, "down")
-          }
-
-          time_before <- Sys.time()
-          # browser()
-
-          dt <- windowPerReadLength(point, tx(),
-                                    reads = mainPlotControls()$reads[[1]],
-                                    pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
-                                    downstream = mainPlotControls()$extendTrailers - 1,
-                                    scoring = mainPlotControls()$normalization,
-                                    acceptedLengths = seq(mainPlotControls()$readlength_min, mainPlotControls()$readlength_max),
-                                    drop.zero.dt = TRUE, append.zeroes = TRUE,
-                                    windows = windows)
-          if (!mainPlotControls()$p_shifted){
-            
-            sdt <- mainPlotControls()$shift_table
-            colnames(sdt)[1] <- "readlength"
-            dt[, position := position + sdt[readlength == fraction]$offsets_start, by = fraction]
-            dt <- dt[position %between% c(- mainPlotControls()$extendLeaders + max(abs(sdt$offsets_start)), 
-                                          mainPlotControls()$extendTrailers - 1 - max(abs(sdt$offsets_start)))]
-          } 
-          print(paste("Number of rows in dt:", nrow(dt)))
-          cat("Coverage calc: "); print(round(Sys.time() - time_before, 2))
-          return(dt)
-        } else {
-          print("This is not a mRNA / valid mRNA")
-          return(NULL)
-        }
-      }) %>%
+      coverage <- reactive(heatmap_data(mainPlotControls, tx, length_table)) %>%
         bindCache(mainPlotControls()$extendLeaders, mainPlotControls()$extendTrailers,
                   mainPlotControls()$normalization, mainPlotControls()$region,
                   ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),

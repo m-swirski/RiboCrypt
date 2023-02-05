@@ -127,3 +127,15 @@ export_format_of_plot <- function(ns) {
     multiple = FALSE
   )
 }
+
+condition_input_select <- function(ns, multiple = TRUE) {
+  selectizeInput(
+    inputId = ns("condition"),
+    label = "Select first condition",
+    choices = "",
+    selected = "",
+    multiple = multiple
+  ) %>%
+    helper(onclick = "fakeClick('tutorial', 'lib')")
+}
+

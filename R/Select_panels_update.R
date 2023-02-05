@@ -51,3 +51,11 @@ library_update_select <- function(libs) {
     selected = libs()[1]
   )
 }
+
+condition_update_select <- function(cond) {
+  updateSelectizeInput(
+    inputId = "condition",
+    choices = cond(),
+    selected = cond()[1]
+  )
+}

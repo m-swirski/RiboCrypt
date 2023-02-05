@@ -79,3 +79,12 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df) {
                  codon_score = input$codon_score,
                  filter_value = input$codon_filter_value)
 }
+
+click_plot_DEG_main_controller <- function(input, df) {
+  
+  dff <- df()[which(df()$condition %in% isolate(input$condition)),]
+  
+  time_before <- Sys.time()
+  print("experiment subsetting based on condition")
+  reactiveValues(dff = dff)
+}

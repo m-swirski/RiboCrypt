@@ -108,9 +108,11 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
    hovertip <- "id"
 
    #vis <- ifelse(unique(dt$Regulation) == "", TRUE, "legendonly") #add_trace(visible = vis)
+  #removed partial_bundle() - it's incompatible with shiny
+   # removed toWebGL() - it's incompatible with animations
    select <- highlight(
      ggplotly(gg, tooltip = hovertip) %>%
-       layout(autosize = TRUE) %>% toWebGL() %>% partial_bundle(),
+       layout(autosize = TRUE),
      on = c('plotly_selected'), off = c('plotly_deselect'),
      selectize = TRUE, persistent = FALSE
    )

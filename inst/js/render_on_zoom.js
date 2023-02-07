@@ -7,16 +7,13 @@
       
       let startFrame = (start - 1) % 3;
       let startShift = 0;
-      if (startFrame > frame) {
-        startShift = 1
-      };
+      if (startFrame > frame) { startShift = 1 };
       let frameAdjustedStart = Math.floor(start / 3) + startShift;
+      if (frameAdjustedStart < 0) { frameAdjustedStart = 0 };
       
       let endFrame = (end - 1) % 3;
       let endShift = 0;
-      if (endFrame < frame) {
-        startShift = -1
-      };
+      if (endFrame < frame) { startShift = -1 };
       let frameAdjustedEnd = Math.floor(end / 3) + endShift;
       
       return {
@@ -43,7 +40,7 @@
       }
       let distance = end - start;
       if (distance <= switchDistance && tracesVisible == 0) {
-          Plotly.addTraces(elem, tracesToAdd(data, start - 100, end + 100));
+          Plotly.addTraces(elem, tracesToAdd(data, start - 300, end + 300));
           tracesVisible = 1;
       }
       if (distance > switchDistance && tracesVisible == 1) {

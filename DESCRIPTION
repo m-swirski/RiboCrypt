@@ -39,7 +39,8 @@ Imports:
   rlang,
   shiny,
   shinycssloaders,
-  shinyhelper
+  shinyhelper,
+  shinyjqui
 Suggests:
   testthat,
   rmarkdown,

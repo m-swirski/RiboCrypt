@@ -26,14 +26,14 @@ browser_ui = function(id, label = "Browser", all_exp) {
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
                    export_format_of_plot(ns)
-          ),
+          )
         ),
-         actionButton(ns("go"), "Plot", icon = icon("rocket")),
+         actionButton(ns("go"), "Plot", icon = icon("rocket")),width=3
       )),
       mainPanel(
         jqui_resizable(plotlyOutput(outputId = ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
         uiOutput(ns("variableUi")
-      ))
+      ),width=9)
     )
   )
 }

@@ -63,12 +63,13 @@ library_input_select <- function(ns, multiple = TRUE, choices = "") {
 }
 
 frame_type_select <- function(ns, name = "frames_type",
-                              label = "Select frames display type") {
+                              label = "Select frames display type",
+                              selected = "lines") {
   selectizeInput(
     inputId = ns(name),
     label = label,
     choices = c("lines", "columns", "stacks", "area", "heatmap"),
-    selected = "lines",
+    selected = selected,
     multiple = FALSE
   ) %>%
     helper(onclick = "fakeClick('tutorial', 'linetype')")

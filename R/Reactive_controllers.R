@@ -26,6 +26,64 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
   }
 }
 
+
+click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
+  {
+    print(paste("here is gene!", isolate(input$gene)))
+    print(paste("here is tx!", isolate(input$tx)))
+    display_region <- observed_tx_annotation(isolate(input$tx), tx)
+    annotation <- observed_cds_annotation(isolate(input$tx), cds,
+                                              isolate(input$other_tx))
+    dff <- observed_exp_subset(isolate(input$library), libs, df)
+    customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
+    
+    #reads <- load_reads(dff, "cov")
+    reads <- filepath(dff, "bigwig")
+    trailer_extension <- input$extendTrailers
+    leader_extension <- input$extendLeaders
+    export.format <- input$plot_export_format
+    summary_track <- input$summary_track
+    summary_track_type <- input$summary_track_type
+    viewMode <- input$viewMode
+    kmers <- input$kmer
+    frames_type <- input$frames_type
+    
+    #other defaults
+    annotation_names <- NULL
+    display_sequence <- "both"
+    withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU")
+    lib_proportions <- NULL
+    colors = NULL
+    ylabels = bamVarName(dff)
+    lib_to_annotation_proportions <- c(0.8,0.2)
+    
+    multiOmicsController()
+    
+    reactiveValues(dff = dff,
+                   display_region = display_region,
+                   customRegions = customRegions,
+                   extend_trailers = extend_trailers,
+                   extend_leaders = extend_trailers,
+                   export.format = export.format,
+                   summary_track = summary_track,
+                   summary_track_type = summary_track_type,
+                   viewMode = viewMode,
+                   kmers = kmers,
+                   frames_type = frames_type,
+                   annotation = annotation,
+                   reads = reads)
+  }
+}
+# click_plot_boxplot_main_controller <- function(input, tx, libs, df) {
+#   dff <- observed_exp_subset(isolate(input$library), libs, df)
+#   customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
+#   
+#   reactiveValues(dff = dff,
+#                  tx  = isolate(input$tx),
+#                  customRegions = customRegions,
+#                  export_format = input$plot_export_format)
+# }
+
 click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df) {
   display_region <- observed_gene_heatmap(isolate(input$tx), tx)
   cds_display <- observed_cds_heatmap(isolate(input$tx),cds)

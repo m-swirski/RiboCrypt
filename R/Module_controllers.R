@@ -12,6 +12,7 @@ selectedRegionProfile <- reactive({
     (function (x) { x$count[seq.int(1, length(x$count), 3)] })()
 })
 
+
 # When user clicks on region
 # start displaying structure viewer
 # and set selected structure to one which was clicked

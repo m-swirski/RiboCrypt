@@ -112,15 +112,15 @@ trimOverlaps <- function(overlaps, display_range) {
   return(overlaps)
 }
 
-selectCols <- function(cols, locations) {
-  matches <- match(names(locations), names(cols))
-  duplications<- duplicated(matches)
-  additions <- cumsum(duplications)
-  additions[!duplications] <- 0
-  matches <- matches + additions
-
-  return(cols[matches])
-}
+# selectCols <- function(cols, locations) {
+#   matches <- match(names(locations), names(cols))
+#   duplications<- duplicated(matches)
+#   additions <- cumsum(duplications)
+#   additions[!duplications] <- 0
+#   matches <- matches + additions
+# 
+#   return(cols[matches])
+# }
 
 selectFrames <- function(frames, locations) {
   matches <- match(names(locations), names(frames))

@@ -1,26 +1,32 @@
-experiment_update_select <- function(org, all_exp, experiments) {
+experiment_update_select <- function(org, all_exp, experiments,
+                                     selected = "AUTO") {
   orgs_safe <- if (isolate(org()) == "ALL") {
     unique(all_exp$organism)
   } else isolate(org())
   picks <- experiments[all_exp$organism %in% orgs_safe]
+  selected <-
+  if (selected == "AUTO") {
+    picks[1]
+  } else selected
   updateSelectizeInput(
     inputId = "dff",
     choices = picks,
-    selected = picks[1],
+    selected = selected,
     server = FALSE
   )
 }
 
-gene_update_select <- function(gene_name_list) {
+gene_update_select <- function(gene_name_list,
+                               selected = gene_name_list()[,2][[1]][1]) {
   updateSelectizeInput(
     inputId = "gene",
     choices = unique(gene_name_list()[,2][[1]]),
-    selected = gene_name_list()[,2][[1]][1],
+    selected = selected,
     server = TRUE
   )
 }
 
-gene_update_select_heatmap <- function(gene_name_list) {
+gene_update_select_heatmap <- function(gene_name_list, selected = "all") {
   updateSelectizeInput(
     inputId = "gene",
     choices = c("all", unique(gene_name_list()[,2][[1]])),

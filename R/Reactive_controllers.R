@@ -1,13 +1,16 @@
 click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
   {
+    # browser()
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
     cds_annotation <- observed_cds_annotation(isolate(input$tx), cds,
                                               isolate(input$other_tx))
+    uorf_annotation <- observed_uorf_annotation(names(tx()),
+                                                isolate(input$add_uorfs))
     dff <- observed_exp_subset(isolate(input$library), libs, df)
-    customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
-
+    # customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
+    customRegions <- uorf_annotation
     #reads <- load_reads(dff, "cov")
     reads <- filepath(dff, "bigwig")
     reactiveValues(dff = dff,
@@ -26,9 +29,11 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
   }
 }
 
-click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df) {
+click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
+                                               length_table, minFiveUTR = NULL) {
   display_region <- observed_gene_heatmap(isolate(input$tx), tx)
-  cds_display <- observed_cds_heatmap(isolate(input$tx),cds)
+  cds_display <- observed_cds_heatmap(isolate(input$tx), cds, length_table,
+                              minFiveUTR = minFiveUTR)
   dff <- observed_exp_subset(isolate(input$library), libs, df)
 
   additional_extension <- 0
@@ -64,8 +69,10 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df) {
                  reads = reads)
 }
 
-click_plot_codon_main_controller <- function(input, tx, cds, libs, df) {
-  cds_display <- observed_cds_heatmap(isolate(input$tx),cds)
+click_plot_codon_main_controller <- function(input, tx, cds, libs, df,
+                                             length_table) {
+  cds_display <- observed_cds_heatmap(isolate(input$tx),cds, length_table,
+                                      minFiveUTR = 3)
   dff <- observed_exp_subset(isolate(input$library), libs, df)
 
   time_before <- Sys.time()
@@ -81,9 +88,9 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df) {
 }
 
 click_plot_DEG_main_controller <- function(input, df) {
-  
+
   dff <- df()[which(df()$condition %in% isolate(input$condition)),]
-  
+
   time_before <- Sys.time()
   print("experiment subsetting based on condition")
   reactiveValues(dff = dff)

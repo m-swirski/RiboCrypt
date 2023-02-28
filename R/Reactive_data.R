@@ -1,33 +1,13 @@
 heatmap_data <- function(mainPlotControls, tx, length_table) {
   message("-- Region: ", mainPlotControls()$region)
   if (length(mainPlotControls()$cds_display) > 0) {
-    print("This is a mRNA")
+    print(paste("Number of input ranges: ",
+                length(mainPlotControls()$cds_display)))
     print(class(mainPlotControls()$reads[[1]]))
     # Pick start or stop region
     point <- observed_cds_point(mainPlotControls)
-    windows <- startRegion(point, tx()[names(point)], TRUE,
-                           upstream = mainPlotControls()$extendLeaders,
-                           downstream = mainPlotControls()$extendTrailers - 1)
-    length_table_sub <- length_table()[tx_name %in% names(point),]
-    if (mainPlotControls()$region == "Start codon") {
-      windows <- extend_needed(windows, length_table_sub$utr5_len,
-                               mainPlotControls()$extendLeaders, "up")
-      windows <- extend_needed(windows, length_table_sub$cds_len,
-                               mainPlotControls()$extendTrailers - 1, "down")
-    } else {
-      windows <- extend_needed(windows, length_table_sub$cds_len,
-                               mainPlotControls()$extendLeaders, "up")
-      windows <- extend_needed(windows, length_table_sub$utr3_len,
-                               mainPlotControls()$extendTrailers  - 1, "down")
-    }
-    window_lengths <- widthPerGroup(windows, FALSE)
-    if (length(unique(window_lengths)) > 1) {
-      warning("Some genes hit chromosome boundary, removing them.")
-      windows <- windows[window_lengths == max(window_lengths)]
-    }
+    windows <- extend_all_to(point, tx, length_table, mainPlotControls)
     time_before <- Sys.time()
-    # browser()
-
     dt <- windowPerReadLength(point, tx(),
                               reads = mainPlotControls()$reads[[1]],
                               pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
@@ -37,7 +17,6 @@ heatmap_data <- function(mainPlotControls, tx, length_table) {
                               drop.zero.dt = TRUE, append.zeroes = TRUE,
                               windows = windows)
     if (!mainPlotControls()$p_shifted){
-
       sdt <- mainPlotControls()$shift_table
       if (nrow(sdt) > 0) {
         colnames(sdt)[1] <- "readlength"

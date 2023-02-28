@@ -17,21 +17,22 @@ organism_input_select <- function(genomes, ns) {
     helper(onclick = "fakeClick('tutorial', 'exp')")
 }
 
-experiment_input_select <- function(names, ns) {
+experiment_input_select <- function(names, ns, browser_options = NULL) {
   selectizeInput(
     inputId = ns("dff"),
     label = "Select an experiment",
     choices = names,
-    selected = NULL,
+    selected = browser_options["default_experiment"],
     multiple = FALSE
   )
 }
 
-gene_input_select <- function(ns, multiple = FALSE) {
+gene_input_select <- function(ns, multiple = FALSE, browser_options = NULL,
+                              choices = NULL) {
     selectizeInput(
     inputId = ns("gene"),
-    choices = NULL,
-    selected = NULL,
+    choices = as.character(browser_options["default_gene"]),
+    selected = as.character(browser_options["default_gene"]),
     label = "Select a gene",
     multiple = multiple,
     options = list(placeholder = 'Insert valid gene')
@@ -39,23 +40,23 @@ gene_input_select <- function(ns, multiple = FALSE) {
     helper(onclick = "fakeClick('tutorial', 'gene')")
 }
 
-tx_input_select <- function(ns, multiple = FALSE) {
+tx_input_select <- function(ns, multiple = FALSE, choices = NULL) {
   selectizeInput(
     inputId = ns("tx"),
-    choices = "",
-    selected = "",
+    choices = choices$value,
+    selected = choices$value[1],
     label = "Select a transcript",
     multiple = multiple,
     options = list(placeholder = 'Insert valid tx')
   )
 }
 
-library_input_select <- function(ns, multiple = TRUE) {
+library_input_select <- function(ns, multiple = TRUE, choices = "") {
   selectizeInput(
     inputId = ns("library"),
     label = "Select libraries",
-    choices = "",
-    selected = "",
+    choices = choices,
+    selected = choices[1],
     multiple = multiple
   ) %>%
     helper(onclick = "fakeClick('tutorial', 'lib')")
@@ -131,7 +132,7 @@ export_format_of_plot <- function(ns) {
 condition_input_select <- function(ns, multiple = TRUE) {
   selectizeInput(
     inputId = ns("condition"),
-    label = "Select first condition",
+    label = "Select two conditions",
     choices = "",
     selected = "",
     multiple = multiple

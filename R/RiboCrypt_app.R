@@ -25,16 +25,38 @@
 RiboCrypt_app <- function(
     validate.experiments = TRUE,
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
-    all_exp = list.experiments(validate = validate.experiments)) {
+    all_exp = list.experiments(validate = validate.experiments),
+    browser_options = c()) {
+  time_before <- Sys.time()
+
+  stopifnot(is(all_exp, "data.table"))
+  stopifnot(!is.null(all_exp$name))
+  stopifnot(nrow(all_exp) > 0)
   # Set environments
   with_readlengths_env <- new.env()
   without_readlengths_env <- new.env()
   #with_cigar_env <- new.env() # Not used for now
+  # Add resource directories
   addResourcePath(prefix = "images",
                   directoryPath = system.file("images", package = "RiboCrypt"))
   addResourcePath(prefix = "rmd",
                   directoryPath = system.file("rmd", package = "RiboCrypt"))
+  # Setup variables
+  if (!isTruthy(browser_options["default_experiment"])) {
+    browser_options["default_experiment"] <- all_exp$name[1]
+  }
+  if (is.na(browser_options["plot_on_start"])) {
+    browser_options["plot_on_start"] <- FALSE
+  }
+  exp_init <- read.experiment(browser_options["default_experiment"],
+                              validate = FALSE)
+  names_init <- get_gene_name_categories(exp_init)
+  if (!isTruthy(browser_options["default_gene"])) {
+    stopifnot(browser_options["default_gene"] %in% names_init$label)
+  }
+  libs <- bamVarName(exp_init)
 
+  # User interface
   ui <- tagList(
     rc_header_image(),
     navbarPage(
@@ -42,20 +64,27 @@ RiboCrypt_app <- function(
       windowTitle = "RiboCrypt",
       title = rc_title(),
       theme = rc_theme(),
-      browser_ui("browser", all_exp = all_exp),
-      analysis_ui("analysis", all_exp = all_exp),
+      browser_ui("browser", all_exp, browser_options, names_init, libs),
+      analysis_ui("analysis", all_exp, browser_options, libs),
       metadata_ui("metadata"),
       tutorial_ui()
     )
   )
 
-  server <- function(input, output, session) {
-    browser_server("browser", all_exp, without_readlengths_env)
-    analysis_server("analysis", all_exp, without_readlengths_env,
-                    with_readlengths_env)
-    metadata_server("metadata")
-  }
 
+  server <- function(input, output, session) {
+    org_and_study_changed_checker(input, output, session)
+
+    rv <- browser_server("browser", all_exp, without_readlengths_env, df,
+                         experiments, tx, cds, libs, org, gene_name_list, rv,
+                         browser_options)
+    rv <- analysis_server("analysis", all_exp, without_readlengths_env,
+            with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
+            gene_name_list, rv)
+    metadata_server("metadata")
+    cat("Server: "); print(round(Sys.time() - time_before, 2))
+  }
+  cat("Init: "); print(round(Sys.time() - time_before, 2))
   shinyApp(ui, server, options = options)
 }
 

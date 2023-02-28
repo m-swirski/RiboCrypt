@@ -48,6 +48,14 @@ click_plot_browser <- function(mainPlotControls, session) {
   return(a)
 }
 
+click_plot_boxplot <- function(boxPlotControls, session) {
+  a <- RiboCrypt:::distribution_plot(boxPlotControls()$dff, 
+                                     boxPlotControls()$display_region, 
+                                     boxPlotControls()$annotation, 
+                                     boxPlotControls()$extendLeaders,
+                                     boxPlotControls()$extendTrailers)
+  return(a)
+}
 get_fastq_page <- function(input, libs, df, relative_dir) {
   print("In fastq page")
   dff <- observed_exp_subset(isolate(input$library), libs, df)

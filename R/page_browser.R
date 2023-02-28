@@ -35,8 +35,8 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
       )),
       mainPanel(
         jqui_resizable(plotlyOutput(outputId = ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
-        uiOutput(ns("variableUi")
-      ),width=9)
+        uiOutput(ns("variableUi"),
+      ), plotlyOutput(outputId = ns("d")),width=9)
     )
   )
 }
@@ -61,6 +61,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
                   ignoreNULL = TRUE)
       # Protein display
       module_protein(input, output, session)
+      output$d <- renderPlotly(click_plot_boxplot(mainPlotControls, session))
       return(rv)
     }
   )

@@ -73,7 +73,9 @@ click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
                    kmers = kmers,
                    frames_type = frames_type,
                    annotation = annotation,
-                   reads = reads)
+                   reads = reads,
+                   withFrames = withFrames,
+                   )
   }
 }
 # click_plot_boxplot_main_controller <- function(input, tx, libs, df) {

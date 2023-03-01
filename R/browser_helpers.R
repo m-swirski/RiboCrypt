@@ -8,9 +8,34 @@ if (is(BPPARAM, "SerialParam")) {
   profiles <- bpmapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
                        reads, withFrames, kmers, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
 }
+  
+  return(profiles)
 }
 
 
+singlePlotsFetcher <- function(profiles, lines, frames_type, withFrames, colors, ylabels, ylabels_full_name) {
+  
+total_libs <- length(profiles)
+if (is(BPPARAM, "SerialParam")) {
+  plots <- mapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
+                  profiles, withFrames, colors, ylabels, ylabels_full_name,
+                  SIMPLIFY = FALSE)
+} else {
+  plots <- bpmapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
+                    profiles, withFrames, colors, ylabels, ylabels_full_name,
+                    SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+}
+return(plots)
+}
+
+
+
+browser_plot_assembler <- function() {
+  
+ profiles < reactive(profilesFetcher(mainPlotControls)) %>% 
+    bindCache(mainPlotControls())
+ 
+} 
 
 #' @importFrom Biostrings nchar translate
 #'

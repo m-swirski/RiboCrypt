@@ -15,8 +15,10 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    gene_input_select(ns, FALSE, browser_options),
                    tx_input_select(ns, FALSE, init_tx),
                    library_input_select(ns, TRUE, libs),
-                   frame_type_select(ns),
-                   sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20, value = 1),
+                   frame_type_select(ns, selected =
+                                       browser_options["default_frame_type"]),
+                   sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
+                          value = as.numeric(browser_options["default_kmer"])),
                    helper_button_redirect_call()
           ),
           tabPanel("Settings",
@@ -26,6 +28,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = FALSE),
                    checkboxInput(ns("other_tx"), label = "Full annotation", value = FALSE),
                    checkboxInput(ns("add_uorfs"), label = "Add uORFs", value = FALSE),
+                   checkboxInput(ns("expression_plot"), label = "Add expression plot", value = FALSE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
                    export_format_of_plot(ns)
@@ -36,7 +39,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
       mainPanel(
         jqui_resizable(plotlyOutput(outputId = ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
         uiOutput(ns("variableUi"),
-      ), plotlyOutput(outputId = ns("d")),width=9)
+      ), plotlyOutput(outputId = ns("d")) %>% shinycssloaders::withSpinner(color="#0dc5c1"), width=9)
     )
   )
 }
@@ -56,12 +59,23 @@ browser_server <- function(id, all_experiments, env, df, experiments,
         ignoreNULL = FALSE)
       # Main plot, this code is only run if 'plot' is pressed
       output$c <- renderPlotly(click_plot_browser(mainPlotControls, session)) %>%
+        bindCache(ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
+                  input$tx, input$other_tx, input$add_uorfs,
+                  input$extendTrailers, input$extendLeaders,
+                  input$plot_export_format,
+                  input$summary_track, input$summary_track_type,
+                  input$viewMode, input$kmer, input$frames_type) %>%
         bindEvent(mainPlotControls(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
       # Protein display
       module_protein(input, output, session)
-      output$d <- renderPlotly(click_plot_boxplot(mainPlotControls, session))
+
+      output$d <- renderPlotly({
+        req(input$expression_plot == TRUE)
+        click_plot_boxplot(mainPlotControls, session)}) %>%
+          bindCache(input$expression_plot,
+                ORFik:::name_decider(mainPlotControls()$dff, naming = "full"))
       return(rv)
     }
   )

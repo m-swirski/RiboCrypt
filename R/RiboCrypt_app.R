@@ -52,7 +52,20 @@ RiboCrypt_app <- function(
                               validate = FALSE)
   names_init <- get_gene_name_categories(exp_init)
   if (!isTruthy(browser_options["default_gene"])) {
+    if (!isTruthy(browser_options["default_gene"])) {
+      browser_options["default_gene"] <- names_init$label[1]
+    }
     stopifnot(browser_options["default_gene"] %in% names_init$label)
+  }
+  if (!isTruthy(browser_options["default_kmer"])) {
+    browser_options["default_kmer"] <- 1
+  } else {
+    stopifnot(!is.na(as.numeric(browser_options["default_kmer"])))
+  }
+  if (!isTruthy(browser_options["default_frame_type"])) {
+    browser_options["default_frame_type"] <- "lines"
+  } else {
+    stopifnot(is.character(browser_options["default_frame_type"]))
   }
   libs <- bamVarName(exp_init)
 
@@ -66,11 +79,10 @@ RiboCrypt_app <- function(
       theme = rc_theme(),
       browser_ui("browser", all_exp, browser_options, names_init, libs),
       analysis_ui("analysis", all_exp, browser_options, libs),
-      metadata_ui("metadata"),
+      metadata_ui("metadata", all_exp),
       tutorial_ui()
     )
   )
-
 
   server <- function(input, output, session) {
     org_and_study_changed_checker(input, output, session)
@@ -81,7 +93,7 @@ RiboCrypt_app <- function(
     rv <- analysis_server("analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
             gene_name_list, rv)
-    metadata_server("metadata")
+    metadata_server("metadata", all_exp)
     cat("Server: "); print(round(Sys.time() - time_before, 2))
   }
   cat("Init: "); print(round(Sys.time() - time_before, 2))

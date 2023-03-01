@@ -7,7 +7,8 @@
 RiboCrypt_app(
   validate.experiments = TRUE,
   options = list(launch.browser = ifelse(interactive(), TRUE, FALSE)),
-  all_exp = list.experiments(validate = validate.experiments)
+  all_exp = list.experiments(validate = validate.experiments),
+  browser_options = c()
 )
 }
 \arguments{

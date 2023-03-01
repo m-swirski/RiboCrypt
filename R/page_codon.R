@@ -14,7 +14,8 @@ codon_ui <- function(id, all_exp, browser_options, libs, label = "Codon") {
                    tx_input_select(ns),
                    library_input_select(ns, TRUE, libs),
                    codon_filter_input_select(ns),
-                   codon_score_input_select(ns)
+                   codon_score_input_select(ns),
+                   checkboxInput(ns("differential"), label = "Differential", value = FALSE),
                    )),
         actionButton(ns("go"), "Plot", icon = icon("rocket")), ),
       mainPanel(

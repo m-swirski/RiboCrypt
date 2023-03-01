@@ -49,9 +49,9 @@ click_plot_browser <- function(mainPlotControls, session) {
 }
 
 click_plot_boxplot <- function(boxPlotControls, session) {
-  a <- RiboCrypt:::distribution_plot(boxPlotControls()$dff, 
-                                     boxPlotControls()$display_region, 
-                                     boxPlotControls()$annotation, 
+  a <- RiboCrypt:::distribution_plot(boxPlotControls()$dff,
+                                     boxPlotControls()$display_region,
+                                     boxPlotControls()$annotation,
                                      boxPlotControls()$extendLeaders,
                                      boxPlotControls()$extendTrailers)
   return(a)
@@ -84,21 +84,53 @@ get_fastq_page <- function(input, libs, df, relative_dir) {
 
 click_plot_codon <- function(input, coverage) {
   message("-- Plotting codon usage")
+
   score_column <-
     if (input$codon_score == "percentage") {
+      score_column_name <- "relative_to_max_score"
       coverage()$relative_to_max_score
     } else if (input$codon_score == "dispersion(NB)") {
+      score_column_name <- "dispersion_txNorm"
       coverage()$dispersion_txNorm
     } else if (input$codon_score == "alpha(DMN)") {
+      score_column_name <- "alpha"
       coverage()$alpha
     } else if (input$codon_score == "sum") {
+      score_column_name <- "sum"
       coverage()$sum
     }
-  plotly::ggplotly(ggplot(coverage(),
-                          aes(type, seqs, fill = score_column)) +
-                     geom_tile(color = "white") +
-                     scale_fill_gradient2(low = "blue", high = "orange",
-                                          mid = "white") +
-                     theme(axis.text.y = element_text(family = "monospace")) +
-                     facet_wrap(coverage()$variable, ncol = 4))
+
+  if (input$differential) {
+    pairs <- ORFik::combn.pairs(unique(coverage()$variable))
+    dt <- data.table()
+    for (pair in pairs) {
+      sample1 <- coverage()[variable == pair[1],]
+      sample2 <- coverage()[variable == pair[2],]
+      score_column <-
+        sample1[, score_column_name, with = FALSE] /
+        sample2[, score_column_name, with = FALSE]
+      dt <- rbindlist(list(dt,
+                 data.table(variable = paste(sample1$variable,
+                                            sample2$variable, sep = " vs "),
+                            seqs = sample1$seqs,
+                            type = sample1$type,
+                            score_column = score_column[[1]])))
+    }
+    plotly::ggplotly(ggplot(dt,
+                            aes(score_column, seqs)) +
+                       geom_point(color = "blue") +
+                       scale_fill_gradient2(low = "blue", high = "orange",
+                                            mid = "white") +
+                       theme(axis.text.y = element_text(family = "monospace")) +
+                       facet_grid(type ~ variable))
+  } else {
+    plotly::ggplotly(ggplot(coverage(),
+                            aes(type, seqs, fill = score_column)) +
+                       geom_tile(color = "white") +
+                       scale_fill_gradient2(low = "blue", high = "orange",
+                                            mid = "white") +
+                       theme(axis.text.y = element_text(family = "monospace")) +
+                       facet_wrap(coverage()$variable, ncol = 4))
+  }
+
 }

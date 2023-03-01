@@ -16,13 +16,15 @@ heatmap_data <- function(mainPlotControls, tx, length_table) {
                               acceptedLengths = seq(mainPlotControls()$readlength_min, mainPlotControls()$readlength_max),
                               drop.zero.dt = TRUE, append.zeroes = TRUE,
                               windows = windows)
-    if (!mainPlotControls()$p_shifted){
-      sdt <- mainPlotControls()$shift_table
-      if (nrow(sdt) > 0) {
-        colnames(sdt)[1] <- "readlength"
-        dt[, position := position + sdt[readlength == fraction]$offsets_start, by = fraction]
-        dt <- dt[position %between% c(- mainPlotControls()$extendLeaders + max(abs(sdt$offsets_start)),
-                                      mainPlotControls()$extendTrailers - 1 - max(abs(sdt$offsets_start)))]
+    if (!is.null(mainPlotControls()$p_shifted)) {
+      if (!mainPlotControls()$p_shifted){
+        sdt <- mainPlotControls()$shift_table
+        if (nrow(sdt) > 0) {
+          colnames(sdt)[1] <- "readlength"
+          dt[, position := position + sdt[readlength == fraction]$offsets_start, by = fraction]
+          dt <- dt[position %between% c(- mainPlotControls()$extendLeaders + max(abs(sdt$offsets_start)),
+                                        mainPlotControls()$extendTrailers - 1 - max(abs(sdt$offsets_start)))]
+        }
       }
     }
     print(paste("Number of rows in dt:", nrow(dt)))

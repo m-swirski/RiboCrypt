@@ -39,7 +39,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
       mainPanel(
         jqui_resizable(plotlyOutput(outputId = ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
         uiOutput(ns("variableUi"),
-      ), plotlyOutput(outputId = ns("d")),width=9)
+      ), plotlyOutput(outputId = ns("d")) %>% shinycssloaders::withSpinner(color="#0dc5c1"), width=9)
     )
   )
 }
@@ -59,6 +59,12 @@ browser_server <- function(id, all_experiments, env, df, experiments,
         ignoreNULL = FALSE)
       # Main plot, this code is only run if 'plot' is pressed
       output$c <- renderPlotly(click_plot_browser(mainPlotControls, session)) %>%
+        bindCache(ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
+                  input$tx, input$other_tx, input$add_uorfs,
+                  input$extendTrailers, input$extendLeaders,
+                  input$plot_export_format,
+                  input$summary_track, input$summary_track_type,
+                  input$viewMode, input$kmer, input$frames_type) %>%
         bindEvent(mainPlotControls(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)

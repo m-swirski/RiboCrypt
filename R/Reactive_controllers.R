@@ -98,7 +98,9 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
     shift_table <- shifts.load(df())
     shift_table <- shift_table[[which(isolate(libs()) == isolate(input$library))]]
     shift_table <- shift_table[fraction %between% c(input$readlength_min, input$readlength_max)]
-    if (!input$p_shifted) additional_extension <- max(abs(shift_table$offsets_start))
+    if (!is.null(input$p_shifted)) {
+      if (!input$p_shifted) additional_extension <- max(abs(shift_table$offsets_start))
+    }
   } else {
     warning("Shift table not found!")
     shift_table <- data.table()

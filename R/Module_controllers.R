@@ -56,9 +56,9 @@ study_and_gene_observers <- function(input, output, session) {
     if (!exists("all_is_gene", mode = "logical")) all_is_gene <- FALSE
     if (!exists("uses_gene", mode = "logical")) uses_gene <- TRUE
 
-    observe(rv$genome <- input$genome) %>%
+    observe(if (rv$genome != input$genome) rv$genome <- input$genome) %>%
       bindEvent(input$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
-    observe(rv$exp <- input$dff) %>%
+    observe(if (rv$exp != input$dff) rv$exp <- input$dff) %>%
       bindEvent(input$dff, ignoreInit = TRUE, ignoreNULL = TRUE)
     observe(updateSelectizeInput(
       inputId = "genome",
@@ -67,6 +67,7 @@ study_and_gene_observers <- function(input, output, session) {
       server = TRUE
     )) %>%
       bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
+
     observeEvent(rv$exp, experiment_update_select(org, all_exp, experiments,
                                                   rv$exp),
                  ignoreInit = TRUE)

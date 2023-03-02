@@ -55,8 +55,8 @@ study_and_gene_observers <- function(input, output, session) {
   with(rlang::caller_env(), {
     if (!exists("all_is_gene", mode = "logical")) all_is_gene <- FALSE
     if (!exists("uses_gene", mode = "logical")) uses_gene <- TRUE
-
-    observe(if (rv$genome != input$genome) {print("rv: input to genome"); rv$genome <- input$genome},
+    if (!exists("idd", mode = "character")) idd <- NULL
+    observe(if (rv$genome != input$genome) {print(paste("rv: input to genome", "browser")); rv$genome <- input$genome},
             priority = 2) %>%
       bindEvent(input$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
     observe(if (rv$exp != input$dff) {print("rv: input to exp");rv$exp <- input$dff}) %>%

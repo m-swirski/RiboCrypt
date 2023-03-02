@@ -51,6 +51,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
     id,
     function(input, output, session, all_exp = all_experiments) {
       # browser()
+      idd <- "browser"
       study_and_gene_observers(input, output, session)
       # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,

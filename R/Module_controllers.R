@@ -72,7 +72,7 @@ study_and_gene_observers <- function(input, output, session) {
       experiment_update_select(org, all_exp, experiments, rv$exp),
                  ignoreInit = TRUE, ignoreNULL = TRUE)
 
-    observeEvent(org(), if (rv$genome != input$genome)
+    observeEvent(org(), if (org() != input$genome)
       experiment_update_select(org, all_exp, experiments),
                  ignoreInit = TRUE, ignoreNULL = TRUE)
     if (all_is_gene) {

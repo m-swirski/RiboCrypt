@@ -60,7 +60,7 @@ study_and_gene_observers <- function(input, output, session) {
       bindEvent(input$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
     observe(if (rv$exp != input$dff) rv$exp <- input$dff) %>%
       bindEvent(input$dff, ignoreInit = TRUE, ignoreNULL = TRUE)
-    observe(updateSelectizeInput(
+    observe(if (rv$genome != input$genome) updateSelectizeInput(
       inputId = "genome",
       choices = c("ALL", unique(all_exp$organism)),
       selected = rv$genome,
@@ -151,7 +151,7 @@ org_and_study_changed_checker <- function(input, output, session) {
     observe({update_rv(rv, df_with)}) %>%
       bindEvent(df_with(), ignoreInit = TRUE)
 
-    observe(org(rv$genome)) %>%
+    observe(if (org() != rv$genome) org(rv$genome)) %>%
       bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
     observe({df(get_exp(rv$exp, experiments, without_readlengths_env))}) %>%
       bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)

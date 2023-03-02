@@ -20,7 +20,7 @@ get_exp <- function(dff, experiments, env) {
   req(dff %in% experiments)
   print("New experiment loaded")
   #print(paste("EXP: ", isolate(dff)))
-  return(read.experiment(dff, output.env = env))
+  return(read.experiment(dff, output.env = env, validate = FALSE))
 }
 
 click_plot_browser <- function(mainPlotControls, session) {

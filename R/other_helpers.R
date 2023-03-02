@@ -26,7 +26,7 @@ getIndexes <- function(ref_granges) {
 matchMultiplePatterns <- function(patterns, Seq) {
   matches <- c()
   for (pattern in patterns) {
-    cur_matches <- matchPattern(pattern, Seq)
+    cur_matches <- matchPattern(pattern, Seq, fixed = FALSE)
     cur_matches <- cur_matches@ranges@start
     names(cur_matches) <- rep(pattern, length(cur_matches))
     matches <- c(matches, cur_matches)

@@ -7,6 +7,12 @@
 #' @keywords internal
 createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"), frame = 1,
                            custom_motif = NULL) {
+  if (custom_motif == "") {
+    custom_motif <- NULL 
+  } else {
+    custom_motif <- gsub("U", "T", custom_motif)
+    custom_motif <- strsplit(custom_motif, ",")[[1]] %>% strsplit(" ") %>% unlist
+  }
   hits <- lapply(list(start_codons, stop_codons, custom_motif), function(x) matchMultiplePatterns(x, sequence))
   names(hits) <- c("white", "black", "purple")
   hits <- lapply(hits, as.data.table)

@@ -39,6 +39,7 @@ click_plot_browser <- function(mainPlotControls, session) {
     kmers = mainPlotControls()$kmerLength,
     frames_type = mainPlotControls()$frames_type,
     custom_regions = mainPlotControls()$customRegions,
+    custom_motif = mainPlotControls()$custom_sequence,
     input_id = session$ns("selectedRegion"),
     summary_track = mainPlotControls()$summary_track,
     summary_track_type = mainPlotControls()$summary_track_type,

@@ -25,7 +25,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    kmerLength = input$kmer,
                    frames_type = input$frames_type,
                    annotation = cds_annotation,
-                   reads = reads)
+                   reads = reads,
+                   custom_sequence = input$customSequence)
   }
 }
 

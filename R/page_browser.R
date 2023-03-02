@@ -24,6 +24,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
           tabPanel("Settings",
                    numericInput(ns("extendLeaders"), "5' extension", 0),
                    numericInput(ns("extendTrailers"), "3' extension", 0),
+                   textInput(ns("customSequence"), label = "Custom sequences highlight", value = NULL),
                    checkboxInput(ns("viewMode"), label = "Genomic View", value = FALSE),
                    checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = FALSE),
                    checkboxInput(ns("other_tx"), label = "Full annotation", value = FALSE),
@@ -64,7 +65,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
                   input$extendTrailers, input$extendLeaders,
                   input$plot_export_format,
                   input$summary_track, input$summary_track_type,
-                  input$viewMode, input$kmer, input$frames_type) %>%
+                  input$viewMode, input$kmer, input$frames_type,input$customSequence) %>%
         bindEvent(mainPlotControls(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)

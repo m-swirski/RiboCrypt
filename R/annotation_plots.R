@@ -10,6 +10,7 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
   if (custom_motif == "") {
     custom_motif <- NULL 
   } else {
+    custom_motif <- toupper(custom_motif)
     custom_motif <- gsub("U", "T", custom_motif)
     custom_motif <- strsplit(custom_motif, ",")[[1]] %>% strsplit(" ") %>% unlist
   }

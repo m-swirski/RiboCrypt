@@ -69,12 +69,15 @@ study_and_gene_observers <- function(input, output, session) {
     )}, priority = 1) %>%
       bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
 
-    observeEvent(rv$exp, if (rv$exp != input$dff)
-      experiment_update_select(org, all_exp, experiments, rv$exp),
+    observeEvent(rv$exp, if (rv$exp != input$dff){
+      print("exp to inputbox")
+      experiment_update_select(org, all_exp, experiments, rv$exp)},
                  ignoreInit = TRUE, ignoreNULL = TRUE)
 
-    observeEvent(org(), if (org() != input$genome)
-      experiment_update_select(org, all_exp, experiments),
+    observeEvent(org(), if (org() != input$genome) {
+      print("org to inputbox")
+      experiment_update_select(org, all_exp, experiments)
+    },
                  ignoreInit = TRUE, ignoreNULL = TRUE)
     if (all_is_gene) {
       updateSelectizeInput(

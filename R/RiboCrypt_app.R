@@ -8,6 +8,9 @@
 #' \code{list.experiments(validate = validate.experiments)}. Which experiments
 #' do you want to allow your app to see, default is all in your system config
 #' path.
+#' @param browser_options named character vector of browser specific arguments
+#' @param init_tab_focus character, default "browser". Which tab to open on
+#' init.
 #' @import shiny bslib ORFik NGLVieweR ggplot2
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
@@ -26,7 +29,7 @@ RiboCrypt_app <- function(
     validate.experiments = TRUE,
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
     all_exp = list.experiments(validate = validate.experiments),
-    browser_options = c()) {
+    browser_options = c(), init_tab_focus = "browser") {
   time_before <- Sys.time()
 
   stopifnot(is(all_exp, "data.table"))
@@ -77,6 +80,7 @@ RiboCrypt_app <- function(
       windowTitle = "RiboCrypt",
       title = rc_title(),
       theme = rc_theme(),
+      selected = init_tab_focus,
       browser_ui("browser", all_exp, browser_options, names_init, libs),
       analysis_ui("analysis", all_exp, browser_options, libs),
       metadata_ui("metadata", all_exp),

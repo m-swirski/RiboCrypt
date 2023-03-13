@@ -19,11 +19,14 @@ pdb_exists <- function(pdb_file) {
 }
 
 protein_struct_plot <- function(selectedRegionProfile, dynamicVisible,
-                                pdb_file_exists, session) {
-  ns <- session$ns
+                                pdb_file_exists, session, structureChoices = list()) {
   req(dynamicVisible(), pdb_file_exists(), selectedRegionProfile())
-  fluidRow(
-    actionButton(ns("dynamicClose"), "Close"),
-    NGLVieweROutput(ns("dynamic"))
-  )
+  
+  ns <- session$ns
+  
+  
+  closeBtn <- actionButton(ns("dynamicClose"), "Close")
+  structureSelector <- selectInput("structureSelector", "Select structure", structureChoices)
+  
+  list(closeBtn, structureSelector, NGLVieweROutput(ns("dynamic")))
 }

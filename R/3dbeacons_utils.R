@@ -14,7 +14,7 @@ model_categories_from_summary <- function(data) {
 }
 
 model_urls_from_summary <- function(data) {
-  data$model_url
+  data$structures$summary$model_url
 }
 
 model_formats_from_summary <- function(data) {

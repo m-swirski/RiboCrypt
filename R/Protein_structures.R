@@ -27,7 +27,7 @@ protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVi
   
   widgetCloseBtn <- actionButton(ns("dynamicClose"), "Close")
   widgetHeader <- renderText(selectedRegion())
-  widgetSelector <- selectInput(ns("structureViewerSelector"), "Select structure", structureChoices)
+  widgetSelector <- selectInput(ns("structureViewerSelector"), "Select structure", structureChoices())
   
   list(widgetCloseBtn, widgetHeader, widgetSelector, NGLVieweROutput(ns("dynamic")))
 }

@@ -38,10 +38,10 @@ module_protein <- function(input, output, session) {
     })
     pdb_files <- reactive(list.files(region_dir()))
     pdb_file <- reactive({
-      if(is.null(input$structureSelector)) {
+      if(is.null(input$structureViewerSelector)) {
         file.path(region_dir(), head(pdb_files()))
       } else {
-        file.path(region_dir(), input$structureSelector)
+        file.path(region_dir(), input$structureViewerSelector)
       }
     })
     pdb_file_exists <- reactive(pdb_exists(pdb_file))
@@ -49,6 +49,7 @@ module_protein <- function(input, output, session) {
     # Variable UI logic
     output$variableUi <- renderUI(
       protein_struct_plot(
+        selectedRegion,
         selectedRegionProfile,
         dynamicVisible,
         pdb_file_exists,

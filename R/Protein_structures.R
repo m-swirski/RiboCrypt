@@ -18,15 +18,16 @@ pdb_exists <- function(pdb_file) {
   file.exists(pdb_file())
 }
 
-protein_struct_plot <- function(selectedRegionProfile, dynamicVisible,
+protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVisible,
                                 pdb_file_exists, session, structureChoices = list()) {
   req(dynamicVisible(), pdb_file_exists(), selectedRegionProfile())
   
   ns <- session$ns
   
   
-  closeBtn <- actionButton(ns("dynamicClose"), "Close")
-  structureSelector <- selectInput("structureSelector", "Select structure", structureChoices)
+  widgetCloseBtn <- actionButton(ns("dynamicClose"), "Close")
+  widgetHeader <- renderText(selectedRegion())
+  widgetSelector <- selectInput(ns("structureViewerSelector"), "Select structure", structureChoices)
   
-  list(closeBtn, structureSelector, NGLVieweROutput(ns("dynamic")))
+  list(widgetCloseBtn, widgetHeader, widgetSelector, NGLVieweROutput(ns("dynamic")))
 }

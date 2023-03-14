@@ -7,6 +7,13 @@
 #' @keywords internal
 createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"), frame = 1,
                            custom_motif = NULL) {
+  if (custom_motif == "") {
+    custom_motif <- NULL 
+  } else {
+    custom_motif <- toupper(custom_motif)
+    custom_motif <- gsub("U", "T", custom_motif)
+    custom_motif <- strsplit(custom_motif, ",")[[1]] %>% strsplit(" ") %>% unlist
+  }
   hits <- lapply(list(start_codons, stop_codons, custom_motif), function(x) matchMultiplePatterns(x, sequence))
   names(hits) <- c("white", "black", "purple")
   hits <- lapply(hits, as.data.table)
@@ -106,6 +113,8 @@ if (length(overlaps) > 0) {
   overlaps <- unlistGrl(overlaps)
   names(overlaps) <- onames
   overlaps$rel_frame <- getRelativeFrames(overlaps)
+  rel_frame <- getRelativeFrames(overlaps)
+  
   overlaps <- subsetByOverlaps(overlaps, display_range)
 
   intersections <- trimOverlaps(overlaps,display_range)
@@ -115,14 +124,20 @@ if (length(overlaps) > 0) {
   layers <- geneTrackLayer(locations)
 
   locations <- unlistGrl(locations)
+  rel_frame <- getRelativeFrames(overlaps)
+  names(rel_frame) <- names(overlaps)
+  if (length(rel_frame) != length(locations)) rel_frame <- selectFrames(rel_frame,locations)
+  locations$rel_frame <- rel_frame
+  cols <- colour_bars(locations, overlaps,display_range)
   locations <- ranges(locations)
   blocks <- c(start(locations) , end(locations))
   names(blocks) <- rep(names(locations),2)
   blocks <- sort(blocks)
   lines_locations <- blocks[!(blocks %in% c(1, plot_width))]
-  cols <- colour_bars(overlaps, display_range)
-  names(cols) <- names(overlaps)
-  if (length(cols) != length(locations)) cols <- selectCols(cols,locations)
+  
+  # cols <- colour_bars(overlaps, display_range)
+  
+  # if (length(cols) != length(locations)) cols <- selectCols(cols,locations)
   rect_locations <- locations
 
   locations <- resize(locations, width = 1, fix = "center")

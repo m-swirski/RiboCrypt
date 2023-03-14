@@ -7,7 +7,9 @@
 RiboCrypt_app(
   validate.experiments = TRUE,
   options = list(launch.browser = ifelse(interactive(), TRUE, FALSE)),
-  all_exp = list.experiments(validate = validate.experiments)
+  all_exp = list.experiments(validate = validate.experiments),
+  browser_options = c(),
+  init_tab_focus = "browser"
 )
 }
 \arguments{
@@ -22,6 +24,11 @@ will crash if you try to load that experiment!}
 \code{list.experiments(validate = validate.experiments)}. Which experiments
 do you want to allow your app to see, default is all in your system config
 path.}
+
+\item{browser_options}{named character vector of browser specific arguments}
+
+\item{init_tab_focus}{character, default "browser". Which tab to open on
+init.}
 }
 \value{
 RiboCrypt shiny app

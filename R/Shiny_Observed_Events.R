@@ -13,12 +13,23 @@ observed_cds_annotation <- function(gene, cds, all = TRUE) {
   }
 }
 
-observed_cds_heatmap <- function(gene, cds) {
+observed_cds_heatmap <- function(gene, cds, length_table = NULL,
+                                 longestPerGene = TRUE,
+                                 minFiveUTR = NULL) {
   if (gene %in% c("", "NULL")) {
     cds()[0]
   } else {
     if ("all" %in% gene) {
-      cds()
+      if (!is.null(length_table) & longestPerGene) {
+        if (is.null(minFiveUTR)) {
+          cds()[length_table()[!duplicated(gene_id) & cds_len > 0,]$tx_name]
+        } else {
+          cds()[length_table()[!duplicated(gene_id) & cds_len > 0 &
+                                 utr5_len >= minFiveUTR,]$tx_name]
+        }
+
+      } else cds()
+
     } else if (gene %in% names(cds())) {
       cds()[gene]
     } else cds()[0]
@@ -47,7 +58,6 @@ observed_exp_subset <- function(library, libs, df) {
 }
 
 observed_cds_point <- function(mainPlotControls) {
-  class(mainPlotControls()$region)
   if (mainPlotControls()$region == "Start codon") {
     region <- groupGRangesBy(
       startSites(mainPlotControls()$cds_display, TRUE, TRUE, TRUE))
@@ -58,8 +68,15 @@ observed_cds_point <- function(mainPlotControls) {
   return(region)
 }
 
+observed_uorf_annotation <- function(names, add_uorfs) {
+  if (add_uorfs) {
+    loadRegion(df, "uorf", names.keep = names)
+  } else GRangesList()
+}
+
 update_rv <- function(rv, df) {
   print("updating rv")
+  # browser()
   if ((rv$lstval == rv$curval) & rv$lstval == "") {
     print("startup updating both")
     rv$lstval <- rv$curval <- df()@txdb
@@ -69,11 +86,11 @@ update_rv <- function(rv, df) {
   print(isolate(rv$lstval))
 }
 
-update_rv_changed <- function(rv, rv_changed) {
+update_rv_changed <- function(rv) {
   if ((rv$lstval != rv$curval)) {
     print("rv_changed")
-    if (rv_changed()) {
-      rv_changed(FALSE)
-    } else rv_changed(TRUE)}
-  else if (is.null(rv_changed())) rv_changed(FALSE)
+    if (rv$changed) {
+      rv$changed <- FALSE
+    } else rv$changed <- TRUE}
+  else if (is.null(rv$changed)) rv$changed <- FALSE
 }

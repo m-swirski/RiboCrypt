@@ -1,4 +1,4 @@
-quality_ui <- function(id, label = "Periodicity", all_exp) {
+quality_ui <- function(id, all_exp, browser_options, libs, label = "Periodicity") {
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
@@ -9,10 +9,10 @@ quality_ui <- function(id, label = "Periodicity", all_exp) {
         tabsetPanel(
           tabPanel("Periodicity",
                    organism_input_select(c("ALL", genomes), ns),
-                   experiment_input_select(experiments, ns),
+                   experiment_input_select(experiments, ns, browser_options),
                    gene_input_select(ns),
                    tx_input_select(ns),
-                   library_input_select(ns, FALSE),
+                   library_input_select(ns, FALSE, libs),
                    heatmap_region_select(ns),
                    normalization_input_select(ns),
                    numericInput(ns("readlength_min"), "Min Readlength", 26),
@@ -27,56 +27,38 @@ quality_ui <- function(id, label = "Periodicity", all_exp) {
   )
 }
 
-quality_server <- function(id, all_experiments, env) {
+quality_server <- function(id, all_experiments, env, df, experiments,
+                           tx, cds, libs, org, gene_name_list, rv) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
-      # Organism / study objects
-      org_and_study_changed_checker(input, output, session)
-      # Gene objects
-      valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE,
-                                                       minThreeUTR = 0)) %>%
-        bindEvent(rv_changed(), ignoreNULL = TRUE)
-      tx <- reactive({loadRegion(df(), part = "mrna", names.keep = valid_genes_subset())}) %>%
-        bindEvent(rv_changed(), ignoreNULL = TRUE)
-      cds <- reactive(loadRegion(df(), part = "cds", names.keep = valid_genes_subset())) %>%
-        bindEvent(rv_changed(), ignoreNULL = TRUE)
-      gene_name_list <- reactive(get_gene_name_categories(df())) %>%
-        bindEvent(rv_changed(), ignoreNULL = TRUE)
-
       # Update main side panels
+      length_table <- reactive(optimizedTranscriptLengths(df(), TRUE, TRUE)) %>%
+        bindCache(rv$curval) %>%
+        bindEvent(rv$changed, ignoreNULL = TRUE)
+
       all_is_gene <- TRUE
       study_and_gene_observers(input, output, session)
 
       # Main plot, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,
-                                        click_plot_heatmap_main_controller(input, tx, cds, libs, df))
+        click_plot_heatmap_main_controller(input, tx, cds, libs, df,
+                                           length_table))
+
+      coverage <- reactive(heatmap_data(mainPlotControls, tx, length_table)) %>%
+        bindCache(mainPlotControls()$extendLeaders, mainPlotControls()$extendTrailers,
+                  mainPlotControls()$normalization, mainPlotControls()$region,
+                  ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
+                  mainPlotControls()$readlength_min,
+                  mainPlotControls()$readlength_max)
+
+
 
       output$c <- renderPlotly({
-        message("-- Plot region: ", mainPlotControls()$region)
-        if (length(mainPlotControls()$cds_display) > 0) {
-          print("This is a mRNA")
-          print(class(mainPlotControls()$reads[[1]]))
-          # Pick start or stop region
-          region <- observed_cds_point(mainPlotControls)
-          time_before <- Sys.time()
-          dt <- windowPerReadLength(region, tx()[names(region)],
-                                    reads = mainPlotControls()$reads[[1]],
-                                    pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
-                                    downstream = mainPlotControls()$extendTrailers - 1,
-                                    scoring = mainPlotControls()$normalization,
-                                    acceptedLengths = seq(mainPlotControls()$readlength_min, mainPlotControls()$readlength_max),
-                                    drop.zero.dt = TRUE, append.zeroes = TRUE)
-          print(paste("Number of rows in dt:", nrow(dt)))
-          cat("Coverage calc: "); print(round(Sys.time() - time_before, 2))
-          dt[, frame := as.factor(position %% 3), by = fraction]
-
-          return(periodicity_plot(dt, fft = TRUE))
-        } else {
-          print("This is not a mRNA / valid mRNA")
-          return(NULL)
-        }
+        coverage()[, frame := as.factor(position %% 3), by = fraction]
+        return(periodicity_plot(coverage(), fft = TRUE))
       })
+      return(rv)
     }
   )
 }

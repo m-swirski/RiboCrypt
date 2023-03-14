@@ -1,6 +1,6 @@
 ### NGLVieweR (protein structures) ###
 # TODO: Move as much as possible of protein stuff out of page_browser
-module_protein <- function(input, output, session) {
+module_protein <- function(input, output, gene_name_list, session) {
   with(rlang::caller_env(), {
     # Setup reactive values needed for structure viewer
     dynamicVisible <- reactiveVal(FALSE)
@@ -45,6 +45,16 @@ module_protein <- function(input, output, session) {
       }
     })
     pdb_file_exists <- reactive(pdb_exists(pdb_file))
+    beacons_qualifier <- reactive({
+      gene_name_list()[gene_name_list()$value == selectedRegion()]$uniprot_id
+    })
+    beacons_results <- reactive({
+      req(beacons_qualifier())
+      fetch_summary(beacons_qualifier()) %>% model_urls_from_summary()
+    })
+    structure_variants <- reactive({
+      append(pdb_files(), beacons_results())
+    })
     output$dynamic <- renderNGLVieweR(protein_struct_render(pdb_file_exists, selectedRegionProfile, pdb_file))
     # Variable UI logic
     output$variableUi <- renderUI(
@@ -54,7 +64,7 @@ module_protein <- function(input, output, session) {
         dynamicVisible,
         pdb_file_exists,
         session,
-        pdb_files()
+        structure_variants
       )
     )
   })
@@ -65,37 +75,118 @@ module_protein <- function(input, output, session) {
 study_and_gene_observers <- function(input, output, session) {
   with(rlang::caller_env(), {
     if (!exists("all_is_gene", mode = "logical")) all_is_gene <- FALSE
-    observeEvent(org(), experiment_update_select(org, all_exp, experiments))
+    if (!exists("uses_gene", mode = "logical")) uses_gene <- TRUE
+
+    observe(if (rv$genome != input$genome & input$genome != "") {
+      rv$genome <- input$genome},
+            priority = 2) %>%
+      bindEvent(input$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
+    observe(if (rv$exp != input$dff & input$dff != "") rv$exp <- input$dff) %>%
+      bindEvent(input$dff, ignoreInit = TRUE, ignoreNULL = TRUE)
+    observe(if (rv$genome != input$genome) {
+      updateSelectizeInput(
+      inputId = "genome",
+      choices = c("ALL", unique(all_exp$organism)),
+      selected = rv$genome,
+      server = TRUE
+    )}, priority = 1) %>%
+      bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
+
+    observeEvent(rv$exp, if (rv$exp != input$dff){
+      experiment_update_select(org, all_exp, experiments, rv$exp)},
+                 ignoreInit = TRUE, ignoreNULL = TRUE)
+
+    observeEvent(org(), if (org() != input$genome & input$genome != "") {
+      experiment_update_select(org, all_exp, experiments)},
+                 ignoreInit = TRUE, ignoreNULL = TRUE)
     if (all_is_gene) {
-      observeEvent(gene_name_list(), gene_update_select_heatmap(gene_name_list))
+      updateSelectizeInput(
+        inputId = "gene",
+        choices = c("all", unique(isolate(gene_name_list())[,2][[1]])),
+        selected = "all",
+        server = TRUE
+      )
+      observeEvent(gene_name_list(), gene_update_select_heatmap(gene_name_list),
+                   ignoreInit = TRUE)
       observeEvent(input$gene, tx_update_select(isolate(input$gene),
                                                 gene_name_list, "all"),
                    ignoreNULL = TRUE, ignoreInit = TRUE)
-    } else {
-      observeEvent(gene_name_list(), gene_update_select(gene_name_list))
+    } else if (uses_gene) {
+      # TODO: decide if updateSelectizeInput should be on top here or not
+      observeEvent(gene_name_list(), gene_update_select(gene_name_list),
+                   ignoreNULL = TRUE, ignoreInit = TRUE)
       observeEvent(input$gene, tx_update_select(isolate(input$gene),
                                                 gene_name_list),
                    ignoreNULL = TRUE, ignoreInit = TRUE)
+      updateSelectizeInput(
+        inputId = "gene",
+        choices = unique(isolate(gene_name_list())[,2][[1]]),
+        selected = isolate(input$gene),
+        server = TRUE
+      )
     }
     observeEvent(libs(), library_update_select(libs))
+    init_round <- FALSE
   }
   )
 }
 
 org_and_study_changed_checker <- function(input, output, session) {
   with(rlang::caller_env(), {
-    # Static values
+    cat("Server startup: "); print(round(Sys.time() - time_before, 2))
+    # browser()
+    ## Static values
     experiments <- all_exp$name
-    # Set reactive values
-    org <- reactive(input$genome)
-    rv <- reactiveValues(lstval="",curval="") # Store current and last genome
-    rv_changed <- reactiveVal(NULL) # Did genome change?
-    observe(update_rv_changed(rv, rv_changed), priority = 1) %>%
-      bindEvent(rv$curval)
-    df <- reactive(get_exp(input$dff, experiments, env))
-    observeEvent(df(), update_rv(rv, df), priority = 2)
+    ## Set reactive values
+    org <- reactiveVal("ALL")
+    # Store current and last genome
+    df <- reactiveVal(get_exp(browser_options["default_experiment"],
+                              experiments, without_readlengths_env))
+    df_with <- reactiveVal(get_exp(browser_options["default_experiment"],
+                              experiments, with_readlengths_env))
     libs <- reactive(bamVarName(df()))
+    # The shared reactive values (rv)
+    # This must be passed to all submodules
+    rv <- reactiveValues(lstval=isolate(df())@txdb,
+                         curval=isolate(df())@txdb,
+                         genome = "ALL",
+                         exp = browser_options["default_experiment"],
+                         changed=FALSE)
+    # Annotation change reactives
+    tx <- reactive(loadRegion(isolate(df()))) %>%
+      bindCache(rv$curval) %>%
+      bindEvent(rv$changed, ignoreNULL = TRUE)
+    cds <- reactive(loadRegion(isolate(df()), "cds")) %>%
+      bindCache(rv$curval) %>%
+      bindEvent(rv$changed, ignoreNULL = TRUE)
+    gene_name_list <- reactiveVal(names_init)
+    init_round <- TRUE
+    gene_name_list <- reactive({if (init_round) {names_init}
+      else get_gene_name_categories(df())}) %>%
+      bindCache(rv$curval) %>%
+      bindEvent(rv$changed, ignoreNULL = TRUE)
+    init_round <- FALSE
+    # observe(gene_name_list()) %>%
+    #   bindEvent(rv$changed, ignoreInit = TRUE)
+    # Observers
+    observe(update_rv_changed(rv), priority = 1) %>%
+      bindEvent(rv$curval, ignoreInit = TRUE)
+    observe({update_rv(rv, df)}) %>%
+      bindEvent(df(), ignoreInit = TRUE)
+    observe({update_rv(rv, df_with)}) %>%
+      bindEvent(df_with(), ignoreInit = TRUE)
+
+    observe(if (org() != rv$genome) org(rv$genome)) %>%
+      bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
+    observe({df(get_exp(rv$exp, experiments, without_readlengths_env))}) %>%
+      bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
+    observe({df_with(get_exp(rv$exp, experiments, with_readlengths_env))}) %>%
+      bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
+
+    cat("Pre modules: "); print(round(Sys.time() - time_before, 2))
   }
   )
 }
+
+
 

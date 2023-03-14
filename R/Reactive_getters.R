@@ -12,17 +12,21 @@ get_gene_name_categories <- function(df) {
   dt[, merged_name := do.call(paste, .SD, ), .SDcols = c(2,1)]
   dt[, merged_name := gsub(" ",  "-", merged_name)]
   dt[, merged_name := gsub("^-",  "", merged_name)]
-  return(data.table(value = dt$ensembl_tx_name, label = dt$merged_name))
+  output_dt <- data.table(value = dt$ensembl_tx_name, label = dt$merged_name)
+  if (! is.null(dt$uniprot_id))  output_dt$uniprot_id <- dt$uniprot_id
+  return(output_dt)
 }
 
 get_exp <- function(dff, experiments, env) {
   print("testing exp")
   req(dff %in% experiments)
   print("New experiment loaded")
-  return(read.experiment(dff, output.env = env))
+  #print(paste("EXP: ", isolate(dff)))
+  return(read.experiment(dff, output.env = env, validate = FALSE))
 }
 
 click_plot_browser <- function(mainPlotControls, session) {
+  # browser()
   time_before <- Sys.time()
   print("Starting loading + Profile + plot calc")
   a <- RiboCrypt::multiOmicsPlot_ORFikExp(
@@ -37,6 +41,7 @@ click_plot_browser <- function(mainPlotControls, session) {
     kmers = mainPlotControls()$kmerLength,
     frames_type = mainPlotControls()$frames_type,
     custom_regions = mainPlotControls()$customRegions,
+    custom_motif = mainPlotControls()$custom_sequence,
     input_id = session$ns("selectedRegion"),
     summary_track = mainPlotControls()$summary_track,
     summary_track_type = mainPlotControls()$summary_track_type,
@@ -46,6 +51,14 @@ click_plot_browser <- function(mainPlotControls, session) {
   return(a)
 }
 
+click_plot_boxplot <- function(boxPlotControls, session) {
+  a <- RiboCrypt:::distribution_plot(boxPlotControls()$dff,
+                                     boxPlotControls()$display_region,
+                                     boxPlotControls()$annotation,
+                                     boxPlotControls()$extendLeaders,
+                                     boxPlotControls()$extendTrailers)
+  return(a)
+}
 get_fastq_page <- function(input, libs, df, relative_dir) {
   print("In fastq page")
   dff <- observed_exp_subset(isolate(input$library), libs, df)
@@ -70,4 +83,57 @@ get_fastq_page <- function(input, libs, df, relative_dir) {
   addResourcePath("tmpuser", dirname(path))
   path <- file.path("tmpuser", basename(path))
   page <- tags$iframe(seamless="seamless", src= path, width=1000, height=900)
+}
+
+click_plot_codon <- function(input, coverage) {
+  message("-- Plotting codon usage")
+
+  score_column <-
+    if (input$codon_score == "percentage") {
+      score_column_name <- "relative_to_max_score"
+      coverage()$relative_to_max_score
+    } else if (input$codon_score == "dispersion(NB)") {
+      score_column_name <- "dispersion_txNorm"
+      coverage()$dispersion_txNorm
+    } else if (input$codon_score == "alpha(DMN)") {
+      score_column_name <- "alpha"
+      coverage()$alpha
+    } else if (input$codon_score == "sum") {
+      score_column_name <- "sum"
+      coverage()$sum
+    }
+
+  if (input$differential) {
+    pairs <- ORFik::combn.pairs(unique(coverage()$variable))
+    dt <- data.table()
+    for (pair in pairs) {
+      sample1 <- coverage()[variable == pair[1],]
+      sample2 <- coverage()[variable == pair[2],]
+      score_column <-
+        sample1[, score_column_name, with = FALSE] /
+        sample2[, score_column_name, with = FALSE]
+      dt <- rbindlist(list(dt,
+                 data.table(variable = paste(sample1$variable,
+                                            sample2$variable, sep = " vs "),
+                            seqs = sample1$seqs,
+                            type = sample1$type,
+                            score_column = score_column[[1]])))
+    }
+    plotly::ggplotly(ggplot(dt,
+                            aes(score_column, seqs)) +
+                       geom_point(color = "blue") +
+                       scale_fill_gradient2(low = "blue", high = "orange",
+                                            mid = "white") +
+                       theme(axis.text.y = element_text(family = "monospace")) +
+                       facet_grid(type ~ variable))
+  } else {
+    plotly::ggplotly(ggplot(coverage(),
+                            aes(type, seqs, fill = score_column)) +
+                       geom_tile(color = "white") +
+                       scale_fill_gradient2(low = "blue", high = "orange",
+                                            mid = "white") +
+                       theme(axis.text.y = element_text(family = "monospace")) +
+                       facet_wrap(coverage()$variable, ncol = 4))
+  }
+
 }

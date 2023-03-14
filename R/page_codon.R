@@ -1,4 +1,4 @@
-codon_ui <- function(id, label = "Codon", all_exp) {
+codon_ui <- function(id, all_exp, browser_options, libs, label = "Codon") {
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
@@ -9,12 +9,13 @@ codon_ui <- function(id, label = "Codon", all_exp) {
         tabsetPanel(
           tabPanel("Codon",
                    organism_input_select(c("ALL", genomes), ns),
-                   experiment_input_select(experiments, ns),
+                   experiment_input_select(experiments, ns, browser_options),
                    gene_input_select(ns),
                    tx_input_select(ns),
-                   library_input_select(ns),
+                   library_input_select(ns, TRUE, libs),
                    codon_filter_input_select(ns),
-                   codon_score_input_select(ns)
+                   codon_score_input_select(ns),
+                   checkboxInput(ns("differential"), label = "Differential", value = FALSE),
                    )),
         actionButton(ns("go"), "Plot", icon = icon("rocket")), ),
       mainPanel(
@@ -23,36 +24,27 @@ codon_ui <- function(id, label = "Codon", all_exp) {
   )
 }
 
-codon_server <- function(id, all_experiments, env) {
+codon_server <- function(id, all_experiments, env, df, experiments, tx, cds,
+                         libs, org, gene_name_list, rv) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
-      # Organism / study objects
-      org_and_study_changed_checker(input, output, session)
-      # Gene objects
-      valid_genes_subset <- reactive(filterTranscripts(df(), stopOnEmpty = FALSE,
-                                                       minFiveUTR = 3)) %>%
-        bindEvent(rv_changed(), ignoreNULL = TRUE)
-      tx <- reactive({loadRegion(df(), part = "mrna", names.keep = valid_genes_subset())}) %>%
-        bindEvent(rv_changed(), ignoreNULL = TRUE)
-      cds <- reactive(loadRegion(df(), part = "cds", names.keep = valid_genes_subset())) %>%
-        bindEvent(rv_changed(), ignoreNULL = TRUE)
-      gene_name_list <- reactive(get_gene_name_categories(df())) %>%
+      length_table <- reactive(optimizedTranscriptLengths(df(), TRUE, TRUE)) %>%
         bindCache(rv$curval) %>%
-        bindEvent(rv_changed(), ignoreNULL = TRUE)
-
+        bindEvent(rv$changed, ignoreNULL = TRUE)
       # Update main side panels
       all_is_gene <- TRUE
       study_and_gene_observers(input, output, session)
 
       # Main plot, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,
-                     click_plot_codon_main_controller(input, tx, cds, libs, df))
+                     click_plot_codon_main_controller(input, tx, cds, libs, df,
+                                                      length_table))
 
       coverage <- reactive({
         message("-- Codon analysis: ")
         if (length(mainPlotControls()$cds_display) > 0) {
-          print("This is a mRNA")
+          print("Valid input")
           filter_val <- mainPlotControls()$filter_value
           print(paste("Filter value:", filter_val))
           print(class(mainPlotControls()$reads[[1]]))
@@ -73,29 +65,9 @@ codon_server <- function(id, all_experiments, env) {
         bindCache(mainPlotControls()$normalization,
                   ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
                   mainPlotControls()$filter_value)
-
-
-      output$c <- renderPlotly({
-        message("-- Plotting codon usage")
-        score_column <-
-        if (input$codon_score == "percentage") {
-          coverage()$relative_to_max_score
-        } else if (input$codon_score == "dispersion(NB)") {
-          coverage()$dispersion_txNorm
-        } else if (input$codon_score == "alpha(DMN)") {
-          coverage()$alpha
-        } else if (input$codon_score == "sum") {
-          coverage()$sum
-        }
-        plotly::ggplotly(ggplot(coverage(),
-                                aes(type, seqs, fill = score_column)) +
-                           geom_tile(color = "white") +
-                           scale_fill_gradient2(low = "blue", high = "orange",
-                                                mid = "white") +
-                           theme(axis.text.y = element_text(family = "monospace")) +
-                           facet_wrap(coverage()$variable, ncol = 4))
-      }) %>%
-        bindEvent(coverage(), ignoreNULL = TRUE)
+      output$c <- renderPlotly(click_plot_codon(input, coverage)) %>%
+        bindEvent(coverage(), ignoreInit = FALSE, ignoreNULL = TRUE)
+      return(rv)
     }
   )
 }

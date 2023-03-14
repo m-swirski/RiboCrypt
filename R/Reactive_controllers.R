@@ -1,13 +1,16 @@
 click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
   {
+    # browser()
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
     cds_annotation <- observed_cds_annotation(isolate(input$tx), cds,
                                               isolate(input$other_tx))
+    uorf_annotation <- observed_uorf_annotation(names(tx()),
+                                                isolate(input$add_uorfs))
     dff <- observed_exp_subset(isolate(input$library), libs, df)
-    customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
-
+    # customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
+    customRegions <- uorf_annotation
     #reads <- load_reads(dff, "cov")
     reads <- filepath(dff, "bigwig")
     reactiveValues(dff = dff,
@@ -22,13 +25,74 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    kmerLength = input$kmer,
                    frames_type = input$frames_type,
                    annotation = cds_annotation,
-                   reads = reads)
+                   reads = reads,
+                   custom_sequence = input$customSequence)
   }
 }
 
-click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df) {
+click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
+  {
+    print(paste("here is gene!", isolate(input$gene)))
+    print(paste("here is tx!", isolate(input$tx)))
+    display_region <- observed_tx_annotation(isolate(input$tx), tx)
+    annotation <- observed_cds_annotation(isolate(input$tx), cds,
+                                              isolate(input$other_tx))
+    dff <- observed_exp_subset(isolate(input$library), libs, df)
+    customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
+
+    #reads <- load_reads(dff, "cov")
+    reads <- filepath(dff, "bigwig")
+    trailer_extension <- input$extendTrailers
+    leader_extension <- input$extendLeaders
+    export.format <- input$plot_export_format
+    summary_track <- input$summary_track
+    summary_track_type <- input$summary_track_type
+    viewMode <- input$viewMode
+    kmers <- input$kmer
+    frames_type <- input$frames_type
+
+    #other defaults
+    annotation_names <- NULL
+    display_sequence <- "both"
+    withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU")
+    lib_proportions <- NULL
+    colors = NULL
+    ylabels = bamVarName(dff)
+    lib_to_annotation_proportions <- c(0.8,0.2)
+
+    multiOmicsController()
+
+    reactiveValues(dff = dff,
+                   display_region = display_region,
+                   customRegions = customRegions,
+                   extend_trailers = extend_trailers,
+                   extend_leaders = extend_trailers,
+                   export.format = export.format,
+                   summary_track = summary_track,
+                   summary_track_type = summary_track_type,
+                   viewMode = viewMode,
+                   kmers = kmers,
+                   frames_type = frames_type,
+                   annotation = annotation,
+                   reads = reads,
+                   withFrames = withFrames,
+                   )
+  }
+}
+# click_plot_boxplot_main_controller <- function(input, tx, libs, df) {
+#   dff <- observed_exp_subset(isolate(input$library), libs, df)
+#   customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
+#
+#   reactiveValues(dff = dff,
+#                  tx  = isolate(input$tx),
+#                  customRegions = customRegions,
+#                  export_format = input$plot_export_format)
+# }
+click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
+                                               length_table, minFiveUTR = NULL) {
   display_region <- observed_gene_heatmap(isolate(input$tx), tx)
-  cds_display <- observed_cds_heatmap(isolate(input$tx),cds)
+  cds_display <- observed_cds_heatmap(isolate(input$tx), cds, length_table,
+                              minFiveUTR = minFiveUTR)
   dff <- observed_exp_subset(isolate(input$library), libs, df)
 
   additional_extension <- 0
@@ -37,7 +101,9 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df) {
     shift_table <- shifts.load(df())
     shift_table <- shift_table[[which(isolate(libs()) == isolate(input$library))]]
     shift_table <- shift_table[fraction %between% c(input$readlength_min, input$readlength_max)]
-    if (!input$p_shifted) additional_extension <- max(abs(shift_table$offsets_start))
+    if (!is.null(input$p_shifted)) {
+      if (!input$p_shifted) additional_extension <- max(abs(shift_table$offsets_start))
+    }
   } else {
     warning("Shift table not found!")
     shift_table <- data.table()
@@ -64,8 +130,10 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df) {
                  reads = reads)
 }
 
-click_plot_codon_main_controller <- function(input, tx, cds, libs, df) {
-  cds_display <- observed_cds_heatmap(isolate(input$tx),cds)
+click_plot_codon_main_controller <- function(input, tx, cds, libs, df,
+                                             length_table) {
+  cds_display <- observed_cds_heatmap(isolate(input$tx),cds, length_table,
+                                      minFiveUTR = 3)
   dff <- observed_exp_subset(isolate(input$library), libs, df)
 
   time_before <- Sys.time()
@@ -81,9 +149,9 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df) {
 }
 
 click_plot_DEG_main_controller <- function(input, df) {
-  
+
   dff <- df()[which(df()$condition %in% isolate(input$condition)),]
-  
+
   time_before <- Sys.time()
   print("experiment subsetting based on condition")
   reactiveValues(dff = dff)

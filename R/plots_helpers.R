@@ -45,7 +45,7 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
     theme(axis.title.x = element_blank(),
           axis.ticks.x = element_blank(),
           axis.text.x = element_blank(),
-          axis.title.y = element_text(size = y_text_size, face = "bold"),
+          axis.title.y = element_text(size = y_text_size, face = "bold", angle = 0, vjust = 0.5),
           axis.text.y = element_text(size = y_text_size - 2),
           plot.margin = unit(c(0,0,0,0), "pt"),
           legend.position = "none") +

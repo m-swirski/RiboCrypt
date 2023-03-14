@@ -26,7 +26,7 @@ getIndexes <- function(ref_granges) {
 matchMultiplePatterns <- function(patterns, Seq) {
   matches <- c()
   for (pattern in patterns) {
-    cur_matches <- matchPattern(pattern, Seq)
+    cur_matches <- matchPattern(pattern, Seq, fixed = FALSE)
     cur_matches <- cur_matches@ranges@start
     names(cur_matches) <- rep(pattern, length(cur_matches))
     matches <- c(matches, cur_matches)
@@ -102,8 +102,9 @@ trimOverlaps <- function(overlaps, display_range) {
   start_indices <- start(overlaps) < min(start(tr))
   end_indices <- end(overlaps) > max(end(tr))
   if (TRUE %in% start_indices) {
+    
     start(overlaps)[start(overlaps) < min(start(tr))] <- min(start(tr))
-
+ 
   }
   if (TRUE %in% end_indices) {
     end(overlaps)[end(overlaps) > max(end(tr))] <- max(end(tr))
@@ -111,34 +112,51 @@ trimOverlaps <- function(overlaps, display_range) {
   return(overlaps)
 }
 
-selectCols <- function(cols, locations) {
-  matches <- match(names(locations), names(cols))
+# selectCols <- function(cols, locations) {
+#   matches <- match(names(locations), names(cols))
+#   duplications<- duplicated(matches)
+#   additions <- cumsum(duplications)
+#   additions[!duplications] <- 0
+#   matches <- matches + additions
+# 
+#   return(cols[matches])
+# }
+
+selectFrames <- function(frames, locations) {
+  matches <- match(names(locations), names(frames))
   duplications<- duplicated(matches)
   additions <- cumsum(duplications)
   additions[!duplications] <- 0
   matches <- matches + additions
-
-  return(cols[matches])
+  
+  return(frames[matches])
 }
 
 
-colour_bars <- function(overlaps, display_range) {
-  if (as.logical(strand(display_range[[1]][1]) == "+")) {
-    ov_starts <- start(overlaps)
-    target_start <- min(start(display_range))
-    frames <- ov_starts - target_start
-    frames <- frames + overlaps$rel_frame
-    colors <- c("#F8766D","#00BA38","#619CFF")[frames %% 3 + 1]
-    return(colors)
-  } else{
-    ov_starts <- end(overlaps)
-    target_start <- max(end(display_range))
-    frames <- ov_starts - target_start
-    frames <- frames - overlaps$rel_frame
-    frames <- - frames
-    colors <- c("#619CFF","#F8766D","#00BA38")[(frames+1) %% 3 + 1]
-    return(colors)
+colour_bars <- function(locations, overlaps, display_range) {
+  
+  frames <- start(locations) - 1
+  frames <- frames + locations$rel_frame
+  colors <- colors <- c("#F8766D","#00BA38","#619CFF")[frames %% 3 + 1]
+  if (1 %in% start(locations)) {
+    if (as.logical(strand(display_range[[1]][1]) == "+")) {
+      ov_starts <- start(overlaps)
+      target_start <- min(start(display_range))
+      frames <- ov_starts - target_start
+      frames <- frames + overlaps$rel_frame
+      colors_general <- c("#F8766D","#00BA38","#619CFF")[frames %% 3 + 1]
+    } else{
+      ov_starts <- end(overlaps)
+      target_start <- max(end(display_range))
+      frames <- ov_starts - target_start
+      frames <- frames - overlaps$rel_frame
+      frames <- - frames
+      colors_general <- c("#619CFF","#F8766D","#00BA38")[(frames+1) %% 3 + 1]
+    }
+    colors[start(locations) == 1] <- colors_general[start(locations) == 1]
   }
+  
+  return(colors)
 }
 
 #'

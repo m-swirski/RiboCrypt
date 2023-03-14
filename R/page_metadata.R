@@ -1,36 +1,15 @@
-metadata_ui <- function(id, label = "metadata") {
+metadata_ui <- function(id, all_exp, label = "metadata") {
   ns <- NS(id)
-  tabPanel(title = "metadata", icon = icon("rectangle-list"),
-           h2("Metadata search page"),
-           sidebarLayout(
-             sidebarPanel(
-               textInput(ns("accession"), "Study accession number (SRP/GEO/PRJNA)",
-                         "GSE13750"),
-               actionButton(ns("go"), "Search", icon = icon("magnifying-glass")),
-             ),
-             mainPanel(
-               textOutput(ns("abstract")),
-               dataTableOutput(ns("metadata")) %>% shinycssloaders::withSpinner(color="#0dc5c1")
-             )
-           )
+  genomes <- unique(all_exp$organism)
+  experiments <- all_exp$name
+  navbarMenu(
+    title = "metadata", icon = icon("layer-group"),
+    sra_search_ui("sra_search"),
+    study_info_ui("study_info")
   )
 }
 
-metadata_server <- function(id) {
-  moduleServer(
-    id,
-    function(input, output, session) {
-      md <- eventReactive(input$go,{
-        abstract <- capture.output({
-          meta_dt <- download.SRA.metadata(input$accession)
-          # TODO: Make a more clever shower
-          meta_dt <- setcolorder(meta_dt, rev(seq(ncol(dt))))
-        })
-        reactiveValues(abstract = abstract,
-                       meta_dt = meta_dt)
-      })
-      output$abstract <- renderText(md()$abstract)
-      output$metadata <- renderDataTable(md()$meta_dt)
-    }
-  )
+metadata_server <- function(id, all_experiments) {
+  sra_search_server("sra_search")
+  study_info_server("study_info", all_experiments)
 }

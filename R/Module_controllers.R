@@ -29,6 +29,19 @@ module_protein <- function(input, output, gene_name_list, session) {
       selectedRegion(NULL)
       dynamicVisible(FALSE)
     })
+    # Setup 3dbeacons model download
+    observeEvent(beacons_structures(), {
+      tmp_paths <- unname(beacons_structures())
+      names(tmp_paths) <- beacons_results()
+      
+      mapply(
+        function(x) {
+          httr::GET(x, httr::write_disk(tmp_paths[x], overwrite = TRUE))
+        },
+        beacons_results()
+      )
+    })
+    
     # NGL viewer widget
     protein_structure_dir <- reactive({
       file.path(dirname(df()@fafile), "protein_structure_predictions")
@@ -36,33 +49,60 @@ module_protein <- function(input, output, gene_name_list, session) {
     region_dir <- reactive({
       file.path(protein_structure_dir(), selectedRegion())
     })
-    pdb_files <- reactive(list.files(region_dir()))
-    pdb_file <- reactive({
-      if(is.null(input$structureViewerSelector)) {
-        file.path(region_dir(), head(pdb_files()))
-      } else {
-        file.path(region_dir(), input$structureViewerSelector)
-      }
+    on_disk_structures <- reactive({
+      paths <- file.path(region_dir(), list.files(region_dir()))
+
+      path_labels <- mapply(
+        function(x) {
+          str_sub(x, start = gregexpr("/", x) %>% unlist() %>% last() + 1)
+        },
+        list.files(region_dir())
+      )
+
+      result <- paths
+      names(result) <- path_labels
+      result
     })
-    pdb_file_exists <- reactive(pdb_exists(pdb_file))
     beacons_qualifier <- reactive({
       gene_name_list()[gene_name_list()$value == selectedRegion()]$uniprot_id
     })
     beacons_results <- reactive({
       req(beacons_qualifier())
-      fetch_summary(beacons_qualifier()) %>% model_urls_from_summary()
+      model_urls <-
+        fetch_summary(beacons_qualifier()) %>%
+        model_urls_from_summary()
+      model_urls
+    })
+    beacons_structures <- reactive({
+      model_labels <- mapply(
+        function(x) {
+          str_sub(x, start = gregexpr("/", x) %>% unlist() %>% last() + 1)
+        },
+        beacons_results()
+      )
+
+      model_paths <- rep(tempfile(pattern = "structure", fileext = ".cif"), length(model_labels))
+
+      result <- model_paths
+      names(result) <- model_labels
+      result
     })
     structure_variants <- reactive({
-      append(pdb_files(), beacons_results())
+      append(on_disk_structures(), beacons_structures())
     })
-    output$dynamic <- renderNGLVieweR(protein_struct_render(pdb_file_exists, selectedRegionProfile, pdb_file))
+    selected_variant <- reactive({
+      req(head(structure_variants()))
+      if (is.null(input$structureViewerSelector)) {
+        head(structure_variants())
+      } else input$structureViewerSelector
+    })
     # Variable UI logic
+    output$dynamic <- renderNGLVieweR(protein_struct_render(selectedRegionProfile, selected_variant))
     output$variableUi <- renderUI(
       protein_struct_plot(
         selectedRegion,
         selectedRegionProfile,
         dynamicVisible,
-        pdb_file_exists,
         session,
         structure_variants
       )

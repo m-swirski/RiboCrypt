@@ -4,10 +4,9 @@ valuesToColors <- function(vals) {
   palette[(vals / max(vals) * 1000) + 1]
 }
 
-protein_struct_render <- function(pdb_file_exists, selectedRegionProfile,
-                                  pdb_file) {
-  req(pdb_file_exists(), selectedRegionProfile())
-  pdb_file() %>% NGLVieweR() %>%
+protein_struct_render <- function(selectedRegionProfile, structure_file) {
+  req(structure_file(), selectedRegionProfile())
+  structure_file() %>% NGLVieweR() %>%
     stageParameters(backgroundColor = "white") %>%
     onRender(fetchJS("sequence_viewer_coloring.js"),
              valuesToColors(selectedRegionProfile()))
@@ -19,8 +18,8 @@ pdb_exists <- function(pdb_file) {
 }
 
 protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVisible,
-                                pdb_file_exists, session, structureChoices = list()) {
-  req(dynamicVisible(), pdb_file_exists(), selectedRegionProfile())
+                                session, structureChoices = list()) {
+  req(dynamicVisible(), selectedRegionProfile())
   
   ns <- session$ns
   

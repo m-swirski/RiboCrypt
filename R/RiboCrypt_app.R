@@ -126,7 +126,7 @@ RiboCrypt_app_modular <- RiboCrypt_app
 rc_header_image <- function() {
   tags$head(
     tags$link(rel = "icon",
-              href = file.path("images", "favicon.ico"),
+              href = file.path("images", "favicon.png"),
               type = "image/x-icon"))
 }
 
@@ -139,7 +139,7 @@ rc_theme <- function() {
 
 rc_title <- function() {
   withTags(
-    a(img(src = file.path("images", "logo.png"),
+    a(img(src = file.path("images", "logo_traces_update.png"),
           alt = "RiboCrypt",
           height = 60)))
 }

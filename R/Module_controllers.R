@@ -104,7 +104,8 @@ study_and_gene_observers <- function(input, output, session) {
         server = TRUE
       )
     }
-    observeEvent(libs(), library_update_select(libs))
+    observeEvent(libs(), library_update_select(libs),
+                 ignoreNULL = TRUE, ignoreInit = TRUE)
     init_round <- FALSE
   }
   )

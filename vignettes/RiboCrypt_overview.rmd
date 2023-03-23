@@ -36,9 +36,10 @@ https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOve
 
 
 
-# Loading ORFik experiment
+# ORFik experiments
 
-The simplest way to create a window is to use the syntax of programing found in the package ORFik.
+A structure of genome annotation and sequencing libraries in RiboCrypt is structured around the
+ORFik experiment syntax. This syntax is required for the app, but not for standalone function calls outside the main app.
 
 ```{r eval = TRUE, echo = TRUE, message = FALSE}
 library(RiboCrypt) # This package
@@ -65,6 +66,52 @@ df[which(df$libtype == "CAGE"),]
 df[which(df$condition == "Mutant"),]
 
 ```
+
+# Interactive app
+
+## Data for app
+Let us recreate the ORFik tutorial sample and populate it into your local
+experiment folder, found at location:  `ORFik::config()["exp"]`
+```{r eval = TRUE, echo = TRUE, message = FALSE}
+  dir <- system.file("extdata/Homo_sapiens_sample", "", package = "ORFik")
+  # 2. Pick an experiment name
+  exper <- "ORFik_tutorial_data"
+  # 3. Pick .gff/.gtf location
+  txdb <- system.file("extdata/Homo_sapiens_sample", "Homo_sapiens_dummy.gtf.db", package = "ORFik")
+  fa <- system.file("extdata/Homo_sapiens_sample", "Homo_sapiens_dummy.fasta", package = "ORFik")
+  all_experiments_dir <- ORFik::config()["exp"] # <- Here they are 
+  template <- create.experiment(dir = dir, saveDir = all_experiments_dir,
+                                exper, txdb = txdb, fa = fa,
+                                organism = "Homo sapiens simulated",
+                                author = "Simulated by ORFik", types = "ofst")
+
+```
+
+## App Format optimizations
+
+Bigwig are very fast formats to reads when read length information is not needed, let us convert the libraries to bigwig.
+
+```{r eval = TRUE, echo = TRUE, message = FALSE}
+convert_to_bigWig(df)
+```
+
+## Running the app
+To start the app you need data, structured through ORFik experiments. For this demonstration let's just copy
+the ORFik experiment example over to your hard drive as a dummy set:
+
+```{r eval = FALSE, echo = TRUE, message = FALSE}
+# Just set some settings for this tutorial to look cool, usually you can ignore these
+browser_options <- c(default_frame_type = "columns", default_experiment = "ORFik_tutorial_data", default_libs = paste0(c("CAGE_WT_r1", "PAS_WT_r1", "RFP_WT_r1", "RNA_WT_r1"), collapse = "|"), plot_on_start = TRUE)
+
+RiboCrypt_app(browser_options = browser_options)
+```
+![](../inst/images/App_picture_for_overview_vignette.png)
+
+
+You will now have the app running in your default browser. 
+For more details, see the RiboCrypt app tutorial, which is included
+inside the app itself and on bioconductor as a vignette. 
+
 # Creating browser window
 
 Browser window is created with `multiOmicsPlot` functions. The function displays libraries subsetted from experiment (df) from top to down. First, lets have a look at a single library of each type (cds is extended by 30 bases). In the resulting plot you can zoom in and inspect coverage:

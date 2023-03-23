@@ -4,6 +4,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
   init_tx <- gene_names_init[label == browser_options["default_gene"],]
+  init_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
   tabPanel(
     title = "browser", icon = icon("chart-line"),
     sidebarLayout(
@@ -14,7 +15,8 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    experiment_input_select(experiments, ns, browser_options),
                    gene_input_select(ns, FALSE, browser_options),
                    tx_input_select(ns, FALSE, init_tx),
-                   library_input_select(ns, TRUE, libs),
+                   library_input_select(ns, TRUE, libs,
+                                        init_libs),
                    frame_type_select(ns, selected =
                                        browser_options["default_frame_type"]),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,

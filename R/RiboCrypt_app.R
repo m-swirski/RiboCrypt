@@ -51,6 +51,10 @@ RiboCrypt_app <- function(
   if (is.na(browser_options["plot_on_start"])) {
     browser_options["plot_on_start"] <- FALSE
   }
+
+  if (!isTruthy(browser_options["allow_non_bw"])) {
+    browser_options["allow_non_bw"] <- FALSE
+  }
   exp_init <- read.experiment(browser_options["default_experiment"],
                               validate = FALSE)
   names_init <- get_gene_name_categories(exp_init)
@@ -71,7 +75,14 @@ RiboCrypt_app <- function(
     stopifnot(is.character(browser_options["default_frame_type"]))
   }
   libs <- bamVarName(exp_init)
-
+  if (!isTruthy(browser_options["default_libs"])) {
+    browser_options["default_libs"] <- libs[1]
+  } else {
+    default_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
+    if (!all(default_libs %in% libs))
+      stop("You defined default_libs, but some of those are not valid names,",
+      " in selected experiment!")
+  }
   # User interface
   ui <- tagList(
     rc_header_image(),

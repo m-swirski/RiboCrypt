@@ -51,12 +51,13 @@ tx_input_select <- function(ns, multiple = FALSE, choices = NULL) {
   )
 }
 
-library_input_select <- function(ns, multiple = TRUE, choices = "") {
+library_input_select <- function(ns, multiple = TRUE, choices = "",
+                                 selected = choices[1]) {
   selectizeInput(
     inputId = ns("library"),
     label = "Select libraries",
     choices = choices,
-    selected = choices[1],
+    selected = selected,
     multiple = multiple
   ) %>%
     helper(onclick = "fakeClick('tutorial', 'lib')")

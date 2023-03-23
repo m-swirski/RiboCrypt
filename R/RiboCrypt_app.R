@@ -8,7 +8,14 @@
 #' \code{list.experiments(validate = validate.experiments)}. Which experiments
 #' do you want to allow your app to see, default is all in your system config
 #' path.
-#' @param browser_options named character vector of browser specific arguments
+#' @param browser_options named character vector of browser specific arguments:\cr
+#' - default_experiment : Which experiment to select, default: first one\cr
+#' - default_gene : Which genes to select, default: first one\cr
+#' - default_libs : Which libraries to select: first one, else a single string,
+#' where libs are seperated by "|", like "RFP_WT_r1|RFP_WT_r2".\cr
+#' - default_kmer : K-mer windowing size, default: 1\cr
+#' - default_frame_type : Ribo-seq line type, default: "lines"\cr
+#' - plot_on_start : Plot when starting, default: "FALSE"\cr
 #' @param init_tab_focus character, default "browser". Which tab to open on
 #' init.
 #' @import shiny bslib ORFik NGLVieweR ggplot2
@@ -19,12 +26,10 @@
 #' @return RiboCrypt shiny app
 #' @export
 #' @examples
-#'
-#' ## To run in RSTUDIO server using ssh
-#' ## A proxy url path is made, so we need to assign that
-#' ## First run the app, and lcopy url part after port
-#' ## should look something like this: /p/3b3a7b68/
-#'
+#' ## Default run
+#' # RiboCrypt_app()
+#' ## Plot on start
+#' # RiboCrypt_app(browser_options = c(plot_on_start = "TRUE"))
 RiboCrypt_app <- function(
     validate.experiments = TRUE,
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),

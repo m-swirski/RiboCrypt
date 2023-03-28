@@ -88,6 +88,8 @@ module_protein <- function(input, output, gene_name_list, session) {
       result
     })
     structure_variants <- reactive({
+      print("Structs fetched")
+      print(beacons_structures())
       append(on_disk_structures(), beacons_structures())
     })
     selected_variant <- reactive({

@@ -24,9 +24,16 @@ protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVi
   ns <- session$ns
   
   
-  widgetCloseBtn <- actionButton(ns("dynamicClose"), "Close")
-  widgetHeader <- renderText(selectedRegion())
-  widgetSelector <- selectInput(ns("structureViewerSelector"), "Select structure", structureChoices())
+  widgetCloseBtn <- actionButton(ns("dynamicClose"), "Close", width = "100%")
+  widgetHeader <- h3(selectedRegion(), style = "text-align: center; transform: translate(0%, -60%);")
+  widgetSelector <- selectInput(ns("structureViewerSelector"), NULL, structureChoices(), width = "100%")
   
-  list(widgetCloseBtn, widgetHeader, widgetSelector, NGLVieweROutput(ns("dynamic")))
+  tagList(
+    fluidRow(
+      column(2, widgetCloseBtn),
+      column(6, widgetHeader, offset = 1),
+      column(2, widgetSelector, offset = 1)
+      ),
+    fluidRow(NGLVieweROutput(ns("dynamic")))
+    )
 }

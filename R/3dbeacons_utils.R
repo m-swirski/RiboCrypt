@@ -4,11 +4,17 @@ beacon_main_api_url <- function() {
 
 #' Fetch summary of uniprot id
 #' @param qualifier uniprot ids
-#' @param provider "pdbe", alternatives: "alphafold", ..
+#' @param provider "pdbe", alternatives: "alphafold", "all"
 #' @return a character of json
 fetch_summary <- function(qualifier, provider = "pdbe") {
+  provider_url <-
+  if (provider == "all") {
+    stop("This does not work yet!")
+    ""
+  } else paste0("?provider=", provider)
+
   stringr::str_interp(
-    paste0(beacon_main_api_url(), "${qualifier}", ".json?provider=", provider),
+    paste0(beacon_main_api_url(), "${qualifier}", ".json", provider_url),
     list(qualifier = qualifier)
   ) %>% RCurl::getURI() %>% jsonlite::fromJSON()
 }

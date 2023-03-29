@@ -1,52 +1,115 @@
 ### NGLVieweR (protein structures) ###
 # TODO: Move as much as possible of protein stuff out of page_browser
-module_protein <- function(input, output, session) {
+module_protein <- function(input, output, gene_name_list, session) {
   with(rlang::caller_env(), {
-# Setup reactive values needed for structure viewer
-dynamicVisible <- reactiveVal(FALSE)
-selectedRegion <- reactiveVal(NULL)
-selectedRegionProfile <- reactive({
-  req(selectedRegion())
-  result <- cds()[names(cds()) == selectedRegion()] %>%
-    getRiboProfile(mainPlotControls()$reads[[1]]) %>%
-    (function (x) { x$count[seq.int(1, length(x$count), 3)] })()
-})
+    # Setup reactive values needed for structure viewer
+    dynamicVisible <- reactiveVal(FALSE)
+    selectedRegion <- reactiveVal(NULL)
+    selectedRegionProfile <- reactive({
+      req(selectedRegion())
+      result <- cds()[names(cds()) == selectedRegion()] %>%
+        getRiboProfile(mainPlotControls()$reads[[1]]) %>%
+        (function (x) {
+          x$count[seq.int(1, length(x$count), 3)]
+        })()
+    })
+    
+    # When user clicks on region
+    # start displaying structure viewer
+    # and set selected structure to one which was clicked
+    observeEvent(input$selectedRegion, {
+      req(input$selectedRegion)
+      selectedRegion(input$selectedRegion)
+      dynamicVisible(TRUE)
+    })
+    # When user clicks close button
+    # stop displaying structure viewer
+    # and set selected structure to NULL
+    observeEvent(input$dynamicClose, {
+      selectedRegion(NULL)
+      dynamicVisible(FALSE)
+    })
+    # Setup 3dbeacons model download
+    observeEvent(beacons_structures(), {
+      tmp_paths <- unname(beacons_structures())
+      names(tmp_paths) <- beacons_results()
+      
+      mapply(
+        function(x) {
+          httr::GET(x, httr::write_disk(tmp_paths[x], overwrite = TRUE))
+        },
+        beacons_results()
+      )
+    })
+    
+    # NGL viewer widget
+    protein_structure_dir <- reactive({
+      file.path(dirname(df()@fafile), "protein_structure_predictions")
+    })
+    region_dir <- reactive({
+      file.path(protein_structure_dir(), selectedRegion())
+    })
+    on_disk_structures <- reactive({
+      paths <- file.path(region_dir(), list.files(region_dir()))
 
+      path_labels <- mapply(
+        function(x) {
+          str_sub(x, start = gregexpr("/", x) %>% unlist() %>% last() + 1)
+        },
+        list.files(region_dir())
+      )
 
-# When user clicks on region
-# start displaying structure viewer
-# and set selected structure to one which was clicked
-observeEvent(input$selectedRegion, {
-  req(input$selectedRegion)
-  selectedRegion(input$selectedRegion)
-  dynamicVisible(TRUE)
-})
-# When user clicks close button
-# stop displaying structure viewer
-# and set selected structure to NULL
-observeEvent(input$dynamicClose, {
-  selectedRegion(NULL)
-  dynamicVisible(FALSE)
-})
-# NGL viewer widget
-protein_structure_dir <- reactive({
-  file.path(dirname(df()@fafile), "protein_structure_predictions")
-})
-region_dir <- reactive({
-  file.path(protein_structure_dir(), selectedRegion())
-})
-pdb_file <- reactive({
-  file.path(region_dir(), "ranked_0.pdb")
-})
-pdb_file_exists <- reactive(pdb_exists(pdb_file))
-output$dynamic <- renderNGLVieweR(
-  protein_struct_render(pdb_file_exists, selectedRegionProfile, pdb_file))
-# Variable UI logic
-output$variableUi <- renderUI(
-  protein_struct_plot(selectedRegionProfile, dynamicVisible,
-                      pdb_file_exists, session))
-  }
-  )
+      result <- paths
+      names(result) <- path_labels
+      result
+    })
+    beacons_qualifier <- reactive({
+      gene_name_list()[gene_name_list()$value == selectedRegion()]$uniprot_id
+    })
+    beacons_results <- reactive({
+      req(beacons_qualifier())
+      model_urls <-
+        fetch_summary(beacons_qualifier()) %>%
+        model_urls_from_summary()
+      model_urls
+    })
+    beacons_structures <- reactive({
+      model_labels <- mapply(
+        function(x) {
+          str_sub(x, start = gregexpr("/", x) %>% unlist() %>% last() + 1)
+        },
+        beacons_results()
+      )
+
+      model_paths <- rep(tempfile(pattern = "structure", fileext = ".cif"), length(model_labels))
+
+      result <- model_paths
+      names(result) <- model_labels
+      result
+    })
+    structure_variants <- reactive({
+      print("Structs fetched")
+      print(beacons_structures())
+      append(on_disk_structures(), beacons_structures())
+    })
+    selected_variant <- reactive({
+      req(head(structure_variants()))
+      if (is.null(input$structureViewerSelector)) {
+        head(structure_variants())
+      } else input$structureViewerSelector
+    })
+    # Variable UI logic
+    output$dynamic <- renderNGLVieweR(protein_struct_render(selectedRegionProfile, selected_variant))
+    output$variableUi <- renderUI(
+      protein_struct_plot(
+        selectedRegion,
+        selectedRegionProfile,
+        dynamicVisible,
+        session,
+        structure_variants
+      )
+    )
+  })
 }
 
 ### NGLVieweR (protein structures) ###

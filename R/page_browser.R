@@ -72,7 +72,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
       # Protein display
-      module_protein(input, output, session)
+      module_protein(input, output, gene_name_list, session)
 
       output$d <- renderPlotly({
         req(input$expression_plot == TRUE)

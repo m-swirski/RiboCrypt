@@ -5,6 +5,7 @@ module_protein <- function(input, output, gene_name_list, session) {
     # Setup reactive values needed for structure viewer
     dynamicVisible <- reactiveVal(FALSE)
     selectedRegion <- reactiveVal(NULL)
+    # Get the Ribo-seq prfile (we select first library for now)
     selectedRegionProfile <- reactive({
       req(selectedRegion())
       result <- cds()[names(cds()) == selectedRegion()] %>%
@@ -92,7 +93,6 @@ module_protein <- function(input, output, gene_name_list, session) {
     })
     structure_variants <- reactive({
       print("Structures fetched")
-      # browser()
       print(beacons_structures())
       append(on_disk_structures(), beacons_structures())
     })

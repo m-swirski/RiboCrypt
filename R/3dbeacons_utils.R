@@ -1,6 +1,14 @@
-fetch_summary <- function(qualifier) {
+beacon_main_api_url <- function() {
+  'https://www.ebi.ac.uk/pdbe/pdbe-kb/3dbeacons/api/uniprot/summary/'
+}
+
+#' Fetch summary of uniprot id
+#' @param qualifier uniprot ids
+#' @param provider "pdbe", alternatives: "alphafold", ..
+#' @return a character of json
+fetch_summary <- function(qualifier, provider = "pdbe") {
   stringr::str_interp(
-    'https://www.ebi.ac.uk/pdbe/pdbe-kb/3dbeacons/api/uniprot/summary/${qualifier}.json?provider=pdbe',
+    paste0(beacon_main_api_url(), "${qualifier}", ".json?provider=", provider),
     list(qualifier = qualifier)
   ) %>% RCurl::getURI() %>% jsonlite::fromJSON()
 }

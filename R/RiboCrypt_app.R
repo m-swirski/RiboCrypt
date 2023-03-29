@@ -23,6 +23,7 @@
 #' @importFrom markdown mark_html
 #' @importFrom shinyjqui jqui_resizable jqui_draggable
 #' @importFrom knitr knit
+#' @importFrom stringr str_sub
 #' @return RiboCrypt shiny app
 #' @export
 #' @examples
@@ -30,6 +31,12 @@
 #' # RiboCrypt_app()
 #' ## Plot on start
 #' # RiboCrypt_app(browser_options = c(plot_on_start = "TRUE"))
+#' ## Init with an experiment and gene (you must of course have the experiment)
+#'
+#' RiboCrypt_app(validate.experiments = FALSE,
+#'        browser_options = c(plot_on_start = "TRUE",
+#'                            default_experiment = "human_all_merged_l50",
+#'                            default_gene = "ATF4-ENSG00000128272"))
 RiboCrypt_app <- function(
     validate.experiments = TRUE,
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),

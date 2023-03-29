@@ -13,7 +13,7 @@ module_protein <- function(input, output, gene_name_list, session) {
           x$count[seq.int(1, length(x$count), 3)]
         })()
     })
-    
+
     # When user clicks on region
     # start displaying structure viewer
     # and set selected structure to one which was clicked
@@ -33,7 +33,7 @@ module_protein <- function(input, output, gene_name_list, session) {
     observeEvent(beacons_structures(), {
       tmp_paths <- unname(beacons_structures())
       names(tmp_paths) <- beacons_results()
-      
+
       mapply(
         function(x) {
           httr::GET(x, httr::write_disk(tmp_paths[x], overwrite = TRUE))
@@ -41,7 +41,7 @@ module_protein <- function(input, output, gene_name_list, session) {
         beacons_results()
       )
     })
-    
+
     # NGL viewer widget
     protein_structure_dir <- reactive({
       file.path(dirname(df()@fafile), "protein_structure_predictions")
@@ -63,16 +63,19 @@ module_protein <- function(input, output, gene_name_list, session) {
       names(result) <- path_labels
       result
     })
-    beacons_qualifier <- reactive({
+    uniprot_id <- reactive(
       gene_name_list()[gene_name_list()$value == selectedRegion()]$uniprot_id
-    })
+    )
+
     beacons_results <- reactive({
-      req(beacons_qualifier())
+      print("Fetching structures..")
       model_urls <-
-        fetch_summary(beacons_qualifier()) %>%
+        fetch_summary(uniprot_id()) %>%
         model_urls_from_summary()
       model_urls
-    })
+    }) %>%
+      bindCache(uniprot_id()) %>%
+      bindEvent(uniprot_id(), ignoreNULL = TRUE, ignoreInit = TRUE)
     beacons_structures <- reactive({
       model_labels <- mapply(
         function(x) {
@@ -88,12 +91,13 @@ module_protein <- function(input, output, gene_name_list, session) {
       result
     })
     structure_variants <- reactive({
-      print("Structs fetched")
+      print("Structures fetched")
+      # browser()
       print(beacons_structures())
       append(on_disk_structures(), beacons_structures())
     })
     selected_variant <- reactive({
-      req(head(structure_variants()))
+      req(structure_variants())
       if (is.null(input$structureViewerSelector)) {
         head(structure_variants())
       } else input$structureViewerSelector

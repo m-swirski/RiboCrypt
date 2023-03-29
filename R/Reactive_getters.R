@@ -11,7 +11,7 @@ get_gene_name_categories <- function(df) {
   }
   dt[, merged_name := do.call(paste, .SD, ), .SDcols = c(2,1)]
   dt[, merged_name := gsub(" ",  "-", merged_name)]
-  dt[, merged_name := gsub("^-",  "", merged_name)]
+  dt[, merged_name := gsub("(^-)|(^NA-)",  "", merged_name)]
   output_dt <- data.table(value = dt$ensembl_tx_name, label = dt$merged_name)
   if (! is.null(dt$uniprot_id))  output_dt$uniprot_id <- dt$uniprot_id
   return(output_dt)

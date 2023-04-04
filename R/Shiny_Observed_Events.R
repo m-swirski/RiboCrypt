@@ -68,9 +68,15 @@ observed_cds_point <- function(mainPlotControls) {
   return(region)
 }
 
-observed_uorf_annotation <- function(names, add_uorfs) {
+observed_uorf_annotation <- function(gene, df, all = TRUE, add_uorfs = FALSE) {
   if (add_uorfs) {
-    loadRegion(df, "uorf", names.keep = names)
+    if (all) {
+      uorfs <- loadRegion(df(), "uorf")
+    } else {
+      uorfs <- loadRegion(df(), "uorf", names.keep = gene)
+    }
+    names(uorfs) <- paste0("U", seq(length(uorfs)))
+    uorfs
   } else GRangesList()
 }
 

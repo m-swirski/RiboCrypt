@@ -6,8 +6,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
     cds_annotation <- observed_cds_annotation(isolate(input$tx), cds,
                                               isolate(input$other_tx))
-    uorf_annotation <- observed_uorf_annotation(names(tx()),
-                                                isolate(input$add_uorfs))
+    uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
+           isolate(input$other_tx), isolate(input$add_uorfs))
     dff <- observed_exp_subset(isolate(input$library), libs, df)
     # customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
     customRegions <- uorf_annotation

@@ -75,7 +75,7 @@ observed_uorf_annotation <- function(gene, df, all = TRUE, add_uorfs = FALSE) {
     } else {
       uorfs <- loadRegion(df(), "uorf", names.keep = gene)
     }
-    names(uorfs) <- paste0("U", seq(length(uorfs)))
+    if (length(uorfs) > 0) names(uorfs) <- paste0("U", seq(length(uorfs)))
     uorfs
   } else GRangesList()
 }

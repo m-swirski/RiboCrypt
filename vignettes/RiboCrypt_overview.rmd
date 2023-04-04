@@ -129,8 +129,7 @@ Now, we can plot just the ribosome footprints (RFPs), with display changed to li
 
 ```{r eval = TRUE, echo = TRUE, message = FALSE}
 
-  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[which(df$libtype == "RFP")[1],],
-                        frames_type = "lines")
+  multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[which(df$libtype == "RFP")[1],], frames_type = "lines")
  
 ```
 

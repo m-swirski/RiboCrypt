@@ -32,9 +32,9 @@ module_protein <- function(input, output, gene_name_list, session) {
     })
     # Setup 3dbeacons model download
     observeEvent(beacons_structures(), {
+      print("Fetching structures..")
       tmp_paths <- unname(beacons_structures())
       names(tmp_paths) <- beacons_results()
-
       mapply(
         function(x) {
           httr::GET(x, httr::write_disk(tmp_paths[x], overwrite = TRUE))
@@ -69,24 +69,32 @@ module_protein <- function(input, output, gene_name_list, session) {
     )
 
     beacons_results <- reactive({
-      print("Fetching structures..")
+      print("Fetching structures URLs..")
       model_urls <-
         fetch_summary(uniprot_id()) %>%
         model_urls_from_summary()
+      # Convert alphafold cif to pdb (NGLviewR does not work with cif there)
+      alphafold_id <- grep("https://alphafold.ebi.ac.uk/files/", model_urls)
+      if (length(alphafold_id) > 0) {
+        model_urls[alphafold_id] <- gsub("cif$", "pdb", model_urls[alphafold_id])
+      }
       model_urls
     }) %>%
       bindCache(uniprot_id()) %>%
       bindEvent(uniprot_id(), ignoreNULL = TRUE, ignoreInit = TRUE)
+
     beacons_structures <- reactive({
+      req(beacons_results())
+      results <- beacons_results()
+
       model_labels <- mapply(
         function(x) {
           str_sub(x, start = gregexpr("/", x) %>% unlist() %>% last() + 1)
         },
-        beacons_results()
+        results
       )
-
-      model_paths <- rep(tempfile(pattern = "structure", fileext = ".cif"), length(model_labels))
-
+      model_paths <- rep(tempfile(pattern = "structure"), length(model_labels))
+      model_paths <- paste0(model_paths, ".", file_ext(results))
       result <- model_paths
       names(result) <- model_labels
       result
@@ -104,6 +112,7 @@ module_protein <- function(input, output, gene_name_list, session) {
     })
     # Variable UI logic
     output$dynamic <- renderNGLVieweR(protein_struct_render(selectedRegionProfile, selected_variant))
+    # output$dynamic <- renderR3dmol(protein_struct_render(selectedRegionProfile, selected_variant))
     output$variableUi <- renderUI(
       protein_struct_plot(
         selectedRegion,

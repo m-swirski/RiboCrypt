@@ -35,8 +35,7 @@
 #' # Load experiment
 #' df <- ORFik.template.experiment()
 #' # 1 Dimensional analysis
-#' dt <- DEG.analysis(df[df$libtype == "RNA",],
-#'                     output.dir = NULL)
+#' dt <- DEG.analysis(df[df$libtype == "RNA",])
 #' dt$Regulation[1] <- "Significant" # Fake sig level
 #' DEG_plot(dt, draw_non_regulated = TRUE)
 #' # 2 Dimensional analysis
@@ -55,23 +54,8 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
                                       "Buffering" = "purple", "mRNA abundance" = "darkgreen",
                                       "Expression" = "blue", "Forwarded" = "yellow",
                                       "Inverse" = "aquamarine", "Translation" = "orange4")) {
-  stopifnot(is(dt, "data.table"))
-  if (is.character(xlim)) stopifnot(xlim %in% c("bidir.max", "auto"))
-  if (is.character(ylim)) stopifnot(ylim %in% c("bidir.max", "auto"))
-  # Remove this line in next bioc
-  if("variable" %in% colnames(dt)) colnames(dt) <- gsub("variable", "contrast", colnames(dt))
-  columns_must_exists <- if (two_dimensions) {
-    c("contrast", "Regulation", "id", "rna", "rfp", "te")
-  } else c("contrast", "Regulation", "id", "LFC", "meanCounts")
-
-  if (!(all(columns_must_exists %in% colnames(dt))))
-    stop("dt must minimally contain the columns: ",
-         paste(columns_must_exists, collapse = ", "))
-  if (!draw_non_regulated) dt <- dt[Regulation != "No change",]
-  if (nrow(dt) == 0) {
-    warning("dt input had no valid rows to plot")
-    return(invisible(NULL))
-  }
+  DEG_plot_input_validation()
+  if (nrow(dt) == 0) return(invisible(NULL))
 
   xlim <-
     if (!all(xlim == "auto")) {
@@ -79,7 +63,7 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
           if (two_dimensions) {c(-max(abs(dt$rna)) - 0.5, max(abs(dt$rna)) + 0.5)
           } else c(-max(abs(log2(dt$meanCounts))) - 0.5, max(log2(abs(dt$meanCounts))) + 0.5)
       } else xlim
-    }
+  }
   ylim <-
     if (!all(ylim == "auto")) {
       if (all(ylim == "bidir.max")) {
@@ -87,16 +71,19 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
           } else c(-max(abs(dt$LFC)) - 0.5, max(abs(dt$LFC)) + 0.5)
       } else ylim
     }
+
   color.values <- color.values[as.character(unique(dt$Regulation))]
   id <- NULL
   dt <- highlight_key(dt, ~id, "Select a transcript")
 
   if (two_dimensions) {
-    gg <- ggplot(dt, aes(x = rna, y = rfp, color = Regulation, frame = contrast, id = id)) +
+    gg <- ggplot(dt, aes(x = rna, y = rfp, color = Regulation,
+                         frame = contrast, id = id)) +
       geom_vline(aes(xintercept = 0), color = "red") +
       geom_abline(slope = 1, intercept = 0, color = "grey", linetype = 2)
   } else { # One dimensional
-    gg <- ggplot(dt, aes(x = log2(meanCounts), y = LFC, color = Regulation, frame = contrast, id = id))
+    gg <- ggplot(dt, aes(x = log2(meanCounts), y = LFC, color = Regulation,
+                         frame = contrast, id = id))
   }
    gg <- gg +
     geom_hline(aes(yintercept = 0), color = "red") +
@@ -116,5 +103,31 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
      on = c('plotly_selected'), off = c('plotly_deselect'),
      selectize = TRUE, persistent = FALSE
    )
+   if (length(unique(dt$contrast)) == 1) {
+     select <- select %>% toWebGL()
+   }
+
    return(select)
+}
+
+DEG_plot_input_validation <- function() {
+  with(rlang::caller_env(), {
+    stopifnot(is(dt, "data.table"))
+    if (is.character(xlim)) stopifnot(xlim %in% c("bidir.max", "auto"))
+    if (is.character(ylim)) stopifnot(ylim %in% c("bidir.max", "auto"))
+    # Remove this line in next bioc
+    if("variable" %in% colnames(dt))
+      colnames(dt) <- gsub("variable", "contrast", colnames(dt))
+    columns_must_exists <- if (two_dimensions) {
+      c("contrast", "Regulation", "id", "rna", "rfp", "te")
+    } else c("contrast", "Regulation", "id", "LFC", "meanCounts")
+
+    if (!(all(columns_must_exists %in% colnames(dt))))
+      stop("dt must minimally contain the columns: ",
+           paste(columns_must_exists, collapse = ", "))
+    if (!draw_non_regulated) dt <- dt[Regulation != "No change",]
+    if (nrow(dt) == 0) {
+      warning("dt input had no valid rows to plot")
+    }
+  })
 }

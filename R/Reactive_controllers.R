@@ -149,10 +149,24 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df,
 }
 
 click_plot_DEG_main_controller <- function(input, df) {
-
-  dff <- df()[which(df()$condition %in% isolate(input$condition)),]
-
+  draw_unregulated <- isolate(input$draw_unnreg)
+  conditions <- isolate(input$condition)
+  # dff <- df()[which(df()$condition %in% conditions),]
+  dff <- df()
+  target.contrast <- "condition"
+  pairs <- combn.pairs(unlist(dff[, target.contrast]))
+  pval <- isolate(input$pval)
+  libs <- paste(ORFik:::name_decider(dff, naming = "full"), collapse = "")
+  hash_string_pre <- paste(draw_unregulated,
+                           libs,
+                           sep = "_|-¤_")
+  hash_string_full <- paste(pval, conditions,
+                            hash_string_pre, sep = "_|-¤_")
   time_before <- Sys.time()
   print("experiment subsetting based on condition")
-  reactiveValues(dff = dff)
+  reactiveValues(dff = dff, draw_unregulated = draw_unregulated,
+                 target.contrast = target.contrast,
+                 pairs = pairs, pval = pval,
+                 hash_string_pre = hash_string_pre,
+                 hash_string_full = hash_string_full)
 }

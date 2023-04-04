@@ -6,7 +6,8 @@ beacon_main_api_url <- function() {
 #' @param qualifier uniprot ids
 #' @param provider "pdbe", alternatives: "alphafold", "all"
 #' @return a character of json
-fetch_summary <- function(qualifier, provider = "pdbe") {
+fetch_summary <- function(qualifier, provider = "alphafold") {
+  # browser()
   provider_url <-
   if (provider == "all") {
     stop("This does not work yet!")

@@ -20,20 +20,19 @@ pdb_exists <- function(pdb_file) {
 protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVisible,
                                 session, structureChoices = list()) {
   req(dynamicVisible(), selectedRegionProfile())
-  
   ns <- session$ns
-  
-  
+
   widgetCloseBtn <- actionButton(ns("dynamicClose"), "Close", width = "100%")
   widgetHeader <- h3(selectedRegion(), style = "text-align: center; transform: translate(0%, -60%);")
   widgetSelector <- selectInput(ns("structureViewerSelector"), NULL, structureChoices(), width = "100%")
-  
+
   tagList(
     fluidRow(
       column(2, widgetCloseBtn),
       column(6, widgetHeader, offset = 1),
       column(2, widgetSelector, offset = 1)
       ),
+    # fluidRow(r3dmolOutput(ns("dynamic")))
     fluidRow(NGLVieweROutput(ns("dynamic")))
     )
 }

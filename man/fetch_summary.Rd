@@ -4,7 +4,7 @@
 \alias{fetch_summary}
 \title{Fetch summary of uniprot id}
 \usage{
-fetch_summary(qualifier, provider = "pdbe")
+fetch_summary(qualifier, provider = "alphafold")
 }
 \arguments{
 \item{qualifier}{uniprot ids}

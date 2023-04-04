@@ -15,8 +15,10 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
                    helper_button_redirect_call()
           ),
           tabPanel("Settings",
-
+                   checkboxInput(ns("draw_unnreg"), label = "Draw unregulated", value = FALSE),
                    checkboxInput(ns("other_tx"), label = "Full annotation", value = FALSE),
+                   sliderInput(ns("pval"), "P-value", min = 0, max = 1,
+                               value = 0.05, step = 0.01),
                    export_format_of_plot(ns)
           ),
         ),
@@ -44,14 +46,18 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
       observeEvent(cond(), condition_update_select(cond))
 
       # Main plot, this code is only run if 'plot' is pressed
-      mainPlotControls <- eventReactive(input$go,
+      controls <- eventReactive(input$go,
                                         click_plot_DEG_main_controller(input, df))
-      analysis_dt <- reactive(DEG.analysis(mainPlotControls()$dff,  output.dir = NULL)) %>%
-        bindCache(mainPlotControls()$condition,
-                  ORFik:::name_decider(mainPlotControls()$dff, naming = "full"))
-      output$c <- renderPlotly(DEG_plot(analysis_dt(), draw_non_regulated = TRUE)) %>%
-        bindCache(mainPlotControls()$condition,
-                  ORFik:::name_decider(mainPlotControls()$dff, naming = "full"))
+      DESeq2_model <- reactive(DEG_model(controls()$dff)) %>%
+        bindCache(controls()$hash_string_pre)
+
+      analysis_dt <- reactive(DEG_model_results(DESeq2_model(),
+            controls()$target.contrast, pairs = controls()$pairs,
+            controls()$pval)) %>%
+        bindCache(controls()$hash_string_full)
+      output$c <- renderPlotly(DEG_plot(analysis_dt(),
+                draw_non_regulated = controls()$draw_unregulated)) %>%
+        bindCache(controls()$hash_string_full)
       # output$c <- renderPlotly(ggplotly(ggplot(aes(x= 1:length(analysis_dt()), y = 1:length(analysis_dt()))) + geom_point()))
       return(rv)
     }

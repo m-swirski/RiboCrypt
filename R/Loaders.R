@@ -12,6 +12,7 @@ load_reads <- function(dff, prefered_read_type,
     outputLibs(
       dff,
       type = read_type,
+      paths = filepath(df, read_type, suffix_stem = c("_pshifted", "")),
       output.mode = "envirlist",
       naming = "fullexp",
       BPPARAM = BPPARAM

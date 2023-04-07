@@ -12,7 +12,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     # customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
     customRegions <- uorf_annotation
     #reads <- load_reads(dff, "cov")
-    reads <- filepath(dff, "bigwig")
+    reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""))
     reactiveValues(dff = dff,
                    display_region = display_region,
                    customRegions = customRegions,

@@ -41,7 +41,7 @@ click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
     customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
 
     #reads <- load_reads(dff, "cov")
-    reads <- filepath(dff, "bigwig")
+    reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""))
     trailer_extension <- input$extendTrailers
     leader_extension <- input$extendLeaders
     export.format <- input$plot_export_format

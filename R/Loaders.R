@@ -8,11 +8,17 @@ load_reads <- function(dff, prefered_read_type,
   read_type <- ifelse(dir.exists(file.path(libFolder(dff), pref_dir)), prefered_read_type,
                       "pshifted")
   message("Using read type: ", read_type)
+  paths <- filepath(dff, read_type, suffix_stem = c("_pshifted", ""))
+  if (length(paths) > 0) {
+    message("First file to load is:")
+    paths[1]
+  }
+
   force(
     outputLibs(
       dff,
       type = read_type,
-      paths = filepath(df, read_type, suffix_stem = c("_pshifted", "")),
+      paths = paths,
       output.mode = "envirlist",
       naming = "fullexp",
       BPPARAM = BPPARAM

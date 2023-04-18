@@ -24,6 +24,7 @@
 #' @importFrom shinyjqui jqui_resizable jqui_draggable
 #' @importFrom knitr knit
 #' @importFrom stringr str_sub
+#' @importFrom httr GET write_disk
 #' @return RiboCrypt shiny app
 #' @export
 #' @examples
@@ -33,10 +34,10 @@
 #' # RiboCrypt_app(browser_options = c(plot_on_start = "TRUE"))
 #' ## Init with an experiment and gene (you must of course have the experiment)
 #'
-#' RiboCrypt_app(validate.experiments = FALSE,
-#'        browser_options = c(plot_on_start = "TRUE",
-#'                            default_experiment = "human_all_merged_l50",
-#'                            default_gene = "ATF4-ENSG00000128272"))
+#' #RiboCrypt_app(validate.experiments = FALSE,
+#' #       browser_options = c(plot_on_start = "TRUE",
+#' #                           default_experiment = "human_all_merged_l50",
+#' #                           default_gene = "ATF4-ENSG00000128272"))
 RiboCrypt_app <- function(
     validate.experiments = TRUE,
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
@@ -112,6 +113,7 @@ RiboCrypt_app <- function(
   )
 
   server <- function(input, output, session) {
+    cds <- NULL
     org_and_study_changed_checker(input, output, session)
 
     rv <- browser_server("browser", all_exp, without_readlengths_env, df,

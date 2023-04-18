@@ -5,6 +5,7 @@ module_protein <- function(input, output, gene_name_list, session) {
     # Setup reactive values needed for structure viewer
     dynamicVisible <- reactiveVal(FALSE)
     selectedRegion <- reactiveVal(NULL)
+    if (FALSE) cds <- NULL # Avoid biocCheck error
     # Get the Ribo-seq prfile (we select first library for now)
     selectedRegionProfile <- reactive({
       req(selectedRegion())

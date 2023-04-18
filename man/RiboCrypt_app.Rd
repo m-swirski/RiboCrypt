@@ -50,8 +50,8 @@ Create RiboCrypt app
 # RiboCrypt_app(browser_options = c(plot_on_start = "TRUE"))
 ## Init with an experiment and gene (you must of course have the experiment)
 
-RiboCrypt_app(validate.experiments = FALSE,
-       browser_options = c(plot_on_start = "TRUE",
-                           default_experiment = "human_all_merged_l50",
-                           default_gene = "ATF4-ENSG00000128272"))
+#RiboCrypt_app(validate.experiments = FALSE,
+#       browser_options = c(plot_on_start = "TRUE",
+#                           default_experiment = "human_all_merged_l50",
+#                           default_gene = "ATF4-ENSG00000128272"))
 }

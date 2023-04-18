@@ -106,6 +106,7 @@ click_plot_codon <- function(input, coverage) {
   if (input$differential) {
     pairs <- ORFik::combn.pairs(unique(coverage()$variable))
     dt <- data.table()
+    type <- NULL # avoid BiocCheck error
     for (pair in pairs) {
       sample1 <- coverage()[variable == pair[1],]
       sample2 <- coverage()[variable == pair[2],]

@@ -159,9 +159,9 @@ click_plot_DEG_main_controller <- function(input, df) {
   libs <- paste(ORFik:::name_decider(dff, naming = "full"), collapse = "")
   hash_string_pre <- paste(draw_unregulated,
                            libs,
-                           sep = "_|-¤_")
+                           sep = "_|-|_")
   hash_string_full <- paste(pval, conditions,
-                            hash_string_pre, sep = "_|-¤_")
+                            hash_string_pre, sep = "_|-|_")
   time_before <- Sys.time()
   print("experiment subsetting based on condition")
   reactiveValues(dff = dff, draw_unregulated = draw_unregulated,

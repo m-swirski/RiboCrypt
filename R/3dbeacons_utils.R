@@ -6,6 +6,8 @@ beacon_main_api_url <- function() {
 #' @param qualifier uniprot ids
 #' @param provider "pdbe", alternatives: "alphafold", "all"
 #' @return a character of json
+#' @importFrom RCurl getURI
+#' @importFrom jsonlite fromJSON
 fetch_summary <- function(qualifier, provider = "alphafold") {
   # browser()
   provider_url <-

@@ -31,6 +31,7 @@ Imports:
   GenomicRanges,
   ggplot2,
   htmlwidgets,
+  httpuv (== 1.6.9),
   httr,
   IRanges,
   jsonlite,

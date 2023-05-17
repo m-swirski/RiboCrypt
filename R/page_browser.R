@@ -77,7 +77,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       output$d <- renderPlotly({
         req(input$expression_plot == TRUE)
         click_plot_boxplot(mainPlotControls, session)}) %>%
-          bindCache(input$expression_plot,
+          bindCache(input$expression_plot, input$extendTrailers, input$extendLeaders,
                 ORFik:::name_decider(mainPlotControls()$dff, naming = "full"))
       return(rv)
     }

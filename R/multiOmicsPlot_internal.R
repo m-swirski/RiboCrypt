@@ -78,7 +78,9 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
     plots <- c(plots, list(automateTicks(nt_area_template()), automateTicksGMP(gene_model_panel),
                            automateTicksX(seq_panel)))
   }
-  #browser()
+  # browser()
+  plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),
+                                                   yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)) ))
   multiomics_plot <- subplot(plots,
                              margin = 0,
                              nrows = nplots,

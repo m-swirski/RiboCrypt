@@ -59,6 +59,9 @@ multiOmicsController <- function() {
   if (length(annotation_proportions) == 0) {
     if (display_sequence %in% c("none", FALSE)) {
       annotation_proportions <- c(0.35,0.65)
+    } else if (viewMode == "genomic") {
+      lib_to_annotation_proportions <- c(0.6,0.4)
+      annotation_proportions <- c(0.2,0.5,0.3)
     } else annotation_proportions <- c(0.2,0.2,0.6)
   } else annotation_proportions <- annotation_proportions / sum(annotation_proportions)
   proportions <- c(lib_proportions * lib_to_annotation_proportions[1], annotation_proportions * lib_to_annotation_proportions[2])

@@ -179,6 +179,10 @@ return(list(result_dt, lines_locations))
 
 geneModelPanelPlot <- function(dt, frame = 1) {
 
+   
+  dt[,no_ex := .N, by = gene_names] 
+  seg_dt <- dt[no_ex > 1]
+  if (nrow(seg_dt > 0))  seg_dt <- seg_dt[ , .(seg_start = rect_ends[1:(.N - 1)], seg_end = rect_starts[2:.N], level = layers[1]), by = gene_names]
   base_gg <- ggplot(frame = frame) + ylab("") + xlab("") +
     theme(axis.title.x = element_blank(),
           axis.ticks.x = element_blank(),
@@ -195,10 +199,15 @@ geneModelPanelPlot <- function(dt, frame = 1) {
       result_plot <- base_gg +
         geom_rect(data = dt, mapping=aes(ymin=0 - layers, ymax = 1 - layers, xmin=rect_starts,
                                          xmax = rect_ends),
-                  fill = dt$cols, alpha = 0.5) +
-        geom_text(data = dt, mapping = aes(y = 0.5 - layers, x = labels_locations,
-                                           label = gene_names), color = "black", hjust = dt$hjusts)})
+                  fill = dt$cols, alpha = 0.5, color = "grey45") +
+        geom_text(data = dt, mapping = aes(y = 0.55 - layers, x = labels_locations,
+                                           label = gene_names), color = "black", hjust = dt$hjusts)
+      })
   } else result_plot <- base_gg
+  if (nrow(seg_dt) > 0) result_plot <- result_plot + 
+    geom_segment(data = seg_dt, 
+                 mapping = aes(x = seg_start, xend = seg_end, y = 0.5 - level, yend = 0.5 - level),
+                 color = "grey45")
   return(result_plot)
 }
 

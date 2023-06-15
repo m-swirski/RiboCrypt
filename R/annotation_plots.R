@@ -198,7 +198,7 @@ geneModelPanelPlot <- function(dt, frame = 1) {
     suppressWarnings({
       result_plot <- base_gg +
         geom_rect(data = dt, mapping=aes(ymin=0 - layers, ymax = 1 - layers, xmin=rect_starts,
-                                         xmax = rect_ends),
+                                         xmax = rect_ends, text = gene_names),
                   fill = dt$cols, alpha = 0.5, color = "grey45") +
         geom_text(data = dt[,.(layers = layers[1], labels_locations = mean(labels_locations)),gene_names],
                   mapping = aes(y = 0.55 - layers, x = labels_locations,
@@ -207,7 +207,7 @@ geneModelPanelPlot <- function(dt, frame = 1) {
   } else result_plot <- base_gg
   if (nrow(seg_dt) > 0) result_plot <- result_plot + 
     geom_segment(data = seg_dt, 
-                 mapping = aes(x = seg_start, xend = seg_end, y = 0.5 - level, yend = 0.5 - level),
+                 mapping = aes(x = seg_start, xend = seg_end, y = 0.5 - level, yend = 0.5 - level, text = gene_names),
                  color = "grey45")
   return(result_plot)
 }

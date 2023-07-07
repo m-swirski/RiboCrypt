@@ -8,6 +8,17 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                                               isolate(input$other_tx))
     uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
            isolate(input$other_tx), isolate(input$add_uorfs))
+    if (!is.null(isolate(input$genomic_region)) & isolate(input$genomic_region) != "") {
+      gr <- try(GRanges(isolate(input$genomic_region)))
+
+      if (is(gr, "GRanges")) {
+        if (width(gr) > 1e6) stop("Only up to 1 million bases can be shown!")
+        seqlevelsStyle(gr) <- seqlevelsStyle(display_region)[1]
+        if (!(as.character(seqnames(gr)) %in% seqnames(seqinfo(df()))))
+          stop("Invalid chromosome selected!")
+        display_region <- GRangesList(Region = gr)
+      } else stop("Malform genomic region: format: chr1:39517672-39523668:+")
+    }
     dff <- observed_exp_subset(isolate(input$library), libs, df)
     # customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
     customRegions <- uorf_annotation

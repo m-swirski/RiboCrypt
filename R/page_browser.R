@@ -66,7 +66,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
         bindCache(ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
                   input$tx, input$other_tx, input$add_uorfs,
                   input$extendTrailers, input$extendLeaders,
-                  input$plot_export_format,
+                  input$plot_export_format, input$genomic_region,
                   input$summary_track, input$summary_track_type,
                   input$viewMode, input$kmer, input$frames_type,input$customSequence) %>%
         bindEvent(mainPlotControls(),

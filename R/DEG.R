@@ -1,3 +1,57 @@
+DE_model <- function(df, method, other_tx) {
+  print("DE model activated!")
+  if (nrow(df) < 2) stop("Differential expression only allowed for studies with > 1 sample")
+  # TODO: add in design correctly
+  counts <- countTable(df, "mrna", type = "summarized")
+  if (!other_tx) {
+    counts <- counts[filterTranscripts(df, 0, 1, 0)]
+  }
+  if (method == "DESeq2") {
+    DEG_model(df, counts = counts)
+  } else if (method == "FPKM ratio") {
+    DEG_model_simple(df, counts = counts)
+  } else stop("Invalid Differential method selected")
+}
+
+DEG_model_simple <- function(df,
+                             target.contrast = design[1],
+                             design = ORFik::design(df),
+                             p.value = 0.05,
+                             counts = countTable(df, "mrna", type = "summarized"),
+                             batch.effect = FALSE) {
+  # Design
+  main.design <- ORFik:::DEG_design(design[1], target.contrast, batch.effect)
+  design_ids <- df[, target.contrast]
+  ids <- rownames(counts)
+  counts <- as.data.table(DESeq2::fpkm(DESeq2::DESeqDataSet(counts, ~ 1)))
+  # Get LFC matrix
+  counts_group <- lapply(unique(design_ids),
+              function(x) rowMeans(counts[,design_ids == x, with = FALSE]))
+  setDT(counts_group)
+  colnames(counts_group) <- unique(design_ids)
+  dt <- data.table(LFC = log2((counts_group[,1][[1]] + 0.0001) / (counts_group[,2][[1]] + 0.0001)),
+                   meanCounts = c(rowMeans(counts_group[, c(1,2), with = FALSE])))
+  dt[, id := ids]
+  dt[, contrast := paste(unique(design_ids)[1:2], collapse = "_vs_")]
+  return(dt)
+}
+
+DE_model_results <- function(dt, controls) {
+  method <- controls()$diff_method
+  if (method == "DESeq2") {
+    dt <- DEG_model_results(dt,
+                     controls()$target.contrast, pairs = controls()$pairs,
+                     controls()$pval)
+  } else if (method == "FPKM ratio") {
+    print("Simplified DE model results")
+    # TODO: Simplified model, make better
+    regulation <- rep("No change", nrow(dt))
+    regulation[abs(dt$LFC) * (dt$meanCounts + 1) > 100 & dt$meanCounts > 10 & abs(dt$LFC) > 0.5] <- "Significant"
+    dt[, Regulation := regulation]
+  } else stop("Invalid Differential method selected")
+  return(dt)
+}
+
 #' Differential expression plots (1D or 2D)
 #'
 #' Gives you interactive 1D or 2D DE plots
@@ -73,6 +127,7 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
     }
 
   color.values <- color.values[as.character(unique(dt$Regulation))]
+  contrasts <- unique(dt$contrast)
   id <- NULL
   dt <- highlight_key(dt, ~id, "Select a transcript")
 
@@ -84,6 +139,7 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
   } else { # One dimensional
     gg <- ggplot(dt, aes(x = log2(meanCounts), y = LFC, color = Regulation,
                          frame = contrast, id = id))
+    if (length(contrasts) == 1) gg <- gg + ggtitle(contrasts)
   }
    gg <- gg +
     geom_hline(aes(yintercept = 0), color = "red") +
@@ -103,7 +159,7 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
      on = c('plotly_selected'), off = c('plotly_deselect'),
      selectize = TRUE, persistent = FALSE
    )
-   if (length(unique(dt$contrast)) == 1) {
+   if (length(contrasts) == 1) {
      select <- select %>% toWebGL()
    }
 

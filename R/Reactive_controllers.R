@@ -149,6 +149,7 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df,
 }
 
 click_plot_DEG_main_controller <- function(input, df) {
+  if (nrow(df()) < 2) stop("Differential expression only allowed for studies with > 1 sample")
   draw_unregulated <- isolate(input$draw_unnreg)
   conditions <- isolate(input$condition)
   # dff <- df()[which(df()$condition %in% conditions),]
@@ -156,9 +157,11 @@ click_plot_DEG_main_controller <- function(input, df) {
   target.contrast <- "condition"
   pairs <- combn.pairs(unlist(dff[, target.contrast]))
   pval <- isolate(input$pval)
+  diff_method = isolate(input$diff_method)
+  full <- isolate(input$other_tx)
   libs <- paste(ORFik:::name_decider(dff, naming = "full"), collapse = "")
   hash_string_pre <- paste(draw_unregulated,
-                           libs,
+                           libs, diff_method, full,
                            sep = "_|-|_")
   hash_string_full <- paste(pval, conditions,
                             hash_string_pre, sep = "_|-|_")
@@ -167,6 +170,8 @@ click_plot_DEG_main_controller <- function(input, df) {
   reactiveValues(dff = dff, draw_unregulated = draw_unregulated,
                  target.contrast = target.contrast,
                  pairs = pairs, pval = pval,
+                 diff_method = diff_method,
+                 full = full,
                  hash_string_pre = hash_string_pre,
                  hash_string_full = hash_string_full)
 }

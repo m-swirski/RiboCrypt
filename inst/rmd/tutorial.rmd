@@ -127,8 +127,11 @@ on whole genome scale.
 
 ## Codon analysis
 
-This tab displays a heatmap of percentage usage of codons
+This tab displays a heatmap of codons dwell times
 over all genes selected, for both A and P sites.
+When pressing "Differential" you swap to a between library
+differential codon dwell time comparison (minimum 2 libraries selected is 
+required for this method!)
 
 ### Display panel (codon)
 
@@ -140,11 +143,12 @@ In addition to have the option to specify all genes (default).
 - Codon filter value (Minimum reads in ORF to be included)
 - Codon score, all scores are normalized for both codon and count per
 gene level (except for sum):
-  - percentage (percentage use relative to max codon)
+  - percentage (percentage use relative to max codon, 
+    transcript normalized percentages)
   - dispersion(NB) (negative binomial dispersion values)
   - alpha(DMN) (Dirichlet-multinomial distribution alpha parameter)
   - sum (raw sum, (a very biased estimator, since some codons are used much 
-   more than others!))
+    more than others!))
 
 ## Heatmap {#heatmap}
 
@@ -186,6 +190,29 @@ Here additional options are shown:
 - Extension works like this, first extend to transcript coordinates.
 - After gene end extend in genomic coordinates
 - If chromosome boundary is reached, remove those genes from the full set.
+
+## Differential gene expression {#diffexp}
+Given an experiment with a least 1 design column with two values,
+like wild-type (WT) vs knock out (of a specific gene),
+you can run differential expression of genes.
+The output is an interactive plot, where you
+can also search for you target genes, making it more useable
+than normal expression plots, which often are very hard to read.
+
+### Display panel (Differential expression)
+Organism and experiment explained above
+- Differential method: FPKM ratio is a pure FPKM ratio calculation without
+factor normalization (like batch effects), fast and crude check.
+DESeq2 argument gives a robust version, but only works for experiments
+with valid experimental design (i.e. design matrix must be full ranked, 
+see deseq2 tutorial for details!)
+- Select two conditions (which 2 factors to group by)
+
+### Display panel (settings)
+- draw unregulated (show dots for unregulated genes, makes it much slower!)
+- Full annotation (all transcript isoforms, default is primary isoform only!)
+- P-value (sliding bar for p-value cutoff, default 0.05)
+- export format for plot (explained above)
 
 ## Read length (QC)
 

@@ -10,15 +10,16 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
           tabPanel("Differential expression",
                    organism_input_select(c("ALL", genomes), ns),
                    experiment_input_select(experiments, ns, browser_options),
-                   library_input_select(ns),
+                   diff_method_input_select(ns),
                    condition_input_select(ns),
                    helper_button_redirect_call()
           ),
           tabPanel("Settings",
                    checkboxInput(ns("draw_unnreg"), label = "Draw unregulated", value = FALSE),
-                   checkboxInput(ns("other_tx"), label = "Full annotation", value = FALSE),
+                   checkboxInput(ns("other_tx"), label = "Full annotation (all isoforms)", value = FALSE),
                    sliderInput(ns("pval"), "P-value", min = 0, max = 1,
                                value = 0.05, step = 0.01),
+                   library_input_select(ns, label = "Libraries (Group1)"),
                    export_format_of_plot(ns)
           ),
         ),
@@ -42,23 +43,21 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
       # Update main side panels
       uses_gene <- FALSE
       study_and_gene_observers(input, output, session)
-      cond <- reactive(df()$condition)
+      cond <- reactive(if (nrow(df()) > 1) {df()[, design(df())[1]]} else "")
       observeEvent(cond(), condition_update_select(cond))
 
       # Main plot, this code is only run if 'plot' is pressed
       controls <- eventReactive(input$go,
-                                        click_plot_DEG_main_controller(input, df))
-      DESeq2_model <- reactive(DEG_model(controls()$dff)) %>%
+                                click_plot_DEG_main_controller(input, df))
+      model <- reactive(DE_model(controls()$dff,
+                                 controls()$diff_method, controls()$full)) %>%
         bindCache(controls()$hash_string_pre)
-
-      analysis_dt <- reactive(DEG_model_results(DESeq2_model(),
-            controls()$target.contrast, pairs = controls()$pairs,
-            controls()$pval)) %>%
+      #
+      analysis_dt <- reactive(DE_model_results(model(), controls)) %>%
         bindCache(controls()$hash_string_full)
       output$c <- renderPlotly(DEG_plot(analysis_dt(),
                 draw_non_regulated = controls()$draw_unregulated)) %>%
         bindCache(controls()$hash_string_full)
-      # output$c <- renderPlotly(ggplotly(ggplot(aes(x= 1:length(analysis_dt()), y = 1:length(analysis_dt()))) + geom_point()))
       return(rv)
     }
   )

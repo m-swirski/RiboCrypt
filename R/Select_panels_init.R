@@ -52,10 +52,11 @@ tx_input_select <- function(ns, multiple = FALSE, choices = NULL) {
 }
 
 library_input_select <- function(ns, multiple = TRUE, choices = "",
-                                 selected = choices[1]) {
+                                 selected = choices[1],
+                                 label = "Select libraries") {
   selectizeInput(
     inputId = ns("library"),
-    label = "Select libraries",
+    label = label,
     choices = choices,
     selected = selected,
     multiple = multiple
@@ -120,6 +121,17 @@ codon_filter_input_select <- function(ns) {
     helper(onclick = "fakeClick('tutorial', 'codonfilt')")
 }
 
+diff_method_input_select <- function(ns) {
+  selectizeInput(
+    inputId = ns("diff_method"),
+    label = "Differential method",
+    choices =
+      c("FPKM ratio", "DESeq2"),
+    multiple = FALSE
+  ) %>%
+    helper(onclick = "fakeClick('tutorial', 'diffexp')")
+}
+
 export_format_of_plot <- function(ns) {
   selectizeInput(
     inputId = ns("plot_export_format"),
@@ -139,6 +151,6 @@ condition_input_select <- function(ns, multiple = TRUE) {
     selected = "",
     multiple = multiple
   ) %>%
-    helper(onclick = "fakeClick('tutorial', 'lib')")
+    helper(onclick = "fakeClick('tutorial', 'diffexp')")
 }
 

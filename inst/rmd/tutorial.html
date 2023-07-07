@@ -13,7 +13,7 @@
 
 <title>Tutorial</title>
 
-<script src="tutorial_files/header-attrs-2.20/header-attrs.js"></script>
+<script src="tutorial_files/header-attrs-2.21/header-attrs.js"></script>
 <script src="tutorial_files/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="tutorial_files/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
@@ -319,8 +319,10 @@ displaced within each frame</li>
 whole genome scale.</p>
 <div id="codon-analysis" class="section level2">
 <h2>Codon analysis</h2>
-<p>This tab displays a heatmap of percentage usage of codons over all
-genes selected, for both A and P sites.</p>
+<p>This tab displays a heatmap of codons dwell times over all genes
+selected, for both A and P sites. When pressing “Differential” you swap
+to a between library differential codon dwell time comparison (minimum 2
+libraries selected is required for this method!)</p>
 <div id="display-panel-codon" class="section level3">
 <h3>Display panel (codon)</h3>
 <p>Study and gene select works same as for browser specified above. In
@@ -333,7 +335,8 @@ libraries (multiple allowed)</p>
 <li>Codon score, all scores are normalized for both codon and count per
 gene level (except for sum):
 <ul>
-<li>percentage (percentage use relative to max codon)</li>
+<li>percentage (percentage use relative to max codon, transcript
+normalized percentages)</li>
 <li>dispersion(NB) (negative binomial dispersion values)</li>
 <li>alpha(DMN) (Dirichlet-multinomial distribution alpha parameter)</li>
 <li>sum (raw sum, (a very biased estimator, since some codons are used
@@ -387,6 +390,34 @@ coordinates.</p></li>
 <li><p>After gene end extend in genomic coordinates</p></li>
 <li><p>If chromosome boundary is reached, remove those genes from the
 full set.</p></li>
+</ul>
+</div>
+</div>
+<div id="diffexp" class="section level2">
+<h2>Differential gene expression</h2>
+<p>Given an experiment with a least 1 design column with two values,
+like wild-type (WT) vs knock out (of a specific gene), you can run
+differential expression of genes. The output is an interactive plot,
+where you can also search for you target genes, making it more useable
+than normal expression plots, which often are very hard to read.</p>
+<div id="display-panel-differential-expression" class="section level3">
+<h3>Display panel (Differential expression)</h3>
+<p>Organism and experiment explained above - Differential method: LFC
+ratio is a pure ratio calculation without factor normalization (like
+batch effects), fast and crude check. DESeq2 argument gives a robust
+version, but only works for experiments with valid experimental design
+(i.e. design matrix must be full ranked, see deseq2 tutorial for
+details!) - Select two conditions (which 2 factors to group by)</p>
+</div>
+<div id="display-panel-settings-2" class="section level3">
+<h3>Display panel (settings)</h3>
+<ul>
+<li>draw unregulated (show dots for unregulated genes, makes it much
+slower!)</li>
+<li>Full annotation (all transcript isoforms, default is primary isoform
+only!)</li>
+<li>P-value (sliding bar for p-value cutoff, default 0.05)</li>
+<li>export format for plot (explained above)</li>
 </ul>
 </div>
 </div>

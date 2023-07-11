@@ -42,12 +42,13 @@ RiboCrypt_app <- function(
     validate.experiments = TRUE,
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
     all_exp = list.experiments(validate = validate.experiments),
-    browser_options = c(), init_tab_focus = "browser") {
+    browser_options = c(), init_tab_focus = "browser", metadata) {
   time_before <- Sys.time()
 
   stopifnot(is(all_exp, "data.table"))
   stopifnot(!is.null(all_exp$name))
   stopifnot(nrow(all_exp) > 0)
+  stopifnot(is(metadata, "data.table"))
   # Set environments
   with_readlengths_env <- new.env()
   without_readlengths_env <- new.env()
@@ -106,7 +107,7 @@ RiboCrypt_app <- function(
       theme = rc_theme(),
       selected = init_tab_focus,
       browser_ui("browser", all_exp, browser_options, names_init, libs),
-      analysis_ui("analysis", all_exp, browser_options, libs),
+      analysis_ui("analysis", all_exp, browser_options, libs, metadata),
       metadata_ui("metadata", all_exp),
       tutorial_ui()
     )
@@ -121,7 +122,7 @@ RiboCrypt_app <- function(
                          browser_options)
     rv <- analysis_server("analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
-            gene_name_list, rv)
+            gene_name_list, rv, metadata)
     metadata_server("metadata", all_exp)
     cat("Server: "); print(round(Sys.time() - time_before, 2))
   }

@@ -1,5 +1,5 @@
 browser_allsamp_ui = function(id,  all_exp, browser_options,
-                      libs, label = "Browser_allsamp") {
+                      metadata, label = "Browser_allsamp") {
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
@@ -12,7 +12,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                    organism_input_select(c("ALL", genomes), ns),
                    experiment_input_select(experiments, ns, browser_options),
                    gene_input_select(ns, FALSE, browser_options),
-                   tx_input_select(ns, FALSE),
+                   metadata_input_select(ns, metadata = metadata),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
                                value = as.numeric(browser_options["default_kmer"])),
                    helper_button_redirect_call()
@@ -21,7 +21,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                    numericInput(ns("extendLeaders"), "5' extension", 0),
                    numericInput(ns("extendTrailers"), "3' extension", 0),
                    textInput(ns("customSequence"), label = "Custom sequences highlight", value = NULL),
-                   textInput(ns("genomic_region"), label = "Genomic region", value = NULL),
+                   tx_input_select(ns, FALSE),
                    checkboxInput(ns("viewMode"), label = "Genomic View", value = FALSE),
                    checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = FALSE),
                    checkboxInput(ns("other_tx"), label = "Full annotation", value = FALSE),
@@ -41,7 +41,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
 }
 
 browser_allsamp_server <- function(id, all_experiments, env, df, experiments,
-                           tx, cds, libs, org, gene_name_list, rv) {
+                           tx, cds, libs, org, gene_name_list, rv, metadata) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {

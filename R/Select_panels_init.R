@@ -154,3 +154,19 @@ condition_input_select <- function(ns, multiple = TRUE) {
     helper(onclick = "fakeClick('tutorial', 'diffexp')")
 }
 
+metadata_input_select <- function(ns, multiple = FALSE, browser_options = NULL,
+                              choices = NULL, selected = NULL, metadata) {
+  cols <- colnames(metadata)
+  cols <- cols[-which(cols %in% "Run")]
+  selectizeInput(
+    inputId = ns("metadata"),
+    choices = cols,
+    selected = "TISSUE",
+    label = "Cluster on:",
+    multiple = multiple,
+    options = list(placeholder = 'Cluster on:')
+  )
+  #  %>%
+  #   helper(onclick = "fakeClick('tutorial', 'metadata')")
+}
+

@@ -8,7 +8,8 @@ analysis_ui <- function(id, all_exp, browser_options, libs, label = "Analysis") 
     codon_ui("codon", all_exp, browser_options, libs),
     DEG_ui("DEG", all_exp, browser_options),
     quality_ui("quality", all_exp, browser_options, libs),
-    fastq_ui("fastq", all_exp, browser_options, libs)
+    fastq_ui("fastq", all_exp, browser_options, libs),
+    browser_allsamp_ui("browser_allsamp", all_exp, browser_options, libs)
   )
 }
 
@@ -24,5 +25,7 @@ analysis_server <- function(id, all_experiments, without_readlengths_env,
   rv <- quality_server("quality", all_experiments, with_readlengths_env,
                 df_with, experiments, tx, cds, libs, org, gene_name_list, rv)
   rv <- fastq_server("fastq", all_experiments, df, experiments, libs, org, rv)
+  browser_allsamp_server("browser_allsamp", all_experiments, without_readlengths_env, df,
+                         experiments, tx, cds, libs, org, gene_name_list, rv)
   return(rv)
 }

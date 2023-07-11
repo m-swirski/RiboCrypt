@@ -99,6 +99,29 @@ click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
 #                  customRegions = customRegions,
 #                  export_format = input$plot_export_format)
 # }
+
+click_plot_browser_allsamp_controller <- function(input, tx, libs, df) {
+  {
+    # browser()
+    print(paste("here is gene!", isolate(input$gene)))
+    print(paste("here is tx!", isolate(input$tx)))
+    dff <- df()[1,]
+    table_path <- file.path(resFolder(dff), "collection_tables", paste0(isolate(input$tx), ".fst"))
+    if (!file.exists(dirname(table_path)))
+      stop("There is no collection fst tables directory for this organism,",
+           " see vignette for more information on how to make these.")
+    if (!file.exists(table_path)) stop("Gene has no precomputed table, try another one!")
+    lib_sizes <- file.path(QCfolder(dff), "totalCounts_mrna.rds")
+    if (!file.exists(lib_sizes))
+      stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
+           " see vignette for more information on how to make these.")
+
+    reactiveValues(dff = dff,
+                   table_path = table_path,
+                   lib_sizes = lib_sizes)
+  }
+}
+
 click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
                                                length_table, minFiveUTR = NULL) {
   display_region <- observed_gene_heatmap(isolate(input$tx), tx)

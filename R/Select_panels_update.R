@@ -54,7 +54,8 @@ library_update_select <- function(libs) {
   updateSelectizeInput(
     inputId = "library",
     choices = libs(),
-    selected = libs()[1]
+    selected = libs()[1],
+    server = TRUE
   )
 }
 

@@ -59,6 +59,27 @@ click_plot_boxplot <- function(boxPlotControls, session) {
                                      boxPlotControls()$extendTrailers)
   return(a)
 }
+
+click_plot_browser_allsamples <- function(mainPlotControls, table = mainPlotControls()$table_path, lib_sizes = mainPlotControls()$lib_sizes) {
+  time_before <- Sys.time()
+  print("Starting loading + Profile + plot calc")
+  table  <- fst::read_fst(table)
+  setDT(table)
+  lib_sizes <- readRDS(lib_sizes)
+  table[, position := 1:.N, by = library]
+  table[, score_tpm := ((count * 1000)  / lib_sizes[as.integer(library)]) * 10^6]
+  table[,score := score_tpm / max(score_tpm), by = library]
+  table[,logscore := log(score*1e9 + 1)]
+  colors <- c("white", "lightblue",
+              rep("blue", 7), "navy", "black")
+  plot <- ggplot(table, aes(x = position, y = library, fill = logscore)) +
+    geom_raster() +  scale_fill_gradientn(colours = colors, na.value = "#000000") + #scale_fill_distiller(palette = "RdPu") +
+    theme(axis.text.y = element_blank())
+  # ggsave("~/Desktop/testplot.png",plot, device = "png")
+  cat("lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
+  return(plot)
+}
+
 get_fastq_page <- function(input, libs, df, relative_dir) {
   print("In fastq page")
   dff <- observed_exp_subset(isolate(input$library), libs, df)

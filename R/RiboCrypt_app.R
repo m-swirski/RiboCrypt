@@ -42,7 +42,8 @@ RiboCrypt_app <- function(
     validate.experiments = TRUE,
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
     all_exp = list.experiments(validate = validate.experiments),
-    browser_options = c(), init_tab_focus = "browser") {
+    browser_options = c(), init_tab_focus = "browser",
+    metadata = NULL) {
   time_before <- Sys.time()
 
   stopifnot(is(all_exp, "data.table"))
@@ -95,6 +96,9 @@ RiboCrypt_app <- function(
     if (!all(default_libs %in% libs))
       stop("You defined default_libs, but some of those are not valid names,",
       " in selected experiment!")
+  }
+  if (!is.null(metadata)) {
+    metadata <- fread(metadata)
   }
   # User interface
   ui <- tagList(

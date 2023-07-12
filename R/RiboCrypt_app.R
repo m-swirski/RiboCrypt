@@ -28,7 +28,7 @@
 #' @importFrom knitr knit
 #' @importFrom stringr str_sub
 #' @importFrom httr GET write_disk
-#' @importFrom ComplexHeatmap Heatmap
+#' @importFrom ComplexHeatmap Heatmap row_order
 #' @return RiboCrypt shiny app
 #' @export
 #' @examples

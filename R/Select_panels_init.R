@@ -176,9 +176,9 @@ metadata_input_select <- function(ns, multiple = FALSE, browser_options = NULL,
     inputId = ns("metadata"),
     choices = cols,
     selected = "TISSUE",
-    label = "Cluster on:",
+    label = "Group on:",
     multiple = multiple,
-    options = list(placeholder = 'Cluster on:')
+    options = list(placeholder = 'Group on:')
   )
   #  %>%
   #   helper(onclick = "fakeClick('tutorial', 'metadata')")

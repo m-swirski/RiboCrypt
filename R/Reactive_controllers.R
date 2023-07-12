@@ -117,7 +117,9 @@ click_plot_browser_allsamp_controller <- function(input, df) {
       stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
            " see vignette for more information on how to make these.")
     metadata <- isolate(input$metadata)
-    table_hash <- paste(name(dff), table_path, lib_sizes, metadata, sep = "|_|")
+    clusters <- isolate(input$clusters)
+    table_hash <- paste(name(dff), table_path, lib_sizes, clusters, metadata,
+                        sep = "|_|")
     reactiveValues(dff = dff,
                    table_path = table_path,
                    lib_sizes = lib_sizes,

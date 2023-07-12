@@ -66,7 +66,7 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
       output$c <- renderPlot(get_meta_browser_plot(table(),
                               isolate(input$heatmap_color),
                               isolate(input$clusters))) %>%
-        bindCache(input$heatmap_color, input$clusters) %>%
+        bindCache(mainPlotControls()$table_hash, input$heatmap_color) %>%
         bindEvent(table(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)

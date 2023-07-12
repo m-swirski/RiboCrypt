@@ -39,7 +39,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
 }
 
 browser_allsamp_server <- function(id, all_experiments, df, experiments,
-                           gene_name_list, metadata) {
+                           metadata) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
@@ -50,6 +50,9 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
                            changed=FALSE)
       uses_libs <- FALSE
       org <- reactive("ALL")
+      gene_name_list <- reactive(get_gene_name_categories_collection(df())) %>%
+        bindCache(rv$curval) %>%
+        bindEvent(rv$changed, ignoreNULL = TRUE)
       study_and_gene_observers(input, output, session)
       # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,

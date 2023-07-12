@@ -17,6 +17,14 @@ get_gene_name_categories <- function(df) {
   return(output_dt)
 }
 
+get_gene_name_categories_collection <- function(df) {
+  valid <- list.files(file.path(resFolder(df), "collection_tables/"))
+  valid <- gsub("\\.fst", "", valid)
+
+  all_genes <- get_gene_name_categories(df)
+  return(all_genes[value%in% valid,])
+}
+
 get_exp <- function(dff, experiments, env) {
   print("testing exp")
   req(dff %in% experiments)

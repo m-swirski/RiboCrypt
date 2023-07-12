@@ -84,7 +84,7 @@ click_plot_browser_allsamples <- function(mainPlotControls,
   table[, score_tpm := ((count * 1000)  / lib_sizes[as.integer(library)]) * 10^6]
   table[,score := score_tpm / max(score_tpm), by = library]
   table[is.na(score), score := 0]
-  table[,logscore := log(score*1e9 + 1)]
+  table[,logscore := log(score + 1)]
   matchings <- chmatch(metadata$Run, runIDs(df))
   matchings <- matchings[!is.na(matchings)]
   if (length(matchings) != nrow(df))

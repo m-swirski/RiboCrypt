@@ -132,6 +132,7 @@ study_and_gene_observers <- function(input, output, session) {
   with(rlang::caller_env(), {
     if (!exists("all_is_gene", mode = "logical")) all_is_gene <- FALSE
     if (!exists("uses_gene", mode = "logical")) uses_gene <- TRUE
+    if (!exists("uses_libs", mode = "logical")) uses_libs <- TRUE
 
     observe(if (rv$genome != input$genome & input$genome != "") {
       rv$genome <- input$genome},
@@ -181,8 +182,11 @@ study_and_gene_observers <- function(input, output, session) {
         server = TRUE
       )
     }
-    observeEvent(libs(), library_update_select(libs),
-                 ignoreNULL = TRUE, ignoreInit = TRUE)
+    if (uses_libs) {
+      observeEvent(libs(), library_update_select(libs),
+                   ignoreNULL = TRUE, ignoreInit = TRUE)
+    }
+
     init_round <- FALSE
   }
   )
@@ -201,6 +205,8 @@ org_and_study_changed_checker <- function(input, output, session) {
                               experiments, without_readlengths_env))
     df_with <- reactiveVal(get_exp(browser_options["default_experiment"],
                               experiments, with_readlengths_env))
+    df_meta <- reactiveVal(get_exp(browser_options["default_experiment_meta"],
+                                   all_exp_meta$name, .GlobalEnv))
     libs <- reactive(bamVarName(df()))
     # The shared reactive values (rv)
     # This must be passed to all submodules

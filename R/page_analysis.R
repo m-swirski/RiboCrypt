@@ -1,4 +1,4 @@
-analysis_ui <- function(id, all_exp, browser_options, libs, metadata,
+analysis_ui <- function(id, all_exp, browser_options, libs, metadata, all_exp_meta,
                         label = "Analysis") {
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
@@ -10,13 +10,14 @@ analysis_ui <- function(id, all_exp, browser_options, libs, metadata,
     DEG_ui("DEG", all_exp, browser_options),
     quality_ui("quality", all_exp, browser_options, libs),
     fastq_ui("fastq", all_exp, browser_options, libs),
-    browser_allsamp_ui("browser_allsamp", all_exp, browser_options, metadata)
+    browser_allsamp_ui("browser_allsamp", all_exp_meta, browser_options, metadata)
   )
 }
 
 analysis_server <- function(id, all_experiments, without_readlengths_env,
                          with_readlengths_env, df, df_with, experiments,
-                         tx, cds, libs, org, gene_name_list, rv, metadata) {
+                         tx, cds, libs, org, gene_name_list, rv, metadata,
+                         all_exp_meta, exp_init_meta, df_meta) {
   rv <- heatmap_server("heatmap", all_experiments, with_readlengths_env,
                 df_with, experiments, tx, cds, libs, org, gene_name_list, rv)
   rv <- codon_server("codon", all_experiments, without_readlengths_env,
@@ -26,7 +27,7 @@ analysis_server <- function(id, all_experiments, without_readlengths_env,
   rv <- quality_server("quality", all_experiments, with_readlengths_env,
                 df_with, experiments, tx, cds, libs, org, gene_name_list, rv)
   rv <- fastq_server("fastq", all_experiments, df, experiments, libs, org, rv)
-  browser_allsamp_server("browser_allsamp", all_experiments, without_readlengths_env, df,
-                         experiments, tx, cds, libs, org, gene_name_list, rv, metadata)
+  browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta,
+                         experiments, gene_name_list, metadata)
   return(rv)
 }

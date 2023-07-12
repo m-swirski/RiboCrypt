@@ -9,7 +9,9 @@ RiboCrypt_app(
   options = list(launch.browser = ifelse(interactive(), TRUE, FALSE)),
   all_exp = list.experiments(validate = validate.experiments),
   browser_options = c(),
-  init_tab_focus = "browser"
+  init_tab_focus = "browser",
+  metadata = NULL,
+  all_exp_meta = all_exp[grep("all_samples-", name), ]
 )
 }
 \arguments{
@@ -36,6 +38,10 @@ where libs are seperated by "|", like "RFP_WT_r1|RFP_WT_r2".\cr
 
 \item{init_tab_focus}{character, default "browser". Which tab to open on
 init.}
+
+\item{metadata}{a path to csv or a data.table of metadata columns,
+must contain a "Run" column to merge IDs to ORFik experiments.
+Is used in metabrowser for grouping of samples.}
 }
 \value{
 RiboCrypt shiny app

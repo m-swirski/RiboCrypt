@@ -17,7 +17,8 @@ organism_input_select <- function(genomes, ns) {
     helper(onclick = "fakeClick('tutorial', 'exp')")
 }
 
-experiment_input_select <- function(names, ns, browser_options = NULL) {
+experiment_input_select <- function(names, ns, browser_options = NULL,
+                                    option_name = "default_experiment") {
   selectizeInput(
     inputId = ns("dff"),
     label = "Select an experiment",
@@ -85,6 +86,19 @@ heatmap_region_select <- function(ns) {
     selected = "Start codon",
     multiple = FALSE
   )
+}
+
+heatmap_color_select <- function(ns, name = "heatmap_color",
+                              label = "Color theme",
+                              selected = "default (White-Blue)") {
+  selectizeInput(
+    inputId = ns(name),
+    label = label,
+    choices = c("default (White-Blue)", "Matrix (black,green,red)"),
+    selected = selected,
+    multiple = FALSE
+  ) %>%
+    helper(onclick = "fakeClick('tutorial', 'heatmapColor')")
 }
 
 normalization_input_select <- function(ns) {

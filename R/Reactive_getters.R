@@ -60,7 +60,12 @@ click_plot_boxplot <- function(boxPlotControls, session) {
   return(a)
 }
 
-click_plot_browser_allsamples <- function(mainPlotControls, table = mainPlotControls()$table_path, lib_sizes = mainPlotControls()$lib_sizes) {
+click_plot_browser_allsamples <- function(mainPlotControls,
+                                          table = mainPlotControls()$table_path,
+                                          lib_sizes = mainPlotControls()$lib_sizes,
+                                          df = mainPlotControls()$dff,
+                                          metadata_field = mainPlotControls()$metadata_field,
+                                          metadata) {
   time_before <- Sys.time()
   print("Starting loading + Profile + plot calc")
   table  <- fst::read_fst(table)
@@ -70,14 +75,24 @@ click_plot_browser_allsamples <- function(mainPlotControls, table = mainPlotCont
   table[, score_tpm := ((count * 1000)  / lib_sizes[as.integer(library)]) * 10^6]
   table[,score := score_tpm / max(score_tpm), by = library]
   table[,logscore := log(score*1e9 + 1)]
-  colors <- c("white", "lightblue",
-              rep("blue", 7), "navy", "black")
+  subset_col <- order(metadata[chmatch(Run, runIDs(df)), metadata_field, with = FALSE][[1]])
+  table[, library := factor(library, levels = levels(library)[subset_col], ordered = TRUE)]
   plot <- ggplot(table, aes(x = position, y = library, fill = logscore)) +
-    geom_raster() +  scale_fill_gradientn(colours = colors, na.value = "#000000") + #scale_fill_distiller(palette = "RdPu") +
+    geom_raster() +
     theme(axis.text.y = element_blank())
   # ggsave("~/Desktop/testplot.png",plot, device = "png")
   cat("lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
   return(plot)
+}
+
+get_meta_browser_plot <- function(gg, color_theme) {
+  colors <- if (color_theme == "default (White-Blue)") {
+    c("white", "lightblue", rep("blue", 7), "navy", "black")
+  } else if (color_theme == "Matrix (black,green,red)") {
+    c("#000000", "#2CFA1F", "yellow2", rep("#FF2400",3))
+  } else stop("Invalid color theme!")
+  cat("Rendering metabrowser plot\n")
+  gg + scale_fill_gradientn(colours = colors, na.value = "#000000")
 }
 
 get_fastq_page <- function(input, libs, df, relative_dir) {

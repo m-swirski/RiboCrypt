@@ -100,12 +100,13 @@ click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
 #                  export_format = input$plot_export_format)
 # }
 
-click_plot_browser_allsamp_controller <- function(input, tx, libs, df) {
+click_plot_browser_allsamp_controller <- function(input, df) {
   {
     # browser()
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
-    dff <- df()[1,]
+    dff <- df()
+
     table_path <- file.path(resFolder(dff), "collection_tables", paste0(isolate(input$tx), ".fst"))
     if (!file.exists(dirname(table_path)))
       stop("There is no collection fst tables directory for this organism,",
@@ -115,10 +116,13 @@ click_plot_browser_allsamp_controller <- function(input, tx, libs, df) {
     if (!file.exists(lib_sizes))
       stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
            " see vignette for more information on how to make these.")
-
+    metadata <- isolate(input$metadata)
+    table_hash <- paste(name(dff), table_path, lib_sizes, metadata, sep = "|_|")
     reactiveValues(dff = dff,
                    table_path = table_path,
-                   lib_sizes = lib_sizes)
+                   lib_sizes = lib_sizes,
+                   table_hash = table_hash,
+                   metadata_field = metadata)
   }
 }
 

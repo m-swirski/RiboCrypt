@@ -18,6 +18,9 @@
 #' - plot_on_start : Plot when starting, default: "FALSE"\cr
 #' @param init_tab_focus character, default "browser". Which tab to open on
 #' init.
+#' @param metadata a path to csv or a data.table of metadata columns,
+#' must contain a "Run" column to merge IDs to ORFik experiments.
+#' Is used in metabrowser for grouping of samples.
 #' @import shiny bslib ORFik NGLVieweR ggplot2
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
@@ -43,12 +46,20 @@ RiboCrypt_app <- function(
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
     all_exp = list.experiments(validate = validate.experiments),
     browser_options = c(), init_tab_focus = "browser",
-    metadata = NULL) {
+    metadata = NULL, all_exp_meta = all_exp[grep("all_samples-", name),]) {
   time_before <- Sys.time()
 
   stopifnot(is(all_exp, "data.table"))
   stopifnot(!is.null(all_exp$name))
   stopifnot(nrow(all_exp) > 0)
+  if (nrow(all_exp_meta) > 0) {
+    all_exp <- all_exp[!(name %in% all_exp_meta$name),]
+    print(paste("Running with", nrow(all_exp), "experiments"))
+    print(paste("Running with", nrow(all_exp_meta), "collections"))
+  }
+  if (!is.null(metadata)) {
+    if (is.character(metadata)) metadata <- fread(metadata)
+  }
   stopifnot(is(metadata, "data.table"))
   # Set environments
   with_readlengths_env <- new.env()
@@ -63,6 +74,10 @@ RiboCrypt_app <- function(
   if (!isTruthy(browser_options["default_experiment"])) {
     browser_options["default_experiment"] <- all_exp$name[1]
   }
+  if (!isTruthy(browser_options["default_experiment_meta"]) &
+      nrow(all_exp_meta > 1)) {
+    browser_options["default_experiment_meta"] <- all_exp_meta$name[1]
+  }
   if (is.na(browser_options["plot_on_start"])) {
     browser_options["plot_on_start"] <- FALSE
   }
@@ -72,6 +87,8 @@ RiboCrypt_app <- function(
   }
   exp_init <- read.experiment(browser_options["default_experiment"],
                               validate = FALSE)
+  # exp_init_meta <- read.experiment(browser_options["default_experiment_meta"],
+  #                             validate = FALSE)
   names_init <- get_gene_name_categories(exp_init)
   if (!isTruthy(browser_options["default_gene"])) {
     if (!isTruthy(browser_options["default_gene"])) {
@@ -79,6 +96,13 @@ RiboCrypt_app <- function(
     }
     stopifnot(browser_options["default_gene"] %in% names_init$label)
   }
+  if (!isTruthy(browser_options["default_gene_meta"])) {
+    if (!isTruthy(browser_options["default_gene_meta"])) {
+      browser_options["default_gene_meta"] <- names_init$label[1]
+    }
+    stopifnot(browser_options["default_gene_meta"] %in% names_init$label)
+  }
+
   if (!isTruthy(browser_options["default_kmer"])) {
     browser_options["default_kmer"] <- 1
   } else {
@@ -98,9 +122,7 @@ RiboCrypt_app <- function(
       stop("You defined default_libs, but some of those are not valid names,",
       " in selected experiment!")
   }
-  if (!is.null(metadata)) {
-    metadata <- fread(metadata)
-  }
+
   # User interface
   ui <- tagList(
     rc_header_image(),
@@ -111,7 +133,7 @@ RiboCrypt_app <- function(
       theme = rc_theme(),
       selected = init_tab_focus,
       browser_ui("browser", all_exp, browser_options, names_init, libs),
-      analysis_ui("analysis", all_exp, browser_options, libs, metadata),
+      analysis_ui("analysis", all_exp, browser_options, libs, metadata, all_exp_meta),
       metadata_ui("metadata", all_exp),
       tutorial_ui()
     )
@@ -126,7 +148,7 @@ RiboCrypt_app <- function(
                          browser_options)
     rv <- analysis_server("analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
-            gene_name_list, rv, metadata)
+            gene_name_list, rv, metadata, all_exp_meta, exp_init_meta, df_meta)
     metadata_server("metadata", all_exp)
     cat("Server: "); print(round(Sys.time() - time_before, 2))
   }

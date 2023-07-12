@@ -113,7 +113,7 @@ allsamples_sidebar <- function(mainPlotControls, plot,
   if (length(matchings) != nrow(df))
     stop("Metadata does not contain information on all collection samples!")
   values <- metadata[matchings, metadata_field, with = FALSE][[1]]
-  orders <- suppressWarnings(unlist(row_order(plot)))
+  orders <- suppressWarnings(unlist(ComplexHeatmap::row_order(plot)))
   meta <- data.table(grouping = values, order = orders)
   meta <- meta[meta$order,]
   meta[, index := .I]

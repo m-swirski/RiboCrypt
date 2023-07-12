@@ -33,9 +33,15 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
         actionButton(ns("go"), "Plot", icon = icon("rocket")), width=3
       )),
       mainPanel(
-        jqui_resizable(plotlyOutput(outputId = ns("d"), height = "700px", width = "100px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
-        jqui_resizable(plotOutput(outputId = ns("c"), height = "700px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
-        width=9)
+        fluidRow(
+          splitLayout(cellWidths = c("10%", "90%"),
+                      jqui_resizable(plotlyOutput(outputId = ns("d"), height = "700px", width = "100px")) %>%
+                        shinycssloaders::withSpinner(color="#0dc5c1"),
+                      jqui_resizable(plotOutput(outputId = ns("c"), height = "700px")) %>%
+                        shinycssloaders::withSpinner(color="#0dc5c1"),
+                      width=9)
+        )
+      )
     )
   )
 }

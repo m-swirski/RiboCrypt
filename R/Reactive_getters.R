@@ -84,7 +84,9 @@ click_plot_browser_allsamples <- function(mainPlotControls,
   table[,score := score_tpm / max(score_tpm), by = library]
   table[is.na(score), score := 0]
   table[,logscore := log(score*1e9 + 1)]
-  subset_col <- order(metadata[chmatch(Run, runIDs(df)), metadata_field, with = FALSE][[1]])
+  matchings <- chmatch(metadata$Run, runIDs(df))
+  meta_sub <- metadata[matchings, metadata_field, with = FALSE][[1]]
+  subset_col <- order(meta_sub)
   table[, library := factor(library, levels = levels(library)[subset_col], ordered = TRUE)]
   table[, score_tpm := NULL]
   table[, score := NULL]
@@ -102,16 +104,26 @@ allsamples_sidebar <- function(mainPlotControls, plot,
                                metadata) {
   time_before <- Sys.time()
   print("Starting metabrowser sidebar")
-  values <- metadata[chmatch(Run, runIDs(df)), metadata_field, with = FALSE][[1]]
-  subset_col <- order(values)
+  matchings <- chmatch(metadata$Run, runIDs(df))
+  values <- metadata[matchings, metadata_field, with = FALSE][[1]]
   orders <- suppressWarnings(unlist(row_order(plot)))
   meta <- data.table(grouping = values, order = orders)
   meta <- meta[meta$order,]
   meta[, index := .I]
   gg <- ggplot(meta, aes(y = index, x = factor(1), fill = grouping)) +
-    geom_raster() + theme_void() + theme(legend.position = "none")
+    geom_raster() + theme_void() +
+    labs(x = NULL, y = NULL, title = NULL) +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme(panel.background = element_rect(fill = "transparent", colour = NA),
+          plot.background = element_rect(fill = "transparent", colour = NA),
+          panel.grid = element_blank(),
+          panel.border = element_blank(),
+          plot.margin = unit(c(0, 0, 0, 0), "cm"),
+          legend.position = "none")
+
   cat("metabrowser sidebar done"); print(round(Sys.time() - time_before, 2))
-  return(gg)
+  return(ggplotly(gg, tooltip="grouping"))
 }
 
 get_meta_browser_plot <- function(table, color_theme, clusters = 1) {

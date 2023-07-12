@@ -24,6 +24,7 @@ Imports:
   BiocGenerics,
   BiocParallel,
   Biostrings,
+  ComplexHeatmap,
   data.table,
   dplyr,
   GenomeInfoDb,

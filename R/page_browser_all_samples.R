@@ -14,8 +14,8 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                            "default_experiment_meta"),
                    gene_input_select(ns, FALSE, browser_options),
                    metadata_input_select(ns, metadata = metadata),
-                   sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
-                               value = as.numeric(browser_options["default_kmer"])),
+                   sliderInput(ns("clusters"), "K-means clusters", min = 1, max = 5,
+                               value = 1),
                    helper_button_redirect_call()
           ),
           tabPanel("Settings",
@@ -25,6 +25,8 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
                    textInput(ns("customSequence"), label = "Custom sequences highlight", value = NULL),
                    tx_input_select(ns, FALSE),
+                   sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
+                               value = as.numeric(browser_options["default_kmer"])),
                    export_format_of_plot(ns)
           )
         ),
@@ -55,15 +57,17 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
                                         ignoreInit = TRUE,
                                         ignoreNULL = FALSE)
       # Main plot, this code is only run if 'plot' is pressed
-      gg <- reactive(click_plot_browser_allsamples(mainPlotControls,
+      table <- reactive(click_plot_browser_allsamples(mainPlotControls,
                                                    metadata = metadata)) %>%
         bindCache(mainPlotControls()$table_hash) %>%
         bindEvent(mainPlotControls()$table_hash,
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
-      output$c <- renderPlot(get_meta_browser_plot(gg(), isolate(input$heatmap_color))) %>%
-        bindCache(input$heatmap_color) %>%
-        bindEvent(gg(),
+      output$c <- renderPlot(get_meta_browser_plot(table(),
+                              isolate(input$heatmap_color),
+                              isolate(input$clusters))) %>%
+        bindCache(input$heatmap_color, input$clusters) %>%
+        bindEvent(table(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
     }

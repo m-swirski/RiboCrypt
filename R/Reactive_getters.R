@@ -74,25 +74,33 @@ click_plot_browser_allsamples <- function(mainPlotControls,
   table[, position := 1:.N, by = library]
   table[, score_tpm := ((count * 1000)  / lib_sizes[as.integer(library)]) * 10^6]
   table[,score := score_tpm / max(score_tpm), by = library]
+  table[is.na(score), score := 0]
   table[,logscore := log(score*1e9 + 1)]
   subset_col <- order(metadata[chmatch(Run, runIDs(df)), metadata_field, with = FALSE][[1]])
   table[, library := factor(library, levels = levels(library)[subset_col], ordered = TRUE)]
-  plot <- ggplot(table, aes(x = position, y = library, fill = logscore)) +
-    geom_raster() +
-    theme(axis.text.y = element_blank())
-  # ggsave("~/Desktop/testplot.png",plot, device = "png")
+  table[, score_tpm := NULL]
+  table[, score := NULL]
+  table[, count := NULL]
+  dtable <- dcast(table, position ~ library, value.var = "logscore")
+  dtable[, position := NULL]
+
   cat("lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
-  return(plot)
+  return(dtable)
 }
 
-get_meta_browser_plot <- function(gg, color_theme) {
+get_meta_browser_plot <- function(table, color_theme, clusters = 1) {
   colors <- if (color_theme == "default (White-Blue)") {
     c("white", "lightblue", rep("blue", 7), "navy", "black")
   } else if (color_theme == "Matrix (black,green,red)") {
     c("#000000", "#2CFA1F", "yellow2", rep("#FF2400",3))
   } else stop("Invalid color theme!")
   cat("Rendering metabrowser plot\n")
-  gg + scale_fill_gradientn(colours = colors, na.value = "#000000")
+  ComplexHeatmap::Heatmap(t(table), show_row_dend = FALSE,
+                          cluster_columns = FALSE,
+                          cluster_rows = FALSE,
+                          use_raster = TRUE,  raster_quality = 5,
+                          km = clusters,
+                          col =  colors, show_row_names = FALSE)
 }
 
 get_fastq_page <- function(input, libs, df, relative_dir) {

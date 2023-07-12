@@ -96,13 +96,31 @@ click_plot_browser_allsamples <- function(mainPlotControls,
   return(dtable)
 }
 
+allsamples_sidebar <- function(mainPlotControls, plot,
+                               df = mainPlotControls()$dff,
+                               metadata_field = mainPlotControls()$metadata_field,
+                               metadata) {
+  time_before <- Sys.time()
+  print("Starting metabrowser sidebar")
+  values <- metadata[chmatch(Run, runIDs(df)), metadata_field, with = FALSE][[1]]
+  subset_col <- order(values)
+  orders <- suppressWarnings(unlist(row_order(plot)))
+  meta <- data.table(grouping = values, order = orders)
+  meta <- meta[meta$order,]
+  meta[, index := .I]
+  gg <- ggplot(meta, aes(y = index, x = factor(1), fill = grouping)) +
+    geom_raster() + theme_void() + theme(legend.position = "none")
+  cat("metabrowser sidebar done"); print(round(Sys.time() - time_before, 2))
+  return(gg)
+}
+
 get_meta_browser_plot <- function(table, color_theme, clusters = 1) {
   colors <- if (color_theme == "default (White-Blue)") {
     c("white", "lightblue", rep("blue", 7), "navy", "black")
   } else if (color_theme == "Matrix (black,green,red)") {
     c("#000000", "#2CFA1F", "yellow2", rep("#FF2400",3))
   } else stop("Invalid color theme!")
-  cat("Rendering metabrowser plot\n")
+  cat("Creating metabrowser heatmap\n")
   ComplexHeatmap::Heatmap(t(table), show_row_dend = FALSE,
                           cluster_columns = FALSE,
                           cluster_rows = FALSE,

@@ -35,7 +35,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
       mainPanel(
         fluidRow(
           splitLayout(cellWidths = c("10%", "90%"),
-                      jqui_resizable(plotlyOutput(outputId = ns("d"), height = "700px", width = "100px")) %>%
+                      jqui_resizable(plotlyOutput(outputId = ns("d"), height = "700px", width = "130px")) %>%
                         shinycssloaders::withSpinner(color="#0dc5c1"),
                       jqui_resizable(plotOutput(outputId = ns("c"), height = "700px")) %>%
                         shinycssloaders::withSpinner(color="#0dc5c1"),

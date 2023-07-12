@@ -114,6 +114,10 @@ allsamples_sidebar <- function(mainPlotControls, plot,
     stop("Metadata does not contain information on all collection samples!")
   values <- metadata[matchings, metadata_field, with = FALSE][[1]]
   orders <- suppressWarnings(unlist(ComplexHeatmap::row_order(plot)))
+  if (all(seq(length(orders)) == orders)) {
+    # TODO: Make failsafe for random hits!
+    orders <- order(values)
+  }
   meta <- data.table(grouping = values, order = orders)
   meta <- meta[meta$order,]
   meta[, index := .I]
@@ -130,7 +134,7 @@ allsamples_sidebar <- function(mainPlotControls, plot,
           legend.position = "none")
 
   cat("metabrowser sidebar done"); print(round(Sys.time() - time_before, 2))
-  return(ggplotly(gg, tooltip="grouping"))
+  return(ggplotly(gg, tooltip="grouping") %>% plotly::config(displayModeBar = FALSE))
 }
 
 get_meta_browser_plot <- function(table, color_theme, clusters = 1) {

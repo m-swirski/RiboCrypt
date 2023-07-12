@@ -74,6 +74,7 @@ click_plot_browser_allsamples <- function(mainPlotControls,
                                           df = mainPlotControls()$dff,
                                           metadata_field = mainPlotControls()$metadata_field,
                                           metadata) {
+  if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
   print("Starting loading + Profile + plot calc")
   table  <- fst::read_fst(table)
@@ -85,6 +86,9 @@ click_plot_browser_allsamples <- function(mainPlotControls,
   table[is.na(score), score := 0]
   table[,logscore := log(score*1e9 + 1)]
   matchings <- chmatch(metadata$Run, runIDs(df))
+  matchings <- matchings[!is.na(matchings)]
+  if (length(matchings) != nrow(df))
+    stop("Metadata does not contain information on all collection samples!")
   meta_sub <- metadata[matchings, metadata_field, with = FALSE][[1]]
   subset_col <- order(meta_sub)
   table[, library := factor(library, levels = levels(library)[subset_col], ordered = TRUE)]
@@ -105,6 +109,9 @@ allsamples_sidebar <- function(mainPlotControls, plot,
   time_before <- Sys.time()
   print("Starting metabrowser sidebar")
   matchings <- chmatch(metadata$Run, runIDs(df))
+  matchings <- matchings[!is.na(matchings)]
+  if (length(matchings) != nrow(df))
+    stop("Metadata does not contain information on all collection samples!")
   values <- metadata[matchings, metadata_field, with = FALSE][[1]]
   orders <- suppressWarnings(unlist(row_order(plot)))
   meta <- data.table(grouping = values, order = orders)

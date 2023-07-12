@@ -60,8 +60,8 @@ RiboCrypt_app <- function(
   }
   if (!is.null(metadata)) {
     if (is.character(metadata)) metadata <- fread(metadata)
+    stopifnot(is(metadata, "data.table"))
   }
-  stopifnot(is(metadata, "data.table"))
   # Set environments
   with_readlengths_env <- new.env()
   without_readlengths_env <- new.env()

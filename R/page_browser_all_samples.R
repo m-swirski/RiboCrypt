@@ -23,12 +23,13 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                    normalization_input_select(ns, choices = normalizations,
                                               help_link = "mbrowser"),
                    heatmap_color_select(ns),
+                   sliderInput(ns("color_mult"), "Color scale multiplier", min = 1, max = 10,
+                               value = 3),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
                    tx_input_select(ns, FALSE),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
-                               value = as.numeric(browser_options["default_kmer"])),
-                   export_format_of_plot(ns)
+                               value = as.numeric(browser_options["default_kmer"]))
           )
         ),
         actionButton(ns("go"), "Plot", icon = icon("rocket")), width=3
@@ -78,21 +79,22 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
 
       plot_object <- reactive(get_meta_browser_plot(table(),
                                                    isolate(input$heatmap_color),
-                                                   isolate(input$clusters))) %>%
-        bindCache(mainPlotControls()$table_hash, input$heatmap_color) %>%
+                                                   isolate(input$clusters),
+                                                   isolate(input$color_mult))) %>%
         bindEvent(table(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
 
       output$c <- renderPlot(plot_object()) %>%
-        bindCache(mainPlotControls()$table_hash, input$heatmap_color) %>%
+        bindCache(mainPlotControls()$table_hash, input$heatmap_color,
+                  isolate(input$color_mult)) %>%
         bindEvent(plot_object(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
       output$d <- renderPlotly(allsamples_sidebar(mainPlotControls,
                                                   plot_object(),
                                                   metadata = metadata)) %>%
-        bindCache(mainPlotControls()$table_hash, input$heatmap_color) %>%
+        bindCache(mainPlotControls()$table_hash) %>%
         bindEvent(plot_object(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)

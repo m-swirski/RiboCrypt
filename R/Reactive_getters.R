@@ -74,6 +74,7 @@ click_plot_browser_allsamples <- function(mainPlotControls,
                                           df = mainPlotControls()$dff,
                                           metadata_field = mainPlotControls()$metadata_field,
                                           normalization = mainPlotControls()$normalization,
+                                          kmer = mainPlotControls()$kmer, 
                                           metadata) {
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
@@ -82,6 +83,9 @@ click_plot_browser_allsamples <- function(mainPlotControls,
   setDT(table)
   lib_sizes <- readRDS(lib_sizes)
   table[, position := 1:.N, by = library]
+  
+  if (kmer > 1) table <- smoothenMultiSampCoverage(table, kmer = kmer)
+  
   table[, score_tpm := ((count * 1000)  / lib_sizes[as.integer(library)]) * 10^6]
 
   norm_opts <- normalizations("metabrowser")

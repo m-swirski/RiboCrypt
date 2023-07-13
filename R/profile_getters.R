@@ -28,6 +28,12 @@ getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
   return(footprints)
 }
 
+smoothenMultiSampCoverage <- function(dt, kmer, kmers_type = "mean") {
+  dt <- dt[,count := get(paste("froll",kmers_type, sep = ""))(count, kmers, fill = 0, align = "center"), by = library]
+  return(dt)
+
+}
+
 #' Get coverage profile
 #'
 #' @param grl a GRangesList

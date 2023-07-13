@@ -121,13 +121,15 @@ click_plot_browser_allsamp_controller <- function(input, df) {
     normalization <- isolate(input$normalization)
     table_hash <- paste(name(dff), table_path, lib_sizes, clusters,
                         metadata_field, normalization, sep = "|_|")
+    kmer <- isolate(input$kmer)
     print(paste("Table hash: ", table_hash))
     reactiveValues(dff = dff,
                    table_path = table_path,
                    lib_sizes = lib_sizes,
                    table_hash = table_hash,
                    metadata_field = metadata_field,
-                   normalization = normalization)
+                   normalization = normalization,
+                   kmer = kmer)
   }
 }
 

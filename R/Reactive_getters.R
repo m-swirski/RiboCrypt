@@ -149,11 +149,12 @@ allsamples_sidebar <- function(mainPlotControls, plot,
   return(ggplotly(gg, tooltip="grouping") %>% plotly::config(displayModeBar = FALSE))
 }
 
-get_meta_browser_plot <- function(table, color_theme, clusters = 1) {
+get_meta_browser_plot <- function(table, color_theme, clusters = 1,
+                                  color_mult = 3) {
   colors <- if (color_theme == "default (White-Blue)") {
-    c("white", "lightblue", rep("blue", 7), "navy", "black")
+    c("white", "lightblue", rep("blue", 4 + color_mult), "navy", "black")
   } else if (color_theme == "Matrix (black,green,red)") {
-    c("#000000", "#2CFA1F", "yellow2", rep("#FF2400",3))
+    c("#000000", "#2CFA1F", "yellow2", rep("#FF2400", color_mult))
   } else stop("Invalid color theme!")
   cat("Creating metabrowser heatmap\n")
   ComplexHeatmap::Heatmap(t(table), show_row_dend = FALSE,

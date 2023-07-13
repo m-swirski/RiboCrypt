@@ -110,7 +110,6 @@ click_plot_browser_allsamples <- function(mainPlotControls,
   table[, count := NULL]
   dtable <- dcast(table, position ~ library, value.var = "logscore")
   dtable[, position := NULL]
-
   cat("Done: lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
   return(dtable)
 }

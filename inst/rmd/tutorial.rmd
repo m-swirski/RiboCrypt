@@ -220,7 +220,8 @@ Display all samples for a specific organism over selected gene.
 ### Display panel (Meta browser)
 Organism, experiment and gene explained above
 - Group on: the metadata column to order plot by
-- K-means clusters: How many k-means clusters to use, if > 1, 
+- K-means clusters: How many k-means clusters to use, if > 1, Group will be
+sorted within the clusters, but K-means have priority.
 
 ### Display panel (settings)
 - Normalization (all scores are tpm normalized and log scaled)
@@ -228,8 +229,13 @@ Organism, experiment and gene explained above
   - Max normalized (each position count divided by maximum)
   - zscore (zscore normalization, (count * mean / sd) variance scaled normalization)
   - tpm (raw tpm of counts, is very sensitive to extreme peaks)
-- Colors: Which color theme to use
-- export format for plot (explained above)
+- Color theme: Which color theme to use
+- Color scale multiplier: how much to amplify the color signal (if all is single color, 
+  try to reduce or increase this depending on which color is the majority)
+- K-mer length: Smoothens out the signal by applying a mean sliding window, 
+  default 1 (off)
+  
+
 
 ### Requirements
 This mode is very intensive on CPU, so it requires certain pre-computed results

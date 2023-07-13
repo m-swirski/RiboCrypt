@@ -428,7 +428,8 @@ only!)</li>
 <h3>Display panel (Meta browser)</h3>
 <p>Organism, experiment and gene explained above - Group on: the
 metadata column to order plot by - K-means clusters: How many k-means
-clusters to use, if &gt; 1,</p>
+clusters to use, if &gt; 1, Group will be sorted within the clusters,
+but K-means have priority.</p>
 </div>
 <div id="display-panel-settings-3" class="section level3">
 <h3>Display panel (settings)</h3>
@@ -441,8 +442,12 @@ clusters to use, if &gt; 1,</p>
 normalization)</li>
 <li>tpm (raw tpm of counts, is very sensitive to extreme peaks)</li>
 </ul></li>
-<li>Colors: Which color theme to use</li>
-<li>export format for plot (explained above)</li>
+<li>Color theme: Which color theme to use</li>
+<li>Color scale multiplier: how much to amplify the color signal (if all
+is single color, try to reduce or increase this depending on which color
+is the majority)</li>
+<li>K-mer length: Smoothens out the signal by applying a mean sliding
+window, default 1 (off)</li>
 </ul>
 </div>
 <div id="requirements" class="section level3">

@@ -119,9 +119,10 @@ click_plot_browser_allsamp_controller <- function(input, df) {
     metadata_field <- isolate(input$metadata)
     clusters <- isolate(input$clusters)
     normalization <- isolate(input$normalization)
-    table_hash <- paste(name(dff), table_path, lib_sizes, clusters,
-                        metadata_field, normalization, sep = "|_|")
     kmer <- isolate(input$kmer)
+    table_hash <- paste(name(dff), table_path, lib_sizes, clusters,
+                        metadata_field, normalization, kmer, sep = "|_|")
+
     print(paste("Table hash: ", table_hash))
     reactiveValues(dff = dff,
                    table_path = table_path,

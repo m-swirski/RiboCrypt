@@ -29,9 +29,8 @@ getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
 }
 
 smoothenMultiSampCoverage <- function(dt, kmer, kmers_type = "mean") {
-  dt <- dt[,count := get(paste("froll",kmers_type, sep = ""))(count, kmers, fill = 0, align = "center"), by = library]
-  return(dt)
-
+  dt[, count := as.numeric(count)]
+  return(dt[,count := get(paste("froll",kmers_type, sep = ""))(count, kmer, fill = 0, align = "center"), by = library])
 }
 
 #' Get coverage profile
@@ -68,7 +67,7 @@ getCoverageProfile <- function(grl, reads, kmers = 1, kmers_type = "mean") {
   }
   return(coverage)
 }
-# 
+#
 # getStackProfile <- function(grl, footprints, kmers, kmers_type = "mean") {
 #   count <- NULL # Avoid data.table warning
 #   profile <- getRiboProfile(grl, footprints, kmers, kmers_type = kmers_type)

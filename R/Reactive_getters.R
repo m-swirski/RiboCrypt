@@ -73,24 +73,37 @@ click_plot_browser_allsamples <- function(mainPlotControls,
                                           lib_sizes = mainPlotControls()$lib_sizes,
                                           df = mainPlotControls()$dff,
                                           metadata_field = mainPlotControls()$metadata_field,
+                                          normalization = mainPlotControls()$normalization,
                                           metadata) {
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
-  print("Starting loading + Profile + plot calc")
+  cat("Starting loading + Profile + plot calc\n")
   table  <- fst::read_fst(table)
   setDT(table)
   lib_sizes <- readRDS(lib_sizes)
   table[, position := 1:.N, by = library]
   table[, score_tpm := ((count * 1000)  / lib_sizes[as.integer(library)]) * 10^6]
-  table[,score := score_tpm / max(score_tpm), by = library]
+
+  norm_opts <- normalizations("metabrowser")
+  if (normalization == norm_opts[1]) {
+    table[,score := score_tpm / sum(score_tpm), by = library]
+    table[,score := score * 1e6]
+  } else if (normalization == norm_opts[2]) {
+    table[,score := score_tpm / max(score_tpm), by = library]
+  } else if (normalization == norm_opts[3]) {
+    table[, score := (score_tpm - mean(score_tpm)) / sd(score_tpm), by = library]
+  } else table[, score := score_tpm]
+
   table[is.na(score), score := 0]
   table[,logscore := log(score + 1)]
+  # Match metadata table and collection runIDs
   matchings <- chmatch(metadata$Run, runIDs(df))
   matchings <- matchings[!is.na(matchings)]
   if (length(matchings) != nrow(df))
     stop("Metadata does not contain information on all collection samples!")
   meta_sub <- metadata[matchings, metadata_field, with = FALSE][[1]]
   subset_col <- order(meta_sub)
+  # Sort
   table[, library := factor(library, levels = levels(library)[subset_col], ordered = TRUE)]
   table[, score_tpm := NULL]
   table[, score := NULL]
@@ -98,7 +111,7 @@ click_plot_browser_allsamples <- function(mainPlotControls,
   dtable <- dcast(table, position ~ library, value.var = "logscore")
   dtable[, position := NULL]
 
-  cat("lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
+  cat("Done: lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
   return(dtable)
 }
 

@@ -402,11 +402,11 @@ where you can also search for you target genes, making it more useable
 than normal expression plots, which often are very hard to read.</p>
 <div id="display-panel-differential-expression" class="section level3">
 <h3>Display panel (Differential expression)</h3>
-<p>Organism and experiment explained above - Differential method: LFC
-ratio is a pure ratio calculation without factor normalization (like
-batch effects), fast and crude check. DESeq2 argument gives a robust
-version, but only works for experiments with valid experimental design
-(i.e. design matrix must be full ranked, see deseq2 tutorial for
+<p>Organism and experiment explained above - Differential method: FPKM
+ratio is a pure FPKM ratio calculation without factor normalization
+(like batch effects), fast and crude check. DESeq2 argument gives a
+robust version, but only works for experiments with valid experimental
+design (i.e. design matrix must be full ranked, see deseq2 tutorial for
 details!) - Select two conditions (which 2 factors to group by)</p>
 </div>
 <div id="display-panel-settings-2" class="section level3">
@@ -419,6 +419,45 @@ only!)</li>
 <li>P-value (sliding bar for p-value cutoff, default 0.05)</li>
 <li>export format for plot (explained above)</li>
 </ul>
+</div>
+</div>
+<div id="mbrowser" class="section level2">
+<h2>Meta Browser</h2>
+<p>Display all samples for a specific organism over selected gene.</p>
+<div id="display-panel-meta-browser" class="section level3">
+<h3>Display panel (Meta browser)</h3>
+<p>Organism, experiment and gene explained above - Group on: the
+metadata column to order plot by - K-means clusters: How many k-means
+clusters to use, if &gt; 1,</p>
+</div>
+<div id="display-panel-settings-3" class="section level3">
+<h3>Display panel (settings)</h3>
+<ul>
+<li>Normalization (all scores are tpm normalized and log scaled)
+<ul>
+<li>transcriptNormalized (each sample counts sum to 1) (default)</li>
+<li>Max normalized (each position count divided by maximum)</li>
+<li>zscore (zscore normalization, (count * mean / sd) variance scaled
+normalization)</li>
+<li>tpm (raw tpm of counts, is very sensitive to extreme peaks)</li>
+</ul></li>
+<li>Colors: Which color theme to use</li>
+<li>export format for plot (explained above)</li>
+</ul>
+</div>
+<div id="requirements" class="section level3">
+<h3>Requirements</h3>
+<p>This mode is very intensive on CPU, so it requires certain
+pre-computed results for the back end. That is namely: - Premade
+collection experiments (an ORFik experiment of all experiments per
+organism) - Premade collection count table and library sizes (for
+normalizations purpose) - Premade fst serialized coverage calculation
+per gene (for instant loading of coverage over thousands of
+libraries)</p>
+<p>Note that on the live app, the human collection (4000 Ribo-seq
+samples) takes around 30 seconds to plot for a ~ 2K nucleotides gene,
+~99% of the time is spent on rendering the plot, not actual computation.
+Future investigation into optimization will be done.</p>
 </div>
 </div>
 <div id="read-length-qc" class="section level2">
@@ -434,8 +473,12 @@ possible select boxes are same as for heatmap above:</p>
 <h3>Plot panel</h3>
 <p>From the options specified in the display panel, when you press
 “plot” the data will be displayed. It contains the specific parts:</p>
-<p>Top plot: Read length relative usage 1. Y-axis: Score 3. Color: Per
-frame (red, green, blue) 4. Facet box: the read length</p>
+<p>Top plot: Read length relative usage</p>
+<ol style="list-style-type: decimal">
+<li>Y-axis: Score</li>
+<li>Color: Per frame (red, green, blue)</li>
+<li>Facet box: the read length</li>
+</ol>
 <p>Bottom plot: Fourier transform (3nt periodicity quality, clean peak
 means good periodicity)</p>
 </div>
@@ -475,6 +518,17 @@ of all metadata found from the study is displayed.</p>
 </div>
 <div id="additional-information" class="section level1">
 <h1>Additional information</h1>
+<p>All files are packed into ORFik experiments for easy access through
+the ORFik API:</p>
+<p>File formats used internally in experiments are: - Annotation (gtf +
+TxDb for random access) - Fasta genome (.fasta, + index for random
+access) - Sequencing libraries (all duplicated reads are collapsed) -
+random access (only for collapsed read lengths): bigwig - Full genome
+coverage (only for collapsed read lengths): covRLE - Full genome
+coverage (split by read lengths): covRLElist - count Tables (Summarized
+experiments, r data serialized .rds) - Library size list (Integer
+vector, .rds) - Precomputed gene coverages per organism: fst (used for
+metabrowser)</p>
 <div id="massivengspipe" class="section level2">
 <h2>massiveNGSpipe</h2>
 <p>For our webpage the processing pipeline used is massiveNGSpipe which
@@ -483,7 +537,13 @@ wraps over multiple tools:</p>
 <li>Fastq files are download with ORFik download.sra</li>
 <li>Adapter is detected with either fastqc (sequence detection) and
 falls back to fastp auto detection.</li>
-<li>Reads are then trimmed with fastp</li>
+<li>Reads are then trimmed with fastp (using the wrapper in ORFik)</li>
+</ol>
+<ul>
+<li>Adapter removal specified</li>
+<li>minimum read size (20nt)</li>
+</ul>
+<ol start="4" style="list-style-type: decimal">
 <li>Read are collapsed (get the set of unique reads and put duplication
 count in read header)</li>
 <li>Reads are aligned with the STAR aligner (using the wrapper in
@@ -501,7 +561,7 @@ created that connects each sample to metadata (condition, inhibitor,
 fraction, replicate etc)</li>
 <li>Bam files are then converted to ORFik ofst format</li>
 <li>These ofst files are then pshifted</li>
-<li>Faster formats are then created (bigwig and covRLE) for faster
+<li>Faster formats are then created (bigwig, fst and covRLE) for faster
 visualization</li>
 </ol>
 </div>

@@ -101,15 +101,18 @@ heatmap_color_select <- function(ns, name = "heatmap_color",
     helper(onclick = "fakeClick('tutorial', 'heatmapColor')")
 }
 
-normalization_input_select <- function(ns) {
+normalization_input_select <- function(ns,
+                                       choices = normalizations(),
+                                       selected = choices[1],
+                                       help_link = "heatmap") {
   selectizeInput(
     inputId = ns("normalization"),
     label = "Normalization",
-    choices =
-      c("transcriptNormalized", "zscore", "sum", "log10sum"),
-    selected = "transcriptNormalized",
+    choices = choices,
+    selected = selected,
     multiple = FALSE
-  )
+  ) %>%
+    helper(onclick = paste("fakeClick('tutorial',", paste0("'", help_link, "')")))
 }
 
 codon_score_input_select <- function(ns) {

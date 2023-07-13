@@ -3,6 +3,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
+  normalizations <- normalizations("metabrowser")
   tabPanel(
     title = "MetaBrowser", icon = icon("chart-line"),
     sidebarLayout(
@@ -19,11 +20,11 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                    helper_button_redirect_call()
           ),
           tabPanel("Settings",
+                   normalization_input_select(ns, choices = normalizations,
+                                              help_link = "mbrowser"),
                    heatmap_color_select(ns),
-                   checkboxInput(ns("viewMode"), label = "Genomic View", value = FALSE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
-                   textInput(ns("customSequence"), label = "Custom sequences highlight", value = NULL),
                    tx_input_select(ns, FALSE),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
                                value = as.numeric(browser_options["default_kmer"])),

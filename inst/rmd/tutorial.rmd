@@ -214,6 +214,36 @@ see deseq2 tutorial for details!)
 - P-value (sliding bar for p-value cutoff, default 0.05)
 - export format for plot (explained above)
 
+## Meta Browser {#mbrowser}
+Display all samples for a specific organism over selected gene.
+
+### Display panel (Meta browser)
+Organism, experiment and gene explained above
+- Group on: the metadata column to order plot by
+- K-means clusters: How many k-means clusters to use, if > 1, 
+
+### Display panel (settings)
+- Normalization (all scores are tpm normalized and log scaled)
+  - transcriptNormalized (each sample counts sum to 1) (default)
+  - Max normalized (each position count divided by maximum)
+  - zscore (zscore normalization, (count * mean / sd) variance scaled normalization)
+  - tpm (raw tpm of counts, is very sensitive to extreme peaks)
+- Colors: Which color theme to use
+- export format for plot (explained above)
+
+### Requirements
+This mode is very intensive on CPU, so it requires certain pre-computed results
+for the back end.
+That is namely:
+- Premade collection experiments (an ORFik experiment of all experiments per organism)
+- Premade collection count table and library sizes (for normalizations purpose)
+- Premade fst serialized coverage calculation per gene (for instant loading of coverage over thousands of libraries)
+
+Note that on the live app, the human collection (4000 Ribo-seq samples) takes
+around 30 seconds to plot for a ~ 2K nucleotides gene, ~99% of the time is spent
+on rendering the plot, not actual computation. Future investigation into optimization
+will be done. 
+
 ## Read length (QC)
 
 This tab displays a QC of pshifted coverage per readlength 
@@ -228,6 +258,7 @@ From the options specified in the display panel, when you press "plot" the data 
 It contains the specific parts:
 
 Top plot: Read length relative usage
+
 1. Y-axis: Score
 3. Color: Per frame (red, green, blue)
 4. Facet box: the read length
@@ -264,6 +295,19 @@ On top the abstract of the study is displayed, and on bottom a table
 of all metadata found from the study is displayed.
 
 # Additional information
+All files are packed into ORFik experiments for easy access
+through the ORFik API:
+
+File formats used internally in experiments are:
+- Annotation (gtf + TxDb for random access)
+- Fasta genome (.fasta, + index for random access)
+- Sequencing libraries (all duplicated reads are collapsed)
+  - random access (only for collapsed read lengths): bigwig
+  - Full genome coverage (only for collapsed read lengths): covRLE
+  - Full genome coverage (split by read lengths): covRLElist
+- count Tables (Summarized experiments, r data serialized .rds)
+- Library size list (Integer vector, .rds)
+- Precomputed gene coverages per organism: fst (used for metabrowser)
 
 ## massiveNGSpipe
 For our webpage the processing pipeline used is massiveNGSpipe 
@@ -272,19 +316,20 @@ which wraps over multiple tools:
 1.  Fastq files are download with ORFik download.sra
 2.  Adapter is detected with either fastqc (sequence detection) and falls
     back to fastp auto detection. 
-3.  Reads are then trimmed with fastp
+3.  Reads are then trimmed with fastp (using the wrapper in ORFik)
+  - Adapter removal specified
+  - minimum read size (20nt)
 4.  Read are collapsed (get the set of unique reads and put duplication count in read header)
 5. Reads are aligned with the STAR aligner (using the wrapper in ORFik), that supports
 contamination removal. Settings: 
-
-- genomic coordinates (to allow both genomic and transcriptomic coordinates)
-- local alignment (to remove unknown flank effects)
-- minimum read size (20nt)
+  - genomic coordinates (to allow both genomic and transcriptomic coordinates)
+  - local alignment (to remove unknown flank effects)
+  - minimum read size (20nt)
 6. When all samples of study are aligned, an ORFik experiment is created that
 connects each sample to metadata (condition, inhibitor, fraction, replicate etc)
 7. Bam files are then converted to ORFik ofst format
 8. These ofst files are then pshifted
-9. Faster formats are then created (bigwig and covRLE) for faster visualization
+9. Faster formats are then created (bigwig, fst and covRLE) for faster visualization
 
 ## Introduction to Ribo-seq
 

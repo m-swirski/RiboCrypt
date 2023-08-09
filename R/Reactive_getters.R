@@ -74,18 +74,19 @@ click_plot_browser_allsamples <- function(mainPlotControls,
                                           df = mainPlotControls()$dff,
                                           metadata_field = mainPlotControls()$metadata_field,
                                           normalization = mainPlotControls()$normalization,
-                                          kmer = mainPlotControls()$kmer, 
+                                          kmer = mainPlotControls()$kmer,
                                           metadata) {
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
   cat("Starting loading + Profile + plot calc\n")
+
   table  <- fst::read_fst(table)
   setDT(table)
-  lib_sizes <- readRDS(lib_sizes)
   table[, position := 1:.N, by = library]
-  
   if (kmer > 1) table <- smoothenMultiSampCoverage(table, kmer = kmer)
-  
+
+  # Make tpm
+  lib_sizes <- readRDS(lib_sizes)
   table[, score_tpm := ((count * 1000)  / lib_sizes[as.integer(library)]) * 10^6]
 
   norm_opts <- normalizations("metabrowser")
@@ -97,8 +98,9 @@ click_plot_browser_allsamples <- function(mainPlotControls,
   } else if (normalization == norm_opts[3]) {
     table[, score := (score_tpm - mean(score_tpm)) / sd(score_tpm), by = library]
   } else table[, score := score_tpm]
-
   table[is.na(score), score := 0]
+
+  # Logscore
   table[,logscore := log(score + 1)]
   # Match metadata table and collection runIDs
   matchings <- chmatch(metadata$Run, runIDs(df))
@@ -108,10 +110,13 @@ click_plot_browser_allsamples <- function(mainPlotControls,
   meta_sub <- metadata[matchings, metadata_field, with = FALSE][[1]]
   subset_col <- order(meta_sub)
   # Sort
+  table[, `:=`(library, factor(library, levels = unique(library), ordered = TRUE))]
   table[, library := factor(library, levels = levels(library)[subset_col], ordered = TRUE)]
+  # Remove columns not to be casted to wide format
   table[, score_tpm := NULL]
   table[, score := NULL]
   table[, count := NULL]
+  # To wide format
   dtable <- dcast(table, position ~ library, value.var = "logscore")
   dtable[, position := NULL]
   cat("Done: lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))

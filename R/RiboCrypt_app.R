@@ -21,7 +21,10 @@
 #' @param metadata a path to csv or a data.table of metadata columns,
 #' must contain a "Run" column to merge IDs to ORFik experiments.
 #' Is used in metabrowser for grouping of samples.
-#' @import shiny bslib ORFik NGLVieweR ggplot2
+#' @param all_exp_meta the subset of all_exp which are collections (the set of
+#' all experiments per organism), this will be fed to the metabrowser, while
+#' remaining all_exp are used in all other modules.
+#' @import shiny bslib ORFik NGLVieweR ggplot2 fst
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
 #' @importFrom shinyjqui jqui_resizable jqui_draggable

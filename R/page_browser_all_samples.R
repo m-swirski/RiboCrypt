@@ -70,7 +70,7 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
                                         ignoreInit = TRUE,
                                         ignoreNULL = FALSE)
       # Main plot, this code is only run if 'plot' is pressed
-      table <- reactive(click_plot_browser_allsamples(mainPlotControls,
+      table <- reactive(compute_collection_table_shiny(mainPlotControls,
                                                    metadata = metadata)) %>%
         bindCache(mainPlotControls()$table_hash) %>%
         bindEvent(mainPlotControls()$table_hash,

@@ -98,7 +98,7 @@ heatmap_color_select <- function(ns, name = "heatmap_color",
     selected = selected,
     multiple = FALSE
   ) %>%
-    helper(onclick = "fakeClick('tutorial', 'heatmapColor')")
+    helper(onclick = "fakeClick('tutorial', 'mbrowser')")
 }
 
 normalization_input_select <- function(ns,

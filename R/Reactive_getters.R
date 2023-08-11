@@ -68,57 +68,19 @@ click_plot_boxplot <- function(boxPlotControls, session) {
   return(a)
 }
 
-click_plot_browser_allsamples <- function(mainPlotControls,
-                                          table = mainPlotControls()$table_path,
-                                          lib_sizes = mainPlotControls()$lib_sizes,
-                                          df = mainPlotControls()$dff,
-                                          metadata_field = mainPlotControls()$metadata_field,
-                                          normalization = mainPlotControls()$normalization,
-                                          kmer = mainPlotControls()$kmer,
-                                          metadata) {
+compute_collection_table_shiny <- function(mainPlotControls,
+                                      path = mainPlotControls()$table_path,
+                                      lib_sizes = mainPlotControls()$lib_sizes,
+                                      df = mainPlotControls()$dff,
+                                      metadata_field = mainPlotControls()$metadata_field,
+                                      normalization = mainPlotControls()$normalization,
+                                      kmer = mainPlotControls()$kmer,
+                                      metadata) {
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
   cat("Starting loading + Profile + plot calc\n")
-
-  table  <- fst::read_fst(table)
-  setDT(table)
-  table[, position := 1:.N, by = library]
-  if (kmer > 1) table <- smoothenMultiSampCoverage(table, kmer = kmer)
-
-  # Make tpm
-  lib_sizes <- readRDS(lib_sizes)
-  table[, score_tpm := ((count * 1000)  / lib_sizes[as.integer(library)]) * 10^6]
-
-  norm_opts <- normalizations("metabrowser")
-  if (normalization == norm_opts[1]) {
-    table[,score := score_tpm / sum(score_tpm), by = library]
-    table[,score := score * 1e6]
-  } else if (normalization == norm_opts[2]) {
-    table[,score := score_tpm / max(score_tpm), by = library]
-  } else if (normalization == norm_opts[3]) {
-    table[, score := (score_tpm - mean(score_tpm)) / sd(score_tpm), by = library]
-  } else table[, score := score_tpm]
-  table[is.na(score), score := 0]
-
-  # Logscore
-  table[,logscore := log(score + 1)]
-  # Match metadata table and collection runIDs
-  matchings <- chmatch(metadata$Run, runIDs(df))
-  matchings <- matchings[!is.na(matchings)]
-  if (length(matchings) != nrow(df))
-    stop("Metadata does not contain information on all collection samples!")
-  meta_sub <- metadata[matchings, metadata_field, with = FALSE][[1]]
-  subset_col <- order(meta_sub)
-  # Sort
-  table[, `:=`(library, factor(library, levels = unique(library), ordered = TRUE))]
-  table[, library := factor(library, levels = levels(library)[subset_col], ordered = TRUE)]
-  # Remove columns not to be casted to wide format
-  table[, score_tpm := NULL]
-  table[, score := NULL]
-  table[, count := NULL]
-  # To wide format
-  dtable <- dcast(table, position ~ library, value.var = "logscore")
-  dtable[, position := NULL]
+  dtable <- compute_collection_table(path, lib_sizes, df, metadata_field,
+                                     normalization, kmer, metadata)
   cat("Done: lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
   return(dtable)
 }
@@ -129,10 +91,7 @@ allsamples_sidebar <- function(mainPlotControls, plot,
                                metadata) {
   time_before <- Sys.time()
   print("Starting metabrowser sidebar")
-  matchings <- chmatch(metadata$Run, runIDs(df))
-  matchings <- matchings[!is.na(matchings)]
-  if (length(matchings) != nrow(df))
-    stop("Metadata does not contain information on all collection samples!")
+  matchings <- match_collection_to_exp(metadata, df)
   values <- metadata[matchings, metadata_field, with = FALSE][[1]]
   orders <- suppressWarnings(unlist(ComplexHeatmap::row_order(plot)))
   if (all(seq(length(orders)) == orders)) {

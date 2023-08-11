@@ -18,14 +18,20 @@ getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
                                       subsetByOverlaps(footprints, grl)}
                                     else {footprints},
                                     as.data.table = TRUE, withFrames=TRUE, is.sorted = TRUE)
-    footprints$frame <- as.factor(footprints$frame)
-    footprints$count <- as.numeric(footprints$count)
-    footprints$genes <- as.factor(footprints$genes)
-    footprints <- footprints[,count := get(paste("froll",kmers_type, sep = ""))(count, kmers, fill = 0, align = "center"), by = list(genes,frame)]
-    footprints <- footprints[(kmers*3 + 1):(nrow(footprints) - kmers*3)]
-    footprints$position <- 1:nrow(footprints)
+    footprints[, frame := as.factor(frame)]
+    footprints[, genes := as.factor(genes)]
+
+    footprints <- smoothenSingleSampCoverage(footprints, kmers)
   }
   return(footprints)
+}
+
+smoothenSingleSampCoverage <- function(dt, kmer, kmers_type = "mean") {
+  dt[, count := as.numeric(count)]
+  dt[,count := get(paste("froll",kmers_type, sep = ""))(count, kmer, fill = 0, align = "center"), by = list(genes, frame)]
+  dt <- dt[(kmer*3 + 1):(nrow(dt) - kmer*3)]
+  dt[, position := 1:nrow(dt)]
+  return(dt)
 }
 
 smoothenMultiSampCoverage <- function(dt, kmer, kmers_type = "mean") {
@@ -67,16 +73,6 @@ getCoverageProfile <- function(grl, reads, kmers = 1, kmers_type = "mean") {
   }
   return(coverage)
 }
-#
-# getStackProfile <- function(grl, footprints, kmers, kmers_type = "mean") {
-#   count <- NULL # Avoid data.table warning
-#   profile <- getRiboProfile(grl, footprints, kmers, kmers_type = kmers_type)
-#   maxpos <- max(profile$position)
-#   # profile <- profile[,.(count = rep(count, 3), new_position = c(position, position + 1, position + 2)),.(position,frame)]
-#   # profile$position <- profile$new_position
-#   profile <- profile[position <= maxpos]
-#   return(profile)
-# }
 
 getProfileWrapper <- function(display_range, reads, withFrames, kmers = 1,
                               kmers_type = "mean", type = "lines") {

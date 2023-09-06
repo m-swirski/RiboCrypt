@@ -174,13 +174,24 @@ study_and_gene_observers <- function(input, output, session) {
       }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
     } else if (uses_gene) {
+      print(id)
+      if (id == "browser_allsamp") {
+        print("Updating metabrowser gene set")
+        choices <- unique(isolate(gene_name_list())[,2][[1]])
+        updateSelectizeInput(
+          inputId = "gene",
+          choices = choices,
+          selected = choices[1],
+          server = TRUE
+        )
+      }
       # TODO: decide if updateSelectizeInput should be on top here or not
       observeEvent(gene_name_list(), gene_update_select(gene_name_list),
                    ignoreNULL = TRUE, ignoreInit = TRUE)
       observeEvent(session$clientData$url_hash, {
         # Update experiment from url api
         page <- getPageFromURL(session)
-        req(id == page || (page == "" && id == "browser"))
+        req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
         query <- getQueryString()
         tag <- "dff"
         value <- query[tag][[1]]
@@ -194,7 +205,7 @@ study_and_gene_observers <- function(input, output, session) {
 
       observeEvent(session$clientData$url_hash, {
         page <- getPageFromURL(session)
-        req(id == page || (page == "" && id == "browser"))
+        req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
         query <- getQueryString()
         print(paste("Page:", id))
         tag <- "gene"
@@ -253,8 +264,11 @@ study_and_gene_observers <- function(input, output, session) {
       }, priority = -10)
       observeEvent(input$gene, {
         req(input$gene != "")
-        req(!(input$tx %in% c("",
-                              isolate(gene_name_list())[label == input$gene,]$value)))
+        if (id != "browser_allsamp") {
+          req(!(input$tx %in% c("",
+                isolate(gene_name_list())[label == input$gene,]$value)))
+        }
+
         print(paste("Page:", id, "(General observer)"))
         tx_update_select(isolate(input$gene), gene_name_list)},
         ignoreNULL = TRUE, ignoreInit = TRUE, priority = -15)
@@ -266,7 +280,7 @@ study_and_gene_observers <- function(input, output, session) {
     no_go_yet <- reactiveVal(TRUE)
     observeEvent(session$clientData$url_hash, {
       page <- getPageFromURL(session)
-      req(id == page || (page == "" && id == "browser"))
+      req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
       query <- getQueryString()
       tag <- "go"
       value <- query[tag][[1]]

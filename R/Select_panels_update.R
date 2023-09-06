@@ -29,8 +29,8 @@ gene_update_select <- function(gene_name_list,
 gene_update_select_heatmap <- function(gene_name_list, selected = "all") {
   updateSelectizeInput(
     inputId = "gene",
-    choices = c("all", unique(gene_name_list()[,2][[1]])),
-    selected = "all",
+    choices = unique(c(selected, gene_name_list()[,2][[1]])),
+    selected = selected,
     server = TRUE
   )
 }

@@ -524,16 +524,22 @@ of all metadata found from the study is displayed.</p>
 <div id="additional-information" class="section level1">
 <h1>Additional information</h1>
 <p>All files are packed into ORFik experiments for easy access through
-the ORFik API:</p>
-<p>File formats used internally in experiments are: - Annotation (gtf +
-TxDb for random access) - Fasta genome (.fasta, + index for random
-access) - Sequencing libraries (all duplicated reads are collapsed) -
-random access (only for collapsed read lengths): bigwig - Full genome
-coverage (only for collapsed read lengths): covRLE - Full genome
-coverage (split by read lengths): covRLElist - count Tables (Summarized
-experiments, r data serialized .rds) - Library size list (Integer
-vector, .rds) - Precomputed gene coverages per organism: fst (used for
-metabrowser)</p>
+the ORFik backend package:</p>
+<p>File formats used internally in experiments are:</p>
+<ul>
+<li>Annotation (gtf + TxDb for random access)</li>
+<li>Fasta genome (.fasta, + index for random access)</li>
+<li>Sequencing libraries (all duplicated reads are collapsed)
+<ul>
+<li>random access (only for collapsed read lengths): bigwig</li>
+<li>Full genome coverage (only for collapsed read lengths): covRLE</li>
+<li>Full genome coverage (split by read lengths): covRLElist</li>
+</ul></li>
+<li>count Tables (Summarized experiments, r data serialized .rds)</li>
+<li>Library size list (Integer vector, .rds)</li>
+<li>Precomputed gene coverages per organism: fst (used for
+metabrowser)</li>
+</ul>
 <div id="massivengspipe" class="section level2">
 <h2>massiveNGSpipe</h2>
 <p>For our webpage the processing pipeline used is massiveNGSpipe which
@@ -579,6 +585,74 @@ shifting”</p>
 <p><a
 href="https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting"
 class="uri">https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting</a></p>
+</div>
+<div id="api-for-url-access-and-sharing" class="section level2">
+<h2>API for URL access and sharing</h2>
+<p>RiboCrypt uses the shiny router API system for creating runable links
+and backspacing etc. The API specificiation is the following:</p>
+<div id="primary-url" class="section level3">
+<h3>Primary url:</h3>
+<p><a href="https://ribocrypt.org/"
+class="uri">https://ribocrypt.org/</a> (This leads to browser page)</p>
+</div>
+<div id="page-selection-api" class="section level3">
+<h3>Page selection API:</h3>
+<p>Page selection is done with “#” followed by the page short name, the
+list is the following:</p>
+<ul>
+<li>broser page (/ or /#browser)</li>
+<li>heatmap (/#heatmap)</li>
+<li>codon (/#codon)</li>
+<li>Differential expression (/#Differential expression)</li>
+<li>Periodicity plot (/#periodicity)</li>
+<li>fastq QC report (/#fastq)</li>
+<li>MetaBrowser (/#MetaBrowser)</li>
+<li>SRA search (/#SRA search)</li>
+<li>Studies supported (/#Studies)</li>
+<li>This tutorial (/#tutorial)</li>
+</ul>
+<p>Example: <a href="https://ribocrypt.org/#tutorial"
+class="uri">https://ribocrypt.org/#tutorial</a> sends you to this
+tutorial page</p>
+</div>
+<div id="parameter-api" class="section level3">
+<h3>Parameter API:</h3>
+<p>Settings can be specified by using the standard web parameter
+API:</p>
+<ul>
+<li>“?”, Starts the parameter specification</li>
+<li>“&amp;”, to combine terms:</li>
+</ul>
+<p>Example: <a
+href="https://RiboCrypt.org/?dff=all_merged-Homo_sapiens&amp;gene=ATF4-ENSG00000128272#browser"
+class="uri">https://RiboCrypt.org/?dff=all_merged-Homo_sapiens&amp;gene=ATF4-ENSG00000128272#browser</a>
+will lead you to browser and insert gene ATF4 (all other settings being
+default).</p>
+<p>A more complicated call would be: <a
+href="https://RiboCrypt.org/?dff=all_merged-Homo_sapiens&amp;gene=ATF4-ENSG00000128272&amp;tx=ENST00000404241&amp;frames_type=area&amp;kmer=9&amp;go=TRUE&amp;extendLeaders=100&amp;extendTrailers=100&amp;viewMode=TRUE&amp;other_tx=TRUE#browser"
+class="uri">https://RiboCrypt.org/?dff=all_merged-Homo_sapiens&amp;gene=ATF4-ENSG00000128272&amp;tx=ENST00000404241&amp;frames_type=area&amp;kmer=9&amp;go=TRUE&amp;extendLeaders=100&amp;extendTrailers=100&amp;viewMode=TRUE&amp;other_tx=TRUE#browser</a></p>
+<div id="browser-1" class="section level4">
+<h4>browser:</h4>
+<ul>
+<li>dff=all_merged-Homo_sapiens (The Experiment to select: for webpage
+it is “study id”_“Organism”)</li>
+<li>gene=ATF4-ENSG00000128272 (For webpage it is: “Gene symbol”-“Ensembl
+gene id”)</li>
+<li>tx=ENST00000404241(isoform)</li>
+<li>frames_type=area (plot type)</li>
+<li>kmer=9 (window smoothing)</li>
+<li>go=TRUE (plot on entry, you do not need to click plot for it to
+happen)</li>
+<li>extendLeaders=100 (extend 100 nt upstream of 5’ UTR / Leader)</li>
+<li>extendTrailers=100 (extend 100 nt downstream of 3’ UTR /
+Trailer)</li>
+<li>viewMode=TRUE (Genomic coordinates, i.e. with introns)</li>
+<li>other_tx=TRUE (Full annotation, show transcript graph for all
+genes/isoforms in area)</li>
+<li>#browser (open browser window)</li>
+</ul>
+</div>
+</div>
 </div>
 <div id="about" class="section level2">
 <h2>About</h2>

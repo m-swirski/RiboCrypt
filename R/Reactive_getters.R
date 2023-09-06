@@ -34,7 +34,6 @@ get_exp <- function(dff, experiments, env) {
 }
 
 click_plot_browser <- function(mainPlotControls, session) {
-  # browser()
   time_before <- Sys.time()
   print("Starting loading + Profile + plot calc")
   a <- RiboCrypt::multiOmicsPlot_ORFikExp(

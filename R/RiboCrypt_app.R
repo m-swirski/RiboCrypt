@@ -28,6 +28,7 @@
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
 #' @importFrom shinyjqui jqui_resizable jqui_draggable
+#' @importFrom shinyjs click useShinyjs
 #' @importFrom knitr knit
 #' @importFrom stringr str_sub
 #' @importFrom httr GET write_disk
@@ -131,6 +132,7 @@ RiboCrypt_app <- function(
   ui <- tagList(
     rc_header_image(),
     navbarPage(
+      id = "navbarID",
       lang = "en",
       windowTitle = "RiboCrypt",
       title = rc_title(),
@@ -140,10 +142,27 @@ RiboCrypt_app <- function(
       analysis_ui("analysis", all_exp, browser_options, libs, metadata, all_exp_meta),
       metadata_ui("metadata", all_exp),
       tutorial_ui()
-    )
-  )
+    ))
 
   server <- function(input, output, session) {
+    observeEvent(session$clientData$url_hash, {
+      currentHash <- getPageFromURL(session)
+      if (is.null(input$navbarID) || !is.null(currentHash) && currentHash != input$navbarID){
+        freezeReactiveValue(input, "navbarID")
+        updateNavbarPage(session, "navbarID", selected = currentHash)
+      }
+    }, priority = 1)
+
+    observeEvent(input$navbarID, {
+      currentHash <- getPageFromURL(session)
+      pushQueryString <- paste0("#", input$navbarID)
+      if(is.null(currentHash) || currentHash != input$navbarID){
+        freezeReactiveValue(input, "navbarID")
+        updateQueryString(pushQueryString, mode = "push", session)
+      }
+    }, priority = 0, ignoreInit = TRUE)
+
+
     cds <- NULL
     org_and_study_changed_checker(input, output, session)
 

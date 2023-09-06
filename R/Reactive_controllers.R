@@ -1,6 +1,5 @@
 click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
   {
-    # browser()
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
     display_region <- observed_tx_annotation(isolate(input$tx), tx)

@@ -128,34 +128,37 @@ module_protein <- function(input, output, gene_name_list, session) {
 
 ### NGLVieweR (protein structures) ###
 # TODO: Move as much as possible of protein stuff out of page_browser
+### NGLVieweR (protein structures) ###
+# TODO: Move as much as possible of protein stuff out of page_browser
 study_and_gene_observers <- function(input, output, session) {
   with(rlang::caller_env(), {
     if (!exists("all_is_gene", mode = "logical")) all_is_gene <- FALSE
     if (!exists("uses_gene", mode = "logical")) uses_gene <- TRUE
     if (!exists("uses_libs", mode = "logical")) uses_libs <- TRUE
+    if (!exists("env")) env <- new.env()
 
     observe(if (rv$genome != input$genome & input$genome != "") {
       rv$genome <- input$genome},
-            priority = 2) %>%
+      priority = 2) %>%
       bindEvent(input$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
     observe(if (rv$exp != input$dff & input$dff != "") rv$exp <- input$dff) %>%
       bindEvent(input$dff, ignoreInit = TRUE, ignoreNULL = TRUE)
     observe(if (rv$genome != input$genome) {
       updateSelectizeInput(
-      inputId = "genome",
-      choices = c("ALL", unique(all_exp$organism)),
-      selected = rv$genome,
-      server = TRUE
-    )}, priority = 1) %>%
+        inputId = "genome",
+        choices = c("ALL", unique(all_exp$organism)),
+        selected = rv$genome,
+        server = TRUE
+      )}, priority = 1) %>%
       bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
 
-    observeEvent(rv$exp, if (rv$exp != input$dff){
+    observeEvent(rv$exp, if (rv$exp != input$dff) {
       experiment_update_select(org, all_exp, experiments, rv$exp)},
-                 ignoreInit = TRUE, ignoreNULL = TRUE)
+      ignoreInit = TRUE, ignoreNULL = TRUE)
 
     observeEvent(org(), if (org() != input$genome & input$genome != "") {
       experiment_update_select(org, all_exp, experiments)},
-                 ignoreInit = TRUE, ignoreNULL = TRUE)
+      ignoreInit = TRUE, ignoreNULL = TRUE)
     if (all_is_gene) {
       updateSelectizeInput(
         inputId = "gene",
@@ -165,27 +168,127 @@ study_and_gene_observers <- function(input, output, session) {
       )
       observeEvent(gene_name_list(), gene_update_select_heatmap(gene_name_list),
                    ignoreInit = TRUE)
-      observeEvent(input$gene, tx_update_select(isolate(input$gene),
-                                                gene_name_list, "all"),
-                   ignoreNULL = TRUE, ignoreInit = TRUE)
+      observeEvent(input$gene, {
+        req(input$gene != "")
+        tx_update_select(isolate(input$gene), gene_name_list, "all")
+      }, ignoreNULL = TRUE, ignoreInit = TRUE)
+
     } else if (uses_gene) {
       # TODO: decide if updateSelectizeInput should be on top here or not
       observeEvent(gene_name_list(), gene_update_select(gene_name_list),
                    ignoreNULL = TRUE, ignoreInit = TRUE)
-      observeEvent(input$gene, tx_update_select(isolate(input$gene),
-                                                gene_name_list),
-                   ignoreNULL = TRUE, ignoreInit = TRUE)
-      updateSelectizeInput(
-        inputId = "gene",
-        choices = unique(isolate(gene_name_list())[,2][[1]]),
-        selected = isolate(input$gene),
-        server = TRUE
-      )
+      observeEvent(session$clientData$url_hash, {
+        # Update experiment from url api
+        page <- getPageFromURL(session)
+        req(id == page || (page == "" && id == "browser"))
+        query <- getQueryString()
+        tag <- "dff"
+        value <- query[tag][[1]]
+
+        if (is.null(input[[tag]]) || !is.null(value) && value != input[[tag]]
+            && rv$exp != value) {
+          print("Update experiment from url API")
+          rv$exp <- value
+        }
+      }, priority = -5)
+
+      observeEvent(session$clientData$url_hash, {
+        page <- getPageFromURL(session)
+        req(id == page || (page == "" && id == "browser"))
+        query <- getQueryString()
+        print(paste("Page:", id))
+        tag <- "gene"
+        value <- query[tag][[1]]
+        if (is.null(input[[tag]]) || !is.null(value) && value != input[[tag]]) {
+          # freezeReactiveValue(input, tag)
+
+          print(paste("Gene before:",isolate(input$gene)))
+          print(paste("Update to:", value))
+          gene_update_select(gene_name_list, selected = value)
+          print(paste("Gene after:", isolate(input$gene)))
+        }
+
+        tag <- "tx"
+        value <- query[tag][[1]]
+        if (is.null(input[[tag]]) || !is.null(value) && value != input[[tag]]){
+          # browser()
+          # freezeReactiveValue(input, tag)
+          tx_update_select(gene_name_list = gene_name_list, selected = value)
+          print(isolate(input$gene))
+        }
+
+        tag <- "frames_type"
+        value <- query[tag][[1]]
+        if (!is.null(value)) {
+          # freezeReactiveValue(input, tag)
+          frame_type_update_select(value)
+        }
+        tag <- "kmer"
+        value <- query[tag][[1]]
+        if (!is.null(value)) {
+          # freezeReactiveValue(input, tag)
+          kmer_update_select(value)
+        }
+        tag <- "extendLeaders"
+        value <- query[tag][[1]]
+        if (!is.null(value)) {
+          updateNumericInput(inputId = tag, value = value)
+        }
+        tag <- "extendTrailers"
+        value <- query[tag][[1]]
+        if (!is.null(value)) {
+          updateNumericInput(inputId = tag, value = value)
+        }
+        tag <- "viewMode"
+        value <- query[tag][[1]]
+        if (!is.null(value)) {
+          updateCheckboxInput(inputId = tag, value = value)
+        }
+        tag <- "other_tx"
+        value <- query[tag][[1]]
+        if (!is.null(value)) {
+          updateCheckboxInput(inputId = tag, value = value)
+        }
+
+      }, priority = -10)
+      observeEvent(input$gene, {
+        req(input$gene != "")
+        req(!(input$tx %in% c("",
+                              isolate(gene_name_list())[label == input$gene,]$value)))
+        print(paste("Page:", id, "(General observer)"))
+        tx_update_select(isolate(input$gene), gene_name_list)},
+        ignoreNULL = TRUE, ignoreInit = TRUE, priority = -15)
     }
     if (uses_libs) {
       observeEvent(libs(), library_update_select(libs),
-                   ignoreNULL = TRUE, ignoreInit = TRUE)
+                   ignoreNULL = TRUE, ignoreInit = FALSE)
     }
+    no_go_yet <- reactiveVal(TRUE)
+    observeEvent(session$clientData$url_hash, {
+      page <- getPageFromURL(session)
+      req(id == page || (page == "" && id == "browser"))
+      query <- getQueryString()
+      tag <- "go"
+      value <- query[tag][[1]]
+      if (!is.null(value)) {
+        if (value[1] == TRUE) {
+          print("Ready, set...")
+          no_go_yet(FALSE)
+        }
+      }
+    }, ignoreNULL = TRUE, ignoreInit = FALSE, priority = -100)
+    # Timer for running plot, we have to wait for setup to finish
+    rtimer <- reactiveTimer(2000)
+    timer <- reactive({req(no_go_yet() == FALSE);print("Timer fired!"); rtimer()}) %>% bindEvent(rtimer(), ignoreInit = TRUE)
+
+    observeEvent(timer(), {
+      print("In clicker")
+      if (!no_go_yet()) {
+        print("Fire button!")
+        shinyjs::click("go")
+        no_go_yet(TRUE)
+      }
+    }, ignoreInit = TRUE, ignoreNULL = TRUE, once = TRUE, priority = -200)
 
     init_round <- FALSE
   }

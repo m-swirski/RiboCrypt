@@ -35,18 +35,36 @@ gene_update_select_heatmap <- function(gene_name_list, selected = "all") {
   )
 }
 
-tx_update_select <- function(gene, gene_name_list, additionals = NULL) {
-  #browser()
-  print("Updating isoform")
-  print(isolate(gene_name_list())[label == gene,][1])
+tx_update_select <- function(gene = NULL, gene_name_list, additionals = NULL,
+                             selected = NULL) {
+  print(paste("Updating isoform:"))
+
+  if (is.null(gene)) {
+    gene <- isolate(gene_name_list())[value == selected,][1]$label
+    if (length(gene) == 0 | is.na(gene)) stop("Isoform does not exist in species!")
+  }
+  print(paste("Gene set:", gene))
   choices <- gene_name_list()[label == gene,1][[1]]
   choices <- c(additionals, choices)
-  selected <- choices[1]
+  if (length(choices) == 0) stop("Gene does not exist in this species")
+  if (is.null(selected)) selected <- choices[1]
+  if (length(selected) > 1) {
+    print(isolate(gene_name_list())[value == selected,][1])
+  } else if (selected != "all") print(selected)
   updateSelectizeInput(
     inputId = "tx",
     choices = choices,
     selected = selected,
     server = TRUE
+  )
+}
+
+frame_type_update_select <- function(selected) {
+  updateSelectizeInput(
+    inputId = "frames_type",
+    label = "Select frames display type",
+    choices = c("lines", "columns", "stacks", "area", "heatmap"),
+    selected = selected
   )
 }
 
@@ -65,4 +83,8 @@ condition_update_select <- function(cond) {
     choices = cond(),
     selected = cond()[1]
   )
+}
+
+kmer_update_select <- function(select) {
+  updateSliderInput(inputId = "kmer", value = select)
 }

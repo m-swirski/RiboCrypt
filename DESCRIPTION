@@ -45,6 +45,7 @@ Imports:
   shiny,
   shinycssloaders,
   shinyhelper,
+  shinyjs,
   shinyjqui,
   stringr
 Suggests:

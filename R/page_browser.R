@@ -60,7 +60,8 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,
         click_plot_browser_main_controller(input, tx, cds, libs, df),
-        ignoreInit = !as.logical(browser_options["plot_on_start"]),
+        ignoreInit = !as.logical(browser_options["plot_on_start"]) ||
+          (!is.null(isolate(getQueryString())[["go"]]) && isolate(getQueryString())[["go"]] == TRUE),
         ignoreNULL = FALSE)
       # Main plot, this code is only run if 'plot' is pressed
       output$c <- renderPlotly(click_plot_browser(mainPlotControls, session)) %>%

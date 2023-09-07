@@ -211,8 +211,6 @@ study_and_gene_observers <- function(input, output, session) {
         tag <- "gene"
         value <- query[tag][[1]]
         if (is.null(input[[tag]]) || !is.null(value) && value != input[[tag]]) {
-          # freezeReactiveValue(input, tag)
-
           print(paste("Gene before:",isolate(input$gene)))
           print(paste("Update to:", value))
           gene_update_select(gene_name_list, selected = value)
@@ -288,11 +286,13 @@ study_and_gene_observers <- function(input, output, session) {
         if (value[1] == TRUE) {
           print("Ready, set...")
           no_go_yet(FALSE)
+          browser_options["plot_on_start"] <- "FALSE"
+          print("Set plot_on_start to FALSE")
         }
       }
     }, ignoreNULL = TRUE, ignoreInit = FALSE, priority = -100)
     # Timer for running plot, we have to wait for setup to finish
-    rtimer <- reactiveTimer(2000)
+    rtimer <- reactiveTimer(1000)
     timer <- reactive({req(no_go_yet() == FALSE);print("Timer fired!"); rtimer()}) %>% bindEvent(rtimer(), ignoreInit = TRUE)
 
     observeEvent(timer(), {

@@ -158,7 +158,7 @@ RiboCrypt_app <- function(
       pushQueryString <- paste0("#", input$navbarID)
       if(is.null(currentHash) || currentHash != input$navbarID){
         freezeReactiveValue(input, "navbarID")
-        updateQueryString("?", mode = "push", session)
+        updateQueryString("?", mode = "replace", session)
         updateQueryString(pushQueryString, mode = "push", session)
       }
     }, priority = 0, ignoreInit = TRUE)

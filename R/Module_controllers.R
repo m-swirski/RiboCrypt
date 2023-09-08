@@ -296,6 +296,7 @@ study_and_gene_observers <- function(input, output, session) {
     timer <- reactive({req(no_go_yet() == FALSE);print("Timer fired!"); rtimer()}) %>% bindEvent(rtimer(), ignoreInit = TRUE)
 
     observeEvent(timer(), {
+      req(input$gene != "")
       print("In clicker")
       if (!no_go_yet()) {
         print("Fire button!")
@@ -303,7 +304,6 @@ study_and_gene_observers <- function(input, output, session) {
         no_go_yet(TRUE)
       }
     }, ignoreInit = TRUE, ignoreNULL = TRUE, once = TRUE, priority = -200)
-
     init_round <- FALSE
   }
   )

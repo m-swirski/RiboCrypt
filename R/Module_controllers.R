@@ -293,13 +293,20 @@ study_and_gene_observers <- function(input, output, session) {
     }, ignoreNULL = TRUE, ignoreInit = FALSE, priority = -100)
     # Timer for running plot, we have to wait for setup to finish
     rtimer <- reactiveTimer(1000)
-    timer <- reactive({req(no_go_yet() == FALSE);print("Timer fired!"); rtimer()}) %>% bindEvent(rtimer(), ignoreInit = TRUE)
+    timer <- reactive({req(no_go_yet() == FALSE);print("Timer activated!"); rtimer()}) %>% bindEvent(rtimer(), ignoreInit = TRUE)
 
     observeEvent(timer(), {
       if (!no_go_yet()) {
         req(input$gene != "")
         print(paste("Fire gene: ", isolate(input$gene)))
+        query <- getQueryString()
+        tag <- "gene"
+        value <- query[tag][[1]]
+        if (!is.null(value)) req(input$gene == value)
         req(input$tx != "" && !is.null(input$tx))
+        tag <- "tx"
+        value <- query[tag][[1]]
+        if (!is.null(value)) req(input$tx == value)
         print(paste("Fire tx: ", isolate(input$tx)))
         print("Fire button!")
         shinyjs::click("go")

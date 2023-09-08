@@ -297,7 +297,8 @@ study_and_gene_observers <- function(input, output, session) {
 
     observeEvent(timer(), {
       if (!no_go_yet()) {
-        req(input$gene != "" & input$tx != "")
+        req(input$gene != "")
+        req(input$tx != "" && !is.null(input$tx))
         print("Fire button!")
         shinyjs::click("go")
         no_go_yet(TRUE)

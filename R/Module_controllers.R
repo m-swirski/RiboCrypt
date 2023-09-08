@@ -187,7 +187,7 @@ study_and_gene_observers <- function(input, output, session) {
       }
       # TODO: decide if updateSelectizeInput should be on top here or not
       observeEvent(gene_name_list(), gene_update_select(gene_name_list),
-                   ignoreNULL = TRUE, ignoreInit = TRUE)
+                   ignoreNULL = TRUE, ignoreInit = TRUE, priority = 5)
       observeEvent(session$clientData$url_hash, {
         # Update experiment from url api
         page <- getPageFromURL(session)

@@ -9,7 +9,6 @@ multiLib_to_metaWindow <- function(collection_df,region = c("stop","start")[1], 
   
   cds <- loadRegion(collection_df,"cds", names.keep = trxs)
   trx <- loadRegion(collection_df, "transcript", names.keep = trxs)
-  browser()
   if (region == "stop") {
     windows <- stopRegion(cds, tx = trx, upstream = windowUpstream, downstream = windowDownstream)
   } else {

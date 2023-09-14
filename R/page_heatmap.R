@@ -63,7 +63,9 @@ heatmap_server <- function(id, all_experiments, env, df, experiments, tx, cds,
                     "Start Site", "Stop Site")
       main_plot <- coverageHeatMap(coverage(), scoring = mainPlotControls()$normalization,
                                    legendPos = "bottom",
-                                   xlab = paste("Position relative to", pos))
+                                   xlab = paste("Position relative to", pos)) + 
+                    theme(axis.title = element_text(size = 18),
+                          axis.text = element_text(size = 12))
       plot_list <- if (mainPlotControls()$summary_track) {
         heights <- c(0.2,0.8)
         list(pSitePlot(coverage(), forHeatmap = TRUE), main_plot)
@@ -71,7 +73,8 @@ heatmap_server <- function(id, all_experiments, env, df, experiments, tx, cds,
         heights <- 1
         list(main_plot)
       }
-      return(subplot(plot_list, nrows = length(plot_list), heights = heights, shareX = TRUE, titleY = TRUE))
+      return(subplot(plot_list, nrows = length(plot_list), heights = heights, shareX = TRUE, titleY = TRUE) %>%
+               plotly::config(toImageButtonOptions= list(format = "svg")))
     }) %>%
       bindEvent(coverage(), ignoreNULL = TRUE)
     output$shift_table <- renderTable(mainPlotControls()$shift_table)

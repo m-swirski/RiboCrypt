@@ -16,7 +16,7 @@ multiLib_to_metaWindow <- function(collection_df,region = c("stop","start")[1], 
   }
   output <- mclapply(fps, function(x) coverageScorings(coveragePerTiling(windows, fimport(x), as.data.table = TRUE)[,position := -windowDownstream:windowUpstream, by = genes], scoring = scoring, copy.dt = FALSE ) , mc.cores= cores)
   names(output) <- bamVarName(collection_df)[cov_exist]
-  output <- rbindlistst(output, idcol = "library")
+  output <- rbindlist(output, idcol = "library")
   return(output)
 }
 

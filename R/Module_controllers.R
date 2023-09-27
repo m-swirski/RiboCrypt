@@ -302,7 +302,17 @@ study_and_gene_observers <- function(input, output, session) {
         print(paste("Page:", id, "(General observer)"))
         tx_update_select(isolate(input$gene), gene_name_list)},
         ignoreNULL = TRUE, ignoreInit = TRUE, priority = -15)
+      print("Updating browser gene set")
+      choices <- unique(isolate(gene_name_list())[,2][[1]])
+      updateSelectizeInput(
+        inputId = "gene",
+        choices = choices,
+        selected = isolate(input$gene),
+        server = TRUE
+      )
+
     }
+
     if (uses_libs) {
       observeEvent(libs(), library_update_select(libs),
                    ignoreNULL = TRUE, ignoreInit = FALSE)

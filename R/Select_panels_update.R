@@ -68,11 +68,11 @@ frame_type_update_select <- function(selected) {
   )
 }
 
-library_update_select <- function(libs) {
+library_update_select <- function(libs, selected = isolate(libs()[1])) {
   updateSelectizeInput(
     inputId = "library",
     choices = libs(),
-    selected = libs()[1],
+    selected = selected,
     server = TRUE
   )
 }

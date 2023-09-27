@@ -220,10 +220,42 @@ study_and_gene_observers <- function(input, output, session) {
         tag <- "tx"
         value <- query[tag][[1]]
         if (is.null(input[[tag]]) || !is.null(value) && value != input[[tag]]){
-          # browser()
           # freezeReactiveValue(input, tag)
           tx_update_select(gene_name_list = gene_name_list, selected = value)
           print(isolate(input$gene))
+        }
+        tag <- "library"
+        value <- query[tag][[1]]
+        if (!is.null(value)){
+          print(paste("Library update to:", value))
+          value <- strsplit(x = value, ",")[[1]]
+          if (length(value) > 0) {
+            is_run_ids <- grep("SRR|ERR|DRR", value)
+            l <- isolate(libs())
+            matches_run <- matches_run_other <- TRUE
+            if (length(is_run_ids) >  0) {
+              print("Convert to ")
+              run_ids <- runIDs(isolate(df()))
+              matches_run <- run_ids %in% value[is_run_ids]
+              matches_run_other <- value %in% run_ids
+            }
+
+            if (length(value) == 1 && value == "all") {
+              value <- l
+            } else {
+              matches <- (l %in% value) | matches_run
+              matches_other <- (value %in% l) | matches_run_other
+              if (!all(matches)) {
+                warning("Given libraries from URL are not part of this experiment:", paste(value[!matches_other], collapse = ", "))
+                if (all(!matches_other)) {
+                  value <- l[1]
+                } else value <- l[matches]
+              }
+            }
+          }
+
+          library_update_select(libs, selected = value)
+          print(isolate(input$library))
         }
 
         tag <- "frames_type"

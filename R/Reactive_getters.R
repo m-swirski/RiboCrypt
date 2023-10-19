@@ -92,7 +92,9 @@ allsamples_sidebar <- function(mainPlotControls, plot,
   print("Starting metabrowser sidebar")
   matchings <- match_collection_to_exp(metadata, df)
   values <- metadata[matchings, metadata_field, with = FALSE][[1]]
+  pdf(NULL) # TODO: Make a better fix for blank pdf write
   orders <- suppressWarnings(unlist(ComplexHeatmap::row_order(plot)))
+  dev.off()
   if (all(seq(length(orders)) == orders)) {
     # TODO: Make failsafe for random hits!
     orders <- order(values)

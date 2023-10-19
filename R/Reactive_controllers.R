@@ -199,7 +199,9 @@ click_plot_DEG_main_controller <- function(input, df) {
   conditions <- isolate(input$condition)
   # dff <- df()[which(df()$condition %in% conditions),]
   dff <- df()
-  target.contrast <- "condition"
+  design <- design(dff, batch.correction.design = TRUE, multi.factor = FALSE)
+  target.contrast <- design[1]
+
   pairs <- combn.pairs(unlist(dff[, target.contrast]))
   pval <- isolate(input$pval)
   diff_method = isolate(input$diff_method)
@@ -213,6 +215,7 @@ click_plot_DEG_main_controller <- function(input, df) {
   time_before <- Sys.time()
   print("experiment subsetting based on condition")
   reactiveValues(dff = dff, draw_unregulated = draw_unregulated,
+                 design = design,
                  target.contrast = target.contrast,
                  pairs = pairs, pval = pval,
                  diff_method = diff_method,

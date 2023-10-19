@@ -1,4 +1,10 @@
-DE_model <- function(df, method, other_tx) {
+DE_model_from_ctrl <- function(controls) {
+  DE_model(controls()$dff, controls()$diff_method, controls()$full,
+           controls()$target.contrast, controls()$design)
+}
+
+DE_model <- function(df, method, other_tx, target.contrast = design[1],
+                     design = ORFik::design(df)) {
   print("DE model activated!")
   if (nrow(df) < 2) stop("Differential expression only allowed for studies with > 1 sample")
   # TODO: add in design correctly
@@ -9,7 +15,7 @@ DE_model <- function(df, method, other_tx) {
   if (method == "DESeq2") {
     DEG_model(df, counts = counts)
   } else if (method == "FPKM ratio") {
-    DEG_model_simple(df, counts = counts)
+    DEG_model_simple(df, target.contrast, design, counts = counts)
   } else stop("Invalid Differential method selected")
 }
 
@@ -21,7 +27,7 @@ DEG_model_simple <- function(df,
                              batch.effect = FALSE) {
   # Design
   main.design <- ORFik:::DEG_design(design[1], target.contrast, batch.effect)
-  design_ids <- df[, target.contrast]
+  design_ids <- as.character(df[, target.contrast])
   ids <- rownames(counts)
   counts <- as.data.table(DESeq2::fpkm(DESeq2::DESeqDataSet(counts, ~ 1)))
   # Get LFC matrix

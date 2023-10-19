@@ -43,14 +43,18 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
       # Update main side panels
       uses_gene <- FALSE
       study_and_gene_observers(input, output, session)
-      cond <- reactive(if (nrow(df()) > 1) {df()[, design(df())[1]]} else "")
+      cond <- reactive(
+        if (nrow(df()) > 1) {
+          design <- design(df(), batch.correction.design = TRUE, multi.factor = FALSE)
+          target.contrast <- design[1]
+          df()[, target.contrast]
+        } else "")
       observeEvent(cond(), condition_update_select(cond))
 
       # Main plot, this code is only run if 'plot' is pressed
       controls <- eventReactive(input$go,
                                 click_plot_DEG_main_controller(input, df))
-      model <- reactive(DE_model(controls()$dff,
-                                 controls()$diff_method, controls()$full)) %>%
+      model <- reactive(DE_model_from_ctrl(controls)) %>%
         bindCache(controls()$hash_string_pre)
       #
       analysis_dt <- reactive(DE_model_results(model(), controls)) %>%

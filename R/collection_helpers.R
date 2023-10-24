@@ -73,9 +73,13 @@ collection_to_wide <- function(table, value.var = "logscore") {
 #' @return a data.table in wide format
 compute_collection_table <- function(path, lib_sizes, df,
                                      metadata_field, normalization,
-                                     kmer, metadata) {
+                                     kmer, metadata, min_count = 0) {
   table <- load_collection(path)
   # Normalize
+  if (min_count > 0) {
+    filt_libs <- table[,.(count = sum(count)),library][count >= min_count,]$library
+    table <- table[library %in% filt_libs]
+  }
   table <- normalize_collection(table, normalization, lib_sizes, kmer)
   ## # Sort table by metadata column selected
   # Match metadata table and collection runIDs

@@ -12,7 +12,7 @@ load_collection <- function(path) {
 #' Normalize collection table
 #'
 #' @param table a data.table in long format
-#' @param normalization a character string, which mode, for options see ?RiboCrypt:::normalizations
+#' @param normalization a character string, which mode, for options see RiboCrypt:::normalizations
 #' @param lib_sizes named integer vector, default NULL. If given will do a pre tpm normalization
 #' for full library sizes
 #' @param kmer integer, default 1L (off), if > 1 will smooth out signal with sliding window size kmer.
@@ -56,9 +56,9 @@ match_collection_to_exp <- function(metadata, df) {
 #' @return a table in wide format
 collection_to_wide <- function(table, value.var = "logscore") {
   # Remove columns not to be casted to wide format
-  table[, score_tpm := NULL]
-  table[, score := NULL]
-  table[, count := NULL]
+  # table[, score_tpm := NULL]
+  # table[, score := NULL]
+  # table[, count := NULL]
   # To wide format
   dtable <- dcast(table, position ~ library, value.var = value.var)
   dtable[, position := NULL]
@@ -70,10 +70,10 @@ collection_to_wide <- function(table, value.var = "logscore") {
 #' @inheritParams load_collection
 #' @inheritParams normalize_collection
 #' @inheritParams collection_to_wide
-#' @return a data.table in wide format
+#' @return a data.table in long or wide (default) format
 compute_collection_table <- function(path, lib_sizes, df,
                                      metadata_field, normalization,
-                                     kmer, metadata, min_count = 0) {
+                                     kmer, metadata, min_count = 0, format = "wide", value.var = "logscore") {
   table <- load_collection(path)
   # Normalize
   if (min_count > 0) {
@@ -88,5 +88,8 @@ compute_collection_table <- function(path, lib_sizes, df,
   meta_order <- order(meta_sub)
   table[, library := factor(library, levels = levels(library)[meta_order], ordered = TRUE)]
   # Cast to wide format and return
-  return(collection_to_wide(table))
+  if (format == "wide") {
+    table <- collection_to_wide(table, value.var = "logscore")
+  }
+  return(table)
 }

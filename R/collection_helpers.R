@@ -70,15 +70,23 @@ collection_to_wide <- function(table, value.var = "logscore") {
 #' @inheritParams load_collection
 #' @inheritParams normalize_collection
 #' @inheritParams collection_to_wide
-#' @return a data.table in long or wide (default) format
+#' @param as_list logical, default FALSE. Return as list of size 2,
+#' count data.table and metadata data.table Set to TRUE if you need metadata
+#' subset (needed if you subset the table, to get correct matching)
+#' @return a data.table in long or wide (default) format, if as list, it is a
+#' list of size 2 (see argument as_list)
 compute_collection_table <- function(path, lib_sizes, df,
                                      metadata_field, normalization,
-                                     kmer, metadata, min_count = 0, format = "wide", value.var = "logscore") {
+                                     kmer, metadata, min_count = 0, format = "wide",
+                                     value.var = "logscore", as_list = FALSE) {
   table <- load_collection(path)
   # Normalize
   if (min_count > 0) {
+    lib_names <- unique(table$library)
     filt_libs <- table[,.(count = sum(count)),library][count >= min_count,]$library
     table <- table[library %in% filt_libs]
+    if (length(filt_libs) == 0)
+      stop("Count filter too strict, no libraries with that much reads for this transcript!")
   }
   table <- normalize_collection(table, normalization, lib_sizes, kmer)
   ## # Sort table by metadata column selected
@@ -86,10 +94,15 @@ compute_collection_table <- function(path, lib_sizes, df,
   matchings <- match_collection_to_exp(metadata, df)
   meta_sub <- metadata[matchings, metadata_field, with = FALSE][[1]]
   meta_order <- order(meta_sub)
+
   table[, library := factor(library, levels = levels(library)[meta_order], ordered = TRUE)]
+  if (min_count > 0) {
+    meta_sub <- meta_sub[lib_names %in% filt_libs]
+  }
   # Cast to wide format and return
   if (format == "wide") {
-    table <- collection_to_wide(table, value.var = "logscore")
+    table <- collection_to_wide(table, value.var = value.var)
   }
+  if (as_list) return(list(table = table, metadata_field = meta_sub))
   return(table)
 }

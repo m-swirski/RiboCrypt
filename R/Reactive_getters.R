@@ -74,24 +74,24 @@ compute_collection_table_shiny <- function(mainPlotControls,
                                       metadata_field = mainPlotControls()$metadata_field,
                                       normalization = mainPlotControls()$normalization,
                                       kmer = mainPlotControls()$kmer,
+                                      min_count = mainPlotControls()$min_count,
                                       metadata) {
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
   cat("Starting loading + Profile + plot calc\n")
   dtable <- compute_collection_table(path, lib_sizes, df, metadata_field,
-                                     normalization, kmer, metadata)
+                                     normalization, kmer, metadata, min_count,
+                                     as_list = TRUE)
   cat("Done: lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
   return(dtable)
 }
 
-allsamples_sidebar <- function(mainPlotControls, plot,
-                               df = mainPlotControls()$dff,
-                               metadata_field = mainPlotControls()$metadata_field,
-                               metadata) {
+allsamples_sidebar <- function(values,
+                               plot) {
   time_before <- Sys.time()
   print("Starting metabrowser sidebar")
-  matchings <- match_collection_to_exp(metadata, df)
-  values <- metadata[matchings, metadata_field, with = FALSE][[1]]
+
+  browser()
   pdf(NULL) # TODO: Make a better fix for blank pdf write
   orders <- suppressWarnings(unlist(ComplexHeatmap::row_order(plot)))
   dev.off()

@@ -119,7 +119,8 @@ click_plot_browser_allsamp_controller <- function(input, df) {
     clusters <- isolate(input$clusters)
     normalization <- isolate(input$normalization)
     kmer <- isolate(input$kmer)
-    table_hash <- paste(name(dff), table_path, lib_sizes, clusters,
+    min_count <- isolate(input$min_count)
+    table_hash <- paste(name(dff), table_path, lib_sizes, clusters, min_count,
                         metadata_field, normalization, kmer, sep = "|_|")
 
     print(paste("Table hash: ", table_hash))
@@ -129,7 +130,8 @@ click_plot_browser_allsamp_controller <- function(input, df) {
                    table_hash = table_hash,
                    metadata_field = metadata_field,
                    normalization = normalization,
-                   kmer = kmer)
+                   kmer = kmer,
+                   min_count = min_count)
   }
 }
 

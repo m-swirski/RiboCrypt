@@ -90,7 +90,7 @@ heatmap_region_select <- function(ns) {
 
 heatmap_color_select <- function(ns, name = "heatmap_color",
                               label = "Color theme",
-                              selected = "default (White-Blue)") {
+                              selected = "Matrix (black,green,red)") {
   selectizeInput(
     inputId = ns(name),
     label = label,

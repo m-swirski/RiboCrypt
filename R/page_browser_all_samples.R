@@ -15,8 +15,8 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                            "default_experiment_meta"),
                    gene_input_select(ns, FALSE, browser_options),
                    metadata_input_select(ns, metadata = metadata),
-                   sliderInput(ns("clusters"), "K-means clusters", min = 1, max = 5,
-                               value = 1),
+                   sliderInput(ns("clusters"), "K-means clusters", min = 1, max = 7,
+                               value = 5),
                    helper_button_redirect_call()
           ),
           tabPanel("Settings",
@@ -28,6 +28,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
                    tx_input_select(ns, FALSE),
+                   numericInput(ns("min_count"), "Minimum counts", 0),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
                                value = as.numeric(browser_options["default_kmer"]))
           )
@@ -77,7 +78,7 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
 
-      plot_object <- reactive(get_meta_browser_plot(table(),
+      plot_object <- reactive(get_meta_browser_plot(table()$table,
                                                    isolate(input$heatmap_color),
                                                    isolate(input$clusters),
                                                    isolate(input$color_mult))) %>%
@@ -91,9 +92,8 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
         bindEvent(plot_object(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
-      output$d <- renderPlotly(allsamples_sidebar(mainPlotControls,
-                                                  plot_object(),
-                                                  metadata = metadata)) %>%
+      output$d <- renderPlotly(allsamples_sidebar(table()$metadata_field,
+                                                  plot_object())) %>%
         bindCache(mainPlotControls()$table_hash) %>%
         bindEvent(plot_object(),
                   ignoreInit = FALSE,

@@ -59,19 +59,8 @@ browser_server <- function(id, all_experiments, env, df, experiments,
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
-      # browser()
       study_and_gene_observers(input, output, session)
-      output$clip <- renderUI({
-        rclipButton(
-          inputId = "clip",
-          label = "Get URL",
-          clipText = make_url_from_inputs(input, session),
-          icon = icon("clipboard"),
-          tooltip = "Get URL to share for this plot",
-          placement = "top",
-          options = list(delay = list(show = 800, hide = 100), trigger = "hover")
-        )
-      })
+      output$clip <- renderUI({clipboard_url_button(input, session)})
       # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,
         click_plot_browser_main_controller(input, tx, cds, libs, df),

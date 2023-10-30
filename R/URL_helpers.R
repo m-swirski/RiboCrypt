@@ -30,6 +30,18 @@ make_url_from_inputs <- function(input, session) {
   return(url)
 }
 
+clipboard_url_button <- function(input, session) {
+  rclipButton(
+    inputId = "clip",
+    label = "Get URL",
+    clipText = make_url_from_inputs(input, session),
+    icon = icon("clipboard"),
+    tooltip = "Get URL to share for this plot. Copied to clipboard (ctrl+v to paste)",
+    placement = "top",
+    options = list(delay = list(show = 800, hide = 100), trigger = "hover")
+  )
+}
+
 #' Make the URL field reactive to page given
 #'
 #' Currently does not support update of input fields other than selected page

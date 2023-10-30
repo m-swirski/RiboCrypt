@@ -24,7 +24,7 @@
 #' @param all_exp_meta the subset of all_exp which are collections (the set of
 #' all experiments per organism), this will be fed to the metabrowser, while
 #' remaining all_exp are used in all other modules.
-#' @import shiny bslib ORFik NGLVieweR ggplot2 fst
+#' @import shiny bslib ORFik NGLVieweR ggplot2 fst rclipboard
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
 #' @importFrom shinyjqui jqui_resizable jqui_draggable
@@ -52,81 +52,8 @@ RiboCrypt_app <- function(
     all_exp = list.experiments(validate = validate.experiments),
     browser_options = c(), init_tab_focus = "browser",
     metadata = NULL, all_exp_meta = all_exp[grep("all_samples-", name),]) {
-  time_before <- Sys.time()
 
-  stopifnot(is(all_exp, "data.table"))
-  stopifnot(!is.null(all_exp$name))
-  stopifnot(nrow(all_exp) > 0)
-  if (nrow(all_exp_meta) > 0) {
-    all_exp <- all_exp[!(name %in% all_exp_meta$name),]
-    print(paste("Running with", nrow(all_exp), "experiments"))
-    print(paste("Running with", nrow(all_exp_meta), "collections"))
-  }
-  if (!is.null(metadata)) {
-    if (is.character(metadata)) metadata <- fread(metadata)
-    stopifnot(is(metadata, "data.table"))
-  }
-  # Set environments
-  with_readlengths_env <- new.env()
-  without_readlengths_env <- new.env()
-  #with_cigar_env <- new.env() # Not used for now
-  # Add resource directories
-  addResourcePath(prefix = "images",
-                  directoryPath = system.file("images", package = "RiboCrypt"))
-  addResourcePath(prefix = "rmd",
-                  directoryPath = system.file("rmd", package = "RiboCrypt"))
-  # Setup variables
-  if (!isTruthy(browser_options["default_experiment"])) {
-    browser_options["default_experiment"] <- all_exp$name[1]
-  }
-  if (!isTruthy(browser_options["default_experiment_meta"]) &
-      nrow(all_exp_meta > 1)) {
-    browser_options["default_experiment_meta"] <- all_exp_meta$name[1]
-  }
-  if (is.na(browser_options["plot_on_start"])) {
-    browser_options["plot_on_start"] <- FALSE
-  }
-
-  if (!isTruthy(browser_options["allow_non_bw"])) {
-    browser_options["allow_non_bw"] <- FALSE
-  }
-  exp_init <- read.experiment(browser_options["default_experiment"],
-                              validate = FALSE)
-  # exp_init_meta <- read.experiment(browser_options["default_experiment_meta"],
-  #                             validate = FALSE)
-  names_init <- get_gene_name_categories(exp_init)
-  if (!isTruthy(browser_options["default_gene"])) {
-    if (!isTruthy(browser_options["default_gene"])) {
-      browser_options["default_gene"] <- names_init$label[1]
-    }
-    stopifnot(browser_options["default_gene"] %in% names_init$label)
-  }
-  if (!isTruthy(browser_options["default_gene_meta"])) {
-    if (!isTruthy(browser_options["default_gene_meta"])) {
-      browser_options["default_gene_meta"] <- names_init$label[1]
-    }
-    stopifnot(browser_options["default_gene_meta"] %in% names_init$label)
-  }
-
-  if (!isTruthy(browser_options["default_kmer"])) {
-    browser_options["default_kmer"] <- 1
-  } else {
-    stopifnot(!is.na(as.numeric(browser_options["default_kmer"])))
-  }
-  if (!isTruthy(browser_options["default_frame_type"])) {
-    browser_options["default_frame_type"] <- "lines"
-  } else {
-    stopifnot(is.character(browser_options["default_frame_type"]))
-  }
-  libs <- bamVarName(exp_init)
-  if (!isTruthy(browser_options["default_libs"])) {
-    browser_options["default_libs"] <- libs[1]
-  } else {
-    default_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
-    if (!all(default_libs %in% libs))
-      stop("You defined default_libs, but some of those are not valid names,",
-      " in selected experiment!")
-  }
+  rc_parameter_setup()
 
   # User interface
   ui <- tagList(
@@ -145,25 +72,7 @@ RiboCrypt_app <- function(
     ))
 
   server <- function(input, output, session) {
-    observeEvent(session$clientData$url_hash, {
-      currentHash <- getPageFromURL(session)
-      if (is.null(input$navbarID) || !is.null(currentHash) && currentHash != input$navbarID){
-        freezeReactiveValue(input, "navbarID")
-        updateNavbarPage(session, "navbarID", selected = currentHash)
-      }
-    }, priority = 1)
-
-    observeEvent(input$navbarID, {
-      currentHash <- getPageFromURL(session)
-      pushQueryString <- paste0("#", input$navbarID)
-      if(is.null(currentHash) || currentHash != input$navbarID){
-        freezeReactiveValue(input, "navbarID")
-        updateQueryString("?", mode = "replace", session)
-        updateQueryString(pushQueryString, mode = "push", session)
-      }
-    }, priority = 0, ignoreInit = TRUE)
-
-
+    reactive_url()
     cds <- NULL
     org_and_study_changed_checker(input, output, session)
 
@@ -202,5 +111,86 @@ rc_title <- function() {
     a(img(src = file.path("images", "logo_traces_update.png"),
           alt = "RiboCrypt",
           height = 60)))
+}
+
+rc_parameter_setup <- function() {
+  with(rlang::caller_env(), {
+    time_before <- Sys.time()
+
+    stopifnot(is(all_exp, "data.table"))
+    stopifnot(!is.null(all_exp$name))
+    stopifnot(nrow(all_exp) > 0)
+    if (nrow(all_exp_meta) > 0) {
+      all_exp <- all_exp[!(name %in% all_exp_meta$name),]
+      print(paste("Running with", nrow(all_exp), "experiments"))
+      print(paste("Running with", nrow(all_exp_meta), "collections"))
+    }
+    if (!is.null(metadata)) {
+      if (is.character(metadata)) metadata <- fread(metadata)
+      stopifnot(is(metadata, "data.table"))
+    }
+    # Set environments
+    with_readlengths_env <- new.env()
+    without_readlengths_env <- new.env()
+    #with_cigar_env <- new.env() # Not used for now
+    # Add resource directories
+    addResourcePath(prefix = "images",
+                    directoryPath = system.file("images", package = "RiboCrypt"))
+    addResourcePath(prefix = "rmd",
+                    directoryPath = system.file("rmd", package = "RiboCrypt"))
+    # Setup variables
+    if (!isTruthy(browser_options["default_experiment"])) {
+      browser_options["default_experiment"] <- all_exp$name[1]
+    }
+    if (!isTruthy(browser_options["default_experiment_meta"]) &
+        nrow(all_exp_meta > 1)) {
+      browser_options["default_experiment_meta"] <- all_exp_meta$name[1]
+    }
+    if (is.na(browser_options["plot_on_start"])) {
+      browser_options["plot_on_start"] <- FALSE
+    }
+
+    if (!isTruthy(browser_options["allow_non_bw"])) {
+      browser_options["allow_non_bw"] <- FALSE
+    }
+    exp_init <- read.experiment(browser_options["default_experiment"],
+                                validate = FALSE)
+    # exp_init_meta <- read.experiment(browser_options["default_experiment_meta"],
+    #                             validate = FALSE)
+    names_init <- get_gene_name_categories(exp_init)
+    if (!isTruthy(browser_options["default_gene"])) {
+      if (!isTruthy(browser_options["default_gene"])) {
+        browser_options["default_gene"] <- names_init$label[1]
+      }
+      stopifnot(browser_options["default_gene"] %in% names_init$label)
+    }
+    if (!isTruthy(browser_options["default_gene_meta"])) {
+      if (!isTruthy(browser_options["default_gene_meta"])) {
+        browser_options["default_gene_meta"] <- names_init$label[1]
+      }
+      stopifnot(browser_options["default_gene_meta"] %in% names_init$label)
+    }
+
+    if (!isTruthy(browser_options["default_kmer"])) {
+      browser_options["default_kmer"] <- 1
+    } else {
+      stopifnot(!is.na(as.numeric(browser_options["default_kmer"])))
+    }
+    if (!isTruthy(browser_options["default_frame_type"])) {
+      browser_options["default_frame_type"] <- "lines"
+    } else {
+      stopifnot(is.character(browser_options["default_frame_type"]))
+    }
+    libs <- bamVarName(exp_init)
+    if (!isTruthy(browser_options["default_libs"])) {
+      browser_options["default_libs"] <- libs[1]
+    } else {
+      default_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
+      if (!all(default_libs %in% libs))
+        stop("You defined default_libs, but some of those are not valid names,",
+             " in selected experiment!")
+    }
+  }
+  )
 }
 

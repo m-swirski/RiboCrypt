@@ -15,14 +15,17 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    experiment_input_select(experiments, ns, browser_options),
                    gene_input_select(ns, FALSE, browser_options),
                    tx_input_select(ns, FALSE, init_tx),
-                   library_input_select(ns, TRUE, libs,
-                                        init_libs),
+                   library_input_select(ns, TRUE, libs, init_libs),
                    frame_type_select(ns, selected =
                                        browser_options["default_frame_type"]),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
                           value = as.numeric(browser_options["default_kmer"])),
-                   helper_button_redirect_call(),
-                   shinyjs::useShinyjs()
+                   helper_button_redirect_call(), # Here are settings ->
+                   shinyjs::useShinyjs(),
+                   rclipboardSetup(),
+                   tags$head(
+                     tags$style(HTML('#clip{background-color:orange}'))
+                   )
           ),
           tabPanel("Settings",
                    numericInput(ns("extendLeaders"), "5' extension", 0),
@@ -36,6 +39,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    checkboxInput(ns("expression_plot"), label = "Add expression plot", value = FALSE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
+                   uiOutput(ns("clip")),
                    export_format_of_plot(ns)
           )
         ),
@@ -57,6 +61,17 @@ browser_server <- function(id, all_experiments, env, df, experiments,
     function(input, output, session, all_exp = all_experiments) {
       # browser()
       study_and_gene_observers(input, output, session)
+      output$clip <- renderUI({
+        rclipButton(
+          inputId = "clip",
+          label = "Get URL",
+          clipText = make_url_from_inputs(input, session),
+          icon = icon("clipboard"),
+          tooltip = "Get URL to share for this plot",
+          placement = "top",
+          options = list(delay = list(show = 800, hide = 100), trigger = "hover")
+        )
+      })
       # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,
         click_plot_browser_main_controller(input, tx, cds, libs, df),

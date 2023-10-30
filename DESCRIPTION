@@ -41,6 +41,7 @@ Imports:
   NGLVieweR,
   plotly,
   rlang,
+  rclipboard,
   RCurl,
   shiny,
   shinycssloaders,

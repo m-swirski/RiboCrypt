@@ -283,12 +283,12 @@ study_and_gene_observers <- function(input, output, session) {
         tag <- "viewMode"
         value <- query[tag][[1]]
         if (!is.null(value)) {
-          updateCheckboxInput(inputId = tag, value = value)
+          updateCheckboxInput(inputId = tag, value = as.logical(value))
         }
         tag <- "other_tx"
         value <- query[tag][[1]]
         if (!is.null(value)) {
-          updateCheckboxInput(inputId = tag, value = value)
+          updateCheckboxInput(inputId = tag, value = as.logical(value))
         }
 
       }, priority = -10)

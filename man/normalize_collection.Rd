@@ -15,7 +15,7 @@ normalize_collection(
 \arguments{
 \item{table}{a data.table in long format}
 
-\item{normalization}{a character string, which mode, for options see ?RiboCrypt:::normalizations}
+\item{normalization}{a character string, which mode, for options see RiboCrypt:::normalizations}
 
 \item{lib_sizes}{named integer vector, default NULL. If given will do a pre tpm normalization
 for full library sizes}

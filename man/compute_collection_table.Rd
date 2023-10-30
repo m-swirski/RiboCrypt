@@ -11,7 +11,11 @@ compute_collection_table(
   metadata_field,
   normalization,
   kmer,
-  metadata
+  metadata,
+  min_count = 0,
+  format = "wide",
+  value.var = "logscore",
+  as_list = FALSE
 )
 }
 \arguments{
@@ -20,12 +24,19 @@ compute_collection_table(
 \item{lib_sizes}{named integer vector, default NULL. If given will do a pre tpm normalization
 for full library sizes}
 
-\item{normalization}{a character string, which mode, for options see ?RiboCrypt:::normalizations}
+\item{normalization}{a character string, which mode, for options see RiboCrypt:::normalizations}
 
 \item{kmer}{integer, default 1L (off), if > 1 will smooth out signal with sliding window size kmer.}
+
+\item{value.var}{which column to use as scores, default "logscore"}
+
+\item{as_list}{logical, default FALSE. Return as list of size 2,
+count data.table and metadata data.table Set to TRUE if you need metadata
+subset (needed if you subset the table, to get correct matching)}
 }
 \value{
-a data.table in wide format
+a data.table in long or wide (default) format, if as list, it is a
+list of size 2 (see argument as_list)
 }
 \description{
 Get collection table normalized in wide format

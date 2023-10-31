@@ -21,6 +21,18 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     dff <- observed_exp_subset(isolate(input$library), libs, df)
     # customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
     customRegions <- uorf_annotation
+    full_names <- ORFik:::name_decider(dff, naming = "full")
+    hash_browser <- paste(full_names,
+                          input$tx, input$other_tx, input$add_uorfs,
+                          input$extendTrailers, input$extendLeaders,
+                          input$plot_export_format, input$genomic_region,
+                          input$summary_track, input$summary_track_type,
+                          input$viewMode, input$kmer, input$frames_type,
+                          input$customSequence, collapse = "|_|")
+    hash_expression <- paste(full_names,
+                             input$expression_plot, input$extendTrailers,
+                             input$extendLeaders, collapse = "|_|")
+
     #reads <- load_reads(dff, "cov")
     reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""))
     reactiveValues(dff = dff,
@@ -36,7 +48,9 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    frames_type = input$frames_type,
                    annotation = cds_annotation,
                    reads = reads,
-                   custom_sequence = input$customSequence)
+                   custom_sequence = input$customSequence,
+                   hash_browser = hash_browser,
+                   hash_expression = hash_expression)
   }
 }
 

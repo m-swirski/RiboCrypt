@@ -61,32 +61,26 @@ browser_server <- function(id, all_experiments, env, df, experiments,
     function(input, output, session, all_exp = all_experiments) {
       study_and_gene_observers(input, output, session)
       output$clip <- renderUI({clipboard_url_button(input, session)})
+
       # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,
         click_plot_browser_main_controller(input, tx, cds, libs, df),
-        ignoreInit = !as.logical(browser_options["plot_on_start"]) ||
-          (!is.null(isolate(getQueryString())[["go"]]) && isolate(getQueryString())[["go"]] == TRUE),
+        ignoreInit = check_plot_on_start(browser_options),
         ignoreNULL = FALSE)
-      # Main plot, this code is only run if 'plot' is pressed
       output$c <- renderPlotly(click_plot_browser(mainPlotControls, session)) %>%
-        bindCache(ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
-                  input$tx, input$other_tx, input$add_uorfs,
-                  input$extendTrailers, input$extendLeaders,
-                  input$plot_export_format, input$genomic_region,
-                  input$summary_track, input$summary_track_type,
-                  input$viewMode, input$kmer, input$frames_type,input$customSequence) %>%
-        bindEvent(mainPlotControls(),
-                  ignoreInit = FALSE,
-                  ignoreNULL = TRUE)
+        bindCache(mainPlotControls()$hash_browser) %>%
+        bindEvent(mainPlotControls(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
       # Protein display
       module_protein(input, output, gene_name_list, session)
 
       output$d <- renderPlotly({
         req(input$expression_plot == TRUE)
         click_plot_boxplot(mainPlotControls, session)}) %>%
-          bindCache(input$expression_plot, input$extendTrailers, input$extendLeaders,
-                ORFik:::name_decider(mainPlotControls()$dff, naming = "full"))
+          bindCache(mainPlotControls()$hash_expression)
       return(rv)
     }
   )
 }
+
+

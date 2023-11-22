@@ -223,6 +223,15 @@ Organism, experiment and gene explained above
 - K-means clusters: How many k-means clusters to use, if > 1, Group will be
 sorted within the clusters, but K-means have priority.
 
+### Statistics tab
+This tab gives the statistics of over representation analysis per cluster.
+Using chi squared test, it gives the residuals per term from metadata 
+(like tissue, cell-line etc). If a value is bigger than +/- 3, it means
+it is quite certain this is over represented. 
+
+If no clustering was applied, this tab gives the number of items per
+metadata term (40 brain samples, 30 kidney samples etc).
+
 ### Display panel (settings)
 - Normalization (all scores are tpm normalized and log scaled)
   - transcriptNormalized (each sample counts sum to 1) (default)

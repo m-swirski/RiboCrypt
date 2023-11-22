@@ -36,15 +36,17 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
         actionButton(ns("go"), "Plot", icon = icon("rocket")), width=3
       )),
       mainPanel(
-        fluidRow(
-          splitLayout(cellWidths = c("10%", "90%"),
-                      jqui_resizable(plotlyOutput(outputId = ns("d"), height = "700px", width = "130px")) %>%
-                        shinycssloaders::withSpinner(color="#0dc5c1"),
-                      jqui_resizable(plotOutput(outputId = ns("c"), height = "700px")) %>%
-                        shinycssloaders::withSpinner(color="#0dc5c1"),
-                      width=9)
-        )
-      )
+        tabsetPanel(type = "tabs",
+          tabPanel("Heatmap", fluidRow(
+            splitLayout(cellWidths = c("10%", "90%"),
+                        jqui_resizable(plotlyOutput(outputId = ns("d"), height = "700px", width = "130px")) %>%
+                          shinycssloaders::withSpinner(color="#0dc5c1"),
+                        jqui_resizable(plotOutput(outputId = ns("c"), height = "700px")) %>%
+                          shinycssloaders::withSpinner(color="#0dc5c1"),
+                        width=9)
+        )),
+        tabPanel("Statistics", tableOutput(outputId = ns("stats")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))
+      ))
     )
   )
 }
@@ -92,10 +94,21 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
         bindEvent(plot_object(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
-      output$d <- renderPlotly(allsamples_sidebar(table()$metadata_field,
-                                                  plot_object())) %>%
+      meta_and_clusters <- reactive(
+          allsamples_metadata_clustering(table()$metadata_field, plot_object()
+                                       )) %>%
         bindCache(mainPlotControls()$table_hash) %>%
         bindEvent(plot_object(),
+                  ignoreInit = FALSE,
+                  ignoreNULL = TRUE)
+      output$d <- renderPlotly(allsamples_sidebar(meta_and_clusters())) %>%
+        bindCache(mainPlotControls()$table_hash) %>%
+        bindEvent(meta_and_clusters(),
+                  ignoreInit = FALSE,
+                  ignoreNULL = TRUE)
+      output$stats <- renderTable(allsamples_meta_stats(meta_and_clusters()),
+                                  rownames = TRUE) %>%
+        bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
     }

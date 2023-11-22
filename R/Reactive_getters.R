@@ -86,22 +86,30 @@ compute_collection_table_shiny <- function(mainPlotControls,
   return(dtable)
 }
 
-allsamples_sidebar <- function(values,
-                               plot) {
+allsamples_metadata_clustering <- function(values, plot) {
   time_before <- Sys.time()
-  print("Starting metabrowser sidebar")
+  print("Starting metabrowser clustering info")
 
-  browser()
   pdf(NULL) # TODO: Make a better fix for blank pdf write
-  orders <- suppressWarnings(unlist(ComplexHeatmap::row_order(plot)))
+  row_orders <- suppressWarnings(ComplexHeatmap::row_order(plot))
   dev.off()
-  if (all(seq(length(orders)) == orders)) {
-    # TODO: Make failsafe for random hits!
-    orders <- order(values)
+  orders <- unlist(row_orders, use.names = FALSE)
+  clustering_was_done <- is.list(row_orders)
+
+  if (!clustering_was_done) {
+    orders <- order(values) # Order by variable instead of cluster
   }
   meta <- data.table(grouping = values, order = orders)
   meta <- meta[meta$order,]
+  if (clustering_was_done) {
+    meta[, cluster := rep(seq(length(row_orders)), lengths(row_orders))]
+  }
   meta[, index := .I]
+  cat("metabrowser clustering info done"); print(round(Sys.time() - time_before, 2))
+  return(meta)
+}
+
+allsamples_sidebar <- function(meta) {
   gg <- ggplot(meta, aes(y = index, x = factor(1), fill = grouping)) +
     geom_raster() + theme_void() +
     labs(x = NULL, y = NULL, title = NULL) +
@@ -114,8 +122,28 @@ allsamples_sidebar <- function(values,
           plot.margin = unit(c(0, 0, 0, 0), "cm"),
           legend.position = "none")
 
-  cat("metabrowser sidebar done"); print(round(Sys.time() - time_before, 2))
   return(ggplotly(gg, tooltip="grouping") %>% plotly::config(displayModeBar = FALSE))
+}
+
+allsamples_meta_stats <- function(meta) {
+  time_before <- Sys.time()
+  print("Starting metabrowser statistics")
+  res <- copy(meta)
+  res[, index := NULL]
+  res[, grouping := as.character(grouping)]
+  clustering_was_done <- !is.null(res$cluster)
+  if (clustering_was_done) {
+    concat_table <- table(res$grouping, res$cluster)
+    chi_test <- chisq.test(concat_table)
+    res <- chi_test$stdres
+  } else {
+    concat_table <- table(res$grouping)
+    res <- matrix(concat_table, ncol = 1)
+    rownames(res) <- names(concat_table)
+    colnames(res) <- "counts"
+  }
+  cat("metabrowser statistics done"); print(round(Sys.time() - time_before, 2))
+  return(as.data.frame.matrix(res))
 }
 
 get_meta_browser_plot <- function(table, color_theme, clusters = 1,

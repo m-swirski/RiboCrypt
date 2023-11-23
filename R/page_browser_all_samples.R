@@ -28,7 +28,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
                    tx_input_select(ns, FALSE),
-                   numericInput(ns("min_count"), "Minimum counts", 0),
+                   numericInput(ns("min_count"), "Minimum counts", min = 0, value = 100),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
                                value = as.numeric(browser_options["default_kmer"]))
           )
@@ -45,7 +45,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                           shinycssloaders::withSpinner(color="#0dc5c1"),
                         width=9)
         )),
-        tabPanel("Statistics", tableOutput(outputId = ns("stats")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))
+        tabPanel("Statistics", DTOutput(outputId = ns("stats")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))
       ))
     )
   )
@@ -106,8 +106,7 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
-      output$stats <- renderTable(allsamples_meta_stats(meta_and_clusters()),
-                                  rownames = TRUE) %>%
+      output$stats <- renderDT(allsamples_meta_stats_shiny(meta_and_clusters())) %>%
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)

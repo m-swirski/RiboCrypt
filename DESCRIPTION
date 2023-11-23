@@ -27,6 +27,8 @@ Imports:
   ComplexHeatmap,
   data.table,
   dplyr,
+  DT,
+  fst,
   GenomeInfoDb,
   GenomicFeatures,
   GenomicRanges,

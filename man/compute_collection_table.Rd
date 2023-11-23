@@ -24,9 +24,23 @@ compute_collection_table(
 \item{lib_sizes}{named integer vector, default NULL. If given will do a pre tpm normalization
 for full library sizes}
 
+\item{df}{the ORFik experiment to load the precomputed collection from.
+It must also have defined runIDs() for all samples.}
+
+\item{metadata_field}{the column name in metadata, to select to group on.}
+
 \item{normalization}{a character string, which mode, for options see RiboCrypt:::normalizations}
 
 \item{kmer}{integer, default 1L (off), if > 1 will smooth out signal with sliding window size kmer.}
+
+\item{metadata}{a data.table of metadata, must contain the Run column to
+select libraries.}
+
+\item{min_count}{integer, default 0. Minimum counts of coverage over transcript
+to be included.}
+
+\item{format}{character, default "wide", alternative "long". The format of
+the table output.}
 
 \item{value.var}{which column to use as scores, default "logscore"}
 

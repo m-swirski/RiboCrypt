@@ -33,6 +33,7 @@
 #' @importFrom stringr str_sub
 #' @importFrom httr GET write_disk
 #' @importFrom ComplexHeatmap Heatmap row_order
+#' @importFrom DT datatable renderDT DTOutput formatStyle styleInterval
 #' @return RiboCrypt shiny app
 #' @export
 #' @examples

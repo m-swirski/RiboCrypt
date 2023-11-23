@@ -125,6 +125,14 @@ allsamples_sidebar <- function(meta) {
   return(ggplotly(gg, tooltip="grouping") %>% plotly::config(displayModeBar = FALSE))
 }
 
+
+allsamples_meta_stats_shiny <- function(meta) {
+  dt <- allsamples_meta_stats(meta)
+  # Add Chi squared significane coloring
+  datatable(round(dt, 2)) %>% formatStyle(columns = seq(ncol(dt)),
+     backgroundColor = styleInterval(c(-3, 3), c('yellow', 'white', 'yellow')))
+}
+
 allsamples_meta_stats <- function(meta) {
   time_before <- Sys.time()
   print("Starting metabrowser statistics")

@@ -2,6 +2,7 @@
 #' Load a ORFik collection table
 #' @param path the path to gene counts
 #' @return a data.table in long format
+#' @importFrom fst read_fst
 load_collection <- function(path) {
   table  <- fst::read_fst(path)
   setDT(table)
@@ -43,7 +44,7 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
 }
 
 match_collection_to_exp <- function(metadata, df) {
-  matchings <- chmatch(metadata$Run, runIDs(df))
+  matchings <- chmatch(runIDs(df), metadata$Run)
   matchings <- matchings[!is.na(matchings)]
   if (length(matchings) != nrow(df))
     stop("Metadata does not contain information on all collection samples!")
@@ -70,9 +71,18 @@ collection_to_wide <- function(table, value.var = "logscore") {
 #' @inheritParams load_collection
 #' @inheritParams normalize_collection
 #' @inheritParams collection_to_wide
+#' @param df the ORFik experiment to load the precomputed collection from.
+#'  It must also have defined runIDs() for all samples.
+#' @param metadata a data.table of metadata, must contain the Run column to
+#' select libraries.
+#' @param metadata_field the column name in metadata, to select to group on.
 #' @param as_list logical, default FALSE. Return as list of size 2,
 #' count data.table and metadata data.table Set to TRUE if you need metadata
 #' subset (needed if you subset the table, to get correct matching)
+#' @param min_count integer, default 0. Minimum counts of coverage over transcript
+#' to be included.
+#' @param format character, default "wide", alternative "long". The format of
+#' the table output.
 #' @return a data.table in long or wide (default) format, if as list, it is a
 #' list of size 2 (see argument as_list)
 compute_collection_table <- function(path, lib_sizes, df,

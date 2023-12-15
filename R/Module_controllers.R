@@ -5,11 +5,24 @@ module_protein <- function(input, output, gene_name_list, session) {
     # Setup reactive values needed for structure viewer
     dynamicVisible <- reactiveVal(FALSE)
     selectedRegion <- reactiveVal(NULL)
+    selectedTX <- reactiveVal(NULL)
     if (FALSE) cds <- NULL # Avoid biocCheck error
+
     # Get the Ribo-seq prfile (we select first library for now)
     selectedRegionProfile <- reactive({
       req(selectedRegion())
-      result <- cds()[names(cds()) == selectedRegion()] %>%
+      coverage_region <- NULL
+      uorf_clicked <- length(grep("U[0-9]+$", input$selectedRegion)) == 1
+      if (uorf_clicked) {
+        print("- Searching for local uorf protein structure:")
+        print(input$selectedRegion)
+        print(paste("In tx:", input$tx))
+      }
+      coverage_region <- c(cds(), mainPlotControls()$customRegions)
+      coverage_region <- coverage_region[names(coverage_region) == selectedRegion()]
+      stopifnot(length(coverage_region) == 1)
+
+      result <- coverage_region %>%
         getRiboProfile(mainPlotControls()$reads[[1]]) %>%
         (function (x) {
           x$count[seq.int(1, length(x$count), 3)]
@@ -22,6 +35,7 @@ module_protein <- function(input, output, gene_name_list, session) {
     observeEvent(input$selectedRegion, {
       req(input$selectedRegion)
       selectedRegion(input$selectedRegion)
+      selectedTX(input$tx)
       dynamicVisible(TRUE)
     })
     # When user clicks close button
@@ -49,18 +63,25 @@ module_protein <- function(input, output, gene_name_list, session) {
       file.path(dirname(df()@fafile), "protein_structure_predictions")
     })
     region_dir <- reactive({
-      file.path(protein_structure_dir(), selectedRegion())
+      file.path(protein_structure_dir(), selectedTX())
     })
     on_disk_structures <- reactive({
       paths <- file.path(region_dir(), list.files(region_dir()))
+
+      uorf_clicked <- length(grep("U[0-9]+$", selectedRegion())) == 1
+      if (uorf_clicked) {
+        paths <- paths[grep(paste0("^uorf_",selectedRegion(), ".pdb$"), basename(paths))]
+        if (length(paths) == 0) warning("No local protein structure for this uORF!")
+      } else {
+        paths <- paths[-grep("uorf", paths)] # Remove uorf structures
+      }
 
       path_labels <- mapply(
         function(x) {
           str_sub(x, start = gregexpr("/", x) %>% unlist() %>% last() + 1)
         },
-        list.files(region_dir())
+        basename(paths)
       )
-
       result <- paths
       names(result) <- path_labels
       result

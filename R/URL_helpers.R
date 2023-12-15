@@ -19,6 +19,8 @@ make_url_from_inputs <- function(input, session) {
                     paste("extendTrailers", input$kmer, sep = "="),
                     paste("viewMode", input$viewMode, sep = "="),
                     paste("other_tx", input$other_tx, sep = "="),
+                    paste("add_uorfs", input$add_uorfs, sep = "="),
+                    paste("summary_track", input$summary_track, sep = "="),
                     paste("go", "TRUE", sep = "="),
                     sep = "&")
 
@@ -167,6 +169,16 @@ check_url_for_basic_parameters <- function() {
         updateCheckboxInput(inputId = tag, value = as.logical(value))
       }
       tag <- "other_tx"
+      value <- query[tag][[1]]
+      if (!is.null(value)) {
+        updateCheckboxInput(inputId = tag, value = as.logical(value))
+      }
+      tag <- "add_uorfs"
+      value <- query[tag][[1]]
+      if (!is.null(value)) {
+        updateCheckboxInput(inputId = tag, value = as.logical(value))
+      }
+      tag <- "summary_track"
       value <- query[tag][[1]]
       if (!is.null(value)) {
         updateCheckboxInput(inputId = tag, value = as.logical(value))

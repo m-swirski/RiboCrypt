@@ -9,7 +9,6 @@ beacon_main_api_url <- function() {
 #' @importFrom RCurl getURI
 #' @importFrom jsonlite fromJSON
 fetch_summary <- function(qualifier, provider = "alphafold") {
-  # browser()
   provider_url <-
   if (provider == "all") {
     stop("This does not work yet!")

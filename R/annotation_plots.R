@@ -105,7 +105,6 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
   }
   overlaps <- subsetByOverlaps(annotation, display_range,
                                type = ifelse(viewMode == "tx", "within", "any"))
-  # Default theme
 
 
   if (length(overlaps) > 0) {
@@ -133,12 +132,11 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
     cols <- colour_bars(locations, overlaps,display_range)
     locations <- ranges(locations)
     blocks <- c(start(locations) , end(locations))
-    names(blocks) <- rep(names(locations),2)
+    names(blocks) <- rep(names(locations), 2)
     blocks <- sort(blocks)
     lines_locations <- blocks[!(blocks %in% c(1, plot_width))]
 
     # cols <- colour_bars(overlaps, display_range)
-
     # if (length(cols) != length(locations)) cols <- selectCols(cols,locations)
     rect_locations <- locations
 

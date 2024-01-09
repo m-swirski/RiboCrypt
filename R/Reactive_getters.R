@@ -36,6 +36,7 @@ get_exp <- function(dff, experiments, env) {
 click_plot_browser <- function(mainPlotControls, session) {
   time_before <- Sys.time()
   print("Starting loading + Profile + plot calc")
+
   a <- RiboCrypt::multiOmicsPlot_ORFikExp(
     display_range = mainPlotControls()$display_region,
     df = mainPlotControls()$dff,
@@ -54,6 +55,7 @@ click_plot_browser <- function(mainPlotControls, session) {
     summary_track_type = mainPlotControls()$summary_track_type,
     export.format = mainPlotControls()$export_format
   )
+
   cat("lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
   return(a)
 }

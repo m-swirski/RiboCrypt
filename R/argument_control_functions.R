@@ -18,8 +18,11 @@ multiOmicsController <- function() {
   }
   seqlevels(display_range) <- seqlevels(annotation)
   display_range <- GRangesList(display_range)
-  if (leader_extension != 0) display_range <- extendLeaders(display_range, leader_extension)
-  if (trailer_extension != 0) display_range <- extendTrailers(display_range, trailer_extension)
+
+  if (!is.null(leader_extension) && is.numeric(leader_extension) && leader_extension != 0)
+    display_range <- extendLeaders(display_range, leader_extension)
+  if (!is.null(trailer_extension) && is.numeric(trailer_extension) &&  trailer_extension != 0)
+    display_range <- extendTrailers(display_range, trailer_extension)
   # if (is(annotation, "GRangesList")) annotation <- unlist(annotation)
 
   if (!is.null(annotation_names)) {

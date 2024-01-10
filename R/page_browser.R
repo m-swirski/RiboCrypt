@@ -39,6 +39,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    checkboxInput(ns("expression_plot"), label = "Add expression plot", value = FALSE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
+                   checkboxInput(ns("log_scale"), label = "Log Scale", value = FALSE),
                    uiOutput(ns("clip")),
                    export_format_of_plot(ns)
           )

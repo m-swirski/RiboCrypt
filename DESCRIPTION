@@ -45,7 +45,7 @@ Imports:
   rlang,
   rclipboard,
   RCurl,
-  shiny (== 1.7.4),
+  shiny,
   shinycssloaders,
   shinyhelper,
   shinyjs,

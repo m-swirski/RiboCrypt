@@ -27,12 +27,12 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                          input$extendTrailers, input$extendLeaders,
                          input$genomic_region, input$viewMode,
                          input$customSequence, collapse = "|_|")
-    hash_browser <- paste(full_names,
-                          input$tx, input$other_tx, input$add_uorfs,
-                          input$extendTrailers, input$extendLeaders,
-                          input$plot_export_format, input$genomic_region,
+    # Until plot and coverage is split (bottom must be part of browser hash)
+    hash_browser <- paste(hash_bottom,
+                          full_names,
+                          input$plot_export_format,
                           input$summary_track, input$summary_track_type,
-                          input$viewMode, input$kmer, input$frames_type,
+                          input$kmer, input$frames_type,
                           input$log_scale, collapse = "|_|")
     hash_expression <- paste(full_names,
                              input$expression_plot, input$extendTrailers,

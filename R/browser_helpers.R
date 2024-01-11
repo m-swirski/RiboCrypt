@@ -1,78 +1,7 @@
-profilesFetcher <- function(display_range, kmers_type, kmers, frames_type, reads, withFrames, BPPARAM = BiocParallel::SerialParam()) {
-
-
-if (is(BPPARAM, "SerialParam")) {
-  profiles <- mapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
-                     reads, withFrames, kmers, SIMPLIFY = FALSE)
-} else {
-  profiles <- bpmapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
-                       reads, withFrames, kmers, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
-}
-
-  return(profiles)
-}
-
-
-singlePlotsFetcher <- function(profiles, lines, frames_type, withFrames, colors, ylabels, ylabels_full_name) {
-
-total_libs <- length(profiles)
-if (is(BPPARAM, "SerialParam")) {
-  plots <- mapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
-                  profiles, withFrames, colors, ylabels, ylabels_full_name,
-                  SIMPLIFY = FALSE)
-} else {
-  plots <- bpmapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
-                    profiles, withFrames, colors, ylabels, ylabels_full_name,
-                    SIMPLIFY = FALSE, BPPARAM = BPPARAM)
-}
-return(plots)
-}
-
-
-
-browser_plot_assembler <- function() {
-
- profiles < reactive(profilesFetcher(mainPlotControls)) %>%
-    bindCache(mainPlotControls())
-
-}
-
-#' @importFrom Biostrings nchar translate
-#'
-multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
-                                    reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
-                                                       naming = "full", BPPARAM = BiocParallel::SerialParam()),
-                                    viewMode = c("tx", "genomic")[1],
-                                    custom_regions = NULL,
-                                    leader_extension = 0, trailer_extension = 0,
-                                    withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
-                                    frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
-                                    ylabels = bamVarName(df), lib_to_annotation_proportions = c(0.8,0.2),lib_proportions = NULL,
-                                    annotation_proportions = NULL,width = NULL, height = NULL,
-                                    plot_name = "default", plot_title = NULL,
-                                    display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 100,
-                                    aa_letter_code = c("one_letter", "three_letters")[1],
-                                    annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                    custom_motif = NULL, BPPARAM = BiocParallel::SerialParam(),
-                                    input_id = "", summary_track = FALSE,
-                                    summary_track_type = frames_type, export.format = "svg") {
-
-  multiOmicsController()
-  # Get NGS data tracks
+multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, annotation,
+                                         start_codons, stop_codons, custom_motif,
+                                         custom_regions, viewMode) {
   force(display_range)
-  force(kmers_type)
-  force(frames_type)
-  force(reads)
-  force(withFrames)
-  force(kmers)
-  if (is(BPPARAM, "SerialParam")) {
-    profiles <- mapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
-                       reads, withFrames, kmers, SIMPLIFY = FALSE)
-  } else {
-    profiles <- bpmapply(function(x,y,c) getProfileWrapper(display_range, x,y,c,kmers_type, type = frames_type),
-                         reads, withFrames, kmers, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
-  }
-
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
@@ -84,11 +13,19 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                                            viewMode = viewMode)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]])
+  return(list(seq_panel = seq_panel, gene_model_panel = gene_model_panel,
+              lines = lines, target_seq = target_seq))
+}
 
+multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels,
+                                           ylabels_full_name, lines,
+                                           frames_type, total_libs,
+                                           summary_track, summary_track_type,
+                                           BPPARAM) {
+  total_libs <- length(profiles)
   force(colors)
   force(lines)
   force(ylabels)
-  total_libs <- length(profiles)
   if (is(BPPARAM, "SerialParam")) {
     plots <- mapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
                     profiles, withFrames, colors, ylabels, ylabels_full_name,
@@ -104,17 +41,47 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
     plots <- make_summary_track(profiles, plots, withFrames, colors,
                                 lines, summary_track_type, nplots)
   }
+  return(list(plots = plots, nplots = nplots))
+}
 
+multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
+                                        kmers_type, frames_type,
+                                        withFrames, log_scale, BPPARAM) {
+  force(display_range)
+  force(reads)
+  force(kmers)
+  force(kmers_type)
+  force(frames_type)
+  force(withFrames)
+  force(log_scale)
+  if (is(BPPARAM, "SerialParam")) {
+    profiles <- mapply(function(x,y,c,l) getProfileWrapper(display_range, x,y,c,l,kmers_type, type = frames_type),
+                       reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE)
+  } else {
+    profiles <- bpmapply(function(x,y,c,l) getProfileWrapper(display_range, x,y,c,l,kmers_type, type = frames_type),
+                         reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+  }
+  return(profiles)
+}
+
+multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_range,
+                                         proportions, seq_render_dist,
+                                         display_sequence, display_dist,
+                                         aa_letter_code, input_id, plot_name,
+                                         plot_title,  width, height, export.format) {
+  nplots <- track_panel$nplots
+  plots <- track_panel$plots
+  gene_model_panel <- bottom_panel$gene_model_panel
+  seq_panel <- bottom_panel$seq_panel
   without_sequence_track <- display_sequence %in% c("none", FALSE)
   if (without_sequence_track) { # plotly subplot without sequence track
-    nplots <- nplots+ 2
+    nplots <- nplots + 2
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
   } else { # plotly subplot with sequence track
     nplots <- nplots + 3
     plots <- c(plots, list(automateTicks(nt_area_template()), automateTicksGMP(gene_model_panel),
                            automateTicksX(seq_panel)))
   }
-  # browser()
   plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),
                                                    yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)) ))
   multiomics_plot <- subplot(plots,
@@ -124,7 +91,8 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
                              shareX = TRUE,
                              titleY = TRUE, titleX = TRUE)
   if (!without_sequence_track) {
-    multiomics_plot <- addJSrender(multiomics_plot, target_seq, nplots-3, seq_render_dist,
+    multiomics_plot <- addJSrender(multiomics_plot, bottom_panel$target_seq,
+                                   nplots-3, seq_render_dist,
                                    display_dist, aa_letter_code, input_id)
   }
 
@@ -132,7 +100,47 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds",refere
   multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
                                              width, height, format = export.format)
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
-
   return(multiomics_plot)
+}
+
+#' @importFrom Biostrings nchar translate
+#'
+multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", reference_sequence = findFa(df),
+                                    reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+                                                       naming = "full", BPPARAM = BiocParallel::SerialParam()),
+                                    viewMode = c("tx", "genomic")[1],
+                                    custom_regions = NULL,
+                                    leader_extension = 0, trailer_extension = 0,
+                                    withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
+                                    frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
+                                    ylabels = bamVarName(df), lib_to_annotation_proportions = c(0.8,0.2),lib_proportions = NULL,
+                                    annotation_proportions = NULL,width = NULL, height = NULL,
+                                    plot_name = "default", plot_title = NULL,
+                                    display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 100,
+                                    aa_letter_code = c("one_letter", "three_letters")[1],
+                                    annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
+                                    custom_motif = NULL, log_scale = FALSE, BPPARAM = BiocParallel::SerialParam(),
+                                    input_id = "", summary_track = FALSE,
+                                    summary_track_type = frames_type, export.format = "svg") {
+
+  multiOmicsController()
+  # Get Bottom annotation and sequence panels
+  bottom_panel <- multiOmicsPlot_bottom_panels(reference_sequence, display_range, annotation,
+                                               start_codons, stop_codons, custom_motif,
+                                               custom_regions, viewMode)
+  # Get NGS data track panels
+  profiles <- multiOmicsPlot_all_profiles(display_range, reads, kmers,
+                                          kmers_type, frames_type,
+                                          withFrames, log_scale, BPPARAM)
+  track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, colors, ylabels,
+                                          ylabels_full_name, bottom_panel$lines,
+                                          frames_type, total_libs,
+                                          summary_track, summary_track_type,
+                                          BPPARAM)
+  return(multiOmicsPlot_complete_plot(track_panel, bottom_panel, display_range,
+                                      proportions, seq_render_dist,
+                                      display_sequence, display_dist,
+                                      aa_letter_code, input_id, plot_name,
+                                      plot_title,  width, height, export.format))
 }
 

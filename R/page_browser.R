@@ -36,10 +36,10 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = FALSE),
                    checkboxInput(ns("other_tx"), label = "Full annotation", value = FALSE),
                    checkboxInput(ns("add_uorfs"), label = "uORF annotation", value = FALSE),
+                   checkboxInput(ns("log_scale"), label = "Log Scale", value = FALSE),
                    checkboxInput(ns("expression_plot"), label = "Add expression plot", value = FALSE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
-                   checkboxInput(ns("log_scale"), label = "Log Scale", value = FALSE),
                    uiOutput(ns("clip")),
                    export_format_of_plot(ns)
           )
@@ -68,9 +68,14 @@ browser_server <- function(id, all_experiments, env, df, experiments,
         click_plot_browser_main_controller(input, tx, cds, libs, df),
         ignoreInit = check_plot_on_start(browser_options),
         ignoreNULL = FALSE)
-      output$c <- renderPlotly(click_plot_browser(mainPlotControls, session)) %>%
-        bindCache(mainPlotControls()$hash_browser) %>%
+
+      bottom_panel <- reactive(bottom_panel_shiny(mainPlotControls))  %>%
+        bindCache(mainPlotControls()$hash_bottom) %>%
         bindEvent(mainPlotControls(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      output$c <- renderPlotly(browser_track_panel_shiny(mainPlotControls, bottom_panel(), session)) %>%
+        bindCache(mainPlotControls()$hash_browser) %>%
+        bindEvent(bottom_panel(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       # Protein display
       module_protein(input, output, gene_name_list, session)

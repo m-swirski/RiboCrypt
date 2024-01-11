@@ -48,11 +48,12 @@
 #' @param AA_code Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
 #' See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
 #' \code{Biostrings::getGeneticCode("11")}
-#' @param export.format character, default: "svg". alternative: "png".
-#' when you click the top right image button export, what should it export as?
+#' @param log_scale logical, default FALSE. Log2 scale the count values, for easier visualization of shapes.
 #' @param BPPARAM how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
 #'  To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.
 #'  You can also add a time remaining bar, for a more detailed pipeline.
+#' @param export.format character, default: "svg". alternative: "png".
+#' when you click the top right image button export, what should it export as?
 #' @inheritParams createSeqPanelPattern
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
@@ -83,7 +84,7 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                 annotation_names = NULL,
                                 start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                 custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
-                                BPPARAM = BiocParallel::SerialParam(), summary_track = FALSE,
+                                log_scale = FALSE, BPPARAM = BiocParallel::SerialParam(), summary_track = FALSE,
                                 summary_track_type = frames_type,
                                 export.format = "svg") {
 
@@ -100,8 +101,8 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
     display_sequence, seq_render_dist,
     aa_letter_code,
     annotation_names, start_codons, stop_codons,
-    custom_motif, BPPARAM, "", summary_track, summary_track_type,
-    export.format)
+    custom_motif, log_scale, BPPARAM, "",
+    summary_track, summary_track_type, export.format)
 
 }
 
@@ -135,7 +136,7 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
                                    aa_letter_code = c("one_letter", "three_letters")[1],
                                    annotation_names = NULL,
                                    start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                   custom_motif = NULL,
+                                   custom_motif = NULL, log_scale = FALSE,
                                    BPPARAM = BiocParallel::SerialParam()) {
   multiOmicsController()
   # Get sequence and create basic seq panel

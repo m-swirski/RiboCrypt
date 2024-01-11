@@ -33,6 +33,74 @@ get_exp <- function(dff, experiments, env) {
   return(read.experiment(dff, output.env = env, validate = FALSE))
 }
 
+bottom_panel_shiny <- function(mainPlotControls) {
+  time_before <- Sys.time()
+  print("Creating bottom panel..")
+  viewMode <- ifelse(mainPlotControls()$viewMode, "genomic", "tx")
+  df <- mainPlotControls()$dff
+  annotation_list <- annotation_controller(df = df,
+                                           display_range = mainPlotControls()$display_region,
+                                           annotation = mainPlotControls()$annotation,
+                                           leader_extension = mainPlotControls()$extendLeaders,
+                                           trailer_extension = mainPlotControls()$extendTrailers,
+                                           viewMode = viewMode)
+
+  bottom_panel <- multiOmicsPlot_bottom_panels(reference_sequence = findFa(df),
+                                               annotation_list$display_range,
+                                               annotation_list$annotation,
+                                               start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
+                                               custom_motif = mainPlotControls()$custom_sequence,
+                                               custom_regions = mainPlotControls()$customRegions,
+                                               viewMode)
+  cat("Done (bottom):"); print(round(Sys.time() - time_before, 2))
+  return(c(bottom_panel, annotation_list))
+}
+
+browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
+                                      reads = mainPlotControls()$reads,
+                                      withFrames = libraryTypes(mainPlotControls()$dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
+                                      viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
+                                      frames_type = mainPlotControls()$frames_type,
+                                      colors = NULL,
+                                      kmers = mainPlotControls()$kmerLength,
+                                      kmers_type = c("mean", "sum")[1],
+                                      ylabels = bamVarName(mainPlotControls()$dff),
+                                      lib_to_annotation_proportions = c(0.8,0.2), lib_proportions = NULL,
+                                      annotation_proportions = NULL, width = NULL, height = NULL,
+                                      plot_name = "default", plot_title = NULL,
+                                      display_sequence = "nt", seq_render_dist = 100,
+                                      aa_letter_code = c("one_letter", "three_letters")[1],
+                                      log_scale = mainPlotControls()$log_scale,
+                                      BPPARAM = BiocParallel::SerialParam(),
+                                      summary_track = mainPlotControls()$summary_track,
+                                      summary_track_type = mainPlotControls()$summary_track_type,
+                                      export.format = mainPlotControls()$export_format) {
+  time_before <- Sys.time()
+  print("Creating full browser panel..")
+  # Input controller
+  multiOmicsControllerView()
+  # Get NGS data track panels
+  # browser()
+  profiles <- multiOmicsPlot_all_profiles(bottom_panel$display_range, reads, kmers,
+                                          kmers_type, frames_type,
+                                          withFrames, log_scale, BPPARAM)
+  track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, colors, ylabels,
+                                                ylabels_full_name, bottom_panel$lines,
+                                                frames_type, total_libs,
+                                                summary_track, summary_track_type,
+                                                BPPARAM)
+  plot <- multiOmicsPlot_complete_plot(track_panel, bottom_panel,
+                                       bottom_panel$display_range,
+                                       proportions, seq_render_dist,
+                                       display_sequence, display_dist,
+                                       aa_letter_code,
+                                       input_id = session$ns("selectedRegion"),
+                                       plot_name, plot_title, width, height,
+                                       export.format)
+  cat("Done (Full):"); print(round(Sys.time() - time_before, 2))
+  return(plot)
+}
+
 click_plot_browser <- function(mainPlotControls, session) {
   time_before <- Sys.time()
   print("Starting loading + Profile + plot calc")
@@ -50,6 +118,7 @@ click_plot_browser <- function(mainPlotControls, session) {
     frames_type = mainPlotControls()$frames_type,
     custom_regions = mainPlotControls()$customRegions,
     custom_motif = mainPlotControls()$custom_sequence,
+    log_scale = mainPlotControls()$log_scale,
     input_id = session$ns("selectedRegion"),
     summary_track = mainPlotControls()$summary_track,
     summary_track_type = mainPlotControls()$summary_track_type,

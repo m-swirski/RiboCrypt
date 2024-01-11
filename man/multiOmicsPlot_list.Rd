@@ -34,6 +34,7 @@ multiOmicsPlot_list(
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
   AA_code = Biostrings::GENETIC_CODE,
+  log_scale = FALSE,
   BPPARAM = BiocParallel::SerialParam(),
   summary_track = FALSE,
   summary_track_type = frames_type,
@@ -115,6 +116,8 @@ If TRUE or "both", display nucleotide and aa sequence in plot.}
 \item{AA_code}{Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
 See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
 \code{Biostrings::getGeneticCode("11")}}
+
+\item{log_scale}{logical, default FALSE. Log2 scale the count values, for easier visualization of shapes.}
 
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
 To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.

@@ -35,6 +35,7 @@ multiOmicsPlot_ORFikExp(
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
+  log_scale = FALSE,
   BPPARAM = BiocParallel::SerialParam(),
   input_id = "",
   summary_track = FALSE,
@@ -120,6 +121,8 @@ If TRUE or "both", display nucleotide and aa sequence in plot.}
 \item{stop_codons}{character vector, default c("TAA", "TAG", "TGA")}
 
 \item{custom_motif}{character vector, default NULL.}
+
+\item{log_scale}{logical, default FALSE. Log2 scale the count values, for easier visualization of shapes.}
 
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
 To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.

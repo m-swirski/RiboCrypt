@@ -69,12 +69,12 @@ getCoverageProfile <- function(grl, reads, kmers = 1, kmers_type = "mean") {
     coverage$genes <- as.factor(coverage$genes)
     coverage <- coverage[,count := get(paste("froll",kmers_type, sep = ""))(count, kmers, fill = 0, align = "center"), by = genes]
     coverage <- coverage[(kmers*3 + 1):(nrow(coverage) - kmers*3)]
-    coverage$position <- 1:nrow(coverage)
+    coverage[, position := seq.int(nrow(coverage))]
   }
   return(coverage)
 }
 
-getProfileWrapper <- function(display_range, reads, withFrames, kmers = 1,
+getProfileWrapper <- function(display_range, reads, withFrames, kmers = 1, log_scale = FALSE,
                               kmers_type = "mean", type = "lines") {
 
   if (withFrames) {
@@ -82,6 +82,7 @@ getProfileWrapper <- function(display_range, reads, withFrames, kmers = 1,
   } else {
     profile <- getCoverageProfile(display_range, reads, kmers, kmers_type = kmers_type)
   }
+  if (log_scale) profile[, count := log2(count + 1)]
   return(profile)
 }
 

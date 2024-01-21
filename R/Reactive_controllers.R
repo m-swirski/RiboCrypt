@@ -34,7 +34,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                           input$summary_track, input$summary_track_type,
                           input$kmer, input$frames_type,
                           input$log_scale, collapse = "|_|")
-    hash_expression <- paste(full_names,
+    hash_expression <- paste(full_names, input$tx,
                              input$expression_plot, input$extendTrailers,
                              input$extendLeaders, collapse = "|_|")
 

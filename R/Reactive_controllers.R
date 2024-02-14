@@ -40,6 +40,10 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
 
     #reads <- load_reads(dff, "cov")
     reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""))
+    if (!all(unlist(file.exists(reads), use.names = FALSE))) {
+      reads <- filepath(df, "bigwig", suffix_stem = c("_pshifted", ""),
+                        base_folders = libFolder(df, "all"))
+    }
     reactiveValues(dff = dff,
                    display_region = display_region,
                    customRegions = customRegions,

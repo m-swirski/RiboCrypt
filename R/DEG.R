@@ -13,33 +13,10 @@ DE_model <- function(df, method, other_tx, target.contrast = design[1],
     counts <- counts[filterTranscripts(df, 0, 1, 0)]
   }
   if (method == "DESeq2") {
-    DEG_model(df, counts = counts)
+    ORFik::DEG_model(df, counts = counts)
   } else if (method == "FPKM ratio") {
-    DEG_model_simple(df, target.contrast, design, counts = counts)
+    ORFik::DEG_model_simple(df, target.contrast, design, counts = counts)
   } else stop("Invalid Differential method selected")
-}
-
-DEG_model_simple <- function(df,
-                             target.contrast = design[1],
-                             design = ORFik::design(df),
-                             p.value = 0.05,
-                             counts = countTable(df, "mrna", type = "summarized"),
-                             batch.effect = FALSE) {
-  # Design
-  main.design <- ORFik:::DEG_design(design[1], target.contrast, batch.effect)
-  design_ids <- as.character(df[, target.contrast])
-  ids <- rownames(counts)
-  counts <- as.data.table(DESeq2::fpkm(DESeq2::DESeqDataSet(counts, ~ 1)))
-  # Get LFC matrix
-  counts_group <- lapply(unique(design_ids),
-              function(x) rowMeans(counts[,design_ids == x, with = FALSE]))
-  setDT(counts_group)
-  colnames(counts_group) <- unique(design_ids)
-  dt <- data.table(LFC = log2((counts_group[,1][[1]] + 0.0001) / (counts_group[,2][[1]] + 0.0001)),
-                   meanCounts = c(rowMeans(counts_group[, c(1,2), with = FALSE])))
-  dt[, id := ids]
-  dt[, contrast := paste(unique(design_ids)[1:2], collapse = "_vs_")]
-  return(dt)
 }
 
 DE_model_results <- function(dt, controls) {

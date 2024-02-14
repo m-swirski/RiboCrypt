@@ -15,8 +15,9 @@ make_url_from_inputs <- function(input, session) {
                     paste("library", paste(input$library, collapse = ","), sep = "="),
                     paste("frames_type", input$frames_type, sep = "="),
                     paste("kmer", input$kmer, sep = "="),
+                    paste("log_scale", input$log_scale, sep = "="),
                     paste("extendLeaders", input$extendLeaders, sep = "="),
-                    paste("extendTrailers", input$kmer, sep = "="),
+                    paste("extendTrailers", input$extendTrailers, sep = "="),
                     paste("viewMode", input$viewMode, sep = "="),
                     paste("other_tx", input$other_tx, sep = "="),
                     paste("add_uorfs", input$add_uorfs, sep = "="),
@@ -109,7 +110,7 @@ check_url_for_basic_parameters <- function() {
       }
       tag <- "library"
       value <- query[tag][[1]]
-      if (!is.null(value)){
+      if (!is.null(value)) {
         print(paste("Library update to:", value))
         value <- strsplit(x = value, ",")[[1]]
         if (length(value) > 0) {
@@ -144,46 +145,28 @@ check_url_for_basic_parameters <- function() {
       tag <- "frames_type"
       value <- query[tag][[1]]
       if (!is.null(value)) {
-        # freezeReactiveValue(input, tag)
         frame_type_update_select(value)
       }
       tag <- "kmer"
       value <- query[tag][[1]]
       if (!is.null(value)) {
-        # freezeReactiveValue(input, tag)
         kmer_update_select(value)
       }
-      tag <- "extendLeaders"
-      value <- query[tag][[1]]
-      if (!is.null(value)) {
-        updateNumericInput(inputId = tag, value = value)
-      }
-      tag <- "extendTrailers"
-      value <- query[tag][[1]]
-      if (!is.null(value)) {
-        updateNumericInput(inputId = tag, value = value)
-      }
-      tag <- "viewMode"
-      value <- query[tag][[1]]
-      if (!is.null(value)) {
-        updateCheckboxInput(inputId = tag, value = as.logical(value))
-      }
-      tag <- "other_tx"
-      value <- query[tag][[1]]
-      if (!is.null(value)) {
-        updateCheckboxInput(inputId = tag, value = as.logical(value))
-      }
-      tag <- "add_uorfs"
-      value <- query[tag][[1]]
-      if (!is.null(value)) {
-        updateCheckboxInput(inputId = tag, value = as.logical(value))
-      }
-      tag <- "summary_track"
-      value <- query[tag][[1]]
-      if (!is.null(value)) {
-        updateCheckboxInput(inputId = tag, value = as.logical(value))
-      }
 
+      # Numeric box updates
+      for (tag in c("extendLeaders", "extendTrailers")) {
+        value <- query[tag][[1]]
+        if (!is.null(value)) {
+          updateNumericInput(inputId = tag, value = value)
+        }
+      }
+      # Checkbox updates
+      for (tag in c("viewMode", "other_tx", "add_uorfs", "summary_track", "log_scale")) {
+        value <- query[tag][[1]]
+        if (!is.null(value)) {
+          updateCheckboxInput(inputId = tag, value = as.logical(value))
+        }
+      }
     }, priority = -10)
 
   })

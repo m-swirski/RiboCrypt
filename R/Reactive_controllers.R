@@ -11,6 +11,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
       gr <- try(GRanges(isolate(input$genomic_region)))
 
       if (is(gr, "GRanges")) {
+        if (start(gr) < 1) stop("Position 1 is minimum position to show on a chromosome! (input ", start(gr), ")")
         if (width(gr) > 1e6) stop("Only up to 1 million bases can be shown!")
         seqlevelsStyle(gr) <- seqlevelsStyle(display_region)[1]
         if (!(as.character(seqnames(gr)) %in% seqnames(seqinfo(df()))))

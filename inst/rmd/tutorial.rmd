@@ -90,6 +90,10 @@ Here additional options are shown:
 
 - 5' extension (extend viewed window upstream, outside defined region)
 - 3' extension (extend viewed window downstream, outside defined region)
+- Custom sequences highlight (Motif search, given in purple color, support IUPAC, examples: CTG or NTG)
+- Genomic region (Browse genomic window instead of gene, syntax: chromosome:start-stop:strand,
+human/mouse/zebrafish: 1:10000-20000:+ , yeast: I:10000-20000:+. 
+Both 1 and chr1 works, conversion will be done internally)
 - Genomic View (Activate/deactivate genomic view, giving splice information and
 correct positions in genome, but a lot harder to understand)
 - Protein structures (If you click the annotation name of a transcript

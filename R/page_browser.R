@@ -41,6 +41,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    checkboxInput(ns("add_uorfs"), label = "uORF annotation", value = FALSE),
                    checkboxInput(ns("log_scale"), label = "Log Scale", value = FALSE),
                    checkboxInput(ns("expression_plot"), label = "Add expression plot", value = FALSE),
+                   checkboxInput(ns("phyloP"), label = "phyloP", value = FALSE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
                    uiOutput(ns("clip")),
@@ -51,8 +52,9 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
       )),
       mainPanel(
         jqui_resizable(plotlyOutput(outputId = ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
-        uiOutput(ns("variableUi"),
-      ), plotlyOutput(outputId = ns("d")) %>% shinycssloaders::withSpinner(color="#0dc5c1"), width=9)
+        plotlyOutput(outputId = ns("e"), height = "50px"),
+        uiOutput(ns("variableUi"),),
+        plotlyOutput(outputId = ns("d")) %>% shinycssloaders::withSpinner(color="#0dc5c1"), width=9)
     )
   )
 }
@@ -82,6 +84,36 @@ browser_server <- function(id, all_experiments, env, df, experiments,
 
       # Protein display
       module_protein(input, output, gene_name_list, session)
+
+      output$e <- renderPlotly({
+        req(input$phyloP == TRUE)
+        phylo_dir <- file.path(dirname(df()@fafile), "phyloP100way")
+        if (dir.exists(phylo_dir)) {
+          phylo_track <- list.files(phylo_dir, pattern = "\\.phyloP100way\\.bw$")[1]
+          if (length(phylo_track) == 1) {
+            grl <- mainPlotControls()$display_region
+            if (mainPlotControls()$viewMode) {
+              rl <- unlistGrl(flankPerGroup(grl))
+            }
+            seqlevelsStyle(grl) <- seqlevelsStyle(rtracklayer::BigWigFile(phylo_track))
+
+            rl <- ranges(grl)
+            names(rl) <- seqnamesPerGroup(grl, FALSE)
+
+            res <- rtracklayer::import.bw(phylo_track, as = "NumericList",
+                                          which = rl)
+            dt <- data.table(coverage = unlist(res, use.names = FALSE))
+            dt[, position := seq.int(.N)]
+            p <- ggplot(data = dt) + geom_bar(aes(y = phyloP, x = position), stat="identity") +
+                  theme_classic() + theme(axis.title.x=element_blank(),
+                                      axis.text.x=element_blank(),
+                                      axis.ticks.x=element_blank())
+            return(ggplotly(p))
+          }
+        }
+        }) %>%
+        bindCache(mainPlotControls()$hash_expression) %>%
+        bindEvent(mainPlotControls(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$d <- renderPlotly({
         req(input$expression_plot == TRUE)

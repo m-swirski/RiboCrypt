@@ -73,6 +73,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   plots <- track_panel$plots
   gene_model_panel <- bottom_panel$gene_model_panel
   seq_panel <- bottom_panel$seq_panel
+  custom_seq_panel <- bottom_panel$custom_bigwig_panels
   without_sequence_track <- display_sequence %in% c("none", FALSE)
   if (without_sequence_track) { # plotly subplot without sequence track
     nplots <- nplots + 2
@@ -82,6 +83,10 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
     plots <- c(plots, list(automateTicks(nt_area_template()), automateTicksGMP(gene_model_panel),
                            automateTicksX(seq_panel)))
   }
+  if (!is.null(custom_seq_panel)) {
+    plots <- c(plots, automateTicksX(custom_seq_panel))
+  }
+
   plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),
                                                    yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)) ))
   multiomics_plot <- subplot(plots,

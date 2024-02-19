@@ -87,33 +87,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
 
       output$e <- renderPlotly({
         req(input$phyloP == TRUE)
-        phylo_dir <- file.path(dirname(df()@fafile), "phyloP100way")
-        if (dir.exists(phylo_dir)) {
-          phylo_track <- list.files(phylo_dir, pattern = "\\.phyloP100way\\.bw$", full.names = TRUE)[1]
-          if (length(phylo_track) == 1) {
-            print("- Loading PhyloP track")
-            grl <- mainPlotControls()$display_region
-            if (mainPlotControls()$viewMode) {
-              rl <- unlistGrl(flankPerGroup(grl))
-            }
-            seqlevelsStyle(grl) <- seqlevelsStyle(rtracklayer::BigWigFile(phylo_track))
 
-            rl <- ranges(grl)
-            names(rl) <- seqnamesPerGroup(grl, FALSE)
-
-            res <- rtracklayer::import.bw(phylo_track, as = "NumericList",
-                                          which = rl)
-            dt <- data.table(phyloP = unlist(res, use.names = FALSE))
-            dt[, position := seq.int(.N)]
-            p <- ggplot(data = dt) + geom_bar(aes(y = phyloP, x = position), stat="identity") +
-                  theme_classic() + theme(axis.title.x = element_blank(),
-                                          axis.ticks.x = element_blank(),
-                                          axis.text.x = element_blank(),
-                                          plot.margin = unit(c(0,0,0,0), "pt")) +
-              scale_x_continuous(expand = c(0,0))
-            return(ggplotly(p))
-          }
-        }
         }) %>%
         bindCache(mainPlotControls()$hash_expression) %>%
         bindEvent(mainPlotControls(), ignoreInit = FALSE, ignoreNULL = TRUE)

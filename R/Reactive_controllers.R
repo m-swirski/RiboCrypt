@@ -62,6 +62,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    reads = reads,
                    custom_sequence = input$customSequence,
                    log_scale = input$log_scale,
+                   phyloP = input$phyloP,
                    hash_bottom = hash_bottom,
                    hash_browser = hash_browser,
                    hash_expression = hash_expression)

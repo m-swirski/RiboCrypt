@@ -89,8 +89,9 @@ browser_server <- function(id, all_experiments, env, df, experiments,
         req(input$phyloP == TRUE)
         phylo_dir <- file.path(dirname(df()@fafile), "phyloP100way")
         if (dir.exists(phylo_dir)) {
-          phylo_track <- list.files(phylo_dir, pattern = "\\.phyloP100way\\.bw$")[1]
+          phylo_track <- list.files(phylo_dir, pattern = "\\.phyloP100way\\.bw$", full.names = TRUE)[1]
           if (length(phylo_track) == 1) {
+            print("- Loading PhyloP track")
             grl <- mainPlotControls()$display_region
             if (mainPlotControls()$viewMode) {
               rl <- unlistGrl(flankPerGroup(grl))
@@ -102,12 +103,14 @@ browser_server <- function(id, all_experiments, env, df, experiments,
 
             res <- rtracklayer::import.bw(phylo_track, as = "NumericList",
                                           which = rl)
-            dt <- data.table(coverage = unlist(res, use.names = FALSE))
+            dt <- data.table(phyloP = unlist(res, use.names = FALSE))
             dt[, position := seq.int(.N)]
             p <- ggplot(data = dt) + geom_bar(aes(y = phyloP, x = position), stat="identity") +
-                  theme_classic() + theme(axis.title.x=element_blank(),
-                                      axis.text.x=element_blank(),
-                                      axis.ticks.x=element_blank())
+                  theme_classic() + theme(axis.title.x = element_blank(),
+                                          axis.ticks.x = element_blank(),
+                                          axis.text.x = element_blank(),
+                                          plot.margin = unit(c(0,0,0,0), "pt")) +
+              scale_x_continuous(expand = c(0,0))
             return(ggplotly(p))
           }
         }

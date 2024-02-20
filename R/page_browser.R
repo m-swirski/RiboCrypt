@@ -85,13 +85,6 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       # Protein display
       module_protein(input, output, gene_name_list, session)
 
-      output$e <- renderPlotly({
-        req(input$phyloP == TRUE)
-
-        }) %>%
-        bindCache(mainPlotControls()$hash_expression) %>%
-        bindEvent(mainPlotControls(), ignoreInit = FALSE, ignoreNULL = TRUE)
-
       output$d <- renderPlotly({
         req(input$expression_plot == TRUE)
         click_plot_boxplot(mainPlotControls, session)}) %>%

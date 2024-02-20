@@ -83,18 +83,19 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
     plots <- c(plots, list(automateTicks(nt_area_template()), automateTicksGMP(gene_model_panel),
                            automateTicksX(seq_panel)))
   }
+
   if (!is.null(custom_seq_panel)) {
     plots <- c(plots, list(automateTicksX(custom_seq_panel)))
-    nplots <- nplots + 1
+    nplots_all <- nplots + 1
     proportions <- c(proportions, 0.07)
     proportions <- proportions/sum(proportions)
-  }
+  } else nplots_all <- nplots
 
   plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),
                                                    yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16))))
   multiomics_plot <- subplot(plots,
                              margin = 0,
-                             nrows = nplots,
+                             nrows = nplots_all,
                              heights = proportions,
                              shareX = TRUE,
                              titleY = TRUE, titleX = TRUE)

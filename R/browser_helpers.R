@@ -85,6 +85,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   }
   if (!is.null(custom_seq_panel)) {
     plots <- c(plots, list(automateTicksX(custom_seq_panel)))
+    nplots <- nplots + 1
     proportions <- c(proportions, 0.07)
     proportions <- round(proportions/sum(proportions), 2)
   }

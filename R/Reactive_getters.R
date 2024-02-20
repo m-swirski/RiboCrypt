@@ -82,6 +82,9 @@ custom_seq_track_panels <- function(mainPlotControls) {
         theme_classic() + theme(axis.title.x = element_blank(),
                                 axis.ticks.x = element_blank(),
                                 axis.text.x = element_blank(),
+                                axis.title.y = element_blank(),
+                                axis.ticks.y = element_blank(),
+                                axis.text.y = element_blank(),
                                 plot.margin = unit(c(0,0,0,0), "pt")) +
         scale_x_continuous(expand = c(0,0))
       return(list(custom_bigwig_panels = p))

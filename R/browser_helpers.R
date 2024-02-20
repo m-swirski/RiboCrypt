@@ -84,11 +84,13 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                            automateTicksX(seq_panel)))
   }
   if (!is.null(custom_seq_panel)) {
-    plots <- c(plots, automateTicksX(custom_seq_panel))
+    plots <- c(plots, list(automateTicksX(custom_seq_panel)))
+    proportions <- c(proportions, 0.07)
+    proportions <- round(proportions/sum(proportions), 2)
   }
 
   plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),
-                                                   yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)) ))
+                                                   yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16))))
   multiomics_plot <- subplot(plots,
                              margin = 0,
                              nrows = nplots,

@@ -87,7 +87,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
     plots <- c(plots, list(automateTicksX(custom_seq_panel)))
     nplots <- nplots + 1
     proportions <- c(proportions, 0.07)
-    proportions <- round(proportions/sum(proportions), 2)
+    proportions <- proportions/sum(proportions)
   }
 
   plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),

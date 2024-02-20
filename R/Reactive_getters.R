@@ -84,7 +84,7 @@ custom_seq_track_panels <- function(mainPlotControls) {
                                 axis.text.x = element_blank(),
                                 plot.margin = unit(c(0,0,0,0), "pt")) +
         scale_x_continuous(expand = c(0,0))
-      return(p)
+      return(list(custom_bigwig_panels = p))
     }
   }
   return(NULL) # If no valid file found

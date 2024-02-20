@@ -59,7 +59,8 @@ bottom_panel_shiny <- function(mainPlotControls) {
 
 custom_seq_track_panels <- function(mainPlotControls) {
   if (!mainPlotControls()$phyloP) return(NULL)
-  phylo_dir <- file.path(dirname(df()@fafile), "phyloP100way")
+  df <- mainPlotControls()$dff
+  phylo_dir <- file.path(dirname(df@fafile), "phyloP100way")
   if (dir.exists(phylo_dir)) {
     phylo_track <- list.files(phylo_dir, pattern = "\\.phyloP100way\\.bw$", full.names = TRUE)[1]
     if (length(phylo_track) == 1) {

@@ -29,7 +29,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     hash_bottom <- paste(input$tx, input$other_tx, input$add_uorfs,
                          input$extendTrailers, input$extendLeaders,
                          input$genomic_region, input$viewMode,
-                         input$customSequence, collapse = "|_|")
+                         input$customSequence, input$phyloP,
+                         collapse = "|_|")
     # Until plot and coverage is split (bottom must be part of browser hash)
     hash_browser <- paste(hash_bottom,
                           full_names,

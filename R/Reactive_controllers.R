@@ -43,9 +43,10 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                              input$extendLeaders, collapse = "|_|")
 
     #reads <- load_reads(dff, "cov")
-    reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""))
-    if (!all(file.exists(unlist(reads, use.names = FALSE))) |
-        any(duplicated(unlist(reads, use.names = FALSE)))) {
+    reads <- try(filepath(dff, "bigwig", suffix_stem = c("_pshifted", "")))
+
+    if (is(reads, "try-error") || (!all(file.exists(unlist(reads, use.names = FALSE))) |
+        any(duplicated(unlist(reads, use.names = FALSE))))) {
       reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""),
                         base_folders = libFolder(dff, "all"))
     }

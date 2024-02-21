@@ -208,6 +208,7 @@ allsamples_metadata_clustering <- function(values, plot) {
     orders <- order(values) # Order by variable instead of cluster
   }
   meta <- data.table(grouping = values, order = orders)
+  meta <- meta[meta$order, ]
   if (clustering_was_done) {
     meta[, cluster := rep(seq(length(row_orders)), lengths(row_orders))]
   }

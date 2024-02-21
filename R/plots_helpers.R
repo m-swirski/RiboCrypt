@@ -53,9 +53,13 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
 
   if (type == "heatmap" | total_libs > 5) {
     profile_plot <- profile_plot +
-      theme(axis.title.y = element_blank(),
-            axis.ticks.y = element_blank(),
-            axis.text.y = element_blank())
+      theme(axis.title.y = element_blank())
+    if (type == "heatmap") {
+      profile_plot <- profile_plot +
+        theme(axis.ticks.y = element_blank(),
+              axis.text.y = element_blank())
+    }
+
     # browser()
     profile_plot <- automateTicksRNA(profile_plot)
     if (flip_ylabel | total_libs > 5) {

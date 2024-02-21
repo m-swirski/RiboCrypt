@@ -107,7 +107,7 @@ compute_collection_table <- function(path, lib_sizes, df,
 
   table[, library := factor(library, levels = levels(library)[meta_order], ordered = TRUE)]
   if (min_count > 0) {
-    meta_sub <- meta_sub[lib_names %in% filt_libs]
+    meta_sub <- meta_sub[meta_order][lib_names[meta_order] %in% filt_libs]
   }
   # Cast to wide format and return
   if (format == "wide") {

@@ -217,7 +217,7 @@ allsamples_metadata_clustering <- function(values, plot) {
 }
 
 allsamples_sidebar <- function(meta) {
-  gg <- ggplot(meta, aes(y = index, x = factor(1), fill = grouping)) +
+  gg <- ggplot(meta, aes(y = rev(index), x = factor(1), fill = grouping)) +
     geom_raster() + theme_void() +
     labs(x = NULL, y = NULL, title = NULL) +
     scale_x_discrete(expand = c(0, 0)) +

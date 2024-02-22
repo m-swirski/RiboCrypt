@@ -229,8 +229,7 @@ allsamples_sidebar <- function(meta) {
           panel.border = element_blank(),
           plot.margin = unit(c(0, 0, 0, 0), "cm"),
           legend.position = "none")
-
-  return(ggplotly(gg, tooltip="grouping") %>% plotly::config(displayModeBar = FALSE))
+  return(ggplotly(gg, tooltip="text") %>% plotly::config(displayModeBar = FALSE))
 }
 
 

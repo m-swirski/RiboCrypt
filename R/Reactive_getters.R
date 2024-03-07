@@ -95,7 +95,7 @@ custom_seq_track_panels <- function(mainPlotControls) {
 
 browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       reads = mainPlotControls()$reads,
-                                      withFrames = libraryTypes(mainPlotControls()$dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
+                                      withFrames = mainPlotControls()$withFrames,
                                       viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
                                       frames_type = mainPlotControls()$frames_type,
                                       colors = NULL,

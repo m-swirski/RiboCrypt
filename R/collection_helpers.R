@@ -10,6 +10,7 @@ load_collection <- function(path) {
   table[, `:=`(library, factor(library, levels = unique(library), ordered = TRUE))]
   return(table)
 }
+
 #' Normalize collection table
 #'
 #' @param table a data.table in long format

@@ -25,6 +25,12 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     # customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
     customRegions <- uorf_annotation
     full_names <- ORFik:::name_decider(dff, naming = "full")
+
+
+    if (isolate(input$withFrames)) {
+      withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU")
+    } else withFrames <- rep(FALSE, nrow(dff))
+
     # Hash strings for cache
     hash_bottom <- paste(input$tx, input$other_tx, input$add_uorfs,
                          input$extendTrailers, input$extendLeaders,
@@ -36,7 +42,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                           full_names,
                           input$plot_export_format,
                           input$summary_track, input$summary_track_type,
-                          input$kmer, input$frames_type,
+                          input$kmer, input$frames_type, input$withFrames,
                           input$log_scale, collapse = "|_|")
     hash_expression <- paste(full_names, input$tx,
                              input$expression_plot, input$extendTrailers,
@@ -66,6 +72,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    custom_sequence = input$customSequence,
                    log_scale = input$log_scale,
                    phyloP = input$phyloP,
+                   withFrames = withFrames,
                    hash_bottom = hash_bottom,
                    hash_browser = hash_browser,
                    hash_expression = hash_expression)

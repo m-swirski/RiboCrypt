@@ -174,7 +174,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     }
     if (!is.null(other_gene) & other_gene != "") {
       print(paste("Sorting on", other_gene))
-      other_tx <- tx_from_gene_list(isolate(gene_name_list()), other_gene)
+      other_tx <- tx_from_gene_list(isolate(gene_name_list()), other_gene)[1]
     } else other_tx <- NULL
 
     table_hash <- paste(name(dff), table_path, lib_sizes, clusters, min_count,

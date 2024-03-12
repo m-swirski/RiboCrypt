@@ -138,18 +138,15 @@ click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
 #                  export_format = input$plot_export_format)
 # }
 
-click_plot_browser_allsamp_controller <- function(input, df) {
+click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
   {
     # browser()
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
+    id <- isolate(input$tx)
     dff <- df()
 
-    table_path <- file.path(resFolder(dff), "collection_tables", paste0(isolate(input$tx), ".fst"))
-    if (!file.exists(dirname(table_path)))
-      stop("There is no collection fst tables directory for this organism,",
-           " see vignette for more information on how to make these.")
-    if (!file.exists(table_path)) stop("Gene has no precomputed table, try another one!")
+    table_path <- collection_path_from_exp(dff, id)
     lib_sizes <- file.path(QCfolder(dff), "totalCounts_mrna.rds")
     if (!file.exists(lib_sizes))
       stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
@@ -159,8 +156,30 @@ click_plot_browser_allsamp_controller <- function(input, df) {
     normalization <- isolate(input$normalization)
     kmer <- isolate(input$kmer)
     min_count <- isolate(input$min_count)
+    region_type <- isolate(input$region_type)
+    other_gene <- isolate(input$other_gene)
+    subset <-
+    if (region_type != "mrna") {
+      if (region_type == "leader+cds") {
+        region <- loadRegion(dff,part = "leaders", names.keep = id)
+        region2 <- loadRegion(dff,part = "cds", names.keep = id)
+        region <- unlistGrl(c(region, region2))
+        region <- GRangesList(region)
+        names(region) <- id
+        subset_coordinates_grl_to_ir(dff, id = id, subset = region)
+      } else {
+        region <- loadRegion(dff, part = region_type, names.keep = id)
+        subset_coordinates_grl_to_ir(dff, id = id, subset = region)
+      }
+    }
+    if (!is.null(other_gene) & other_gene != "") {
+      print(paste("Sorting on", other_gene))
+      other_tx <- tx_from_gene_list(isolate(gene_name_list()), other_gene)
+    } else other_tx <- NULL
+
     table_hash <- paste(name(dff), table_path, lib_sizes, clusters, min_count,
-                        metadata_field, normalization, kmer, sep = "|_|")
+                        region_type, metadata_field, normalization,
+                        kmer, sep = "|_|")
 
     print(paste("Table hash: ", table_hash))
     reactiveValues(dff = dff,
@@ -170,7 +189,9 @@ click_plot_browser_allsamp_controller <- function(input, df) {
                    metadata_field = metadata_field,
                    normalization = normalization,
                    kmer = kmer,
-                   min_count = min_count)
+                   min_count = min_count,
+                   subset = subset,
+                   group_on_tx_tpm = other_tx)
   }
 }
 

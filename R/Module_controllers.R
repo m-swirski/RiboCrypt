@@ -153,6 +153,7 @@ module_protein <- function(input, output, gene_name_list, session) {
 # TODO: Move as much as possible of protein stuff out of page_browser
 study_and_gene_observers <- function(input, output, session) {
   with(rlang::caller_env(), {
+    # Checks for which flags to set from parent function
     if (!exists("all_is_gene", mode = "logical")) all_is_gene <- FALSE
     if (!exists("uses_gene", mode = "logical")) uses_gene <- TRUE
     if (!exists("uses_libs", mode = "logical")) uses_libs <- TRUE
@@ -205,10 +206,19 @@ study_and_gene_observers <- function(input, output, session) {
           selected = choices[1],
           server = TRUE
         )
+        updateSelectizeInput(
+          inputId = "other_gene",
+          choices = c("", choices),
+          selected = "",
+          server = TRUE
+        )
       }
       # TODO: decide if updateSelectizeInput should be on top here or not
       observeEvent(gene_name_list(), gene_update_select(gene_name_list),
                    ignoreNULL = TRUE, ignoreInit = TRUE, priority = 5)
+      observeEvent(gene_name_list(), gene_update_select(gene_name_list, "",
+                                                        id = "other_gene"),
+                   ignoreNULL = TRUE, ignoreInit = TRUE, priority = 6)
 
       check_url_for_basic_parameters()
       observeEvent(input$gene, {

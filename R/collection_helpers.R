@@ -89,8 +89,12 @@ collection_to_wide <- function(table, value.var = "logscore") {
 compute_collection_table <- function(path, lib_sizes, df,
                                      metadata_field, normalization,
                                      kmer, metadata, min_count = 0, format = "wide",
-                                     value.var = "logscore", as_list = FALSE) {
+                                     value.var = "logscore", as_list = FALSE,
+                                     subset = NULL, group_on_tx_tpm = NULL) {
   table <- load_collection(path)
+  if (!is.null(subset)) {
+    table <- subset_fst_by_interval(table, subset)
+  }
   # Normalize
   if (min_count > 0) {
     lib_names <- unique(table$library)
@@ -102,8 +106,19 @@ compute_collection_table <- function(path, lib_sizes, df,
   table <- normalize_collection(table, normalization, lib_sizes, kmer)
   ## # Sort table by metadata column selected
   # Match metadata table and collection runIDs
-  matchings <- match_collection_to_exp(metadata, df)
-  meta_sub <- metadata[matchings, metadata_field, with = FALSE][[1]]
+  if (!is.null(group_on_tx_tpm)) {
+    isoform <- group_on_tx_tpm
+    table_path_other <- collection_path_from_exp(df, isoform)
+    table_other <- load_collection(table_path_other)
+    table_other <- normalize_collection(table_other, "tpm", lib_sizes, 1)
+    counts <- table_other[ , .(tpm = sum(score)), by = library]
+    tpm <- counts$tpm
+    names(tpm) <- counts$library
+    meta_sub <- tpm
+  } else {
+    matchings <- match_collection_to_exp(metadata, df)
+    meta_sub <- metadata[matchings, metadata_field, with = FALSE][[1]]
+  }
   meta_order <- order(meta_sub)
 
   table[, library := factor(library, levels = levels(library)[meta_order], ordered = TRUE)]
@@ -116,4 +131,52 @@ compute_collection_table <- function(path, lib_sizes, df,
   }
   if (as_list) return(list(table = table, metadata_field = meta_sub))
   return(table)
+}
+
+subset_fst_by_region <- function(df_all, table, id,
+                                 gene_mrna = loadRegion(df_all, names.keep = id),
+                                 subset = loadRegion(df_all,part = "cds", names.keep = id),
+                                 flank_cutoff = 0) {
+  stopifnot(is(table, "data.table"))
+
+
+  subset_pos <- subset_coordinates_grl_to_ir(gene_mrna, subset, flank_cutoff)
+  is_long_format <- all(c("library", "position") %in% colnames(table))
+  if (is_long_format) {
+    return(table[position %in% subset_pos,])
+  }
+  return(table[subset_pos,])
+}
+
+subset_coordinates_grl_to_ir <- function(df, id,
+                                         gene_mrna = loadRegion(df, names.keep = id),
+                                         subset = loadRegion(df,part = "cds", names.keep = id),
+                                         flank_cutoff = 0) {
+  stopifnot(flank_cutoff >= 0)
+  stopifnot(length(subset) == 1)
+  stopifnot(length(gene_mrna) == 1)
+
+  subset_txcoord <- pmapToTranscriptF(subset, gene_mrna)
+  subset_pos <- seq(as.integer(start(subset_txcoord)) + flank_cutoff, as.integer(end(subset_txcoord)) - flank_cutoff)
+  return(subset_pos)
+}
+
+subset_fst_by_interval <- function(table, subset) {
+  stopifnot(is.numeric(subset) && length(subset) > 0)
+  stopifnot(is(table, "data.table"))
+
+  is_long_format <- all(c("library", "position") %in% colnames(table))
+  if (is_long_format) {
+    return(table[position %in% subset,])
+  }
+  return(table[subset,])
+}
+
+collection_path_from_exp <- function(df, id) {
+  table_path <- file.path(resFolder(df), "collection_tables", paste0(id, ".fst"))
+  if (!file.exists(dirname(table_path)))
+    stop("There is no collection fst tables directory for this organism,",
+         " see vignette for more information on how to make these.")
+  if (!file.exists(table_path)) stop("Gene has no precomputed table, try another one!")
+  return(table_path)
 }

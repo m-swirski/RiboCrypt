@@ -183,13 +183,16 @@ compute_collection_table_shiny <- function(mainPlotControls,
                                       normalization = mainPlotControls()$normalization,
                                       kmer = mainPlotControls()$kmer,
                                       min_count = mainPlotControls()$min_count,
+                                      subset = mainPlotControls()$subset,
+                                      group_on_tx_tpm = mainPlotControls()$group_on_tx_tpm,
                                       metadata) {
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
   cat("Starting loading + Profile + plot calc\n")
   dtable <- compute_collection_table(path, lib_sizes, df, metadata_field,
                                      normalization, kmer, metadata, min_count,
-                                     as_list = TRUE)
+                                     as_list = TRUE, subset = subset,
+                                     group_on_tx_tpm = group_on_tx_tpm)
   cat("Done: lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
   return(dtable)
 }
@@ -207,6 +210,7 @@ allsamples_metadata_clustering <- function(values, plot) {
   if (!clustering_was_done) {
     orders <- order(values) # Order by variable instead of cluster
   }
+
   meta <- data.table(grouping = values, order = orders)
   meta <- meta[meta$order, ]
   if (clustering_was_done) {
@@ -218,8 +222,10 @@ allsamples_metadata_clustering <- function(values, plot) {
 }
 
 allsamples_sidebar <- function(meta) {
+  numeric_grouping <- is.numeric(meta$grouping)
+
   gg <- ggplot(meta, aes(y = rev(index), x = factor(1), fill = grouping)) +
-    geom_raster() + theme_void() +
+    theme_void() +
     labs(x = NULL, y = NULL, title = NULL) +
     scale_x_discrete(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
@@ -229,11 +235,29 @@ allsamples_sidebar <- function(meta) {
           panel.border = element_blank(),
           plot.margin = unit(c(0, 0, 0, 0), "cm"),
           legend.position = "none")
-  return(ggplotly(gg, tooltip="text") %>% plotly::config(displayModeBar = FALSE))
+
+  if (numeric_grouping) {
+    meta[, grouping_numeric := grouping]
+    meta[, grouping := cut(grouping, breaks=5)]
+    gg_tpm <- gg + geom_line(aes(x = grouping_numeric, y = rev(index), fill = NULL)) +
+      coord_flip()
+    plotly_tpm <- ggplotly(gg_tpm, tooltip="text")
+  }
+
+  gg_groups <- gg + geom_raster()
+  res <- ggplotly(gg_groups, tooltip="text")
+
+  if (numeric_grouping) {
+    res <- subplot(plotly_tpm, res, nrows = 1)
+  }
+  return(res %>% plotly::config(displayModeBar = FALSE))
 }
 
 
 allsamples_meta_stats_shiny <- function(meta) {
+  if (is.numeric(meta$grouping)) {
+    meta[, grouping := cut(grouping, breaks=5)]
+  }
   dt <- allsamples_meta_stats(meta)
   # Add Chi squared significane coloring
   datatable(round(dt, 2)) %>% formatStyle(columns = seq(ncol(dt)),

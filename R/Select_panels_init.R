@@ -29,12 +29,13 @@ experiment_input_select <- function(names, ns, browser_options = NULL,
 }
 
 gene_input_select <- function(ns, multiple = FALSE, browser_options = NULL,
-                              choices = NULL) {
+                              choices = NULL, label = "Select a gene",
+                              id = "gene") {
     selectizeInput(
-    inputId = ns("gene"),
+    inputId = ns(id),
     choices = as.character(browser_options["default_gene"]),
     selected = as.character(browser_options["default_gene"]),
-    label = "Select a gene",
+    label = label,
     multiple = multiple,
     options = list(placeholder = 'Insert valid gene')
   ) %>%
@@ -76,6 +77,17 @@ frame_type_select <- function(ns, name = "frames_type",
     multiple = FALSE
   ) %>%
     helper(onclick = "fakeClick('tutorial', 'linetype')")
+}
+
+region_view_select <- function(ns, name, label,
+                               selected = "mrna") {
+  selectizeInput(
+    inputId = ns(name),
+    label = label,
+    choices = c("mrna", "cds", "leader+cds", "leader", "trailer"),
+    selected = selected,
+    multiple = FALSE
+  )
 }
 
 heatmap_region_select <- function(ns) {

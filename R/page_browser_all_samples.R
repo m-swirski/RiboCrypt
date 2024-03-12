@@ -25,8 +25,10 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                    heatmap_color_select(ns),
                    sliderInput(ns("color_mult"), "Color scale zoom", min = 1, max = 10,
                                value = 3),
+                   gene_input_select(ns, label = "Sort by other gene", id = "other_gene"),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
+                   region_view_select(ns, "region_type", "Select region to view"),
                    tx_input_select(ns, FALSE),
                    numericInput(ns("min_count"), "Minimum counts", min = 0, value = 100),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
@@ -69,7 +71,7 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
       study_and_gene_observers(input, output, session)
       # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,
-                                        click_plot_browser_allsamp_controller(input, df),
+                                        click_plot_browser_allsamp_controller(input, df, gene_name_list),
                                         ignoreInit = TRUE,
                                         ignoreNULL = FALSE)
       # Main plot, this code is only run if 'plot' is pressed

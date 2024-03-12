@@ -239,7 +239,7 @@ allsamples_sidebar <- function(meta) {
   if (numeric_grouping) {
     meta[, grouping_numeric := grouping]
     meta[, grouping := cut(grouping, breaks=5)]
-    gg_tpm <- gg + geom_line(aes(x = grouping_numeric, y = rev(index), fill = NULL)) +
+    gg_tpm <- gg + geom_line(aes(y = grouping_numeric, x = rev(index), fill = NULL)) +
       coord_flip()
     plotly_tpm <- ggplotly(gg_tpm, tooltip="text")
   }

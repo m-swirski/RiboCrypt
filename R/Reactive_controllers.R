@@ -158,6 +158,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     min_count <- isolate(input$min_count)
     region_type <- isolate(input$region_type)
     other_gene <- isolate(input$other_gene)
+    frame <- isolate(input$frame)
     subset <-
     if (region_type != "mrna") {
       if (region_type == "leader+cds") {
@@ -181,7 +182,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     }
 
     table_hash <- paste(name(dff), table_path, lib_sizes, clusters, min_count,
-                        region_type, metadata_field, normalization,
+                        region_type, metadata_field, normalization, frame,
                         kmer, other_tx_hash, sep = "|_|")
 
     print(paste("Table hash: ", table_hash))
@@ -194,7 +195,8 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    kmer = kmer,
                    min_count = min_count,
                    subset = subset,
-                   group_on_tx_tpm = other_tx)
+                   group_on_tx_tpm = other_tx,
+                   frame = frame)
   }
 }
 

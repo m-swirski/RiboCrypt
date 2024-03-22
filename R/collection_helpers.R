@@ -19,11 +19,15 @@ load_collection <- function(path) {
 #' for full library sizes
 #' @param kmer integer, default 1L (off), if > 1 will smooth out signal with sliding window size kmer.
 #' @param add_logscore logical, default TRUE, adds a log(score + 1) to table
+#' @param split_by_frame logical, default FALSE
+#'  For kmer sliding window, should it split by frame
 #' @return a data.table of normalized results
 normalize_collection <- function(table, normalization, lib_sizes = NULL,
-                                 kmer = 1L, add_logscore = TRUE) {
+                                 kmer = 1L, add_logscore = TRUE,
+                                 split_by_frame = FALSE) {
   # Sliding window
-  if (kmer > 1) table <- smoothenMultiSampCoverage(table, kmer = kmer)
+  if (kmer > 1) table <- smoothenMultiSampCoverage(table, kmer = kmer,
+                                                   split_by_frame = split_by_frame)
   # Make tpm
   if (!is.null(lib_sizes)) {
     if (is.character(lib_sizes)) lib_sizes <- readRDS(lib_sizes)
@@ -90,7 +94,8 @@ compute_collection_table <- function(path, lib_sizes, df,
                                      metadata_field, normalization,
                                      kmer, metadata, min_count = 0, format = "wide",
                                      value.var = "logscore", as_list = FALSE,
-                                     subset = NULL, group_on_tx_tpm = NULL) {
+                                     subset = NULL, group_on_tx_tpm = NULL,
+                                     split_by_frame = FALSE) {
   table <- load_collection(path)
   if (!is.null(subset)) {
     table <- subset_fst_by_interval(table, subset)
@@ -103,7 +108,8 @@ compute_collection_table <- function(path, lib_sizes, df,
     if (length(filt_libs) == 0)
       stop("Count filter too strict, no libraries with that much reads for this transcript!")
   }
-  table <- normalize_collection(table, normalization, lib_sizes, kmer)
+  table <- normalize_collection(table, normalization, lib_sizes, kmer, TRUE,
+                                split_by_frame)
   ## # Sort table by metadata column selected
   # Match metadata table and collection runIDs
   if (!is.null(group_on_tx_tpm)) {

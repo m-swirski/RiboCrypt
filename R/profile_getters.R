@@ -28,14 +28,20 @@ getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
 
 smoothenSingleSampCoverage <- function(dt, kmer, kmers_type = "mean") {
   dt[, count := as.numeric(count)]
-  dt[,count := get(paste("froll",kmers_type, sep = ""))(count, kmer, fill = 0, align = "center"), by = list(genes, frame)]
+  dt[,count := get(paste("froll", kmers_type, sep = ""))(count, kmer, fill = 0, align = "center"), by = list(genes, frame)]
   dt <- dt[(kmer*3 + 1):(nrow(dt) - kmer*3)]
   dt[, position := 1:nrow(dt)]
   return(dt)
 }
 
-smoothenMultiSampCoverage <- function(dt, kmer, kmers_type = "mean") {
+smoothenMultiSampCoverage <- function(dt, kmer, kmers_type = "mean", split_by_frame = FALSE) {
   dt[, count := as.numeric(count)]
+  if (split_by_frame) {
+    if (!("frame" %in% colnames(dt))) {
+      dt[, frame := rep(seq(0, 2), length.out = nrow(dt))]
+    }
+    return(dt[,count := get(paste("froll", kmers_type, sep = ""))(count, kmer, fill = 0, align = "center"), by = .(library, frame)])
+  }
   return(dt[,count := get(paste("froll",kmers_type, sep = ""))(count, kmer, fill = 0, align = "center"), by = library])
 }
 

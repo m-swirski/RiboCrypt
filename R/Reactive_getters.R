@@ -185,6 +185,7 @@ compute_collection_table_shiny <- function(mainPlotControls,
                                       min_count = mainPlotControls()$min_count,
                                       subset = mainPlotControls()$subset,
                                       group_on_tx_tpm = mainPlotControls()$group_on_tx_tpm,
+                                      split_by_frame = mainPlotControls()$frame,
                                       metadata) {
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
@@ -192,7 +193,8 @@ compute_collection_table_shiny <- function(mainPlotControls,
   dtable <- compute_collection_table(path, lib_sizes, df, metadata_field,
                                      normalization, kmer, metadata, min_count,
                                      as_list = TRUE, subset = subset,
-                                     group_on_tx_tpm = group_on_tx_tpm)
+                                     group_on_tx_tpm = group_on_tx_tpm,
+                                     split_by_frame = split_by_frame)
   cat("Done: lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
   return(dtable)
 }

@@ -15,7 +15,10 @@ compute_collection_table(
   min_count = 0,
   format = "wide",
   value.var = "logscore",
-  as_list = FALSE
+  as_list = FALSE,
+  subset = NULL,
+  group_on_tx_tpm = NULL,
+  split_by_frame = FALSE
 )
 }
 \arguments{
@@ -47,6 +50,9 @@ the table output.}
 \item{as_list}{logical, default FALSE. Return as list of size 2,
 count data.table and metadata data.table Set to TRUE if you need metadata
 subset (needed if you subset the table, to get correct matching)}
+
+\item{split_by_frame}{logical, default FALSE
+For kmer sliding window, should it split by frame}
 }
 \value{
 a data.table in long or wide (default) format, if as list, it is a

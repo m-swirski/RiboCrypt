@@ -118,7 +118,7 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
 
     overlaps <- subsetByOverlaps(overlaps, display_range)
 
-    intersections <- trimOverlaps(overlaps,display_range)
+    intersections <- trimOverlaps(overlaps, display_range)
     intersections <- groupGRangesBy(intersections)
 
     locations <- pmapToTranscriptF(intersections, display_range)
@@ -127,53 +127,64 @@ createGeneModelPanel <- function(display_range, annotation, frame=1, custom_regi
     locations <- unlistGrl(locations)
     rel_frame <- getRelativeFrames(overlaps)
     names(rel_frame) <- names(overlaps)
-    if (length(rel_frame) != length(locations)) rel_frame <- selectFrames(rel_frame,locations)
+    if (length(rel_frame) != length(locations)) rel_frame <- selectFrames(rel_frame, locations)
     locations$rel_frame <- rel_frame
-    cols <- colour_bars(locations, overlaps,display_range)
-    locations <- ranges(locations)
-    blocks <- c(start(locations) , end(locations))
-    names(blocks) <- rep(names(locations), 2)
-    blocks <- sort(blocks)
-    lines_locations <- blocks[!(blocks %in% c(1, plot_width))]
-
-    # cols <- colour_bars(overlaps, display_range)
-    # if (length(cols) != length(locations)) cols <- selectCols(cols,locations)
-    rect_locations <- locations
-
-    locations <- resize(locations, width = 1, fix = "center")
-
-    labels_locations <- start(locations)
-
-    too_close <- labels_locations < 0.02 * plot_width
-
-    too_far <- labels_locations > 0.98 * plot_width
-    labels_locations[too_close] <- 1
-    labels_locations[too_far] <- plot_width
-    hjusts <- rep("center", length(labels_locations))
-    hjusts[too_close] <- "left"
-    hjusts[too_far] <- "right"
-    # TODO: remove when verified this is not needed
-    # if (as.logical(strand(display_range[[1]][1]) == "+")) {
-    #   gene_names <- names(locations)
-    # } else gene_names <- names(locations)
-    gene_names <- names(locations)
-    custom_region_names <- which(names(lines_locations) %in% names(custom_regions))
-    names(lines_locations) <- rep("black", length(lines_locations))
-    names(lines_locations)[custom_region_names] <- "orange4"
-    result_dt <- data.table(layers = layers,
-                            rect_starts = start(rect_locations),
-                            rect_ends = end(rect_locations),
-                            cols = cols,
-                            labels_locations = labels_locations,
-                            hjusts = hjusts,
-                            gene_names = gene_names)
+    cols <- colour_bars(locations, overlaps, display_range)
+    res_list <- geneBoxFromRanges(locations, plot_width, layers,
+                                  cols, custom_regions)
 
   } else {
     result_dt <- data.table()
     lines_locations <- NULL
+    res_list <- list(result_dt, lines_locations)
   }
 
-  return(list(result_dt, lines_locations))
+  return(res_list)
+}
+
+geneBoxFromRanges <- function(locations, plot_width,
+                              layers = rep(1, length(locations)),
+                              cols = c("#F8766D","#00BA38","#619CFF")[start(locations) %% 3 + 1],
+                              custom_regions = NULL) {
+
+  locations <- ranges(locations)
+  blocks <- c(start(locations) , end(locations))
+  names(blocks) <- rep(names(locations), 2)
+  blocks <- sort(blocks)
+  lines_locations <- blocks[!(blocks %in% c(1, plot_width))]
+
+
+  rect_locations <- locations
+
+  locations <- resize(locations, width = 1, fix = "center")
+
+  labels_locations <- start(locations)
+
+  too_close <- labels_locations < 0.02 * plot_width
+
+  too_far <- labels_locations > 0.98 * plot_width
+  labels_locations[too_close] <- 1
+  labels_locations[too_far] <- plot_width
+  hjusts <- rep("center", length(labels_locations))
+  hjusts[too_close] <- "left"
+  hjusts[too_far] <- "right"
+  # TODO: remove when verified this is not needed
+  # if (as.logical(strand(display_range[[1]][1]) == "+")) {
+  #   gene_names <- names(locations)
+  # } else gene_names <- names(locations)
+  gene_names <- names(locations)
+  custom_region_names <- which(names(lines_locations) %in% names(custom_regions))
+  names(lines_locations) <- rep("black", length(lines_locations))
+  names(lines_locations)[custom_region_names] <- "orange4"
+  result_dt <- data.table(layers = layers,
+                          rect_starts = start(rect_locations),
+                          rect_ends = end(rect_locations),
+                          cols = cols,
+                          labels_locations = labels_locations,
+                          hjusts = hjusts,
+                          gene_names = gene_names)
+  res_list <- list(result_dt, lines_locations)
+  return(res_list)
 }
 
 geneModelPanelPlot <- function(dt, frame = 1) {

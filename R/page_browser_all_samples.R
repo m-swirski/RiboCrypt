@@ -47,7 +47,8 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                         jqui_resizable(plotOutput(outputId = ns("c"), height = "700px")) %>%
                           shinycssloaders::withSpinner(color="#0dc5c1"),
                         width=9)
-        )),
+        ),
+        plotlyOutput(outputId = ns("e"))),
         tabPanel("Statistics", DTOutput(outputId = ns("stats")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))
       ))
     )
@@ -71,15 +72,15 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
         bindEvent(rv$changed, ignoreNULL = TRUE)
       study_and_gene_observers(input, output, session)
       # Main plot controller, this code is only run if 'plot' is pressed
-      mainPlotControls <- eventReactive(input$go,
+      controller <- eventReactive(input$go,
                                         click_plot_browser_allsamp_controller(input, df, gene_name_list),
                                         ignoreInit = TRUE,
                                         ignoreNULL = FALSE)
       # Main plot, this code is only run if 'plot' is pressed
-      table <- reactive(compute_collection_table_shiny(mainPlotControls,
+      table <- reactive(compute_collection_table_shiny(controller,
                                                    metadata = metadata)) %>%
-        bindCache(mainPlotControls()$table_hash) %>%
-        bindEvent(mainPlotControls()$table_hash,
+        bindCache(controller()$table_hash) %>%
+        bindEvent(controller()$table_hash,
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
 
@@ -91,8 +92,11 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
 
-      output$c <- renderPlot(plot_object()) %>%
-        bindCache(mainPlotControls()$table_hash, input$heatmap_color,
+      output$c <- renderPlot(get_meta_browser_plot_full(table()$table,
+                        plot_object(), controller()$id,
+                        controller()$dff, controller()$summary_track
+                             )) %>%
+        bindCache(controller()$table_hash, input$heatmap_color,
                   isolate(input$color_mult)) %>%
         bindEvent(plot_object(),
                   ignoreInit = FALSE,
@@ -100,16 +104,22 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
       meta_and_clusters <- reactive(
           allsamples_metadata_clustering(table()$metadata_field, plot_object()
                                        )) %>%
-        bindCache(mainPlotControls()$table_hash) %>%
+        bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
-      output$d <- renderPlotly(allsamples_sidebar(meta_and_clusters())) %>%
-        bindCache(mainPlotControls()$table_hash) %>%
+
+      output$d <- renderPlotly(allsamples_sidebar(meta_and_clusters()$meta)) %>%
+        bindCache(controller()$table_hash) %>%
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
-      output$stats <- renderDT(allsamples_meta_stats_shiny(meta_and_clusters())) %>%
+      output$e <- renderPlotly(allsamples_enrich_bar_plot(meta_and_clusters()$enrich_dt)) %>%
+        bindCache(controller()$table_hash) %>%
+        bindEvent(meta_and_clusters(),
+                  ignoreInit = FALSE,
+                  ignoreNULL = TRUE)
+      output$stats <- renderDT(allsamples_meta_stats_shiny(meta_and_clusters()$enrich_dt)) %>%
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)

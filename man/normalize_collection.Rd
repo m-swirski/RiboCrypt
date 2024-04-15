@@ -9,7 +9,8 @@ normalize_collection(
   normalization,
   lib_sizes = NULL,
   kmer = 1L,
-  add_logscore = TRUE
+  add_logscore = TRUE,
+  split_by_frame = FALSE
 )
 }
 \arguments{
@@ -23,6 +24,9 @@ for full library sizes}
 \item{kmer}{integer, default 1L (off), if > 1 will smooth out signal with sliding window size kmer.}
 
 \item{add_logscore}{logical, default TRUE, adds a log(score + 1) to table}
+
+\item{split_by_frame}{logical, default FALSE
+For kmer sliding window, should it split by frame}
 }
 \value{
 a data.table of normalized results

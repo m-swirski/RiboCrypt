@@ -39,7 +39,7 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                 withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
                                 frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
                                 ylabels = bamVarName(df), lib_to_annotation_proportions = c(0.8,0.2),lib_proportions = NULL,
-                                annotation_proportions = NULL,width = NULL, height = NULL,
+                                annotation_proportions = NULL, width = NULL, height = NULL,
                                 plot_name = "default", plot_title = NULL,
                                 display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 100,
                                 aa_letter_code = c("one_letter", "three_letters")[1],

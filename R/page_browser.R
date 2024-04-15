@@ -6,6 +6,10 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
   experiments <- all_exp$name
   init_tx <- gene_names_init[label == browser_options["default_gene"],]
   init_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
+  copy_button_formatting <- tags$head(
+    tags$style(HTML('#clip{background-color:orange}'))
+  )
+
   tabPanel(
     tags$head(includeHTML(system.file("google_analytics_html",
                                       "google_analytics.html", package = "RiboCrypt"))),
@@ -26,9 +30,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    helper_button_redirect_call(), # Here are settings ->
                    shinyjs::useShinyjs(),
                    rclipboardSetup(),
-                   tags$head(
-                     tags$style(HTML('#clip{background-color:orange}'))
-                   )
+                   copy_button_formatting
           ),
           tabPanel("Settings",
                    numericInput(ns("extendLeaders"), "5' extension", 0),

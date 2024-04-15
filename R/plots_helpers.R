@@ -11,17 +11,17 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
                 size = 0.1, alpha = 0.8, position = "identity")
   } else if (type == "lines") {
     profile_plot <- profile_plot +
-      geom_line(aes(y = count, x = position,color = frame), size = 0.5)
+      geom_line(aes(y = count, x = position, color = frame), size = 0.5)
   } else if (type == "stacks") {
     profile_plot <- profile_plot +
-      geom_area(aes(y = count, x = position,fill = frame), size = 0.1,
+      geom_area(aes(y = count, x = position, fill = frame), size = 0.1,
                 alpha = 0.8, col = "black")
   } else if (type == "columns") {
     profile_plot <- profile_plot +
       geom_col(aes(y = count, x = position, fill = frame))
   } else if (type == "area") {
     profile_plot <- profile_plot +
-      geom_area(aes(y = count, x = position,fill = frame), size = 0.1,
+      geom_area(aes(y = count, x = position, fill = frame), size = 0.1,
                 alpha = 0.8, col = "black", position = 'identity')
   } else if (type == "heatmap") {
     hm_colors <- c("white", "yellow1","yellow2", "yellow3",
@@ -38,7 +38,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
 
 singlePlot_add_theme <- function(profile_plot, ylabels, type,
                                  flip_ylabel = type == "heatmap", total_libs,
-                                 ylabels_full_name = ylabels) {
+                                 ylabels_full_name = ylabels, as_plotly = TRUE) {
   y_text_size <- ifelse(total_libs < 30, 8, 6)
   profile_plot <- profile_plot +
     ylab(ylabels) +
@@ -61,7 +61,7 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
     }
 
     # browser()
-    profile_plot <- automateTicksRNA(profile_plot)
+    profile_plot <- automateTicksRNA(profile_plot, as_plotly)
     if (flip_ylabel | total_libs > 5) {
       y_text_size <- ifelse(total_libs < 30, 15, ifelse(total_libs < 50, 10,
                                                         ifelse(total_libs < 60, 7, 5)))
@@ -74,5 +74,5 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
     }
     return(profile_plot)
   }
-  return(automateTicksRNA(profile_plot))
+  return(automateTicksRNA(profile_plot, as_plotly))
 }

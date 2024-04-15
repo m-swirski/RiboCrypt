@@ -24,7 +24,8 @@ automateTicksGMP <- function(plot) {
 #'
 #' @rawNamespace import(plotly, except = c(config, last_plot))
 #' @keywords internal
-automateTicksRNA <- function(plot) {
+automateTicksRNA <- function(plot, as_plotly = TRUE) {
+  if (!as_plotly) return(plot)
   plot %>% ggplotly(dynamicTicks = TRUE) %>%
     plotly::layout(yaxis=list(autorange = FALSE,nticks=3), xaxis=list(autorange=FALSE))
 }

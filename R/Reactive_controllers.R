@@ -159,6 +159,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     region_type <- isolate(input$region_type)
     other_gene <- isolate(input$other_gene)
     frame <- isolate(input$frame)
+    summary_track <- isolate(input$summary_track)
     subset <-
     if (region_type != "mrna") {
       if (region_type == "leader+cds") {
@@ -183,10 +184,11 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
 
     table_hash <- paste(name(dff), table_path, lib_sizes, clusters, min_count,
                         region_type, metadata_field, normalization, frame,
-                        kmer, other_tx_hash, sep = "|_|")
+                        kmer, other_tx_hash, summary_track, sep = "|_|")
 
     print(paste("Table hash: ", table_hash))
     reactiveValues(dff = dff,
+                   id = id,
                    table_path = table_path,
                    lib_sizes = lib_sizes,
                    table_hash = table_hash,
@@ -196,7 +198,8 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    min_count = min_count,
                    subset = subset,
                    group_on_tx_tpm = other_tx,
-                   frame = frame)
+                   frame = frame,
+                   summary_track = summary_track)
   }
 }
 

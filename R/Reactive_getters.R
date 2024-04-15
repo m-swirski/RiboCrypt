@@ -199,7 +199,7 @@ compute_collection_table_shiny <- function(mainPlotControls,
   return(dtable)
 }
 
-allsamples_metadata_clustering <- function(values, plot) {
+allsamples_metadata_clustering <- function(values, plot, numeric_bins = 5) {
   time_before <- Sys.time()
   print("Starting metabrowser clustering info")
 
@@ -219,8 +219,13 @@ allsamples_metadata_clustering <- function(values, plot) {
     meta[, cluster := rep(seq(length(row_orders)), lengths(row_orders))]
   }
   meta[, index := .I]
+
+  if (is.numeric(meta$grouping)) { #Make numeric bins
+    meta[, grouping_numeric_bins := cut(grouping, breaks=numeric_bins)]
+  }
+  enrich_dt <- allsamples_meta_stats(meta)
   cat("metabrowser clustering info done"); print(round(Sys.time() - time_before, 2))
-  return(meta)
+  return(list(meta = meta, enrich_dt = enrich_dt))
 }
 
 allsamples_sidebar <- function(meta) {
@@ -240,7 +245,7 @@ allsamples_sidebar <- function(meta) {
 
   if (numeric_grouping) {
     meta[, grouping_numeric := grouping]
-    meta[, grouping := cut(grouping, breaks=5)]
+    meta[, grouping := grouping_numeric_bins]
     gg_tpm <- gg + geom_line(aes(y = grouping_numeric, x = rev(index), fill = NULL)) +
       coord_flip()
     plotly_tpm <- ggplotly(gg_tpm, tooltip="text")
@@ -256,11 +261,7 @@ allsamples_sidebar <- function(meta) {
 }
 
 
-allsamples_meta_stats_shiny <- function(meta) {
-  if (is.numeric(meta$grouping)) {
-    meta[, grouping := cut(grouping, breaks=5)]
-  }
-  dt <- allsamples_meta_stats(meta)
+allsamples_meta_stats_shiny <- function(dt) {
   # Add Chi squared significane coloring
   datatable(round(dt, 2)) %>% formatStyle(columns = seq(ncol(dt)),
      backgroundColor = styleInterval(c(-3, 3), c('yellow', 'white', 'yellow')))
@@ -271,7 +272,11 @@ allsamples_meta_stats <- function(meta) {
   print("Starting metabrowser statistics")
   res <- copy(meta)
   res[, index := NULL]
+  if ("grouping_numeric_bins" %in% colnames(res)) {
+    res[, grouping := grouping_numeric_bins]
+  }
   res[, grouping := as.character(grouping)]
+
   clustering_was_done <- !is.null(res$cluster)
   if (clustering_was_done) {
     concat_table <- table(res$grouping, res$cluster)
@@ -287,20 +292,21 @@ allsamples_meta_stats <- function(meta) {
   return(as.data.frame.matrix(res))
 }
 
-get_meta_browser_plot <- function(table, color_theme, clusters = 1,
-                                  color_mult = 3) {
-  colors <- if (color_theme == "default (White-Blue)") {
-    c("white", "lightblue", rep("blue", 4 + color_mult), "navy", "black")
-  } else if (color_theme == "Matrix (black,green,red)") {
-    c("#000000", "#2CFA1F", "yellow2", rep("#FF2400", color_mult))
-  } else stop("Invalid color theme!")
-  cat("Creating metabrowser heatmap\n")
-  ComplexHeatmap::Heatmap(t(table), show_row_dend = FALSE,
-                          cluster_columns = FALSE,
-                          cluster_rows = FALSE,
-                          use_raster = TRUE,  raster_quality = 5,
-                          km = clusters,
-                          col =  colors, show_row_names = FALSE)
+allsamples_enrich_bar_plot <- function(enrich) {
+  enrich_dt <- as.data.table(enrich, keep.rownames = T)
+  enrich_dt <- suppressWarnings(melt(enrich_dt))
+  enrich_dt[, variable := factor(as.character(variable))]
+  enrich_dt <- enrich_dt[rn != "",]
+  enrichment_plot <- ggplot(enrich_dt) +
+    geom_bar(aes(x = rn, y = value, fill = variable), stat="identity", position=position_dodge()) +
+    theme_minimal() + labs(fill = "Cluster") + xlab("Tissue") + ylab("Enrichment") + geom_hline(yintercept = c(3, -3), linetype="dashed",
+                                                                                                color = "red", linewidth=1) +
+    theme(axis.title = element_text(size = 32),
+          axis.text.x = element_text(size = (22), angle = 45),
+          axis.text.y = element_text(size = (22)),
+          legend.text = element_text(size = 22),
+          legend.title = element_text(size = 32))
+  return(enrichment_plot)
 }
 
 get_fastq_page <- function(input, libs, df, relative_dir) {

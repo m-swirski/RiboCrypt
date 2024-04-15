@@ -33,8 +33,8 @@ Imports:
   GenomicFeatures,
   GenomicRanges,
   ggplot2,
+  grid,
   htmlwidgets,
-  httpuv (== 1.6.9),
   httr,
   IRanges,
   jsonlite,
@@ -57,5 +57,5 @@ Suggests:
   BiocStyle, 
   BSgenome,
   BSgenome.Hsapiens.UCSC.hg19
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 VignetteBuilder: knitr

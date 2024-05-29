@@ -220,6 +220,9 @@ see deseq2 tutorial for details!)
 
 ## Meta Browser {#mbrowser}
 Display all samples for a specific organism over selected gene.
+This tab does not use bigwig files to load (as that would be very slow).
+It uses precomputed fst files of coverage over all libraries. Note: Not
+all isoforms are computed, by default the longest isoform is computed. 
 
 ### Display panel (Meta browser)
 Organism, experiment and gene explained above
@@ -245,11 +248,22 @@ metadata term (40 brain samples, 30 kidney samples etc).
 - Color theme: Which color theme to use
 - Color scale multiplier: how much to amplify the color signal (if all is single color, 
   try to reduce or increase this depending on which color is the majority)
+- Sort by other gene: Sort heatmap on expression of another gene (increasing).
+  A line plot will be shown left that display the expression of that other gene 
+  per row. Also the enrichment analysis is done on bins of the other genes expression
+  instead of metadata term.
+- Summary top track (same as in browser, the aggregate of all rows, useful to see
+  the frame information, which is not represented in the heatmap)
+- Split by frame: (Not active yet!): When completed will display the heatmap 
+  with frame information, so rgb colors from white to dark red etc.
+- Summary display type: Same as in browser
+- Region to view: By default uses entire transcript. Can subset to only view
+  cds or leader+cds etc.
+- Select a transcript: Which transcript isoforms not all isoforms have
+  computed fsts. By default the longest isoforms have been computed for all genes.
 - K-mer length: Smoothens out the signal by applying a mean sliding window, 
   default 1 (off)
   
-
-
 ### Requirements
 This mode is very intensive on CPU, so it requires certain pre-computed results
 for the back end.

@@ -73,9 +73,9 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
       study_and_gene_observers(input, output, session)
       # Main plot controller, this code is only run if 'plot' is pressed
       controller <- eventReactive(input$go,
-                                        click_plot_browser_allsamp_controller(input, df, gene_name_list),
-                                        ignoreInit = TRUE,
-                                        ignoreNULL = FALSE)
+                                  click_plot_browser_allsamp_controller(input, df, gene_name_list),
+                                  ignoreInit = TRUE,
+                                  ignoreNULL = FALSE)
       # Main plot, this code is only run if 'plot' is pressed
       table <- reactive(compute_collection_table_shiny(controller,
                                                    metadata = metadata)) %>%
@@ -94,7 +94,8 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
 
       output$c <- renderPlot(get_meta_browser_plot_full(table()$table,
                         plot_object(), controller()$id,
-                        controller()$dff, controller()$summary_track
+                        controller()$dff, controller()$summary_track,
+                        region_type = controller()$region_type
                              )) %>%
         bindCache(controller()$table_hash, input$heatmap_color,
                   isolate(input$color_mult)) %>%

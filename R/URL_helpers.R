@@ -91,6 +91,7 @@ check_url_for_basic_parameters <- function() {
       page <- getPageFromURL(session)
       req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
       query <- getQueryString()
+      req(length(query) > 0)
       print(paste("Page:", id))
       tag <- "gene"
       value <- query[tag][[1]]

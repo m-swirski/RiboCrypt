@@ -197,6 +197,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    kmer = kmer,
                    min_count = min_count,
                    subset = subset,
+                   region_type = region_type,
                    group_on_tx_tpm = other_tx,
                    frame = frame,
                    summary_track = summary_track)

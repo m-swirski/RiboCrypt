@@ -17,11 +17,12 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
 
 get_meta_browser_plot_full <- function(m, heatmap, id, df,
                                        summary = TRUE, annotation = TRUE,
+                                       region_type = region_type,
                                        rel_heights = c(0.2, 0.75, 0.05)) {
   stopifnot(is.numeric(rel_heights) && length(rel_heights) == 3)
   gene_model_panel <- summary_plot <- NULL
   if (!summary & !annotation) return(heatmap)
-  # browser()
+
   if (summary) {
     summary_track_type <- "area"
     summary_profile <- data.table(count = rowSums(m))
@@ -41,12 +42,16 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
 
     lengths <- ORFik:::optimizedTranscriptLengths(df)
     length <- lengths[tx_name == id]
-    tx_width <- length$tx_len
+    tx_width <- ncol(heatmap) # length$tx_len
 
-
+    #mrna what we have
+    #cds do nothing
+    #leader+cds
+    #leader do nothing
+    #trailer do nothing
     start <- 1
     end <- tx_width
-    if (length$cds_len > 0) {
+    if (length$cds_len > 0 & region_type %in% c("mrna", "leader+cds")) {
       start <- start + length$utr5_len
       end <- start + length$cds_len
     }

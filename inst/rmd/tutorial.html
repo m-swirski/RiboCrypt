@@ -13,7 +13,7 @@
 
 <title>Tutorial</title>
 
-<script src="tutorial_files/header-attrs-2.25/header-attrs.js"></script>
+<script src="tutorial_files/header-attrs-2.26/header-attrs.js"></script>
 <script src="tutorial_files/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="tutorial_files/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
@@ -429,7 +429,10 @@ only!)</li>
 </div>
 <div id="mbrowser" class="section level2">
 <h2>Meta Browser</h2>
-<p>Display all samples for a specific organism over selected gene.</p>
+<p>Display all samples for a specific organism over selected gene. This
+tab does not use bigwig files to load (as that would be very slow). It
+uses precomputed fst files of coverage over all libraries. Note: Not all
+isoforms are computed, by default the longest isoform is computed.</p>
 <div id="display-panel-meta-browser" class="section level3">
 <h3>Display panel (Meta browser)</h3>
 <p>Organism, experiment and gene explained above - Group on: the
@@ -461,6 +464,22 @@ normalization)</li>
 <li>Color scale multiplier: how much to amplify the color signal (if all
 is single color, try to reduce or increase this depending on which color
 is the majority)</li>
+<li>Sort by other gene: Sort heatmap on expression of another gene
+(increasing). A line plot will be shown left that display the expression
+of that other gene per row. Also the enrichment analysis is done on bins
+of the other genes expression instead of metadata term.</li>
+<li>Summary top track (same as in browser, the aggregate of all rows,
+useful to see the frame information, which is not represented in the
+heatmap)</li>
+<li>Split by frame: (Not active yet!): When completed will display the
+heatmap with frame information, so rgb colors from white to dark red
+etc.</li>
+<li>Summary display type: Same as in browser</li>
+<li>Region to view: By default uses entire transcript. Can subset to
+only view cds or leader+cds etc.</li>
+<li>Select a transcript: Which transcript isoforms not all isoforms have
+computed fsts. By default the longest isoforms have been computed for
+all genes.</li>
 <li>K-mer length: Smoothens out the signal by applying a mean sliding
 window, default 1 (off)</li>
 </ul>

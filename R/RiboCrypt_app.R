@@ -25,6 +25,7 @@
 #' all experiments per organism), this will be fed to the metabrowser, while
 #' remaining all_exp are used in all other modules.
 #' @import shiny bslib ORFik NGLVieweR ggplot2 fst rclipboard
+#' @importFrom Biostrings strsplit
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
 #' @importFrom shinyjqui jqui_resizable jqui_draggable

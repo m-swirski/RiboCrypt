@@ -95,7 +95,8 @@ compute_collection_table <- function(path, lib_sizes, df,
                                      kmer, metadata, min_count = 0, format = "wide",
                                      value.var = "logscore", as_list = FALSE,
                                      subset = NULL, group_on_tx_tpm = NULL,
-                                     split_by_frame = FALSE) {
+                                     split_by_frame = FALSE,
+                                     ratio_interval = NULL) {
   table <- load_collection(path)
   if (!is.null(subset)) {
     table <- subset_fst_by_interval(table, subset)
@@ -112,7 +113,21 @@ compute_collection_table <- function(path, lib_sizes, df,
                                 split_by_frame)
   ## # Sort table by metadata column selected
   # Match metadata table and collection runIDs
-  if (!is.null(group_on_tx_tpm)) {
+  if (!is.null(ratio_interval)) {
+    stopifnot(is.numeric(ratio_interval) && length(ratio_interval) == 2)
+    stopifnot(all(is.finite(ratio_interval)))
+
+    if (ratio_interval[1] > ratio_interval[2]) stop("Ratio interval must start on >= 1")
+    if (ratio_interval[1] < 1) stop("Ratio interval must start on >= 1")
+    if (ratio_interval[2] > max(table$position)) stop("Ratio interval must end on <= ncol(heatmap)")
+
+    counts <- table[position %in% seq.int(ratio_interval[1], ratio_interval[2]),
+                    .(tpm = sum(score)), by = library]
+    tpm <- counts$tpm
+    names(tpm) <- counts$library
+    meta_sub <- tpm
+    table[, library := factor(library, levels = as.character(counts$library), ordered = TRUE)]
+  } else if (!is.null(group_on_tx_tpm)) {
     isoform <- group_on_tx_tpm
     table_path_other <- collection_path_from_exp(df, isoform)
     table_other <- load_collection(table_path_other)
@@ -128,8 +143,10 @@ compute_collection_table <- function(path, lib_sizes, df,
   meta_order <- order(meta_sub)
 
   table[, library := factor(library, levels = levels(library)[meta_order], ordered = TRUE)]
-  if (min_count > 0) {
+  if (min_count > 0 & is.null(ratio_interval)) {
     meta_sub <- meta_sub[meta_order][lib_names[meta_order] %in% filt_libs]
+  } else if (!is.null(ratio_interval)) {
+    meta_sub <- meta_sub[meta_order]
   }
   # Cast to wide format and return
   if (format == "wide") {

@@ -44,11 +44,6 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
     length <- lengths[tx_name == id]
     tx_width <- ncol(heatmap) # length$tx_len
 
-    #mrna what we have
-    #cds do nothing
-    #leader+cds
-    #leader do nothing
-    #trailer do nothing
     start <- 1
     end <- tx_width
     if (length$cds_len > 0 & region_type %in% c("mrna", "leader+cds")) {

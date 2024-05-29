@@ -160,6 +160,14 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     other_gene <- isolate(input$other_gene)
     frame <- isolate(input$frame)
     summary_track <- isolate(input$summary_track)
+    ratio_interval <- isolate(input$ratio_interval)
+    if (!is.null(ratio_interval)) {
+      if (ratio_interval != "") {
+        temp_interval <- as.numeric(unlist(strsplit(ratio_interval, ":|-")))
+        if (anyNA(temp_interval)) stop("Invlid interval given for ratio inverval!")
+        ratio_interval <- temp_interval
+      } else ratio_interval <- NULL
+    }
     subset <-
     if (region_type != "mrna") {
       if (region_type == "leader+cds") {
@@ -174,7 +182,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
         subset_coordinates_grl_to_ir(dff, id = id, subset = region)
       }
     }
-    if (!is.null(other_gene) & other_gene != "") {
+    if (!is.null(other_gene) && other_gene != "") {
       print(paste("Sorting on", other_gene))
       other_tx <- tx_from_gene_list(isolate(gene_name_list()), other_gene)[1]
       other_tx_hash <- paste0("sortOther:", other_tx)
@@ -199,6 +207,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    subset = subset,
                    region_type = region_type,
                    group_on_tx_tpm = other_tx,
+                   ratio_interval = ratio_interval,
                    frame = frame,
                    summary_track = summary_track)
   }

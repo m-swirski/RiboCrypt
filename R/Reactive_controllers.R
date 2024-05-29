@@ -192,7 +192,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
 
     table_hash <- paste(name(dff), table_path, lib_sizes, clusters, min_count,
                         region_type, metadata_field, normalization, frame,
-                        kmer, other_tx_hash, summary_track, sep = "|_|")
+                        kmer, other_tx_hash, ratio_interval, summary_track, sep = "|_|")
 
     print(paste("Table hash: ", table_hash))
     reactiveValues(dff = dff,

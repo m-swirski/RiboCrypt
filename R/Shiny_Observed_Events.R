@@ -81,7 +81,7 @@ observed_uorf_annotation <- function(gene, df, all = TRUE, add_uorfs = FALSE) {
 }
 
 update_rv <- function(rv, df) {
-  print("updating rv")
+  print("updating rv txdb")
   # browser()
   if ((rv$lstval == rv$curval) & rv$lstval == "") {
     print("startup updating both")

@@ -56,22 +56,13 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   )
 }
 
-browser_allsamp_server <- function(id, all_experiments, df, experiments,
-                           metadata) {
+browser_allsamp_server <- function(id, all_experiments, df, metadata,
+                                   experiments = all_experiments$name) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
-      rv <- reactiveValues(lstval=isolate(df())@txdb,
-                           curval=isolate(df())@txdb,
-                           genome = "ALL",
-                           exp = name(isolate(df())),
-                           changed=FALSE)
-      uses_libs <- FALSE
-      org <- reactive("ALL")
-      gene_name_list <- reactive(get_gene_name_categories_collection(df())) %>%
-        bindCache(rv$curval) %>%
-        bindEvent(rv$changed, ignoreNULL = TRUE)
-      study_and_gene_observers(input, output, session)
+      allsamples_observer_controller(input, output, session)
+
       # Main plot controller, this code is only run if 'plot' is pressed
       controller <- eventReactive(input$go,
                                   click_plot_browser_allsamp_controller(input, df, gene_name_list),
@@ -81,17 +72,13 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
       table <- reactive(compute_collection_table_shiny(controller,
                                                    metadata = metadata)) %>%
         bindCache(controller()$table_hash) %>%
-        bindEvent(controller()$table_hash,
-                  ignoreInit = FALSE,
-                  ignoreNULL = TRUE)
+        bindEvent(controller()$table_hash, ignoreInit = FALSE, ignoreNULL = TRUE)
 
       plot_object <- reactive(get_meta_browser_plot(table()$table,
                                                    isolate(input$heatmap_color),
                                                    isolate(input$clusters),
                                                    isolate(input$color_mult))) %>%
-        bindEvent(table(),
-                  ignoreInit = FALSE,
-                  ignoreNULL = TRUE)
+        bindEvent(table(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$c <- renderPlot(get_meta_browser_plot_full(table()$table,
                         plot_object(), controller()$id,
@@ -100,16 +87,12 @@ browser_allsamp_server <- function(id, all_experiments, df, experiments,
                              )) %>%
         bindCache(controller()$table_hash, input$heatmap_color,
                   isolate(input$color_mult)) %>%
-        bindEvent(plot_object(),
-                  ignoreInit = FALSE,
-                  ignoreNULL = TRUE)
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
       meta_and_clusters <- reactive(
           allsamples_metadata_clustering(table()$metadata_field, plot_object()
                                        )) %>%
         bindCache(controller()$table_hash) %>%
-        bindEvent(plot_object(),
-                  ignoreInit = FALSE,
-                  ignoreNULL = TRUE)
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$d <- renderPlotly(allsamples_sidebar(meta_and_clusters()$meta)) %>%
         bindCache(controller()$table_hash) %>%

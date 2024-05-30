@@ -42,10 +42,14 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
 
     lengths <- ORFik:::optimizedTranscriptLengths(df)
     length <- lengths[tx_name == id]
+    # Custom UTR lengths for Sac cer (yeast)
+    if (organism(df) == "Saccharomyces cerevisiae")
+      length$utr5_len <- 650
     tx_width <- ncol(heatmap) # length$tx_len
 
     start <- 1
     end <- tx_width
+
     if (length$cds_len > 0 & region_type %in% c("mrna", "leader+cds")) {
       start <- start + length$utr5_len
       end <- start + length$cds_len
@@ -66,3 +70,5 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
                                    ncol = 1, rel_heights = c(0.2, 0.75, 0.05)[to_use_logicals])
   return(final_plot)
 }
+
+

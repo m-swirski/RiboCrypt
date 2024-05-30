@@ -168,20 +168,8 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
         ratio_interval <- temp_interval
       } else ratio_interval <- NULL
     }
-    subset <-
-    if (region_type != "mrna") {
-      if (region_type == "leader+cds") {
-        region <- loadRegion(dff,part = "leaders", names.keep = id)
-        region2 <- loadRegion(dff,part = "cds", names.keep = id)
-        region <- unlistGrl(c(region, region2))
-        region <- GRangesList(region)
-        names(region) <- id
-        subset_coordinates_grl_to_ir(dff, id = id, subset = region)
-      } else {
-        region <- loadRegion(dff, part = region_type, names.keep = id)
-        subset_coordinates_grl_to_ir(dff, id = id, subset = region)
-      }
-    }
+    subset <- subset_fst_coord_by_region(dff, id, region_type)
+
     if (!is.null(other_gene) && other_gene != "") {
       print(paste("Sorting on", other_gene))
       other_tx <- tx_from_gene_list(isolate(gene_name_list()), other_gene)[1]

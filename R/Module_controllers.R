@@ -311,5 +311,35 @@ org_and_study_changed_checker <- function(input, output, session) {
   )
 }
 
+allsamples_observer_controller <- function(input, output, session) {
+  with(rlang::caller_env(), {
+  rv <- reactiveValues(lstval=isolate(df())@txdb,
+                       curval=isolate(df())@txdb,
+                       genome = "ALL",
+                       exp = name(isolate(df())),
+                       changed=FALSE)
+  observe(if (rv$exp != input$dff & input$dff != "") {
+    rv$exp <- input$dff
+    message("allsamples browser: dff changed, update rv")
+  }) %>%
+    bindEvent(input$dff, ignoreInit = TRUE, ignoreNULL = TRUE)
+
+  observe(update_rv_changed(rv), priority = 1) %>%
+    bindEvent(rv$curval, ignoreInit = TRUE)
+  observe({update_rv(rv, df)}) %>%
+    bindEvent(df(), ignoreInit = TRUE)
+
+  observe({df(get_exp(rv$exp, experiments, .GlobalEnv, "(allsamples)"))}) %>%
+    bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
+
+  uses_libs <- FALSE
+  org <- reactive("ALL")
+  gene_name_list <- reactive(get_gene_name_categories_collection(df())) %>%
+    bindCache(rv$curval) %>%
+    bindEvent(rv$changed, ignoreNULL = TRUE)
+  study_and_gene_observers(input, output, session)
+  })
+}
+
 
 

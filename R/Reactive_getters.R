@@ -25,8 +25,8 @@ get_gene_name_categories_collection <- function(df) {
   return(all_genes[value%in% valid,])
 }
 
-get_exp <- function(dff, experiments, env) {
-  print("testing exp")
+get_exp <- function(dff, experiments, env, info = NULL) {
+  print(paste("testing exp", info))
   req(dff %in% experiments)
   print("New experiment loaded")
   #print(paste("EXP: ", isolate(dff)))
@@ -204,7 +204,10 @@ compute_collection_table_shiny <- function(mainPlotControls,
 allsamples_metadata_clustering <- function(values, plot, numeric_bins = 5) {
   time_before <- Sys.time()
   print("Starting metabrowser clustering info")
+  at_least_2_values <- length(unique(values)) > 1
+  if (!at_least_2_values) message("Single value analysis not possible, skipping!")
 
+  req(at_least_2_values)
   pdf(NULL) # TODO: Make a better fix for blank pdf write
   row_orders <- suppressWarnings(ComplexHeatmap::row_order(plot))
   dev.off()

@@ -85,7 +85,7 @@ RiboCrypt_app <- function(
     rv <- analysis_server("analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
             gene_name_list, rv, metadata, all_exp_meta, exp_init_meta, df_meta)
-    # metadata_server("metadata", all_exp)
+    metadata_server("metadata", all_exp)
     cat("Server: "); print(round(Sys.time() - time_before, 2))
   }
   cat("Init: "); print(round(Sys.time() - time_before, 2))

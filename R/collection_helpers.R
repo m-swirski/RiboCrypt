@@ -235,11 +235,32 @@ subset_fst_by_interval <- function(table, subset) {
   return(table[subset,])
 }
 
-collection_path_from_exp <- function(df, id) {
-  table_path <- file.path(resFolder(df), "collection_tables", paste0(id, ".fst"))
-  if (!file.exists(dirname(table_path)))
+#' Get collection directory
+#' @param df ORFik experiment
+#' @param must_exists logical, stop if dir does not exists
+#' @return file.path(resFolder(df), "collection_tables")
+#' @export
+collection_dir_from_exp <- function(df, must_exists = FALSE) {
+  table_dir <- file.path(resFolder(df), "collection_tables")
+
+  if (must_exists & !file.exists(table_dir))
     stop("There is no collection fst tables directory for this organism,",
          " see vignette for more information on how to make these.")
-  if (!file.exists(table_path)) stop("Gene has no precomputed table, try another one!")
+  return(table_dir)
+}
+
+#' Get collection directory
+#' @param df ORFik experiment
+#' @param id character, transcript ids
+#' @param must_exists logical, stop if dir does not exists
+#' @param output_dir = collection_dir_from_exp(df, must_exists)
+#' @return file.path(resFolder(df), "collection_tables")
+#' @export
+collection_path_from_exp <- function(df, id, must_exists = TRUE,
+                                     output_dir = collection_dir_from_exp(df, must_exists)) {
+  table_path <- file.path(output_dir, paste0(id, ".fst"))
+  if (must_exists) {
+    if (!file.exists(table_path)) stop("Gene has no precomputed table, try another one!")
+  }
   return(table_path)
 }

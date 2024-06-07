@@ -2,6 +2,7 @@
 
 export(DEG_plot)
 export(RiboCrypt_app)
+export(browseRC)
 export(collection_dir_from_exp)
 export(collection_path_from_exp)
 export(multiOmicsPlot_ORFikExp)

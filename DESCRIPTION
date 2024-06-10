@@ -25,6 +25,7 @@ Imports:
   BiocParallel,
   Biostrings,
   ComplexHeatmap,
+  cowplot,
   data.table,
   dplyr,
   DT,

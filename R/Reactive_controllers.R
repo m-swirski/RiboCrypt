@@ -163,8 +163,17 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     ratio_interval <- isolate(input$ratio_interval)
     if (!is.null(ratio_interval)) {
       if (ratio_interval != "") {
-        temp_interval <- as.numeric(unlist(strsplit(ratio_interval, ":|-")))
-        if (anyNA(temp_interval)) stop("Invlid interval given for ratio inverval!")
+        split_ratio <- unlist(strsplit(ratio_interval, ";"))
+
+        temp_interval <- strsplit(split_ratio, ":|-")
+        single_input <- lengths(temp_interval) == 1
+        if (any(lengths(temp_interval) > 2)) stop("Malformed sort in interval input!")
+        if(any(single_input)) {
+          temp_interval[which(single_input)] <- lapply(temp_interval[which(single_input)], function(x) rep(x, 2))
+        }
+        temp_interval <- as.numeric(unlist(temp_interval))
+
+        if (anyNA(temp_interval)) stop("Malformed sort in interval input!")
         ratio_interval <- temp_interval
       } else ratio_interval <- NULL
     }
@@ -180,7 +189,8 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
 
     table_hash <- paste(name(dff), table_path, lib_sizes, clusters, min_count,
                         region_type, metadata_field, normalization, frame,
-                        kmer, other_tx_hash, ratio_interval, summary_track, sep = "|_|")
+                        kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
+                        summary_track, sep = "|_|")
 
     print(paste("Table hash: ", table_hash))
     reactiveValues(dff = dff,

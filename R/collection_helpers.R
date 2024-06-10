@@ -114,19 +114,15 @@ compute_collection_table <- function(path, lib_sizes, df,
   ## # Sort table by metadata column selected
   # Match metadata table and collection runIDs
   if (!is.null(ratio_interval)) {
-    stopifnot(is.numeric(ratio_interval) && length(ratio_interval) == 2)
-    stopifnot(all(is.finite(ratio_interval)))
+    tpm <- subset_fst_interval_sum(ratio_interval[seq(2)], table)
+    is_ratio <- length(ratio_interval) == 4
+    if (is_ratio) {
+      tpm2 <- subset_fst_interval_sum(ratio_interval[seq(3,4)], table)
+      tpm <- (tpm + 1) / (tpm2 + 1) # Pseudo ratio
+    }
 
-    if (ratio_interval[1] > ratio_interval[2]) stop("Ratio interval must start on >= 1")
-    if (ratio_interval[1] < 1) stop("Ratio interval must start on >= 1")
-    if (ratio_interval[2] > max(table$position)) stop("Ratio interval must end on <= ncol(heatmap)")
-
-    counts <- table[position %in% seq.int(ratio_interval[1], ratio_interval[2]),
-                    .(tpm = sum(score)), by = library]
-    tpm <- counts$tpm
-    names(tpm) <- counts$library
     meta_sub <- tpm
-    table[, library := factor(library, levels = as.character(counts$library), ordered = TRUE)]
+    table[, library := factor(library, levels = names(tpm), ordered = TRUE)]
   } else if (!is.null(group_on_tx_tpm)) {
     isoform <- group_on_tx_tpm
     table_path_other <- collection_path_from_exp(df, isoform)
@@ -169,6 +165,21 @@ subset_fst_by_region <- function(df_all, table, id,
     return(table[position %in% subset_pos,])
   }
   return(table[subset_pos,])
+}
+
+subset_fst_interval_sum <- function(ratio_interval, table) {
+  stopifnot(is.numeric(ratio_interval) && length(ratio_interval) == 2)
+  stopifnot(all(is.finite(ratio_interval)))
+
+  if (ratio_interval[1] > ratio_interval[2]) stop("Ratio interval must start on >= 1")
+  if (ratio_interval[1] < 1) stop("Ratio interval must start on >= 1")
+  if (ratio_interval[2] > max(table$position)) stop("Ratio interval must end on <= ncol(heatmap)")
+
+  counts <- table[position %in% seq.int(ratio_interval[1], ratio_interval[2]),
+                  .(tpm = sum(score)), by = library]
+  tpm <- counts$tpm
+  names(tpm) <- counts$library
+  return(tpm)
 }
 
 

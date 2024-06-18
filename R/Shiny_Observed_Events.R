@@ -80,6 +80,26 @@ observed_uorf_annotation <- function(gene, df, all = TRUE, add_uorfs = FALSE) {
   } else GRangesList()
 }
 
+observed_translon_annotation <- function(gene, df, all = TRUE, add_translons = FALSE) {
+  if (add_translons) {
+    translon_annotation <- file.path(dirname(df@fafile),
+                                     "predicted_translons",
+                                     "predicted_translons_with_sequence_ranges.rds")
+
+    if (file.exists(translon_annotation)) {
+      if (all) {
+        translons <- readRDS(translon_annotation)
+      } else {
+        translons <- readRDS(translon_annotation)
+        translons <- translons[names(translons) %in% gene]
+      }
+      if (length(translons) > 0) names(translons) <- paste0("T", seq(length(translons)))
+      return(translons)
+    }
+  }
+  return(GRangesList())
+}
+
 update_rv <- function(rv, df) {
   print("updating rv txdb")
   # browser()

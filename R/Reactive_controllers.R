@@ -7,6 +7,9 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                                               isolate(input$other_tx))
     uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
            isolate(input$other_tx), isolate(input$add_uorfs))
+    translon_annotation <- observed_translon_annotation(isolate(input$tx), df(),
+                                                isolate(input$other_tx), isolate(input$add_translon))
+    customRegions <- c(uorf_annotation, translon_annotation)
     if (!is.null(isolate(input$genomic_region)) & isolate(input$genomic_region) != "") {
       gr <- try(GRanges(isolate(input$genomic_region)))
 
@@ -23,7 +26,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     }
     dff <- observed_exp_subset(isolate(input$library), libs, df)
     # customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
-    customRegions <- uorf_annotation
+
     full_names <- ORFik:::name_decider(dff, naming = "full")
 
 
@@ -32,7 +35,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     } else withFrames <- rep(FALSE, nrow(dff))
 
     # Hash strings for cache
-    hash_bottom <- paste(input$tx, input$other_tx, input$add_uorfs,
+    hash_bottom <- paste(input$tx, input$other_tx,
+                         input$add_uorfs,  input$add_translon,
                          input$extendTrailers, input$extendLeaders,
                          input$genomic_region, input$viewMode,
                          input$customSequence, input$phyloP,

@@ -313,9 +313,12 @@ Displays the html page.
 
 # Metadata
 
-Metadata tab displays information about studies.
+Metadata tab displays information about studies and custom predictions.
+## SRA search 
 
-## Study accession number
+Search SRA for full information of supported study
+
+### Study accession number
  Here you input a study accession number in the form of either:
  
  - SRP
@@ -323,9 +326,28 @@ Metadata tab displays information about studies.
  - PRJNA (PRJ....)
  - PRJID (Only numbers)
 
-## Output
+### Output
 On top the abstract of the study is displayed, and on bottom a table
 of all metadata found from the study is displayed.
+
+## Studies
+
+Full table of supported studies with information about sample counts
+
+## Predicted translons
+
+Full list of predicted translons on all_merged tracks per species.
+
+### Settings:
+
+Translon annotation scheme:
+
+ - Prediction algorithm: ORFik::detect_ribo_orfs 
+ - translon_types <- c("uORF", "uoORF","doORF","dORF")
+ - start_codons <- "ATG|TTG|CTG"
+ - additional arguments: add sequence and amino acid sequence per translon
+ - All other arguments default.
+
 
 # Additional information
 All files are packed into ORFik experiments for easy access

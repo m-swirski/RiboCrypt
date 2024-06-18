@@ -538,9 +538,11 @@ select from organism, study and library.</p>
 </div>
 <div id="metadata" class="section level1">
 <h1>Metadata</h1>
-<p>Metadata tab displays information about studies.</p>
-<div id="study-accession-number" class="section level2">
-<h2>Study accession number</h2>
+<p>Metadata tab displays information about studies and custom
+predictions. ## SRA search</p>
+<p>Search SRA for full information of supported study</p>
+<div id="study-accession-number" class="section level3">
+<h3>Study accession number</h3>
 <p>Here you input a study accession number in the form of either:</p>
 <ul>
 <li>SRP</li>
@@ -549,10 +551,32 @@ select from organism, study and library.</p>
 <li>PRJID (Only numbers)</li>
 </ul>
 </div>
-<div id="output" class="section level2">
-<h2>Output</h2>
+<div id="output" class="section level3">
+<h3>Output</h3>
 <p>On top the abstract of the study is displayed, and on bottom a table
 of all metadata found from the study is displayed.</p>
+</div>
+<div id="studies" class="section level2">
+<h2>Studies</h2>
+<p>Full table of supported studies with information about sample
+counts</p>
+</div>
+<div id="predicted-translons" class="section level2">
+<h2>Predicted translons</h2>
+<p>Full list of predicted translons on all_merged tracks per
+species.</p>
+<div id="settings" class="section level3">
+<h3>Settings:</h3>
+<p>Translon annotation scheme:</p>
+<ul>
+<li>Prediction algorithm: ORFik::detect_ribo_orfs</li>
+<li>translon_types &lt;- c(“uORF”, “uoORF”,“doORF”,“dORF”)</li>
+<li>start_codons &lt;- “ATG|TTG|CTG”</li>
+<li>additional arguments: add sequence and amino acid sequence per
+translon</li>
+<li>All other arguments default.</li>
+</ul>
+</div>
 </div>
 </div>
 <div id="additional-information" class="section level1">

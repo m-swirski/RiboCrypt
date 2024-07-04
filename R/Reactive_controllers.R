@@ -225,7 +225,7 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
   additional_extension <- 0
   shift_path <- file.path(ORFik::libFolder(df()), "pshifted", "shifting_table.rds")
   if (file.exists(shift_path)) {
-    shift_table <- shifts.load(df())
+    shift_table <- shifts_load(df())
     shift_table <- shift_table[[which(isolate(libs()) == isolate(input$library))]]
     shift_table <- shift_table[fraction %between% c(input$readlength_min, input$readlength_max)]
     if (!is.null(input$p_shifted)) {

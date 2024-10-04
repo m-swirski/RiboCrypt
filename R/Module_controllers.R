@@ -265,8 +265,11 @@ org_and_study_changed_checker <- function(input, output, session) {
                               experiments, without_readlengths_env))
     df_with <- reactiveVal(get_exp(browser_options["default_experiment"],
                               experiments, with_readlengths_env))
-    df_meta <- reactiveVal(get_exp(browser_options["default_experiment_meta"],
-                                   all_exp_meta$name, .GlobalEnv))
+    if (nrow(all_exp_meta) > 0) {
+      df_meta <- reactiveVal(get_exp(browser_options["default_experiment_meta"],
+                                     all_exp_meta$name, .GlobalEnv))
+    }
+
     libs <- reactive(bamVarName(df()))
     # The shared reactive values (rv)
     # This must be passed to all submodules

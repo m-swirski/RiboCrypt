@@ -27,6 +27,8 @@ analysis_server <- function(id, all_experiments, without_readlengths_env,
   rv <- quality_server("quality", all_experiments, with_readlengths_env,
                 df_with, experiments, tx, cds, libs, org, gene_name_list, rv)
   rv <- fastq_server("fastq", all_experiments, df, experiments, libs, org, rv)
-  browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata)
+  if (nrow(all_exp_meta) > 0) {
+    browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata)
+  }
   return(rv)
 }

@@ -5,9 +5,12 @@ rc_parameter_setup <- function() {
     stopifnot(is(all_exp, "data.table"))
     stopifnot(!is.null(all_exp$name))
     stopifnot(nrow(all_exp) > 0)
+    print(paste("Running with", nrow(all_exp), "experiments"))
+    if (is.null(all_exp_meta)) {
+      all_exp_meta <- data.table(name = character(), organism = character())
+    }
     if (nrow(all_exp_meta) > 0) {
       all_exp <- all_exp[!(name %in% all_exp_meta$name),]
-      print(paste("Running with", nrow(all_exp), "experiments"))
       print(paste("Running with", nrow(all_exp_meta), "collections"))
     }
     if (!is.null(metadata)) {

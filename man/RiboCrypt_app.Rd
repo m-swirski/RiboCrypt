@@ -41,9 +41,12 @@ init.}
 
 \item{metadata}{a path to csv or a data.table of metadata columns,
 must contain a "Run" column to merge IDs to ORFik experiments.
-Is used in metabrowser for grouping of samples.}
+It is used in the metabrowser tab for grouping of samples.}
 
-\item{all_exp_meta}{the subset of all_exp which are collections (the set of
+\item{all_exp_meta}{a data.table, default:
+\code{all_exp[grep("all_samples-", name),]}. Can also be NULL, to ignore
+the metabrowser completly.
+It is the subset of all_exp which are collections (the set of
 all experiments per organism), this will be fed to the metabrowser, while
 remaining all_exp are used in all other modules.}
 }

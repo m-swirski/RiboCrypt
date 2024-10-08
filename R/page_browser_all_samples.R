@@ -57,6 +57,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
 }
 
 browser_allsamp_server <- function(id, all_experiments, df, metadata,
+                                   names_init,
                                    experiments = all_experiments$name) {
   moduleServer(
     id,

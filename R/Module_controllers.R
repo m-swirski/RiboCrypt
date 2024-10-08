@@ -285,15 +285,12 @@ org_and_study_changed_checker <- function(input, output, session) {
     cds <- reactive(loadRegion(isolate(df()), "cds")) %>%
       bindCache(rv$curval) %>%
       bindEvent(rv$changed, ignoreNULL = TRUE)
-    gene_name_list <- reactiveVal(names_init)
-    init_round <- TRUE
-    gene_name_list <- reactive({if (init_round) {names_init}
-      else get_gene_name_categories(df())}) %>%
+    # gene_name_list <- reactiveVal(names_init)
+    gene_name_list <- reactive({
+      if(rv$changed == FALSE) {names_init}
+      else {get_gene_name_categories(df())}}) %>%
       bindCache(rv$curval) %>%
-      bindEvent(rv$changed, ignoreNULL = TRUE)
-    init_round <- FALSE
-    # observe(gene_name_list()) %>%
-    #   bindEvent(rv$changed, ignoreInit = TRUE)
+      bindEvent(rv$changed)
     # Observers
     observe(update_rv_changed(rv), priority = 1) %>%
       bindEvent(rv$curval, ignoreInit = TRUE)
@@ -337,9 +334,11 @@ allsamples_observer_controller <- function(input, output, session) {
 
   uses_libs <- FALSE
   org <- reactive("ALL")
-  gene_name_list <- reactive(get_gene_name_categories_collection(df())) %>%
+  gene_name_list <- reactive({
+    if(rv$changed == FALSE) {names_init}
+    else {get_gene_name_categories_collection(df())}}) %>%
     bindCache(rv$curval) %>%
-    bindEvent(rv$changed, ignoreNULL = TRUE)
+    bindEvent(rv$changed)
   study_and_gene_observers(input, output, session)
   })
 }

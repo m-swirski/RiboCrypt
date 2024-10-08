@@ -56,9 +56,12 @@ tx_update_select <- function(gene = NULL, gene_name_list, additionals = NULL,
 
 tx_from_gene_list <- function(gene_name_list, gene = NULL, selected = NULL,
                               additionals = NULL) {
+
   if (is.null(gene)) {
     gene <- gene_name_list[value == selected,][1]$label
     if (length(gene) == 0 | is.na(gene)) stop("Isoform does not exist in species!")
+  } else if (gene == "all") {
+    return(c(gene, additionals))
   }
   print(paste("Gene set:", gene))
   isoforms <- gene_name_list[label == gene, 1][[1]]

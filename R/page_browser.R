@@ -4,7 +4,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
-  init_tx <- gene_names_init[label == browser_options["default_gene"],]
+  init_tx <- subset(gene_names_init, label == browser_options["default_gene"])
   init_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
   copy_button_formatting <- tags$head(
     tags$style(HTML('#clip{background-color:orange}'))

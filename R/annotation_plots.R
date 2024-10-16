@@ -112,6 +112,9 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
     overlaps_tx <- subsetByOverlaps(tx_annotation, display_range,
                                     type = ifelse(viewMode == "tx", "within", "any"))
     if (length(overlaps) > 0) {
+      if (!all(names(overlaps_tx)) %in% names(overlaps)) {
+        overlaps_tx <- overlaps_tx[names(overlaps_tx) %in% names(overlaps)]
+      }
       overlaps_tx <- groupGRangesBy(unlistGrl(GenomicRanges::psetdiff(unlistGrl(overlaps_tx),
                                                                       overlaps[names(unlistGrl(overlaps_tx))])))
     }
@@ -232,7 +235,6 @@ geneModelPanelPlot <- function(dt, frame = 1) {
     scale_x_continuous(expand = c(0,0)) +
     scale_y_continuous(expand = c(0,0)) +
     theme(panel.background = element_rect(fill= "white"))
-  browser()
   dt <- dt[order(type, decreasing = TRUE),]
   seg_dt <- dt[no_ex > 1]
   draw_introns <- nrow(seg_dt) > 0

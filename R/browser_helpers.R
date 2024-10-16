@@ -1,6 +1,7 @@
 multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, annotation,
                                          start_codons, stop_codons, custom_motif,
-                                         custom_regions, viewMode) {
+                                         custom_regions, viewMode,
+                                         tx_annotation = NULL) {
   force(display_range)
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
@@ -9,6 +10,7 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
   seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]])
   # Get the panel for the annotation track
   gene_model_panel <- createGeneModelPanel(display_range, annotation,
+                                           tx_annotation = tx_annotation,
                                            custom_regions = custom_regions,
                                            viewMode = viewMode)
   lines <- gene_model_panel[[2]]
@@ -151,5 +153,48 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
                                       display_sequence, display_dist,
                                       aa_letter_code, input_id, plot_name,
                                       plot_title,  width, height, export.format))
+}
+
+genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6) {
+  input_given <- !is.null(genomic_string) && genomic_string != ""
+  if (input_given) {
+    gr <- try(GRanges(genomic_string))
+
+    if (is(gr, "GRanges")) {
+      if (start(gr) < 1) stop("Position 1 is minimum position to show on a chromosome! (input ", start(gr), ")")
+      if (width(gr) > 1e6) stop("Only up to 1 million bases can be shown!")
+
+      try(seqlevelsStyle(gr) <- seqlevelsStyle(display_region)[1], silent = TRUE)
+
+      if (!(as.character(seqnames(gr)) %in% seqnames(seqinfo(df()))))
+        stop("Invalid chromosome selected!")
+      display_region <- GRangesList(Region = gr)
+    } else stop("Malform genomic region: format: chr1:39517672-39523668:+")
+  }
+  return(display_region)
+}
+
+hash_strings_browser <- function(input, dff) {
+  full_names <- ORFik:::name_decider(dff, naming = "full")
+  hash_bottom <- paste(input$tx, input$other_tx,
+                       input$add_uorfs,  input$add_translon,
+                       input$extendTrailers, input$extendLeaders,
+                       input$genomic_region, input$viewMode,
+                       input$customSequence, input$phyloP,
+                       collapse = "|_|")
+  # Until plot and coverage is split (bottom must be part of browser hash)
+  hash_browser <- paste(hash_bottom,
+                        full_names,
+                        input$plot_export_format,
+                        input$summary_track, input$summary_track_type,
+                        input$kmer, input$frames_type, input$withFrames,
+                        input$log_scale, collapse = "|_|")
+  hash_expression <- paste(full_names, input$tx,
+                           input$expression_plot, input$extendTrailers,
+                           input$extendLeaders, collapse = "|_|")
+  hash_strings <- list(hash_bottom = hash_bottom, hash_browser = hash_browser,
+                       hash_expression = hash_expression)
+  stopifnot(all(lengths(hash_strings) == 1))
+  return(hash_strings)
 }
 

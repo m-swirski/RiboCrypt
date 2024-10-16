@@ -3,6 +3,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
+    tx_annotation <- observed_cds_annotation(isolate(input$tx), tx,
+                                             isolate(input$other_tx))
     cds_annotation <- observed_cds_annotation(isolate(input$tx), cds,
                                               isolate(input$other_tx))
     uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
@@ -10,53 +12,21 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     translon_annotation <- observed_translon_annotation(isolate(input$tx), df(),
                                                 isolate(input$other_tx), isolate(input$add_translon))
     customRegions <- c(uorf_annotation, translon_annotation)
-    if (!is.null(isolate(input$genomic_region)) & isolate(input$genomic_region) != "") {
-      gr <- try(GRanges(isolate(input$genomic_region)))
-
-      if (is(gr, "GRanges")) {
-        if (start(gr) < 1) stop("Position 1 is minimum position to show on a chromosome! (input ", start(gr), ")")
-        if (width(gr) > 1e6) stop("Only up to 1 million bases can be shown!")
-
-        try(seqlevelsStyle(gr) <- seqlevelsStyle(display_region)[1], silent = TRUE)
-
-        if (!(as.character(seqnames(gr)) %in% seqnames(seqinfo(df()))))
-          stop("Invalid chromosome selected!")
-        display_region <- GRangesList(Region = gr)
-      } else stop("Malform genomic region: format: chr1:39517672-39523668:+")
-    }
+    display_region <- genomic_string_to_grl(isolate(input$genomic_region), display_region)
     dff <- observed_exp_subset(isolate(input$library), libs, df)
-    # customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
-
-    full_names <- ORFik:::name_decider(dff, naming = "full")
-
 
     if (isolate(input$withFrames)) {
       withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU")
     } else withFrames <- rep(FALSE, nrow(dff))
 
     # Hash strings for cache
-    hash_bottom <- paste(input$tx, input$other_tx,
-                         input$add_uorfs,  input$add_translon,
-                         input$extendTrailers, input$extendLeaders,
-                         input$genomic_region, input$viewMode,
-                         input$customSequence, input$phyloP,
-                         collapse = "|_|")
-    # Until plot and coverage is split (bottom must be part of browser hash)
-    hash_browser <- paste(hash_bottom,
-                          full_names,
-                          input$plot_export_format,
-                          input$summary_track, input$summary_track_type,
-                          input$kmer, input$frames_type, input$withFrames,
-                          input$log_scale, collapse = "|_|")
-    hash_expression <- paste(full_names, input$tx,
-                             input$expression_plot, input$extendTrailers,
-                             input$extendLeaders, collapse = "|_|")
+    hash_strings <- hash_strings_browser(input, dff)
 
-    #reads <- load_reads(dff, "cov")
     reads <- try(filepath(dff, "bigwig", suffix_stem = c("_pshifted", "")))
-
-    if (is(reads, "try-error") || (!all(file.exists(unlist(reads, use.names = FALSE))) |
-        any(duplicated(unlist(reads, use.names = FALSE))))) {
+    invalid_reads <- is(reads, "try-error") ||
+      (!all(file.exists(unlist(reads, use.names = FALSE))) |
+         any(duplicated(unlist(reads, use.names = FALSE))))
+    if (invalid_reads) {
       reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""),
                         base_folders = libFolder(dff, "all"))
     }
@@ -72,14 +42,15 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    kmerLength = input$kmer,
                    frames_type = input$frames_type,
                    annotation = cds_annotation,
+                   tx_annotation = tx_annotation,
                    reads = reads,
                    custom_sequence = input$customSequence,
                    log_scale = input$log_scale,
                    phyloP = input$phyloP,
                    withFrames = withFrames,
-                   hash_bottom = hash_bottom,
-                   hash_browser = hash_browser,
-                   hash_expression = hash_expression)
+                   hash_bottom = hash_strings[["hash_bottom"]],
+                   hash_browser = hash_strings[["hash_browser"]],
+                   hash_expression = hash_strings[["hash_expression"]])
   }
 }
 
@@ -132,15 +103,6 @@ click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
                    )
   }
 }
-# click_plot_boxplot_main_controller <- function(input, tx, libs, df) {
-#   dff <- observed_exp_subset(isolate(input$library), libs, df)
-#   customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
-#
-#   reactiveValues(dff = dff,
-#                  tx  = isolate(input$tx),
-#                  customRegions = customRegions,
-#                  export_format = input$plot_export_format)
-# }
 
 click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
   {

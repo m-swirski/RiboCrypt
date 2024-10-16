@@ -102,9 +102,9 @@ trimOverlaps <- function(overlaps, display_range) {
   start_indices <- start(overlaps) < min(start(tr))
   end_indices <- end(overlaps) > max(end(tr))
   if (TRUE %in% start_indices) {
-    
+
     start(overlaps)[start(overlaps) < min(start(tr))] <- min(start(tr))
- 
+
   }
   if (TRUE %in% end_indices) {
     end(overlaps)[end(overlaps) > max(end(tr))] <- max(end(tr))
@@ -118,7 +118,7 @@ trimOverlaps <- function(overlaps, display_range) {
 #   additions <- cumsum(duplications)
 #   additions[!duplications] <- 0
 #   matches <- matches + additions
-# 
+#
 #   return(cols[matches])
 # }
 
@@ -128,34 +128,35 @@ selectFrames <- function(frames, locations) {
   additions <- cumsum(duplications)
   additions[!duplications] <- 0
   matches <- matches + additions
-  
+
   return(frames[matches])
 }
 
 
-colour_bars <- function(locations, overlaps, display_range) {
-  
+colour_bars <- function(locations, overlaps, display_range, type = "cds") {
+  if (type != "cds") return(rep("gray", length(locations)))
+
   frames <- start(locations) - 1
   frames <- frames + locations$rel_frame
-  colors <- colors <- c("#F8766D","#00BA38","#619CFF")[frames %% 3 + 1]
+  colors <- rc_rgb()[frames %% 3 + 1]
   if (1 %in% start(locations)) {
     if (as.logical(strand(display_range[[1]][1]) == "+")) {
       ov_starts <- start(overlaps)
       target_start <- min(start(display_range))
       frames <- ov_starts - target_start
       frames <- frames + overlaps$rel_frame
-      colors_general <- c("#F8766D","#00BA38","#619CFF")[frames %% 3 + 1]
+      colors_general <- rc_rgb()[frames %% 3 + 1]
     } else{
       ov_starts <- end(overlaps)
       target_start <- max(end(display_range))
       frames <- ov_starts - target_start
       frames <- frames - overlaps$rel_frame
       frames <- - frames
-      colors_general <- c("#619CFF","#F8766D","#00BA38")[(frames+1) %% 3 + 1]
+      colors_general <- rc_rgb()[c(3,1,2)][(frames+1) %% 3 + 1]
     }
     colors[start(locations) == 1] <- colors_general[start(locations) == 1]
   }
-  
+
   return(colors)
 }
 

@@ -51,13 +51,15 @@ bottom_panel_shiny <- function(mainPlotControls) {
                                                start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                                custom_motif = mainPlotControls()$custom_sequence,
                                                custom_regions = mainPlotControls()$customRegions,
-                                               viewMode)
-  custom_bigwig_panels <- custom_seq_track_panels(mainPlotControls)
+                                               viewMode,
+                                               tx_annotation = mainPlotControls()$tx_annotation)
+  custom_bigwig_panels <- custom_seq_track_panels(mainPlotControls,
+                                                  annotation_list$display_range)
   cat("Done (bottom):"); print(round(Sys.time() - time_before, 2))
   return(c(bottom_panel, annotation_list, custom_bigwig_panels))
 }
 
-custom_seq_track_panels <- function(mainPlotControls) {
+custom_seq_track_panels <- function(mainPlotControls, display_range) {
   if (!mainPlotControls()$phyloP) return(NULL)
   df <- mainPlotControls()$dff
   phylo_dir <- file.path(dirname(df@fafile), "phyloP100way")
@@ -65,15 +67,11 @@ custom_seq_track_panels <- function(mainPlotControls) {
     phylo_track <- list.files(phylo_dir, pattern = "\\.phyloP100way\\.bw$", full.names = TRUE)[1]
     if (length(phylo_track) == 1) {
       print("- Loading PhyloP track")
-      grl <- mainPlotControls()$display_region
-      if (mainPlotControls()$viewMode) {
-        rl <- unlistGrl(flankPerGroup(grl))
-      }
-      seqlevelsStyle(grl) <- seqlevelsStyle(rtracklayer::BigWigFile(phylo_track))
-
+      grl <- display_range
       rl <- ranges(grl)
       names(rl) <- seqnamesPerGroup(grl, FALSE)
 
+      seqlevelsStyle(rl) <- seqlevelsStyle(rtracklayer::BigWigFile(phylo_track))[1]
       res <- rtracklayer::import.bw(phylo_track, as = "NumericList",
                                     which = rl)
       dt <- data.table(phyloP = unlist(res, use.names = FALSE))

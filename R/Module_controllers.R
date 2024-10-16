@@ -10,7 +10,7 @@ module_protein <- function(input, output, gene_name_list, session) {
 
     # Get the Ribo-seq prfile (we select first library for now)
     selectedRegionProfile <- reactive({
-      req(selectedRegion())
+      req(selectedRegion(), input$useCustomRegions)
       coverage_region <- NULL
       uorf_clicked <- length(grep("U[0-9]+$", input$selectedRegion)) == 1
       if (uorf_clicked) {
@@ -33,7 +33,7 @@ module_protein <- function(input, output, gene_name_list, session) {
     # start displaying structure viewer
     # and set selected structure to one which was clicked
     observeEvent(input$selectedRegion, {
-      req(input$selectedRegion)
+      req(input$selectedRegion, input$useCustomRegions)
       selectedRegion(input$selectedRegion)
       selectedTX(input$tx)
       dynamicVisible(TRUE)

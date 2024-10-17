@@ -158,8 +158,9 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
   layers <- geneTrackLayer(locations)
 
   locations <- unlistGrl(locations)
-  rel_frame <- getRelativeFrames(overlaps)
-  names(rel_frame) <- names(overlaps)
+  rel_frame <- getRelativeFrames(locations)
+  names(rel_frame) <- names(locations)
+  browser()
   type <- overlaps$type
   names(type) <- names(overlaps)
 

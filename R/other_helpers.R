@@ -135,9 +135,9 @@ selectFrames <- function(frames, locations) {
 
 colour_bars <- function(locations, overlaps, display_range, type = "cds") {
   all_colors <- rep("gray", length(locations))
+  names(all_colors) <- names(locations)
   is_cds <- locations$type == "cds"
   if (all(!is_cds)) return(all_colors)
-
   locations <- locations[is_cds]
   overlaps <- overlaps[overlaps$type == "cds"]
   frames <- start(locations) - 1
@@ -161,7 +161,6 @@ colour_bars <- function(locations, overlaps, display_range, type = "cds") {
     colors[start(locations) == 1] <- colors_general[which(start(locations) == 1)]
   }
   all_colors[is_cds] <- colors
-
   return(all_colors)
 }
 
@@ -171,9 +170,10 @@ colour_bars <- function(locations, overlaps, display_range, type = "cds") {
 #' @keywords internal
 getRelativeFrames <- function(overlaps) {
   dt <- data.table(names = names(overlaps),
-                   width = width(overlaps))
-  dt[,cum_width := cumsum(width), names]
-  dt[, rel_frame := c(0,-cum_width %% 3)[1:length(width)], names]
+                   width = width(overlaps),
+                   type = overlaps$type)
+  dt[,cum_width := cumsum(width), .(names, type)]
+  dt[, rel_frame := c(0,-cum_width %% 3)[1:length(width)], .(names, type)]
   return(dt$rel_frame)
 }
 

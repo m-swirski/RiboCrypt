@@ -143,7 +143,6 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
   overlaps <- unlistGrl(overlaps)
   names(overlaps) <- onames
   overlaps$rel_frame <- getRelativeFrames(overlaps)
-  rel_frame <- getRelativeFrames(overlaps)
 
   overlaps <- subsetByOverlaps(overlaps, display_range)
 
@@ -168,8 +167,9 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
   locations$rel_frame <- rel_frame
 
   cols <- colour_bars(locations, overlaps, display_range, type)
-  return(geneBoxFromRanges(locations, plot_width, layers,
-                           cols, custom_regions))
+  geneBox <- geneBoxFromRanges(locations, plot_width, layers,
+                                cols, custom_regions)
+  return(geneBox)
 }
 
 geneBoxFromRanges <- function(locations, plot_width,
@@ -212,6 +212,18 @@ geneBoxFromRanges <- function(locations, plot_width,
                           gene_names = gene_names,
                           type = type)
   result_dt[,no_ex := .N, by = gene_names]
+  result_dt <- result_dt[order(type, decreasing = TRUE),]
+  dt <- result_dt
+  draw_introns <- nrow(dt[no_ex > 1]) > 0
+  if (draw_introns) {
+    seg_dt <- dt[no_ex > 1]
+    seg_dt <- seg_dt[ , .(layers = layers[1], rect_starts = rect_ends[1:(.N - 1)], rect_ends = rect_starts[2:.N],
+                          cols = "grey45", labels_locations = 0, hjusts = "center",
+                          type = "intron", no_ex = "1"), by = gene_names]
+    seg_dt <- seg_dt[, colnames(dt), with = F]
+    with_introns_dt <- rbindlist(list(dt, seg_dt))
+    result_dt <- with_introns_dt
+  }
   res_list <- list(result_dt, lines_locations)
   return(res_list)
 }
@@ -224,6 +236,8 @@ geneModelPanelPlot <- function(dt, frame = 1) {
   # If no annotation given, dt is empty, return blank
   if (nrow(dt) == 0) return(ggplot())
   # Else render exon boxes
+  seg_dt <- dt[type == "intron"]
+  dt <- dt[type != "intron"]
 
   result_plot <- ggplot(frame = frame) + ylab("") + xlab("") +
     theme(axis.title.x = element_blank(),
@@ -235,15 +249,11 @@ geneModelPanelPlot <- function(dt, frame = 1) {
     scale_x_continuous(expand = c(0,0)) +
     scale_y_continuous(expand = c(0,0)) +
     theme(panel.background = element_rect(fill= "white"))
-  dt <- dt[order(type, decreasing = TRUE),]
-  seg_dt <- dt[no_ex > 1]
   draw_introns <- nrow(seg_dt) > 0
-  if (draw_introns)  seg_dt <- seg_dt[ , .(seg_start = rect_ends[1:(.N - 1)], seg_end = rect_starts[2:.N], level = layers[1]), by = gene_names]
   if (draw_introns) result_plot <- result_plot +
     geom_segment(data = seg_dt,
-                 mapping = aes(x = seg_start, xend = seg_end, y = 0.5 - level, yend = 0.5 - level, text = gene_names),
+                 mapping = aes(x = rect_starts, xend = rect_ends, y = 0.5 - layers, yend = 0.5 - layers, text = gene_names),
                  color = "grey45", alpha = 0.6)
-  # browser()
   suppressWarnings({
     result_plot <-  result_plot +
      geom_rect(data = dt, mapping=aes(ymin=0 - layers + ifelse(type == "cds", 0, 0.33), ymax = 1 - layers - ifelse(type == "cds", 0, 0.33),

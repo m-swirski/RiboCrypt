@@ -112,26 +112,21 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
     overlaps_tx <- subsetByOverlaps(tx_annotation, display_range,
                                     type = ifelse(viewMode == "tx", "within", "any"))
     if (length(overlaps) > 0) {
-      if (!all(names(overlaps_tx)) %in% names(overlaps)) {
+      if (!all(names(overlaps_tx) %in% names(overlaps))) {
         overlaps_tx <- overlaps_tx[names(overlaps_tx) %in% names(overlaps)]
       }
       overlaps_tx <- groupGRangesBy(unlistGrl(GenomicRanges::psetdiff(unlistGrl(overlaps_tx),
                                                                       overlaps[names(unlistGrl(overlaps_tx))])))
     }
-
   }
+
   if (use_custom_region) overlaps <- c(overlaps, overlaps_custom)
 
 
   if (length(overlaps) > 0 | length(overlaps_tx) > 0) {
-    res_list <- list(data.table(), c())
-    if (length(overlaps) > 0 )
-      res_list <- gene_box_fix_overlaps(display_range, overlaps, custom_regions, "cds")
-    if (viewMode != "tx") {
-      res_list_tx <- gene_box_fix_overlaps(display_range, overlaps_tx, custom_regions, "utr")
-      res_list[[1]] <- rbind(res_list[[1]], res_list_tx[[1]])
-      res_list[[2]] <- c(res_list[[2]], res_list_tx[[2]])
-    }
+    overlaps@unlistData$type <- "cds"
+    if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <- "utr"
+    res_list <- gene_box_fix_overlaps(display_range, c(overlaps, overlaps_tx), custom_regions)
   } else {
     result_dt <- data.table()
     lines_locations <- NULL
@@ -141,8 +136,8 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
   return(res_list)
 }
 
-gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
-                                  type = "cds") {
+gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
+  type_per_grl <- unlist(lapply(overlaps, function(x) unique(x$type)))
   plot_width <- widthPerGroup(display_range)
   onames <- rep(names(overlaps), numExonsPerGroup(overlaps, FALSE))
   overlaps <- unlistGrl(overlaps)
@@ -154,26 +149,35 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
 
 
   intersections <- trimOverlaps(overlaps, display_range)
-  intersections <- groupGRangesBy(intersections)
+  intersections <- groupGRangesBy(intersections, paste0(names(intersections), "___", intersections$type))
+  names(intersections) <- sub("___.*", "", names(intersections))
 
   locations <- pmapToTranscriptF(intersections, display_range)
+  locations@unlistData$type <- rep(type_per_grl, times = lengths(locations))
+
+  locations <- sortPerGroup(groupGRangesBy(unlistGrl(locations)))
   layers <- geneTrackLayer(locations)
 
   locations <- unlistGrl(locations)
   rel_frame <- getRelativeFrames(overlaps)
   names(rel_frame) <- names(overlaps)
+  type <- overlaps$type
+  names(type) <- names(overlaps)
+
   if (length(rel_frame) != length(locations)) rel_frame <- selectFrames(rel_frame, locations)
   locations$rel_frame <- rel_frame
+
   cols <- colour_bars(locations, overlaps, display_range, type)
   return(geneBoxFromRanges(locations, plot_width, layers,
-                           cols, custom_regions, type))
+                           cols, custom_regions))
 }
 
 geneBoxFromRanges <- function(locations, plot_width,
                               layers = rep(1, length(locations)),
                               cols = rc_rgb()[start(locations) %% 3 + 1],
-                              custom_regions = NULL, type = "cds") {
-
+                              custom_regions = NULL) {
+  type <- locations$type
+  end(locations)[type == "utr"] <- end(locations)[type == "utr"] + 1
   locations <- ranges(locations)
   blocks <- c(start(locations) , end(locations))
   names(blocks) <- rep(names(locations), 2)
@@ -195,10 +199,6 @@ geneBoxFromRanges <- function(locations, plot_width,
   hjusts <- rep("center", length(labels_locations))
   hjusts[too_close] <- "left"
   hjusts[too_far] <- "right"
-  # TODO: remove when verified this is not needed
-  # if (as.logical(strand(display_range[[1]][1]) == "+")) {
-  #   gene_names <- names(locations)
-  # } else gene_names <- names(locations)
   gene_names <- names(locations)
   custom_region_names <- which(names(lines_locations) %in% names(custom_regions))
   names(lines_locations) <- rep("black", length(lines_locations))
@@ -242,15 +242,15 @@ geneModelPanelPlot <- function(dt, frame = 1) {
   if (draw_introns) result_plot <- result_plot +
     geom_segment(data = seg_dt,
                  mapping = aes(x = seg_start, xend = seg_end, y = 0.5 - level, yend = 0.5 - level, text = gene_names),
-                 color = "grey45")
-
+                 color = "grey45", alpha = 0.6)
+  # browser()
   suppressWarnings({
     result_plot <-  result_plot +
      geom_rect(data = dt, mapping=aes(ymin=0 - layers + ifelse(type == "cds", 0, 0.33), ymax = 1 - layers - ifelse(type == "cds", 0, 0.33),
                                       xmin=rect_starts,xmax = rect_ends, text = gene_names),
                fill = dt$cols, color = "grey45") +
       geom_text(data = dt[,.(layers = layers[1], labels_locations = mean(labels_locations)),gene_names],
-                mapping = aes(y = 0.55 - layers, x = labels_locations,
+                mapping = aes(y = 0.50 - layers, x = labels_locations,
                               label = gene_names), color = "black", hjust = "center")
     })
 

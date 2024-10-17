@@ -134,8 +134,12 @@ selectFrames <- function(frames, locations) {
 
 
 colour_bars <- function(locations, overlaps, display_range, type = "cds") {
-  if (type != "cds") return(rep("gray", length(locations)))
+  all_colors <- rep("gray", length(locations))
+  is_cds <- locations$type == "cds"
+  if (all(!is_cds)) return(all_colors)
 
+  locations <- locations[is_cds]
+  overlaps <- overlaps[overlaps$type == "cds"]
   frames <- start(locations) - 1
   frames <- frames + locations$rel_frame
   colors <- rc_rgb()[frames %% 3 + 1]
@@ -154,10 +158,11 @@ colour_bars <- function(locations, overlaps, display_range, type = "cds") {
       frames <- - frames
       colors_general <- rc_rgb()[c(3,1,2)][(frames+1) %% 3 + 1]
     }
-    colors[start(locations) == 1] <- colors_general[start(locations) == 1]
+    colors[start(locations) == 1] <- colors_general[which(start(locations) == 1)]
   }
+  all_colors[is_cds] <- colors
 
-  return(colors)
+  return(all_colors)
 }
 
 #'

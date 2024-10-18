@@ -160,7 +160,6 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
   locations <- unlistGrl(locations)
   rel_frame <- getRelativeFrames(locations)
   names(rel_frame) <- names(locations)
-  browser()
   type <- overlaps$type
   names(type) <- names(overlaps)
 

@@ -87,13 +87,12 @@ geneTrackLayer <- function(grl) {
   return(all_layers)
 }
 
-#'
+#' Create gene annotation layer for browser
 #' @import ORFik
 #' @importFrom GenomicRanges ranges resize psetdiff
 #' @importFrom IRanges subsetByOverlaps IRangesList
 #' @keywords internal
-
-
+#' @noRd
 createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL,
                                  frame=1, custom_regions, viewMode) {
   # TODO: Explain sections of this function, or split in sub functions
@@ -121,24 +120,19 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
   }
 
   if (use_custom_region) overlaps <- c(overlaps, overlaps_custom)
+  if (length(overlaps) > 0) overlaps@unlistData$type <- "cds"
+  if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <- "utr"
 
-
-  if (length(overlaps) > 0 | length(overlaps_tx) > 0) {
-    if (length(overlaps) > 0) overlaps@unlistData$type <- "cds"
-    if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <- "utr"
-    res_list <- gene_box_fix_overlaps(display_range, c(overlaps, overlaps_tx), custom_regions)
-  } else {
-    result_dt <- data.table()
-    lines_locations <- NULL
-    res_list <- list(result_dt, lines_locations)
-  }
-
-  return(res_list)
+  return(gene_box_fix_overlaps(display_range, c(overlaps, overlaps_tx), custom_regions))
 }
 
 gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
+  if (length(overlaps) == 0) {
+    result_dt <- data.table()
+    lines_locations <- NULL
+    return(list(result_dt, lines_locations))
+  }
 
-  type_per_grl <- unlist(lapply(overlaps, function(x) unique(x$type)))
   names_grouping <- rep(names(overlaps), lengths(overlaps))
   overlaps <- unlistGrl(overlaps)
   names(overlaps) <- names_grouping
@@ -151,6 +145,7 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
   names(intersections) <- sub("___.*", "", names(intersections))
 
   locations <- pmapToTranscriptF(intersections, display_range)
+  type_per_grl <- unlist(lapply(intersections, function(x) unique(x$type)))
   locations@unlistData$type <- rep(type_per_grl, times = lengths(locations))
   locations <- unlistGrl(locations)
   locations$rel_frame_orf <- getRelativeFrames(locations)
@@ -164,6 +159,11 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
   return(geneBox)
 }
 
+#' Get gene annotation box coordinates
+#'
+#' Get data.table of coordinates and coloring, and a lines vector for
+#' main plot vertical lines.
+#' @noRd
 geneBoxFromRanges <- function(locations, plot_width,
                               layers = rep(1, length(locations)),
                               cols = rc_rgb()[start(locations) %% 3 + 1],

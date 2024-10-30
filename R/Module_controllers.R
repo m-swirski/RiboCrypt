@@ -197,21 +197,14 @@ study_and_gene_observers <- function(input, output, session) {
 
     } else if (uses_gene) {
       print(id)
+      choices <- unique(isolate(gene_name_list())[,2][[1]])
       if (id == "browser_allsamp") {
         print("Updating metabrowser gene set")
-        choices <- unique(isolate(gene_name_list())[,2][[1]])
-        updateSelectizeInput(
-          inputId = "gene",
-          choices = choices,
-          selected = choices[1],
-          server = TRUE
-        )
-        updateSelectizeInput(
-          inputId = "other_gene",
-          choices = c("", choices),
-          selected = "",
-          server = TRUE
-        )
+
+        gene_update_select_internal(NULL, choices = choices,
+                                    id = "gene")
+        gene_update_select_internal(NULL, choices = c("", choices),
+                                    id = "other_gene")
       }
       # TODO: decide if updateSelectizeInput should be on top here or not
       observeEvent(gene_name_list(), gene_update_select(gene_name_list),
@@ -227,19 +220,14 @@ study_and_gene_observers <- function(input, output, session) {
           req(!(input$tx %in% c("",
                 isolate(gene_name_list())[label == input$gene,]$value)))
         }
-
         print(paste("Page:", id, "(General observer)"))
         tx_update_select(isolate(input$gene), gene_name_list)},
         ignoreNULL = TRUE, ignoreInit = TRUE, priority = -15)
-      print("Updating browser gene set")
-      choices <- unique(isolate(gene_name_list())[,2][[1]])
-      updateSelectizeInput(
-        inputId = "gene",
-        choices = choices,
-        selected = isolate(input$gene),
-        server = TRUE
-      )
-
+      selected_gene <- ifelse(exists("browser_options"),
+                              browser_options["default_gene"],
+                              choices[1])
+      gene_update_select_internal(isolate(gene_name_list()), selected_gene,
+                                  choices = choices)
     }
 
     if (uses_libs) {
@@ -261,13 +249,14 @@ org_and_study_changed_checker <- function(input, output, session) {
     ## Set reactive values
     org <- reactiveVal("ALL")
     # Store current and last genome
+    exps_dir <- ORFik::config()["exp"]
     df <- reactiveVal(get_exp(browser_options["default_experiment"],
-                              experiments, without_readlengths_env))
+                              experiments, without_readlengths_env, exps_dir))
     df_with <- reactiveVal(get_exp(browser_options["default_experiment"],
-                              experiments, with_readlengths_env))
+                              experiments, with_readlengths_env, exps_dir))
     if (nrow(all_exp_meta) > 0) {
       df_meta <- reactiveVal(get_exp(browser_options["default_experiment_meta"],
-                                     all_exp_meta$name, .GlobalEnv))
+                                     all_exp_meta$name, .GlobalEnv, exps_dir))
     }
 
     libs <- reactive(bamVarName(df()))

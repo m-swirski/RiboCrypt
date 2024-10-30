@@ -3,7 +3,8 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
   count <- NULL # Avoid data.table warning
   profile_plot <- ggplot(profile)
   if (length(lines) > 0) profile_plot <- profile_plot +
-    geom_vline(xintercept = lines, col = names(lines), linetype = 4, size = line_size)
+    geom_vline(xintercept = lines, col = names(lines), linetype = 4,
+               alpha = 0.2, size = line_size)
   profile_plot <- profile_plot + geom_hline(yintercept = 0)
   if (!withFrames) {
     profile_plot <- profile_plot +

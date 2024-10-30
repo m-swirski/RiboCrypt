@@ -17,13 +17,29 @@ experiment_update_select <- function(org, all_exp, experiments,
 }
 
 gene_update_select <- function(gene_name_list,
-                               selected = gene_name_list()[,2][[1]][1],
-                               id = "gene") {
+                               selected = choices[1],
+                               id = "gene",
+                               choices = unique(gene_name_list()[,2][[1]]),
+                               server = TRUE) {
+
+  gene_update_select_internal(gene_name_list(),
+                              selected = selected,
+                              id = id,
+                              choices = choices,
+                              server = server)
+}
+
+gene_update_select_internal <- function(gene_name_list,
+                                        selected = choices[1],
+                                        id = "gene",
+                                        choices = unique(gene_name_list[,2][[1]]),
+                                        server = TRUE) {
+  print(paste("Updating", paste0(id, ":"), selected))
   updateSelectizeInput(
     inputId = id,
-    choices = unique(gene_name_list()[,2][[1]]),
+    choices = choices,
     selected = selected,
-    server = TRUE
+    server = server
   )
 }
 

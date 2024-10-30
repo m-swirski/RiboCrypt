@@ -3,7 +3,6 @@ getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
   not_coverage <- is(footprints, "GenomicRanges") |
     is(footprints, "GAlignments") | is(footprints, "GAlignmentPairs")
   if (kmers == 1) {
-
     footprints <- coveragePerTiling(grl,
                                     if(not_coverage){
                                       subsetByOverlaps(footprints, grl)}

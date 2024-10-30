@@ -4,8 +4,10 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
-  init_tx <- subset(gene_names_init, label == browser_options["default_gene"])
+  # TODO: move init_tx and init_libs to setup module
+  all_isoforms <- subset(gene_names_init, label == browser_options["default_gene"])
   init_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
+  viewMode <- browser_options["default_view_mode"] == "genomic"
   copy_button_formatting <- tags$head(
     tags$style(HTML('#clip{background-color:orange}'))
   )
@@ -21,7 +23,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    organism_input_select(c("ALL", genomes), ns),
                    experiment_input_select(experiments, ns, browser_options),
                    gene_input_select(ns, FALSE, browser_options),
-                   tx_input_select(ns, FALSE, init_tx),
+                   tx_input_select(ns, FALSE, all_isoforms, browser_options["default_isoform"]),
                    library_input_select(ns, TRUE, libs, init_libs),
                    frame_type_select(ns, selected =
                                        browser_options["default_frame_type"]),
@@ -37,13 +39,13 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    numericInput(ns("extendTrailers"), "3' extension", 0),
                    textInput(ns("customSequence"), label = "Custom sequences highlight", value = NULL),
                    textInput(ns("genomic_region"), label = "Genomic region", value = NULL),
-                   checkboxInput(ns("viewMode"), label = "Genomic View", value = FALSE),
+                   checkboxInput(ns("viewMode"), label = "Genomic View", value = viewMode),
                    checkboxInput(ns("other_tx"), label = "Full annotation", value = FALSE),
                    checkboxInput(ns("add_uorfs"), label = "uORF annotation", value = FALSE),
                    checkboxInput(ns("add_translon"), label = "Predicted translons", value = FALSE),
                    checkboxInput(ns("log_scale"), label = "Log Scale", value = FALSE),
                    checkboxInput(ns("expression_plot"), label = "Add expression plot", value = FALSE),
-                   checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = FALSE),
+                   checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = TRUE),
                    checkboxInput(ns("phyloP"), label = "phyloP", value = FALSE),
                    checkboxInput(ns("withFrames"), label = "Split color Frames", value = TRUE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),

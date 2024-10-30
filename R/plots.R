@@ -13,7 +13,7 @@ createSinglePlot <- function(profile, withFrames, colors, ylabels,
 
 #profiles <- mapply(function(x,y,z) getProfileAnimate(display_range, x, y, z), reads, withFrames, kmers,  SIMPLIFY = FALSE)
 
-getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines){
+getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines, lines_size = 0.1){
   count <- NULL # Avoid data.table warning
   profile_plot <- ggplot(profile) +
     ylab(ylabels) +
@@ -22,9 +22,9 @@ getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines){
           axis.text.x = element_blank(),
           plot.margin = unit(c(0,0,0,0), "pt")) +
     scale_x_continuous(expand = c(0,0))
-
+  if (length(lines) > 0) profile_plot <- profile_plot +
+    geom_vline(xintercept = lines, col = names(lines), linetype = 4, alpha = 0.5, size = lines_size)
   if (withFrames) {
-    if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = names(lines), linetype = 4)
     profile_plot <- profile_plot +
       geom_line(aes(y = count, x = position, color = frame, frame = file), size = 0.75) +
       theme(legend.position = "none") +
@@ -32,7 +32,6 @@ getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines){
     profile_plot <- automateTicks(profile_plot)
 
   } else {
-    if (length(lines) > 0) profile_plot <- profile_plot + geom_vline(xintercept = lines, col = names(lines), linetype = 4)
     profile_plot <- profile_plot +
       geom_area(aes(y = count, x = position, frame = file), fill = colors, position = "identity")
     profile_plot <- automateTicksRNA(profile_plot)

@@ -98,16 +98,15 @@ antisense <- function(grl) {
 #' @importFrom BiocGenerics start<- end<-
 #' @keywords internal
 trimOverlaps <- function(overlaps, display_range) {
-  tr <- unlistGrl(display_range)
-  start_indices <- start(overlaps) < min(start(tr))
-  end_indices <- end(overlaps) > max(end(tr))
-  if (TRUE %in% start_indices) {
+  flanks <- unlistGrl(display_range)
 
-    start(overlaps)[start(overlaps) < min(start(tr))] <- min(start(tr))
-
+  start_out_of_bounds <- start(overlaps) < min(start(flanks))
+  end_out_of_bounds <- end(overlaps) > max(end(flanks))
+  if (any(start_out_of_bounds)) {
+    start(overlaps)[start_out_of_bounds] <- min(start(flanks))
   }
-  if (TRUE %in% end_indices) {
-    end(overlaps)[end(overlaps) > max(end(tr))] <- max(end(tr))
+  if (any(end_out_of_bounds)) {
+    end(overlaps)[end_out_of_bounds] <- max(end(flanks))
   }
   return(overlaps)
 }
@@ -133,7 +132,7 @@ selectFrames <- function(frames, locations) {
 }
 
 
-colour_bars <- function(locations, overlaps, display_range, type = "cds") {
+colour_bars <- function(locations, overlaps, display_range) {
   all_colors <- rep("gray", length(locations))
   names(all_colors) <- names(locations)
   is_cds <- locations$type == "cds"
@@ -141,24 +140,27 @@ colour_bars <- function(locations, overlaps, display_range, type = "cds") {
   locations <- locations[is_cds]
   overlaps <- overlaps[overlaps$type == "cds"]
   frames <- start(locations) - 1
-  frames <- frames + locations$rel_frame
+  frames <- frames + locations$rel_frame_orf
   colors <- rc_rgb()[frames %% 3 + 1]
-  if (1 %in% start(locations)) {
-    if (as.logical(strand(display_range[[1]][1]) == "+")) {
+  tx_mode <- 1 %in% start(locations)
+  if (tx_mode) {
+    plus_stranded <- as.logical(strand(display_range[[1]][1]) == "+")
+    if (plus_stranded) {
       ov_starts <- start(overlaps)
       target_start <- min(start(display_range))
       frames <- ov_starts - target_start
-      frames <- frames + overlaps$rel_frame
+      frames <- frames + overlaps$rel_frame_exon
       colors_general <- rc_rgb()[frames %% 3 + 1]
-    } else{
+    } else {
       ov_starts <- end(overlaps)
       target_start <- max(end(display_range))
       frames <- ov_starts - target_start
-      frames <- frames - overlaps$rel_frame
+      frames <- frames - overlaps$rel_frame_exon
       frames <- - frames
       colors_general <- rc_rgb()[c(3,1,2)][(frames+1) %% 3 + 1]
     }
-    colors[start(locations) == 1] <- colors_general[which(start(locations) == 1)]
+    is_tx_init <- start(locations) == 1
+    colors[is_tx_init] <- colors_general[which(is_tx_init)]
   }
   all_colors[is_cds] <- colors
   return(all_colors)

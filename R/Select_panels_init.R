@@ -23,7 +23,7 @@ experiment_input_select <- function(names, ns, browser_options = NULL,
     inputId = ns("dff"),
     label = "Select an experiment",
     choices = names,
-    selected = browser_options["default_experiment"],
+    selected = browser_options[option_name],
     multiple = FALSE
   )
 }
@@ -42,11 +42,12 @@ gene_input_select <- function(ns, multiple = FALSE, browser_options = NULL,
     helper(onclick = "fakeClick('tutorial', 'gene')")
 }
 
-tx_input_select <- function(ns, multiple = FALSE, choices = NULL) {
+tx_input_select <- function(ns, multiple = FALSE, choices = NULL,
+                            selected = choices$value[1]) {
   selectizeInput(
     inputId = ns("tx"),
     choices = choices$value,
-    selected = choices$value[1],
+    selected = selected,
     label = "Select a transcript",
     multiple = multiple,
     options = list(placeholder = 'Insert valid tx')

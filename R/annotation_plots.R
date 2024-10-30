@@ -89,7 +89,7 @@ geneTrackLayer <- function(grl) {
 
 #'
 #' @import ORFik
-#' @importFrom GenomicRanges ranges resize
+#' @importFrom GenomicRanges ranges resize psetdiff
 #' @importFrom IRanges subsetByOverlaps IRangesList
 #' @keywords internal
 
@@ -124,7 +124,7 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
 
 
   if (length(overlaps) > 0 | length(overlaps_tx) > 0) {
-    overlaps@unlistData$type <- "cds"
+    if (length(overlaps) > 0) overlaps@unlistData$type <- "cds"
     if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <- "utr"
     res_list <- gene_box_fix_overlaps(display_range, c(overlaps, overlaps_tx), custom_regions)
   } else {
@@ -137,13 +137,12 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
 }
 
 gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
-  type_per_grl <- unlist(lapply(overlaps, function(x) unique(x$type)))
-  plot_width <- widthPerGroup(display_range)
-  onames <- rep(names(overlaps), numExonsPerGroup(overlaps, FALSE))
-  overlaps <- unlistGrl(overlaps)
-  names(overlaps) <- onames
-  overlaps$rel_frame <- getRelativeFrames(overlaps)
 
+  type_per_grl <- unlist(lapply(overlaps, function(x) unique(x$type)))
+  names_grouping <- rep(names(overlaps), lengths(overlaps))
+  overlaps <- unlistGrl(overlaps)
+  names(overlaps) <- names_grouping
+  overlaps$rel_frame_exon <- getRelativeFrames(overlaps)
   overlaps <- subsetByOverlaps(overlaps, display_range)
 
 
@@ -153,22 +152,15 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
 
   locations <- pmapToTranscriptF(intersections, display_range)
   locations@unlistData$type <- rep(type_per_grl, times = lengths(locations))
-
-  locations <- sortPerGroup(groupGRangesBy(unlistGrl(locations)))
-  layers <- geneTrackLayer(locations)
-
   locations <- unlistGrl(locations)
-  rel_frame <- getRelativeFrames(locations)
-  names(rel_frame) <- names(locations)
-  type <- overlaps$type
-  names(type) <- names(overlaps)
+  locations$rel_frame_orf <- getRelativeFrames(locations)
+  locations <- unlistGrl(groupGRangesBy(locations))
 
-  if (length(rel_frame) != length(locations)) rel_frame <- selectFrames(rel_frame, locations)
-  locations$rel_frame <- rel_frame
-
-  cols <- colour_bars(locations, overlaps, display_range, type)
-  geneBox <- geneBoxFromRanges(locations, plot_width, layers,
-                                cols, custom_regions)
+  cols <- colour_bars(locations, overlaps, display_range)
+  layers <- geneTrackLayer(groupGRangesBy(locations))
+  plot_width <- widthPerGroup(display_range)
+  geneBox <- geneBoxFromRanges(locations, plot_width, layers, cols,
+                               custom_regions)
   return(geneBox)
 }
 
@@ -177,7 +169,8 @@ geneBoxFromRanges <- function(locations, plot_width,
                               cols = rc_rgb()[start(locations) %% 3 + 1],
                               custom_regions = NULL) {
   type <- locations$type
-  end(locations)[type == "utr"] <- end(locations)[type == "utr"] + 1
+  end(locations)[type == "utr"] <- pmin(plot_width,
+                                        end(locations)[type == "utr"] + 1)
   locations <- ranges(locations)
   blocks <- c(start(locations) , end(locations))
   names(blocks) <- rep(names(locations), 2)

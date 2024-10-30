@@ -11,10 +11,12 @@
 #' @param browser_options named character vector of browser specific arguments:\cr
 #' - default_experiment : Which experiment to select, default: first one\cr
 #' - default_gene : Which genes to select, default: first one\cr
+#' - default_isoform : Which isoform to select, default: first one\cr
 #' - default_libs : Which libraries to select: first one, else a single string,
 #' where libs are seperated by "|", like "RFP_WT_r1|RFP_WT_r2".\cr
 #' - default_kmer : K-mer windowing size, default: 1\cr
 #' - default_frame_type : Ribo-seq line type, default: "lines"\cr
+#' - default_view_mode : "tx", alternative "genomic"
 #' - plot_on_start : Plot when starting, default: "FALSE"\cr
 #' @param init_tab_focus character, default "browser". Which tab to open on
 #' init.
@@ -50,8 +52,19 @@
 #'
 #' #RiboCrypt_app(validate.experiments = FALSE,
 #' #       browser_options = c(plot_on_start = "TRUE",
-#' #                           default_experiment = "human_all_merged_l50",
+#' #                           default_experiment = "all_merged-Homo_sapiens_2024_8",
 #' #                           default_gene = "ATF4-ENSG00000128272"))
+#' #RiboCrypt_app(validate.experiments = FALSE, all_exp = all_exp,
+#' #browser_options = c(plot_on_start = "TRUE",
+#' #                    default_experiment = "human_all_merged_l50",
+#' #                    default_gene = "RPL12-ENSG00000197958",
+#' #                    default_isoform = "ENST00000361436",
+#' #                    default_view_mode = "genomic"))
+#' #RiboCrypt_app(validate.experiments = FALSE,
+#' #       browser_options = c(plot_on_start = "TRUE",
+#' #                           default_experiment = "all_merged-Saccharomyces_cerevisiae",
+#' #                           default_gene = "EFM5-YGR001",
+#' #                           default_view_mode = "genomic"))
 RiboCrypt_app <- function(
     validate.experiments = TRUE,
     options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
@@ -74,14 +87,14 @@ RiboCrypt_app <- function(
       browser_ui("browser", all_exp, browser_options, names_init, libs),
       analysis_ui("analysis", all_exp, browser_options, libs, metadata, all_exp_meta),
       metadata_ui("metadata", all_exp),
-      tutorial_ui()
+      tutorial_ui("tutorial")
     ))
 
   server <- function(input, output, session) {
     reactive_url()
     cds <- NULL
     org_and_study_changed_checker(input, output, session)
-
+    tutorial_server("tutorial")
     rv <- browser_server("browser", all_exp, without_readlengths_env, df,
                          experiments, tx, cds, libs, org, gene_name_list, rv,
                          browser_options)

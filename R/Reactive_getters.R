@@ -25,12 +25,13 @@ get_gene_name_categories_collection <- function(df) {
   return(all_genes[value%in% valid,])
 }
 
-get_exp <- function(dff, experiments, env, info = NULL) {
-  print(paste("testing exp", info))
+get_exp <- function(dff, experiments, env,
+                    exps_dir = ORFik::config()["exp"]) {
+  print(paste("Loading exp"))
   req(dff %in% experiments)
   print("New experiment loaded")
-  #print(paste("EXP: ", isolate(dff)))
-  return(read.experiment(dff, output.env = env, validate = FALSE))
+  return(read.experiment(dff, output.env = env, validate = FALSE,
+                         in.dir = exps_dir))
 }
 
 bottom_panel_shiny <- function(mainPlotControls) {
@@ -182,7 +183,7 @@ get_fastq_page <- function(input, libs, df, relative_dir) {
     return(NULL)
   }
   candidates <- list.files(trim_dir, full.names = TRUE, pattern = "html")
-  candidates_base <- gsub("report_", "", gsub(".html$", "", basename(candidates)))
+  candidates_base <- gsub("report_", "", sub(".html$", "", basename(candidates)))
   proper_names <- gsub("_Aligned.*", "", ORFik:::remove.file_ext(dff$filepath,basename = TRUE))
   path <- grep(pattern = proper_names, candidates, value = TRUE)
   if (length(path) != 1) {

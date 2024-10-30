@@ -1,7 +1,6 @@
 rc_parameter_setup <- function() {
   with(rlang::caller_env(), {
     time_before <- Sys.time()
-
     stopifnot(is(all_exp, "data.table"))
     stopifnot(!is.null(all_exp$name))
     stopifnot(nrow(all_exp) > 0)
@@ -31,33 +30,38 @@ rc_parameter_setup <- function() {
       browser_options["default_experiment"] <- all_exp$name[1]
     }
     if (!isTruthy(browser_options["default_experiment_meta"]) &
-        nrow(all_exp_meta > 1)) {
+        nrow(all_exp_meta) > 1) {
       browser_options["default_experiment_meta"] <- all_exp_meta$name[1]
     }
     if (is.na(browser_options["plot_on_start"])) {
       browser_options["plot_on_start"] <- FALSE
     }
-
+    if (!isTruthy(browser_options["default_view_mode"])) {
+      browser_options["default_view_mode"] <- "tx"
+    }
+    stopifnot(is.character(browser_options["default_view_mode"]) &
+              browser_options["default_view_mode"] %in% c("tx", "genomic"))
     if (!isTruthy(browser_options["allow_non_bw"])) {
       browser_options["allow_non_bw"] <- FALSE
     }
     exp_init <- read.experiment(browser_options["default_experiment"],
                                 validate = FALSE)
-    # exp_init_meta <- read.experiment(browser_options["default_experiment_meta"],
-    #                             validate = FALSE)
     names_init <- get_gene_name_categories(exp_init)
     if (!isTruthy(browser_options["default_gene"])) {
-      if (!isTruthy(browser_options["default_gene"])) {
-        browser_options["default_gene"] <- names_init$label[1]
-      }
-      stopifnot(browser_options["default_gene"] %in% names_init$label)
+      browser_options["default_gene"] <- names_init$label[1]
     }
+    stopifnot(browser_options["default_gene"] %in% names_init$label)
     if (!isTruthy(browser_options["default_gene_meta"])) {
-      if (!isTruthy(browser_options["default_gene_meta"])) {
-        browser_options["default_gene_meta"] <- names_init$label[1]
-      }
-      stopifnot(browser_options["default_gene_meta"] %in% names_init$label)
+      browser_options["default_gene_meta"] <- names_init$label[1]
     }
+    stopifnot(browser_options["default_gene_meta"] %in% names_init$label)
+
+    gene_isoforms <- names_init[label == browser_options["default_gene"],]
+    if (nrow(gene_isoforms) == 0) stop("Selected gene has no isoforms!")
+    if (!isTruthy(browser_options["default_isoform"])) {
+      browser_options["default_isoform"] <- gene_isoforms$value[1]
+    }
+    stopifnot(browser_options["default_isoform"] %in% gene_isoforms$value)
 
     if (!isTruthy(browser_options["default_kmer"])) {
       browser_options["default_kmer"] <- 1

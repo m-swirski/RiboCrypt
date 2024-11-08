@@ -215,7 +215,7 @@ geneBoxFromRanges <- function(locations, plot_width,
     seg_dt <- seg_dt[ , .(layers = layers[1], rect_starts = rect_ends[1:(.N - 1)], rect_ends = rect_starts[2:.N],
                           cols = "grey45", labels_locations = 0, hjusts = "center",
                           type = "intron", no_ex = "1"), by = gene_names]
-    seg_dt <- seg_dt[, colnames(dt), with = F]
+    seg_dt <- seg_dt[, colnames(dt), with = FALSE]
     with_introns_dt <- rbindlist(list(dt, seg_dt))
     result_dt <- with_introns_dt
   }

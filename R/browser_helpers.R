@@ -155,13 +155,13 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
                                       plot_title,  width, height, export.format))
 }
 
-genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6) {
+genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6,
+                                  viewMode, extendLeaders, extendTrailers) {
   input_given <- !is.null(genomic_string) && genomic_string != ""
   if (input_given) {
     gr <- try(GRanges(genomic_string))
     if (is(gr, "GRanges")) {
       if (start(gr) < 1) stop("Position 1 is minimum position to show on a chromosome! (input ", start(gr), ")")
-      if (width(gr) > 1e6) stop("Only up to 1 million bases can be shown!")
 
       suppressWarnings(try(seqlevelsStyle(gr) <- seqlevelsStyle(display_region)[1], silent = TRUE))
 
@@ -170,6 +170,12 @@ genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6
       display_region <- GRangesList(Region = gr)
     } else stop("Malformed genomic region: format: chr1:39517672-39523668:+")
   }
+
+  extension_size <- extendLeaders + extendTrailers
+  true_sized_grl <- if (viewMode == "tx") {display_region} else flankPerGroup(display_region)
+  size <- widthPerGroup(true_sized_grl, FALSE)
+  if (size > max_size) stop("Only up to ", round(max_size/1e6, 3) ," million bases can be shown, input: ",
+                            round(size/1e6, 3), " million bases")
   return(display_region)
 }
 

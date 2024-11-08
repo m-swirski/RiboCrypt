@@ -13,8 +13,11 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                                                 isolate(input$other_tx), isolate(input$add_translon))
     customRegions <- c(uorf_annotation, translon_annotation)
     display_region <- genomic_string_to_grl(isolate(input$genomic_region), display_region,
-                                            seqinfo(isolate(df())))
+                                            max_size = 1e6, isolate(input$viewMode),
+                                            isolate(input$extendLeaders),
+                                            isolate(input$extendTrailers))
     dff <- observed_exp_subset(isolate(input$library), libs, df)
+
 
     if (isolate(input$withFrames)) {
       withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU")

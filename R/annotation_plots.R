@@ -16,7 +16,7 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
     custom_motif <- strsplit(custom_motif, ",")[[1]] %>% strsplit(" ") %>% unlist
   }
   hits <- lapply(list(start_codons, stop_codons, custom_motif), function(x) matchMultiplePatterns(x, sequence))
-  names(hits) <- c("white", "black", "purple")
+  names(hits) <- c("white", "black", "#C97D00")
   hits <- lapply(hits, as.data.table)
   hits <- rbindlist(hits, idcol = "col")
   names(hits) <- c("col", "pos")
@@ -29,9 +29,10 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
 
 plotSeqPanel <- function(hits, sequence, frame = 1) {
   pos <- NULL # avoid dt warning
+  # New red: #FFA8A3 ?
   fig <- ggplot() +
     geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3), frame = frame),
-              fill = c("#F8766D","#00BA38","#619CFF" )) +
+              fill = c("#F8766D","#00BA38","#619CFF")) +
     geom_segment(data=hits, mapping = aes(y = 2 - (frames + 1), yend =  2 - frames, x = pos, xend = pos), col=hits$col) +
     ylab("frame") +
     xlab("position [nt]") +

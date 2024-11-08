@@ -21,6 +21,9 @@ make_url_from_inputs <- function(input, session) {
                     paste("viewMode", input$viewMode, sep = "="),
                     paste("other_tx", input$other_tx, sep = "="),
                     paste("add_uorfs", input$add_uorfs, sep = "="),
+                    paste("genomic_region", sub("\\+$", "p", input$genomic_region), sep = "="),
+                    paste("customSequence", input$customSequence, sep = "="),
+                    paste("phyloP", input$phyloP, sep = "="),
                     paste("summary_track", input$summary_track, sep = "="),
                     paste("go", "TRUE", sep = "="),
                     sep = "&")
@@ -29,7 +32,7 @@ make_url_from_inputs <- function(input, session) {
   page <- ifelse(page == "", "", paste0("#", page))
   # Now combine
   url <- paste0(host, settings, page)
-  print(paste("Copied text:", url))
+  print(paste("URL:", url))
   return(url)
 }
 
@@ -41,7 +44,7 @@ clipboard_url_button <- function(input, session) {
     icon = icon("clipboard"),
     tooltip = "Get URL to share for this plot. Copied to clipboard (ctrl+v to paste)",
     placement = "top",
-    options = list(delay = list(show = 800, hide = 100), trigger = "hover")
+    options = list(delay = list(show = 600, hide = 100), trigger = "hover")
   )
 }
 
@@ -161,8 +164,17 @@ check_url_for_basic_parameters <- function() {
           updateNumericInput(inputId = tag, value = value)
         }
       }
+      # Free character box updated
+      for (tag in c("customSequence", "genomic_region")) {
+        value <- query[tag][[1]]
+        if (!is.null(value)) {
+          if (tag == "genomic_region") value <- sub("p$", "+", value)
+          updateTextInput(inputId = tag, value = as.character(value))
+        }
+      }
+
       # Checkbox updates
-      for (tag in c("viewMode", "other_tx", "add_uorfs", "summary_track", "log_scale")) {
+      for (tag in c("viewMode", "other_tx", "add_uorfs", "summary_track", "log_scale", "phyloP")) {
         value <- query[tag][[1]]
         if (!is.null(value)) {
           updateCheckboxInput(inputId = tag, value = as.logical(value))

@@ -12,7 +12,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     translon_annotation <- observed_translon_annotation(isolate(input$tx), df(),
                                                 isolate(input$other_tx), isolate(input$add_translon))
     customRegions <- c(uorf_annotation, translon_annotation)
-    display_region <- genomic_string_to_grl(isolate(input$genomic_region), display_region)
+    display_region <- genomic_string_to_grl(isolate(input$genomic_region), display_region,
+                                            seqinfo(isolate(df())))
     dff <- observed_exp_subset(isolate(input$library), libs, df)
 
     if (isolate(input$withFrames)) {

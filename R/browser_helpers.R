@@ -159,17 +159,16 @@ genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6
   input_given <- !is.null(genomic_string) && genomic_string != ""
   if (input_given) {
     gr <- try(GRanges(genomic_string))
-
     if (is(gr, "GRanges")) {
       if (start(gr) < 1) stop("Position 1 is minimum position to show on a chromosome! (input ", start(gr), ")")
       if (width(gr) > 1e6) stop("Only up to 1 million bases can be shown!")
 
-      try(seqlevelsStyle(gr) <- seqlevelsStyle(display_region)[1], silent = TRUE)
+      suppressWarnings(try(seqlevelsStyle(gr) <- seqlevelsStyle(display_region)[1], silent = TRUE))
 
-      if (!(as.character(seqnames(gr)) %in% seqnames(seqinfo(df()))))
+      if (!(as.character(seqnames(gr)) %in% seqnames(seqinfo(display_region))))
         stop("Invalid chromosome selected!")
       display_region <- GRangesList(Region = gr)
-    } else stop("Malform genomic region: format: chr1:39517672-39523668:+")
+    } else stop("Malformed genomic region: format: chr1:39517672-39523668:+")
   }
   return(display_region)
 }

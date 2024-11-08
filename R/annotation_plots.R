@@ -170,8 +170,9 @@ geneBoxFromRanges <- function(locations, plot_width,
                               cols = rc_rgb()[start(locations) %% 3 + 1],
                               custom_regions = NULL) {
   type <- locations$type
-  end(locations)[type == "utr"] <- pmin(plot_width,
-                                        end(locations)[type == "utr"] + 1)
+  locations <- move_utrs_touching_cds(locations, type, plot_width)
+
+
   locations <- ranges(locations)
   blocks <- c(start(locations) , end(locations))
   names(blocks) <- rep(names(locations), 2)
@@ -220,6 +221,17 @@ geneBoxFromRanges <- function(locations, plot_width,
   }
   res_list <- list(result_dt, lines_locations)
   return(res_list)
+}
+
+move_utrs_touching_cds <- function(locations, type, plot_width) {
+  utr_end_touch_cds <- type == "utr" & (end(locations)+1) %in% start(locations)[type == "cds"]
+  new_utr_ends <- end(locations)[utr_end_touch_cds] + 1
+  end(locations)[utr_end_touch_cds] <- pmin(plot_width, new_utr_ends)
+
+  utr_start_touch_cds <- type == "utr" & (start(locations)-1) %in% end(locations)[type == "cds"]
+  new_utr_starts <- start(locations)[utr_start_touch_cds] - 1
+  start(locations)[utr_start_touch_cds] <- pmax(1, new_utr_starts)
+  return(locations)
 }
 
 rc_rgb <- function() {

@@ -29,12 +29,14 @@ experiment_input_select <- function(names, ns, browser_options = NULL,
 }
 
 gene_input_select <- function(ns, multiple = FALSE, browser_options = NULL,
-                              choices = NULL, label = "Select a gene",
-                              id = "gene") {
+                              choices = as.character(browser_options["default_gene"]),
+                              label = "Select a gene",
+                              id = "gene",
+                              selected = as.character(browser_options["default_gene"])) {
     selectizeInput(
     inputId = ns(id),
-    choices = as.character(browser_options["default_gene"]),
-    selected = as.character(browser_options["default_gene"]),
+    choices = choices,
+    selected = selected,
     label = label,
     multiple = multiple,
     options = list(placeholder = 'Insert valid gene')

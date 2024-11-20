@@ -116,7 +116,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     id <- isolate(input$tx)
     dff <- df()
 
-    table_path <- collection_path_from_exp(dff, id)
+    table_path <- collection_path_from_exp(dff, id, isolate(gene_name_list()))
     lib_sizes <- file.path(QCfolder(dff), "totalCounts_mrna.rds")
     if (!file.exists(lib_sizes))
       stop("Count table library size files are not created, missing file totalCounts_mrna.rds",

@@ -260,18 +260,31 @@ collection_dir_from_exp <- function(df, must_exists = FALSE) {
   return(table_dir)
 }
 
-#' Get collection directory
+#' Get collection path
+#'
+#' For directory and id, must be fst format file
 #' @param df ORFik experiment
 #' @param id character, transcript ids
+#' @param gene_name_list a data.table, default NULL, with gene ids
 #' @param must_exists logical, stop if dir does not exists
-#' @param output_dir = collection_dir_from_exp(df, must_exists)
+#' @param collection_dir = collection_dir_from_exp(df, must_exists)
 #' @return file.path(resFolder(df), "collection_tables")
 #' @export
-collection_path_from_exp <- function(df, id, must_exists = TRUE,
-                                     output_dir = collection_dir_from_exp(df, must_exists)) {
-  table_path <- file.path(output_dir, paste0(id, ".fst"))
-  if (must_exists) {
-    if (!file.exists(table_path)) stop("Gene has no precomputed table, try another one!")
+collection_path_from_exp <- function(df, id, gene_name_list = NULL,
+                                     must_exists = TRUE,
+                                     collection_dir = collection_dir_from_exp(df, must_exists)) {
+  table_path <- file.path(collection_dir, paste0(id, ".fst"))
+  if (must_exists && !file.exists(table_path)) {
+    all_ids_print <- "None"
+    if (!is.null(gene_name_list)) {
+      all_ids <- gene_name_list[label == gene_name_list[value == id,]$label,]$value
+      all_ids_paths <- file.path(collection_dir, paste0(all_ids, ".fst"))
+      all_ids <- all_ids[file.exists(all_ids_paths)]
+      if (length(all_ids) > 0) {
+        all_ids_print <- paste(all_ids, collapse = ", ")
+      }
+    }
+    stop("Gene isoform has no precomputed table, existing isoforms: ", all_ids_print)
   }
   return(table_path)
 }

@@ -17,7 +17,7 @@ analysis_ui <- function(id, all_exp, browser_options, libs, metadata, all_exp_me
 analysis_server <- function(id, all_experiments, without_readlengths_env,
                          with_readlengths_env, df, df_with, experiments,
                          tx, cds, libs, org, gene_name_list, rv, metadata,
-                         all_exp_meta, exp_init_meta, df_meta, names_init) {
+                         all_exp_meta, exp_init_meta, df_meta, names_init, browser_options) {
   rv <- heatmap_server("heatmap", all_experiments, with_readlengths_env,
                 df_with, experiments, tx, cds, libs, org, gene_name_list, rv)
   rv <- codon_server("codon", all_experiments, without_readlengths_env,
@@ -28,7 +28,8 @@ analysis_server <- function(id, all_experiments, without_readlengths_env,
                 df_with, experiments, tx, cds, libs, org, gene_name_list, rv)
   rv <- fastq_server("fastq", all_experiments, df, experiments, libs, org, rv)
   if (nrow(all_exp_meta) > 0) {
-    browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata, names_init)
+    browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata,
+                           names_init, browser_options)
   }
   return(rv)
 }

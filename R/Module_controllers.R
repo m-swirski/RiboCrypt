@@ -223,8 +223,11 @@ study_and_gene_observers <- function(input, output, session) {
         print(paste("Page:", id, "(General observer)"))
         tx_update_select(isolate(input$gene), gene_name_list)},
         ignoreNULL = TRUE, ignoreInit = TRUE, priority = -15)
+      browser_option_id <-ifelse(id == "browser_allsamp",
+                                 "default_gene_meta", "default_gene")
+
       selected_gene <- ifelse(exists("browser_options"),
-                              browser_options["default_gene"],
+                              browser_options[browser_option_id],
                               choices[1])
       gene_update_select_internal(isolate(gene_name_list()), selected_gene,
                                   choices = choices)

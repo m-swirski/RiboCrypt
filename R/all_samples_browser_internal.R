@@ -112,11 +112,11 @@ annotation_track_allsamples <- function(df, id, region_type, tx_width) {
     start <- start + length$utr5_len
     end <- start + length$cds_len
   }
-  grl <- GRangesList(GRanges("1", IRanges(start, end)))
+  grl <- GRangesList(GRanges("1", IRanges(start, end), type = "cds"))
   names(grl) <- id
 
   ranges <- unlistGrl(grl)
-  ranges <- c(GRanges("1", IRanges(1, tx_width)), ranges)
+  ranges <- c(GRanges("1", IRanges(1, tx_width), type = "utr"), ranges)
   dt <- geneBoxFromRanges(ranges, tx_width,
                           cols = c("#FFFFFF", c("#F8766D","#00BA38","#619CFF")[start(ranges[-1]) %% 3 + 1]))[[1]]
   return(geneModelPanelPlot(dt))

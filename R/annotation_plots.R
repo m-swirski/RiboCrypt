@@ -255,11 +255,13 @@ geneModelPanelPlot <- function(dt, frame = 1) {
     scale_x_continuous(expand = c(0,0)) +
     scale_y_continuous(expand = c(0,0)) +
     theme(panel.background = element_rect(fill= "white"))
+
   draw_introns <- nrow(seg_dt) > 0
   if (draw_introns) result_plot <- result_plot +
     geom_segment(data = seg_dt,
                  mapping = aes(x = rect_starts, xend = rect_ends, y = 0.5 - layers, yend = 0.5 - layers, text = gene_names),
                  color = "grey45", alpha = 0.6)
+
   suppressWarnings({
     result_plot <-  result_plot +
      geom_rect(data = dt, mapping=aes(ymin=0 - layers + ifelse(type == "cds", 0, 0.33), ymax = 1 - layers - ifelse(type == "cds", 0, 0.33),

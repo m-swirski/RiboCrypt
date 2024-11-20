@@ -42,12 +42,12 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
       mainPanel(
         tabsetPanel(type = "tabs",
           tabPanel("Heatmap", fluidRow(
-            splitLayout(cellWidths = c("10%", "90%"),
-                        jqui_resizable(plotlyOutput(outputId = ns("d"), height = "700px", width = "130px")) %>%
+            jqui_resizable(
+              splitLayout(cellWidths = c("10%", "90%"),
+                        plotlyOutput(outputId = ns("d"), height = "618px", width = "130px"),
+                        plotOutput(outputId = ns("c"), height = "700px", width = "105%") %>%
                           shinycssloaders::withSpinner(color="#0dc5c1"),
-                        jqui_resizable(plotOutput(outputId = ns("c"), height = "700px")) %>%
-                          shinycssloaders::withSpinner(color="#0dc5c1"),
-                        width=9)
+                        width=9, cellArgs = list(style = "padding: 0px")))
         ),
         plotlyOutput(outputId = ns("e"))),
         tabPanel("Statistics", DTOutput(outputId = ns("stats")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))

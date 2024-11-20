@@ -80,9 +80,9 @@ check_url_for_basic_parameters <- function() {
       page <- getPageFromURL(session)
       req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
       query <- getQueryString()
+
       tag <- "dff"
       value <- query[tag][[1]]
-
       if (is.null(input[[tag]]) || !is.null(value) && value != input[[tag]]
           && rv$exp != value) {
         print("Update experiment from url API")

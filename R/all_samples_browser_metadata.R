@@ -59,7 +59,9 @@ allsamples_sidebar <- function(meta) {
   if (numeric_grouping) {
     res <- subplot(plotly_tpm, res, nrows = 1)
   }
-  return(res %>% plotly::config(displayModeBar = FALSE))
+  return(res %>% plotly::config(displayModeBar = FALSE) %>%
+           layout(margin = list(autoexpand = FALSE, t = 4))
+         )
 }
 
 

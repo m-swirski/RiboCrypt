@@ -2,13 +2,14 @@
 % Please edit documentation in R/collection_helpers.R
 \name{collection_path_from_exp}
 \alias{collection_path_from_exp}
-\title{Get collection directory}
+\title{Get collection path}
 \usage{
 collection_path_from_exp(
   df,
   id,
+  gene_name_list = NULL,
   must_exists = TRUE,
-  output_dir = collection_dir_from_exp(df, must_exists)
+  collection_dir = collection_dir_from_exp(df, must_exists)
 )
 }
 \arguments{
@@ -16,13 +17,15 @@ collection_path_from_exp(
 
 \item{id}{character, transcript ids}
 
+\item{gene_name_list}{a data.table, default NULL, with gene ids}
+
 \item{must_exists}{logical, stop if dir does not exists}
 
-\item{output_dir}{= collection_dir_from_exp(df, must_exists)}
+\item{collection_dir}{= collection_dir_from_exp(df, must_exists)}
 }
 \value{
 file.path(resFolder(df), "collection_tables")
 }
 \description{
-Get collection directory
+For directory and id, must be fst format file
 }

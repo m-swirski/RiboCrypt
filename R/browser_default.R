@@ -25,7 +25,8 @@
 #' @param colors character, default NULL (automatic colouring). If "withFrames" argument
 #' is TRUE, colors are set to to c("red", "green", "blue") for the 3 frames.
 #' Alternative:  Character vector of length 1 or length of "reads" list argument.
-#' @param kmers numeric (integer), bin positions into kmers.
+#' @param kmers numeric (integer), bin positions into kmers. Default NULL, which is equal to 1,
+#' i.e. no binning.
 #' @param kmers_type character, function used for kmers sliding window. default: "mean", alternative: "sum"
 #' @param ylabels character, default NULL. Name of libraries in "reads" list arugment.
 #' @param width numeric, default NULL. Width of plot.

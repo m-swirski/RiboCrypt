@@ -2,6 +2,8 @@ getPageFromURL <- function(session = NULL, url = session$clientData$url_hash) {
   utils::URLdecode(sub("#", "", session$clientData$url_hash))
 }
 
+#' Make URL from shiny reactive input
+#' @noRd
 make_url_from_inputs <- function(input, session) {
   host <- session$clientData$url_hostname
   if (host != "ribocrypt.org") {
@@ -205,7 +207,8 @@ check_url_for_go_on_init <- function() {
     }, ignoreNULL = TRUE, ignoreInit = FALSE, priority = -100)
     # Timer for running plot, we have to wait for setup to finish
     rtimer <- reactiveTimer(1000)
-    timer <- reactive({req(no_go_yet() == FALSE);print("Timer activated!"); rtimer()}) %>% bindEvent(rtimer(), ignoreInit = TRUE)
+    timer <- reactive({req(no_go_yet() == FALSE);print("Timer activated!"); rtimer()}) %>%
+      bindEvent(rtimer(), ignoreInit = TRUE)
 
     observeEvent(timer(), {
       if (!no_go_yet()) {
@@ -244,16 +247,57 @@ check_url_for_go_on_init <- function() {
 #' @param browser getOption("browser")
 #' @return browseURL, opens browse with page
 #' @export
-browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL, exp = "all_merged-Homo_sapiens_modalities",
-                     libraries=NULL,
+browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
+                     exp = "all_merged-Homo_sapiens_modalities",
+                     libraries = NULL, extendLeaders = 0, extendTrailers = 0,
+                     viewMode = FALSE, other_tx = FALSE,
                      host = "https://ribocrypt.org", plot_on_start = TRUE,
                      frames_type = "columns", kmer=1,
                      browser = getOption("browser")) {
-  if (is.null(symbol) & is.null(gene_id)) stop("At least on of symbol and gene_id must be defined!")
-  exp <- paste0("&dff=", exp)
-  frames_type <- paste0("&frames_type=", frames_type)
-  kmer <- paste0("&kmer=", kmer)
-  prefix_url <- paste0(host, "/?", exp, frames_type, kmer)
+
+  full_url <- make_rc_url(symbol, gene_id, tx_id, exp, libraries,
+                          host, plot_on_start, frames_type, kmer)
+  browseURL(full_url, browser = browser)
+}
+
+
+#' Create URL to browse a gene on Ribocrypt webpage
+#'
+#' Can also make url for local RiboCrypt app'
+#' On the actuall app, the function make_url_from_inputs is used on
+#' the shiny reactive input object. This one is for manual use.
+#' @inheritParams multiOmicsPlot_list
+#' @param symbol gene symbol, default NULL
+#' @param gene_id gene symbol, default NULL
+#' @param tx_id gene symbol, default NULL
+#' @param exp experiment name, default "all_merged-Homo_sapiens_modalities"
+#' @param libraries NULL, default to first in experiment, c("RFP","RNA") would add RNA to default.
+#' @param host url, default "https://ribocrypt.org". Set to localhost for local version.
+#' @param plot_on_start logical, default TRUE. Plot gene when opening browser.
+#' @param frames_type "columns"
+#' @param viewMode FALSE (transcript view), TRUE gives genomic.
+#' @param other_tx FALSE, show all other annotation in region (isoforms etc.)
+#' @return browseURL, opens browse with page
+#' @export
+make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
+                        exp = "all_merged-Homo_sapiens_modalities",
+                        libraries = NULL, extendLeaders = 0, extendTrailers = 0,
+                        viewMode = FALSE, other_tx = FALSE,
+                        host = "https://ribocrypt.org", plot_on_start = TRUE,
+                        frames_type = "columns", kmer=1) {
+  if (is.null(symbol) & is.null(gene_id))
+    stop("At least on of symbol and gene_id must be defined!")
+  settings <- "/?"
+  settings <- paste(settings,
+                    paste("dff", exp, sep = "="),
+                    paste0("frames_type", frames_type, sep = "="),
+                    paste0("kmer", kmer, sep = "="),
+                    paste0("extendLeaders", extendLeaders, sep = "="),
+                    paste0("extendTrailers", extendTrailers, sep = "="),
+                    paste0("viewMode", viewMode, sep = "="),
+                    paste0("other_tx", other_tx, sep = "="),
+                    sep = "&")
+  prefix_url <- paste0(host, settings)
   gene <- paste0(if (!is.na(symbol) & !is.null(symbol)) {paste0(symbol, "-")} else NULL, gene_id)
   if (!is.null(tx_id)) tx_id <- paste0("&tx=", tx_id)
   if (!is.null(libraries)) libraries <- paste0("&library=", paste(libraries, collapse = ","))
@@ -261,6 +305,5 @@ browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL, exp = "all_mer
   select <- paste0("&gene=", gene, tx_id, libraries)
   plot_on_start <- paste0("&go=", as.logical(plot_on_start))
   full_url <- paste0(prefix_url, select, plot_on_start)
-  # full_url
-  browseURL(full_url, browser = browser)
+  return(full_url)
 }

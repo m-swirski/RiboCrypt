@@ -1,3 +1,6 @@
+#' Main controller for browser settings
+#' Takes shiny input and converts to a proper list of settings
+#' @noRd
 click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
   {
     print(paste("here is gene!", isolate(input$gene)))

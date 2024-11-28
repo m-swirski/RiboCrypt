@@ -84,10 +84,18 @@ collection_to_wide <- function(table, value.var = "logscore") {
 #' @param as_list logical, default FALSE. Return as list of size 2,
 #' count data.table and metadata data.table Set to TRUE if you need metadata
 #' subset (needed if you subset the table, to get correct matching)
+#' @param subset numeric vector, positional interval to subset, must be <= size of
+#' whole region.
+#' @param group_on_tx_tpm numeric vector, default NULL.
+#' tpm values per libraries. Either for that gene or some other gene.
 #' @param min_count integer, default 0. Minimum counts of coverage over transcript
 #' to be included.
 #' @param format character, default "wide", alternative "long". The format of
 #' the table output.
+#' @param ratio_interval numeric vector of size 2 or 4, default NULL.
+#' If 2, means you should
+#' sort libraries on coverage in that region. If 4, means to sort on ratio
+#' of that region in this gene vs the other region in another gene.
 #' @return a data.table in long or wide (default) format, if as list, it is a
 #' list of size 2 (see argument as_list)
 compute_collection_table <- function(path, lib_sizes, df,

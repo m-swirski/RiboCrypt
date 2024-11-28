@@ -24,6 +24,8 @@ get_meta_browser_plot_full(
 
 \item{df}{ORFik experiment}
 
+\item{summary}{logical, default TRUE (add top plot)}
+
 \item{annotation}{logical, default TRUE (add bottom annotation track)}
 
 \item{region_type}{character, "what is the coverage region?" Usually full mrna:
@@ -31,8 +33,6 @@ get_meta_browser_plot_full(
 
 \item{rel_heights}{numeric < 1, default: c(0.2, 0.75, 0.05).
 Relative heights, sum to 1 and must be length 3.}
-
-\item{sumary}{logical, default TRUE (add top plot)}
 }
 \description{
 Full plot for allsamples browser

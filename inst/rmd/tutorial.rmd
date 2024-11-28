@@ -225,19 +225,12 @@ It uses precomputed fst files of coverage over all libraries. Note: Not
 all isoforms are computed, by default the longest isoform is computed. 
 
 ### Display panel (Meta browser)
+
 Organism, experiment and gene explained above
+
 - Group on: the metadata column to order plot by
 - K-means clusters: How many k-means clusters to use, if > 1, Group will be
 sorted within the clusters, but K-means have priority.
-
-### Statistics tab
-This tab gives the statistics of over representation analysis per cluster.
-Using chi squared test, it gives the residuals per term from metadata 
-(like tissue, cell-line etc). If a value is bigger than +/- 3, it means
-it is quite certain this is over represented. 
-
-If no clustering was applied, this tab gives the number of items per
-metadata term (40 brain samples, 30 kidney samples etc).
 
 ### Display panel (settings)
 - Normalization (all scores are tpm normalized and log scaled)
@@ -263,6 +256,17 @@ metadata term (40 brain samples, 30 kidney samples etc).
   computed fsts. By default the longest isoforms have been computed for all genes.
 - K-mer length: Smoothens out the signal by applying a mean sliding window, 
   default 1 (off)
+
+### Statistics tab
+This tab gives the statistics of over representation analysis per cluster
+of the metabrowser plot.
+Using chi squared test, it gives the residuals per term from metadata 
+(like tissue, cell-line etc). If a value is bigger than +/- 3, it means
+it is quite certain this is over represented. This is shown as a red line.
+
+If no clustering was applied, this tab gives the number of items per
+metadata term (40 brain samples, 30 kidney samples etc).
+
   
 ### Requirements
 This mode is very intensive on CPU, so it requires certain pre-computed results

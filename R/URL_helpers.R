@@ -235,28 +235,22 @@ check_url_for_go_on_init <- function() {
 #' Browse a gene on Ribocrypt webpage
 #'
 #' Can also disply local RiboCrypt app
-#' @param symbol gene symbol, default NULL
-#' @param gene_id gene symbol, default NULL
-#' @param tx_id gene symbol, default NULL
-#' @param exp experiment name, default "all_merged-Homo_sapiens_modalities"
-#' @param libraries NULL, default to first in experiment, c("RFP","RNA") would add RNA to default.
-#' @param host url, default "https://ribocrypt.org". Set to localhost for local version.
-#' @param plot_on_start logical, default TRUE. Plot gene when opening browser.
-#' @param frames_type "columns"
-#' @param kmer default 1 (kmer window to smear out reads)
+#' @inheritParams make_rc_url
 #' @param browser getOption("browser")
 #' @return browseURL, opens browse with page
 #' @export
 browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                      exp = "all_merged-Homo_sapiens_modalities",
-                     libraries = NULL, extendLeaders = 0, extendTrailers = 0,
+                     libraries = NULL, leader_extension = 0, trailer_extension = 0,
                      viewMode = FALSE, other_tx = FALSE,
-                     host = "https://ribocrypt.org", plot_on_start = TRUE,
-                     frames_type = "columns", kmer=1,
+                     plot_on_start = TRUE, frames_type = "columns", kmer=1,
+                     host = "https://ribocrypt.org",
                      browser = getOption("browser")) {
 
   full_url <- make_rc_url(symbol, gene_id, tx_id, exp, libraries,
-                          host, plot_on_start, frames_type, kmer)
+                          leader_extension, trailer_extension,
+                          viewMode, other_tx, plot_on_start, frames_type,
+                          kmer, host)
   browseURL(full_url, browser = browser)
 }
 
@@ -272,19 +266,20 @@ browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
 #' @param tx_id gene symbol, default NULL
 #' @param exp experiment name, default "all_merged-Homo_sapiens_modalities"
 #' @param libraries NULL, default to first in experiment, c("RFP","RNA") would add RNA to default.
-#' @param host url, default "https://ribocrypt.org". Set to localhost for local version.
 #' @param plot_on_start logical, default TRUE. Plot gene when opening browser.
 #' @param frames_type "columns"
 #' @param viewMode FALSE (transcript view), TRUE gives genomic.
 #' @param other_tx FALSE, show all other annotation in region (isoforms etc.)
-#' @return browseURL, opens browse with page
+#' @param kmer integer, default 1 (no binning), binning size of windows, to smear out the signal.
+#' @param host url, default "https://ribocrypt.org". Set to localhost for local version.
+#' @return character, URL.
 #' @export
 make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                         exp = "all_merged-Homo_sapiens_modalities",
-                        libraries = NULL, extendLeaders = 0, extendTrailers = 0,
+                        libraries = NULL, leader_extension = 0, trailer_extension = 0,
                         viewMode = FALSE, other_tx = FALSE,
-                        host = "https://ribocrypt.org", plot_on_start = TRUE,
-                        frames_type = "columns", kmer=1) {
+                        plot_on_start = TRUE, frames_type = "columns", kmer=1,
+                        host = "https://ribocrypt.org") {
   if (is.null(symbol) & is.null(gene_id))
     stop("At least on of symbol and gene_id must be defined!")
   settings <- "/?"

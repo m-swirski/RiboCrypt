@@ -10,14 +10,14 @@ make_rc_url(
   tx_id = NULL,
   exp = "all_merged-Homo_sapiens_modalities",
   libraries = NULL,
-  extendLeaders = 0,
-  extendTrailers = 0,
+  leader_extension = 0,
+  trailer_extension = 0,
   viewMode = FALSE,
   other_tx = FALSE,
-  host = "https://ribocrypt.org",
   plot_on_start = TRUE,
   frames_type = "columns",
-  kmer = 1
+  kmer = 1,
+  host = "https://ribocrypt.org"
 )
 }
 \arguments{
@@ -31,18 +31,24 @@ make_rc_url(
 
 \item{libraries}{NULL, default to first in experiment, c("RFP","RNA") would add RNA to default.}
 
+\item{leader_extension}{integer, default 0. (How much to extend view upstream)}
+
+\item{trailer_extension}{integer, default 0. (How much to extend view downstream)}
+
 \item{viewMode}{FALSE (transcript view), TRUE gives genomic.}
 
 \item{other_tx}{FALSE, show all other annotation in region (isoforms etc.)}
 
-\item{host}{url, default "https://ribocrypt.org". Set to localhost for local version.}
-
 \item{plot_on_start}{logical, default TRUE. Plot gene when opening browser.}
 
 \item{frames_type}{"columns"}
+
+\item{kmer}{integer, default 1 (no binning), binning size of windows, to smear out the signal.}
+
+\item{host}{url, default "https://ribocrypt.org". Set to localhost for local version.}
 }
 \value{
-browseURL, opens browse with page
+character, URL.
 }
 \description{
 Can also make url for local RiboCrypt app'

@@ -47,7 +47,7 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
 #' @param heatmap ComplexHeatmap object of plot from 'm'
 #' @param id id of transcript
 #' @param df ORFik experiment
-#' @param sumary logical, default TRUE (add top plot)
+#' @param summary logical, default TRUE (add top plot)
 #' @param annotation logical, default TRUE (add bottom annotation track)
 #' @param region_type character, "what is the coverage region?" Usually full mrna:
 #' "mrna" or "leader+cds".

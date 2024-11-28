@@ -1,83 +1,3 @@
-unlistToExtremities <- function(grl) {
-  gr <- unlistGrl(grl)
-  gr$names <- names(gr)
-  dt <- as.data.table(gr)
-  dt <- dt[,.(seqnames = seqnames[1], start = min(start), end = max(end), strand = strand[1]), by = names]
-  return(GRanges(dt))
-}
-
-#' Distance to following range
-#'
-#' @param grl a GRangesList
-#' @param grl2 a GRangesList, default 'grl'
-#' @param ignore.strand logical, default FALSE
-#' @importFrom IRanges precede follow distance
-#' @return numeric vector of distance
-distanceToFollowing <- function(grl, grl2 = grl, ignore.strand = FALSE) {
-  stops <- stopRegion(grl,downstream = 0, upstream = 0) %>% unlistGrl
-  starts <- grl2 %>% unlistToExtremities()
-  if (!ignore.strand){
-    followers <- precede(stops,starts)
-  } else {
-    minus_strand <- which(stops@strand == "-")
-    plus_strand <- which(stops@strand == "+")
-    followers_plus <- precede(stops[plus_strand],starts, ignore.strand = TRUE)
-    followers_minus <- follow(stops[minus_strand],starts, ignore.strand = TRUE)
-    followers <- c()
-    if (length(minus_strand > 0)) followers[minus_strand] <- followers_minus
-    if (length(plus_strand > 0)) followers[plus_strand] <- followers_plus
-  }
-  nas <- is.na(followers)
-  dists <- distance(stops[!is.na(followers)], starts[followers[!is.na(followers)]], ignore.strand = ignore.strand)
-  out <- 1:length(grl)
-  out[!nas] <- dists
-  out[nas] <- NA
-  out
-}
-
-distanceToPreceding <- function(grl, grl2 = grl, ignore.strand = FALSE) {
-  stops <- grl2 %>% unlistToExtremities()
-  starts <- startRegion(grl,downstream = 0,upstream = 0) %>% unlistGrl()
-  if (!ignore.strand){
-    preceders <- follow(starts,stops)
-  } else {
-    minus_strand <- which(starts@strand == "-")
-    plus_strand <- which(starts@strand == "+")
-    preceders_plus <- follow(starts[plus_strand],stops, ignore.strand = TRUE)
-    preceders_minus <- precede(starts[minus_strand],stops, ignore.strand=TRUE)
-    preceders <- c()
-    if (length(minus_strand > 0)) preceders[minus_strand] <- preceders_minus
-    if (length(plus_strand > 0)) preceders[plus_strand] <- preceders_plus
-  }
-  nas <- is.na(preceders)
-  dists <- distance(starts[!is.na(preceders)], stops[preceders[!is.na(preceders)]], ignore.strand = ignore.strand)
-  out <- 1:length(grl)
-  out[!nas] <- dists
-  out[nas] <- NA
-  out
-
-}
-
-extendTrailersUntil <- function(grl, grl2=grl, extension = 500, until = 200, min_ext = 25, ...) {
-  dists <- distanceToFollowing(grl,grl2, ...)
-  dists[is.na(dists)] <- extension + until + 1
-  diff <- pmax(dists - until, min_ext)
-  extension <- pmin(extension, diff)
-  grl <- extendTrailers(grl, extension)
-  return(grl)
-}
-
-extendLeadersUntil <- function(grl, grl2=grl, extension = 500, until = 200, min_ext = 25, ...) {
-  dists <- distanceToPreceding(grl,grl2, ...)
-  dists[is.na(dists)] <- extension + until + 1
-  diff <- pmax(dists - until,min_ext)
-  extension <- pmin(extension, diff)
-
-
-  grl <- extendLeaders(grl, extension)
-  return(grl)
-}
-
 getStopWindow <- function(grl, upstream = 200, downstream = 500, min_upstream_dist = 50, min_downstream_dist = 200, min_ext = 25,...) {
   ext_grl <- grl %>% stopRegion(upstream = 0, downstream = 0) %>% extendTrailersUntil(.,grl,extension=downstream,until=min_downstream_dist,min_ext=min_ext,...)
 
@@ -151,7 +71,7 @@ metaPlot <- function(reads, grl, outward = 500, inward = 200, min_outward_distan
   count <- NULL # Avoid warning
   if (withFrames) {
     ggplot(metaCov) +
-      geom_vline(aes(xintercept = inward + outward)) + 
+      geom_vline(aes(xintercept = inward + outward)) +
       geom_col(aes(y = count, x = index, color = frames), size = 0.75) +
       theme(legend.position = "none") +
       ylab("transcript normalized coverage") +

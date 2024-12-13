@@ -97,7 +97,7 @@ allsamples_meta_stats <- function(meta) {
 }
 
 allsamples_enrich_bar_plot <- function(enrich) {
-  enrich_dt <- as.data.table(enrich, keep.rownames = T)
+  enrich_dt <- as.data.table(enrich, keep.rownames = TRUE)
   enrich_dt <- suppressWarnings(melt(enrich_dt))
   enrich_dt[, variable := factor(as.character(variable))]
   enrich_dt <- enrich_dt[rn != "",]

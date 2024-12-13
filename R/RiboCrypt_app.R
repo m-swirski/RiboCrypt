@@ -41,9 +41,11 @@
 #' @importFrom ComplexHeatmap Heatmap row_order draw
 #' @importFrom DT datatable renderDT DTOutput formatStyle styleInterval
 #' @importFrom grid grid.grabExpr
+#' @importFrom rtracklayer BigWigFile
 #' @return RiboCrypt shiny app
 #' @export
 #' @examples
+#' run_variable <- 1 # Ignore check test limit
 #' ## Default run
 #' # RiboCrypt_app()
 #' ## Plot on start

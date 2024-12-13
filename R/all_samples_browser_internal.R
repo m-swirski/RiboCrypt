@@ -53,6 +53,7 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
 #' "mrna" or "leader+cds".
 #' @param rel_heights numeric < 1, default: c(0.2, 0.75, 0.05).
 #' Relative heights, sum to 1 and must be length 3.
+#' @return a cowplot grub
 #' @importFrom cowplot plot_grid
 get_meta_browser_plot_full <- function(m, heatmap, id, df,
                                        summary = TRUE, annotation = TRUE,
@@ -99,7 +100,7 @@ annotation_track_allsamples <- function(df, id, region_type, tx_width) {
   withFrames <- TRUE
   colors <- TRUE
 
-  lengths <- ORFik:::optimizedTranscriptLengths(df)
+  lengths <- ORFik::optimizedTranscriptLengths(df)
   length <- lengths[tx_name == id]
   # Custom UTR lengths for Sac cer (yeast)
   if (organism(df) == "Saccharomyces cerevisiae")

@@ -259,6 +259,10 @@ subset_fst_by_interval <- function(table, subset) {
 #' @param must_exists logical, stop if dir does not exists
 #' @return file.path(resFolder(df), "collection_tables")
 #' @export
+#' @examples
+#' df <- ORFik.template.experiment()
+#' collection_dir_from_exp(df)
+#'
 collection_dir_from_exp <- function(df, must_exists = FALSE) {
   table_dir <- file.path(resFolder(df), "collection_tables")
 
@@ -278,6 +282,10 @@ collection_dir_from_exp <- function(df, must_exists = FALSE) {
 #' @param collection_dir = collection_dir_from_exp(df, must_exists)
 #' @return file.path(resFolder(df), "collection_tables")
 #' @export
+#' @examples
+#' df <- ORFik.template.experiment()
+#' tx_id <- "ENST0000012312"
+#' collection_path_from_exp(df, id = tx_id, must_exists = FALSE)
 collection_path_from_exp <- function(df, id, gene_name_list = NULL,
                                      must_exists = TRUE,
                                      collection_dir = collection_dir_from_exp(df, must_exists)) {

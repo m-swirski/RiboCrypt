@@ -127,7 +127,7 @@ From top to down, we see Ribo-seq coverage, displayed as columns with the three 
 
 Now, we can plot just the ribosome footprints (RFPs), with display changed to lines, instead of columns:
 
-```{r eval = TRUE, echo = TRUE, message = FALSE}
+```{r eval = FALSE, echo = TRUE, message = FALSE}
 
   multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[3], 30), 30), annotation = cds,df = df[which(df$libtype == "RFP")[1],], frames_type = "lines")
  

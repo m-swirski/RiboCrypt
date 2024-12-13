@@ -34,6 +34,9 @@ get_meta_browser_plot_full(
 \item{rel_heights}{numeric < 1, default: c(0.2, 0.75, 0.05).
 Relative heights, sum to 1 and must be length 3.}
 }
+\value{
+a cowplot grub
+}
 \description{
 Full plot for allsamples browser
 }

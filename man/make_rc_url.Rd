@@ -55,3 +55,6 @@ Can also make url for local RiboCrypt app'
 On the actuall app, the function make_url_from_inputs is used on
 the shiny reactive input object. This one is for manual use.
 }
+\examples{
+make_rc_url("ATF4", "ENSG00000128272")
+}

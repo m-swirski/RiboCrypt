@@ -1,7 +1,7 @@
 Package: RiboCrypt
 Type: Package
 Title: Interactive visualization in genomics
-Version: 1.13.0
+Version: 1.13.1
 Authors@R: c(
   person(given = "Michal", family = "Swirski", email = "michal.swirski@uw.edu.pl", role = c("aut", "cre", "cph")),
   person(given = "Haakon", family = "Tjeldnes", email = "hauken_heyken@hotmail.com", role = c("aut","ctb")),
@@ -46,6 +46,7 @@ Imports:
   rlang,
   rclipboard,
   RCurl,
+  rtracklayer,
   shiny,
   shinycssloaders,
   shinyhelper,

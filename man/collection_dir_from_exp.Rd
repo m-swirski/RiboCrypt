@@ -17,3 +17,8 @@ file.path(resFolder(df), "collection_tables")
 \description{
 Get collection directory
 }
+\examples{
+df <- ORFik.template.experiment()
+collection_dir_from_exp(df)
+
+}

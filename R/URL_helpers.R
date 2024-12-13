@@ -239,6 +239,9 @@ check_url_for_go_on_init <- function() {
 #' @param browser getOption("browser")
 #' @return browseURL, opens browse with page
 #' @export
+#' @examples
+#' browseRC("ATF4", "ENSG00000128272")
+#'
 browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                      exp = "all_merged-Homo_sapiens_modalities",
                      libraries = NULL, leader_extension = 0, trailer_extension = 0,
@@ -274,6 +277,8 @@ browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
 #' @param host url, default "https://ribocrypt.org". Set to localhost for local version.
 #' @return character, URL.
 #' @export
+#' @examples
+#' make_rc_url("ATF4", "ENSG00000128272")
 make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                         exp = "all_merged-Homo_sapiens_modalities",
                         libraries = NULL, leader_extension = 0, trailer_extension = 0,
@@ -287,8 +292,8 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                     paste("dff", exp, sep = "="),
                     paste0("frames_type", frames_type, sep = "="),
                     paste0("kmer", kmer, sep = "="),
-                    paste0("extendLeaders", extendLeaders, sep = "="),
-                    paste0("extendTrailers", extendTrailers, sep = "="),
+                    paste0("extendLeaders", leader_extension, sep = "="),
+                    paste0("extendTrailers", trailer_extension, sep = "="),
                     paste0("viewMode", viewMode, sep = "="),
                     paste0("other_tx", other_tx, sep = "="),
                     sep = "&")

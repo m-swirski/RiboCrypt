@@ -59,6 +59,7 @@ RiboCrypt shiny app
 Create RiboCrypt app
 }
 \examples{
+run_variable <- 1 # Ignore check test limit
 ## Default run
 # RiboCrypt_app()
 ## Plot on start

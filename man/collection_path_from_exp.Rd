@@ -29,3 +29,8 @@ file.path(resFolder(df), "collection_tables")
 \description{
 For directory and id, must be fst format file
 }
+\examples{
+df <- ORFik.template.experiment()
+tx_id <- "ENST0000012312"
+collection_path_from_exp(df, id = tx_id, must_exists = FALSE)
+}

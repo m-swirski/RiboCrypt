@@ -166,12 +166,11 @@ click_plot_browser <- function(mainPlotControls, session) {
 }
 
 click_plot_boxplot <- function(boxPlotControls, session) {
-  a <- RiboCrypt:::distribution_plot(boxPlotControls()$dff,
-                                     boxPlotControls()$display_region,
-                                     boxPlotControls()$annotation,
-                                     boxPlotControls()$extendLeaders,
-                                     boxPlotControls()$extendTrailers)
-  return(a)
+  return(distribution_plot(boxPlotControls()$dff,
+                           boxPlotControls()$display_region,
+                           boxPlotControls()$annotation,
+                           boxPlotControls()$extendLeaders,
+                           boxPlotControls()$extendTrailers))
 }
 
 get_fastq_page <- function(input, libs, df, relative_dir) {

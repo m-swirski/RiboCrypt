@@ -56,3 +56,7 @@ browseURL, opens browse with page
 \description{
 Can also disply local RiboCrypt app
 }
+\examples{
+browseRC("ATF4", "ENSG00000128272")
+
+}

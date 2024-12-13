@@ -51,34 +51,12 @@ heatmap_server <- function(id, all_experiments, env, df, experiments, tx, cds,
                                            length_table))
 
       coverage <- reactive(heatmap_data(mainPlotControls, tx, length_table)) %>%
-        bindCache(mainPlotControls()$extendLeaders, mainPlotControls()$extendTrailers,
-                  mainPlotControls()$normalization, mainPlotControls()$region,
-                  ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
-                  mainPlotControls()$readlength_min,
-                  mainPlotControls()$readlength_max)
+        bindCache(mainPlotControls()$hash_string)
 
-    output$c <- renderPlotly({
-      message("-- Plotting heatmap")
-      pos <- ifelse(mainPlotControls()$region == "Start codon",
-                    "Start Site", "Stop Site")
-      main_plot <- coverageHeatMap(coverage(), scoring = mainPlotControls()$normalization,
-                                   legendPos = "bottom",
-                                   xlab = paste("Position relative to", pos)) + 
-                    theme(axis.title = element_text(size = 18),
-                          axis.text = element_text(size = 12))
-      plot_list <- if (mainPlotControls()$summary_track) {
-        heights <- c(0.2,0.8)
-        list(pSitePlot(coverage(), forHeatmap = TRUE), main_plot)
-      } else {
-        heights <- 1
-        list(main_plot)
-      }
-      return(subplot(plot_list, nrows = length(plot_list), heights = heights, shareX = TRUE, titleY = TRUE) %>%
-               plotly::config(toImageButtonOptions= list(format = "svg")))
-    }) %>%
-      bindEvent(coverage(), ignoreNULL = TRUE)
-    output$shift_table <- renderTable(mainPlotControls()$shift_table)
-    return(rv)
+      output$c <- renderPlotly(reactive_heatmap_plot(mainPlotControls, coverage)) %>%
+        bindEvent(coverage(), ignoreNULL = TRUE)
+      output$shift_table <- renderTable(mainPlotControls()$shift_table)
+      return(rv)
   }
   )
 }

@@ -141,6 +141,7 @@ required for this method!)
 
 Study and gene select works same as for browser specified above.
 In addition to have the option to specify all genes (default).
+
 - Select libraries (multiple allowed)
 
 #### Filters {#codonfilt}
@@ -153,6 +154,18 @@ gene level (except for sum):
   - alpha(DMN) (Dirichlet-multinomial distribution alpha parameter)
   - sum (raw sum, (a very biased estimator, since some codons are used much 
     more than others!))
+    
+#### Codon plot
+
+Display is the score per codon (amino acid), in addition there are 2 custom
+"amino acids", * as in * : TGA, means TGA is a stop codon (last codon in CDS).
+Similar is #, as in # : ATG which means ATG as start codon (first codon in CDS).
+For P-sites start codons should be enriched, while for A-sites there should be
+a richer variability, often with a small enrichment for stop-codons. 
+We will implement a richer model eventually using the more correct negative binomial 
+relationships between E, P and A sites, i.g. the motif PPP (triplet-proline in E,P,A site) 
+is much stronger than a single P in the A site etc. 
+alone etc. 
 
 ## Heatmap {#heatmap}
 

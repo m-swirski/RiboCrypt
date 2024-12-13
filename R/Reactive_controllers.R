@@ -205,6 +205,13 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
     shift_table <- data.table()
   }
 
+  hash_string <- paste(input$extendLeaders + additional_extension,
+                       input$extendTrailers + additional_extension,
+                       input$normalization, input$region,
+                       paste(ORFik:::name_decider(dff, naming = "full"), collapse = "|__|"),
+                       input$readlength_min,
+                       input$readlength_max, sep = "|__|")
+
   time_before <- Sys.time()
   reads <- load_reads(dff, "covl")
 
@@ -223,12 +230,13 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
                  summary_track = input$summary_track,
                  p_shifted = input$p_shifted,
                  shift_table = shift_table,
+                 hash_string = hash_string,
                  reads = reads)
 }
 
 click_plot_codon_main_controller <- function(input, tx, cds, libs, df,
                                              length_table) {
-  cds_display <- observed_cds_heatmap(isolate(input$tx),cds, length_table,
+  cds_display <- observed_cds_heatmap(isolate(input$tx), cds, length_table,
                                       minFiveUTR = 3)
   dff <- observed_exp_subset(isolate(input$library), libs, df)
 

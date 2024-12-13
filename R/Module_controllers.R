@@ -147,10 +147,11 @@ module_protein <- function(input, output, gene_name_list, session) {
   })
 }
 
-### NGLVieweR (protein structures) ###
-# TODO: Move as much as possible of protein stuff out of page_browser
-### NGLVieweR (protein structures) ###
-# TODO: Move as much as possible of protein stuff out of page_browser
+#' This function sets up default backend for genome specific reactives
+#'
+#' It is a rlang module for all submodules.\cr
+#' It has branch points for setup to be more flexible for modules.
+#' @noRd
 study_and_gene_observers <- function(input, output, session) {
   with(rlang::caller_env(), {
     # Checks for which flags to set from parent function

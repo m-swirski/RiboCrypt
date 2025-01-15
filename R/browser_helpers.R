@@ -122,7 +122,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
                                     viewMode = c("tx", "genomic")[1],
                                     custom_regions = NULL,
                                     leader_extension = 0, trailer_extension = 0,
-                                    withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
+                                    withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI"),
                                     frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
                                     ylabels = bamVarName(df), lib_to_annotation_proportions = c(0.8,0.2),lib_proportions = NULL,
                                     annotation_proportions = NULL,width = NULL, height = NULL,

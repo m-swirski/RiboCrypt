@@ -15,7 +15,7 @@ multiOmicsPlot_ORFikExp(
   custom_regions = NULL,
   leader_extension = 0,
   trailer_extension = 0,
-  withFrames = libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU"),
+  withFrames = libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU", "TI"),
   frames_type = "lines",
   colors = NULL,
   kmers = NULL,
@@ -75,7 +75,7 @@ a different color.}
 \item{trailer_extension}{integer, default 0. (How much to extend view downstream)}
 
 \item{withFrames}{a logical vector, default
-\code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU")}
+\code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU", "TI")}
 Alternative: a length 1 or same length as list length of "reads" argument.}
 
 \item{frames_type}{character, default "lines". Alternative:\cr

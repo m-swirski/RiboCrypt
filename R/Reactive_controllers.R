@@ -23,7 +23,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
 
 
     if (isolate(input$withFrames)) {
-      withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU")
+      withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
     } else withFrames <- rep(FALSE, nrow(dff))
 
     # Hash strings for cache

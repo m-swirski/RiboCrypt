@@ -12,7 +12,7 @@
 #' Default: \code{outputLibs(df, type = "pshifted", output.mode = "envirlist",
 #' naming = "full", BPPARAM = BiocParallel::SerialParam())}
 #' @param withFrames a logical vector, default
-#' \code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU")}
+#' \code{libraryTypes(df, uniqueTypes = FALSE) \%in\% c("RFP", "RPF", "LSU", "TI")}
 #' Alternative: a length 1 or same length as list length of "reads" argument.
 #' @param ylabels character, default \code{bamVarName(df)}. Name of libraries in "reads" list argument.
 #' @param plot_name character, default "default" (will create name from display_range name).
@@ -36,7 +36,7 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                 viewMode = c("tx", "genomic")[1],
                                 custom_regions = NULL,
                                 leader_extension = 0, trailer_extension = 0,
-                                withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU"),
+                                withFrames = libraryTypes(df, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI"),
                                 frames_type = "lines", colors = NULL, kmers = NULL, kmers_type = c("mean", "sum")[1],
                                 ylabels = bamVarName(df), lib_to_annotation_proportions = c(0.8,0.2),lib_proportions = NULL,
                                 annotation_proportions = NULL, width = NULL, height = NULL,

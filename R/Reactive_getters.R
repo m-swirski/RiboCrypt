@@ -63,18 +63,32 @@ bottom_panel_shiny <- function(mainPlotControls) {
 custom_seq_track_panels <- function(mainPlotControls, display_range) {
   if (!mainPlotControls()$phyloP) return(NULL)
   df <- mainPlotControls()$dff
+
+  return(phylo_custom_seq_track_panel(df, display_range))
+}
+
+phylo_custom_seq_track_panel <- function(df, display_range) {
   phylo_dir <- file.path(dirname(df@fafile), "phyloP100way")
   if (dir.exists(phylo_dir)) {
     phylo_track <- list.files(phylo_dir, pattern = "\\.phyloP100way\\.bw$", full.names = TRUE)[1]
     if (length(phylo_track) == 1) {
       print("- Loading PhyloP track")
       grl <- display_range
+
+      seqlevelsStyle(grl) <- seqlevelsStyle(rtracklayer::BigWigFile(phylo_track))[1]
+      # TODO: Use ORFik:::coverage_random_access_file here!
+      is_minus_strand <- !strandBool(grl)
+
       rl <- ranges(grl)
       names(rl) <- seqnamesPerGroup(grl, FALSE)
-
-      seqlevelsStyle(rl) <- seqlevelsStyle(rtracklayer::BigWigFile(phylo_track))[1]
       res <- rtracklayer::import.bw(phylo_track, as = "NumericList",
                                     which = rl)
+      if (is_minus_strand) {
+        temp_cov2 <- rev(res)
+        res <- relist(rev(unlist(temp_cov2)), skeleton = res)
+      }
+
+
       dt <- data.table(phyloP = unlist(res, use.names = FALSE))
       dt[, position := seq.int(.N)]
       p <- ggplot(data = dt) + geom_bar(aes(y = phyloP, x = position), stat="identity") +

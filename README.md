@@ -1,6 +1,6 @@
 RiboCrypt: R Package for interactive visualization and browsing NGS data. 
 ==============================================================================
-![](inst/images/App_picture_for_readme.png)
+![](inst/images/tutorial_fig1.png)
 
 #### Online app
 See our webpage containing thousands of Ribosome profiling datasets to explore!

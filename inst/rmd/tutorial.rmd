@@ -1,10 +1,19 @@
 ---
 title: "Tutorial"
-output: 
+output:
   html_document:
-    self_contained: false
+    self_contained: no
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    css: "custom.css"
+  pdf_document: default
+editor_options:
+  markdown:
+    wrap: 72
 ---
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, fig.align = "left")
@@ -12,346 +21,439 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "left")
 
 # Introduction
 
-Welcome to `RiboCrypt` 
-`RiboCrypt` is an R package for interactive visualization in genomics. `RiboCrypt` works with any NGS-based method, but much emphasis is put on Ribo-seq data visualization. 
+Welcome to `RiboCrypt`
 
-This tutorial will walk you through usage of the app. 
+`RiboCrypt` is an R package and web server for interactive visualization
+and analysis in genomics. `RiboCrypt` works with most NGS-based methods,
+but much emphasis is put on Ribo-seq data visualization. RiboCrypt uses
+ORFik experiment objects, so to ensure compatibility use [ORFik](https://doi.org/10.1186/s12859-021-04254-w) and
+[massiveNGSpipe](https://github.com/rc-biotech/massiveNGSpipe) for processing own (unpublished) data. If you encounter
+any issues, please, contact us using the info in the footnote.
 
-`RibCrypt` app currently supports creating interactive browser views for NGS tracks, using
-ORFik, Ribocrypt and massiveNGSpipe as backend.
+The following is web server walk through listing all utilities and
+options therein.
+
+## Ribo-seq overview
+
+For more general material about ribosome profiling, we suggest reading [this review](https://cshperspectives.cshlp.org/content/11/5/a032698.full.pdf+html).
+For more technical explanation of data processing steps and specific analyses, it's best to see [ORFik](https://bioconductor.org/packages/release/bioc/html/ORFik.html) Overview vignette, especially chapter 6
+["RiboSeq footprints automatic shift detection and shifting"](https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting)
 
 
 # Browser {#browser}
-The browser is the main coverage plot display page. 
-It contains a click panel on the left side and display panels on the right.
-It displays coverage of NGS data in either transcript coordinates (default),
-or genomic coordinates (like IGV).
-Each part will now be explained:
 
-```{r, echo = FALSE, out.width = "1000px", out.height="500px", fig.align="left"}
-knitr::include_graphics("../images/tutorial_browser_browser.png")
+The browser is the basic coverage display page. It contains a selection
+panel on the left side and a display window (browser) on the right. It displays
+coverage of sequencing data in either transcript coordinates (default, collapsed introns), or
+genomic coordinates. The following (Fig. 1), SRD5A1 gene, [has recently shown to be decoded in three frames](https://doi.org/10.21203/rs.3.rs-5390104/v1).
+
+```{r, echo = FALSE, out.width = "1000px", out.height="600px", fig.align="left"}
+knitr::include_graphics("../images/tutorial_fig1.png")
 ```
 
-## Display panel (browser)
-The display panel shows the primary settings, (study, gene, sample, etc),
-the possible select boxes are:
+Figure 1. SRD5A1 gene displayed using default options. Using [API](#API), this
+browser view can be re-generated using this
+[link](ribocrypt.org/?&dff=all_merged-Homo_sapiens_modalities&gene=SRD5A1-ENSG00000145545&tx=ENST00000274192&library=RFP&frames_type=area&kmer=9&log_scale=FALSE&extendLeaders=0&extendTrailers=0&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE).
 
-### Experiment selection {#exp}
-- Select an organism: Either select "ALL" to keep all experiments, or select a specific organism to select display
-only that subset of experiments in experiment select tab.
-- Select an experiment: The experiments contain study names combined with organism (some studies
-are multi species, so sometimes one study have multiple experiments). 
-Select which one you want. There also exist merged experiments 
-(all samples merged for the organism, etc)
+## Browser window
 
-### Gene selection {#gene}
-- Select a gene: A gene can be selected currently using:
-  - Gene id (ENSEMBL)
-  - Gene symbol (hgnc, etc)
-- Select a transcript: A transcript isoform of the given gene above, 
-default is Ensembl canonical isoform. Can be selected using:
-  - Transcript id (ENSEMBL)
+When you press the "plot" button on the selection panel, the selected data will be displayed according to
+specified options, explained later in the tutorial.
 
-### Library selection {#lib}
-Each experiment usually have multiple libraries. Select which one
-to display, by default if you select multiple libraries they will be shown
-under each other.
+The browser window consists of the specific parts:
+
+1.  Single or multiple density tracks are displayed on top. By default
+    Ribo-seq is rendered in 3 colors, where
+
+-   red is 0 frame, the start frame of reference transcript.
+-   green is +1 frame
+-   blue is +2 frame
+
+2.  Sequence track (top middle), displayes DNA sequence when zoomed in
+    (\< 100nt)
+3.  Annotation track (middle), the annotation track displays the
+    transcript annotation, together with black bars that is displayed on
+    top of the data track. CDS and other annotations are color-coded
+    according to relative reading frame
+4.  Frame track (bottom), the 3 frames displayed with given color bars:
+
+-   white (start codons, ATG)
+
+-   black (stop codons, TAA \| TAG \| TGA)
+
+-   brown (custom motifs)
+
+    When zoomed in, the amino acid sequence is displayed within each
+    frame.
+5. Additional displays, for example protein structure viewer, which appears after clicking on isoform ID on annotation track.
+
+In the example above (Fig. 1), notice green coverage preceding CDS (in Blue). It
+corresponds to overlapping open reading frame, so it is clear that there
+are two regions that undergo translation simultaneously in this locus.
+
+## Selection panel (browser)
+
+The display panel shows the primary settings, (study, gene, sample, etc):   
+
+### Experiment {#exp}
+
+-   Select an organism: Either select "ALL" to keep all experiments, or
+    select a specific organism to select display only that subset of
+    experiments in experiment select tab.
+-   Select an experiment: The experiments contain study names combined
+    with organism (some studies are multi species, so sometimes one
+    study have multiple experiments). Select which one you want. There
+    also exist merged experiments (all samples merged for the organism,
+    etc)
+
+### Gene {#gene}
+
+-   Select a gene: A gene can be selected using:
+    -   Gene id (ENSEMBL)
+    -   Gene symbol (HGNC, etc)
+-   Select a transcript: A transcript isoform of the given gene above,
+    default is Ensembl canonical isoform, other isoforms can be
+    selected.
+
+### Library {#lib}
+
+Usually each experiment have multiple libraries. In the case of merged experiments, different modalities (RFP, RNA, disome, TI, see Fig. 2) can be selected in this field.
+Select which one to display, if you select multiple libraries they will be stacked in the browser as multiple tracks.
 
 Library are by default named:
 
-- Library type (RFP, RNA etc),
-- Condition (WT, KO (wild type, knock out ) etc)
-- Stage/timepoint (5h, 1d (5 hours, 1 day) etc)
-- fraction (chx, cytosolic, ATF4 (ribosomal inhibitor, cell fraction, gene) etc)
-- replicate (technical/biological replicate number (r1, r2, r3))
+-   Library type (RFP, RNA etc),
+-   Condition (WT, KO (wild type, knock out ) etc)
+-   Stage/timepoint (5h, 1d (5 hours, 1 day) etc)
+-   fraction (chx, cytosolic, ATF4 (ribosomal inhibitor, cell fraction,
+    gene) etc)
+-   replicate (technical/biological replicate number (r1, r2, r3))
 
-The resuting name above could be:
+The resuting name could for example be:
 
-- RFP_WT_5h_chx_cytosolic_r1
+-   RFP_WT_5h_chx_cytosolic_r1
 
-A normal thing to see is that if condition is KO (knockout), the fraction column
-usually contains a gene name (the name of the gene that was knocked out)
-Currently, best way to find SRR run number for respective sample is to go to
-metadata tab and search for the study. 
+It's normal to see that if condition is KO (knockout), the
+fraction column contains a gene name (the name of the gene that was
+knocked out). Currently the best way to find SRR run number for
+respective sample is to go to metadata tab and search for the study.
 
-### View mode {#linetype}
-- Select frames display type: 
-  - lines (single line, most clear for middle distance (> 100 nt))
-  - columns (single point bars, most clear for single nt resolution)
-  - stacks (Area under curve, stacked, most clear for long distance (> 1000 nt))
-  - area (Area under curve, with alpha (see-through), most clear for long distance (> 1000 nt))
-- K-mer length:
-When looking at a large region (> 100nt), pure coverage can usually be hard to inspect.
-Using K-mer length > 1 (9 is a good starting point to try), you can easily look at
-patterns over larger regions. 
+### Display type {#linetype}
 
-## Display panel (settings)
-Here additional options are shown:
+-   Select reading frames display type:
+    -   lines (single line per frame, most clear for middle distance (\>
+        100 nt))
+    -   columns (single bars per position, most clear for single nucleotide
+        resolution)
+    -   stacks (Area under curve, stacked, most clear for large regions
+        (\> 1000 nt))
+    -   area (Area under curve, with semitransparent overlapping frames, most clear for
+        large regions (\> 1000 nt))
+    -   heatmap (good for displaying large number of libraries, see metabrowser for display of thousands of libraries)
+-   K-mer length: sliding window of selected length applying averaging
+    coverage per frame. K-mer = 1 means unaltered data. When looking at a large region (\> 100nt), pure coverage can usually be hard to inspect due to intrinsic Ribo-seq spikyness. Using K-mer length \> 1 (9, the default, is a good starting point), you can easily look at patterns over larger regions.
 
-- 5' extension (extend viewed window upstream, outside defined region)
-- 3' extension (extend viewed window downstream, outside defined region)
-- Custom sequences highlight (Motif search, given in purple color, support IUPAC, examples: CTG or NTG)
-- Genomic region (Browse genomic window instead of gene, syntax: chromosome:start-stop:strand,
-human/mouse/zebrafish: 1:10000-20000:+ , yeast: I:10000-20000:+. 
-Both 1 and chr1 works, conversion will be done internally)
-- Genomic View (Activate/deactivate genomic view, giving splice information and
-correct positions in genome, but a lot harder to understand)
-- Protein structures (If you click the annotation name of a transcript
-in the plot panel it will display the alpha-fold protein colored by the ribo-seq data displayed
-in the plot panel)
-- Full annotation (display full annotation or just the tx you selected)
-- Summary top track (Add an additional plot track on top, summarizing all selecte libs)
-- Select Summary display type (same as frames display type above, but for the summary track)
-- Export format (When you hover the plot top right image button, and click export 
-(the camera button), which format to export as)
+Notice, how in figure 2 reducing K-mer length to 1, changing display type to columns and adding TI-seq (Translation Initiation profiling, samples treated with translation initiation inhibitors - either lactimidomycin or harringtonin) enables detection of translation in all three reading frames. In fact, experienced user can notice drop of signal in red frame after stop codon of the corresponding ORF (hidden behind most abundant, green), further corroborating overlapping translation.
+If this process seems somewhat imprecise and not fully defined - it is by design - annotating such elusive phenomena is notoriously difficult to tackle algorithmically, and doing so successfully requires deep intuition in how the signal and noise behave, so manual investigation into many instances like this. Thus, RiboCrypt can be treated as a hypothesis building tool, rather a database of fixed answers. [Try](ribocrypt.org/?&dff=all_merged-Homo_sapiens_modalities&gene=SRD5A1-ENSG00000145545&tx=ENST00000274192&library=RFP,TI&frames_type=columns&kmer=1&log_scale=FALSE&extendLeaders=0&extendTrailers=0&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE) modifying yourself, for example switching on RNA-seq track, or altering smoothing window width.
+
+```{r, echo = FALSE, out.width = "500px", out.height="600px", fig.align="left"}
+knitr::include_graphics("../images/tutorial_fig2.png")
+```
+Figure 2. Comparison of display types and smoothing window widths.
+
+## Selection panel (Settings)
+
+Settings tab contains additional parameters:
+
+-   5' extension (extend viewed window upstream)
+-   3' extension (extend viewed window downstream)
+-   Custom sequences highlight (Motif search, given in brown color,
+    support IUPAC, examples: CTG or NTG)
+-   Genomic region (Browse genomic window instead of gene, syntax:
+    chromosome:start-stop:strand, human/mouse/zebrafish: 1:10000-20000:+
+    , yeast: I:10000-20000:+. Both 1 and chr1 works, conversion will be
+    done automatically)
+-   Genomic View (Activate/deactivate genomic view, displaying full introns, see Figure 3)
+-   Protein structures (If you click the annotation name of a transcript
+    in the plot panel it will display the alpha-fold protein colored by
+    the ribo-seq data displayed in the plot panel)
+-   Full annotation (display all transcript isoforms annotation or just the selected
+    isoform)
+-   Predicted translons - display [predicted translons](#translons) in the annotation track.
+    Try turning it on for the [example](ribocrypt.org/?&dff=all_merged-Homo_sapiens_modalities&gene=SRD5A1-ENSG00000145545&tx=ENST00000274192&library=RFP&frames_type=area&kmer=9&log_scale=FALSE&extendLeaders=0&extendTrailers=0&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE) in Figures 1 and 2 - notice that the red (second) translon was missed
+-   Summary top track (Add an additional plot track on top, summarizing
+    all selected libraries)
+-   Select Summary display type (same as frames display type above, but
+    for the summary track)
+-   Export format (Choose plot export format from plotly controls. The
+    default is svg vector graphics that allows for high customizability)
+    
+Uniquely, RiboCrypt allows for toggling between transcriptomic and genomic views, while displaying coding exons in colors according to the correct reading frame. Moreover, extensions allow for exploration of large chunks of the genome, even tens of thousands of bases. [Try](ribocrypt.org/?&dff=all_merged-Saccharomyces_cerevisiae_modalities&gene=EFM5-YGR001C&tx=YGR001C_mRNA&library=RFP&frames_type=area&kmer=5&log_scale=FALSE&extendLeaders=15000&extendTrailers=15000&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE) finding all genes in this browser window, and then turn full annotation on to see what you missed! (loading may be a bit slow, but displaying over region 30 thousands bases long here isn't practical)
 
 
-## Plot panel 
-From the options specified in the display panel, when you press "plot" the data will be displayed.
-It contains the specific parts:
+```{r, echo = FALSE, out.width = "900px", out.height="600px", fig.align="left"}
+knitr::include_graphics("../images/tutorial_fig3.png")
+```
+Figure 3. Comparison between transcriptomic and genomic view on yeast [EFM5](ribocrypt.org/?&dff=all_merged-Saccharomyces_cerevisiae_modalities&gene=EFM5-YGR001C&tx=YGR001C_mRNA&library=RFP&frames_type=area&kmer=5&log_scale=FALSE&extendLeaders=1&extendTrailers=150&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE) and [ABP140](ribocrypt.org/?&dff=all_merged-Saccharomyces_cerevisiae_modalities&gene=ABP140-YOR239W&tx=YOR239W_mRNA&library=RFP&frames_type=area&kmer=5&log_scale=FALSE&extendLeaders=1&extendTrailers=150&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE) genes.
 
-1. Ribo-seq data (top), the single or multi-track data is displayed on top. By default
-Ribo-seq is displayed in 3 colors, where 
- - red is 0 frame, the start frame of reference transcript.
- - green is +1 frame
- - blue is +2 frame 
-2. Sequence track (top middle), displayes DNA sequence when zoomed in (< 100nt)
-3. Annotation track (middle), the annotation track displays the transcript annotation, together
-with black bars that is displayed on top of the data track.
-4. Frame track (bottom), the 3 frames displayed with given color bars:
- - white  (Start codons)
- - black  (Stop codons)
- - purple (Custom motifs)
- When zoomed in, the amino acid sequence is displaced within each frame
+
+## 
 
 # Analysis
 
-Here we collect the analysis possibilities, which are usually
-on whole genome scale.
-
-## Codon analysis
-
-This tab displays a heatmap of codons dwell times
-over all genes selected, for both A and P sites.
-When pressing "Differential" you swap to a between library
-differential codon dwell time comparison (minimum 2 libraries selected is 
-required for this method!)
-
-### Display panel (codon)
-
-Study and gene select works same as for browser specified above.
-In addition to have the option to specify all genes (default).
-
-- Select libraries (multiple allowed)
-
-#### Filters {#codonfilt}
-- Codon filter value (Minimum reads in ORF to be included)
-- Codon score, all scores are normalized for both codon and count per
-gene level (except for sum):
-  - percentage (percentage use relative to max codon, 
-    transcript normalized percentages)
-  - dispersion(NB) (negative binomial dispersion values)
-  - alpha(DMN) (Dirichlet-multinomial distribution alpha parameter)
-  - sum (raw sum, (a very biased estimator, since some codons are used much 
-    more than others!))
-    
-#### Codon plot
-
-Display is the score per codon (amino acid), in addition there are 2 custom
-"amino acids", * as in * : TGA, means TGA is a stop codon (last codon in CDS).
-Similar is #, as in # : ATG which means ATG as start codon (first codon in CDS).
-For P-sites start codons should be enriched, while for A-sites there should be
-a richer variability, often with a small enrichment for stop-codons. 
-We will implement a richer model eventually using the more correct negative binomial 
-relationships between E, P and A sites, i.g. the motif PPP (triplet-proline in E,P,A site) 
-is much stronger than a single P in the A site etc. 
-alone etc. 
+Here we collect the analysis possibilities, which are usually operating on meta-gene or multi locus scale.
 
 ## Heatmap {#heatmap}
 
 This tab displays a heatmap of coverage per readlength at a specific
-region (like start site of coding sequences) over all genes selected. 
+region (like start site of coding sequences) over all genes selected.
 
 ```{r, echo = FALSE, out.width = "1000px", out.height="500px", fig.align="left"}
-knitr::include_graphics("../images/tutorial_heatmap_browser.png")
+knitr::include_graphics("../images/tutorial_fig4.png")
 ```
 
-### Display panel (heatmap)
-Study and gene select works same as for browser specified above.
-In addition to have the option to specify all genes (default).
+Figure 4. Metagene per-readlength heatmap of before (upper panel) and after (bottom panel) P-shifting. Notice emerging periodicity.
 
-- Select libraries
-Only 1 library can be selected currently in heatmap mode.
-- View region 
-Select one of:
-  - Start codon
-  - Stop codon
-- Normalization
-Normalization mode for data display, select one of:
-  - transcriptNormalized (each gene counts sum to 1)
-  - zscore (zscore normalization, will give better overview if 1 readlength
-  is extreme)
-  - sum (raw sum of counts, is very sensitive to extreme peaks)
-  - log10sum (log10 sum of counts, is less sensitive to extreme peaks)
-- Min Readlength
- The minimum readlength to display from library
-- Max readlength 
- The maximum readlength to display from library
+### Selection panel (heatmap)
 
-### Display panel (settings)
+Study and gene select works same as for browser specified above. In
+addition to have the option to specify all genes (default).
+
+-   Select libraries. Currently Only 1 library can be selected in
+    heatmap mode.
+-   View region Select one of:
+    -   Start codon
+    -   Stop codon
+-   Normalization Normalization mode for data display, select one of:
+    -   transcriptNormalized (each gene counts sum to 1)
+    -   zscore (zscore normalization, will give better overview if 1
+        readlength is extreme)
+    -   sum (raw sum of counts, is very sensitive to extreme peaks)
+    -   log10sum (log10 sum of counts, is less sensitive to extreme
+        peaks)
+-   Min Readlength The minimum readlength to display 
+-   Max readlength The maximum readlength to display 
+
+### Selection panel (settings)
+
 Here additional options are shown:
 
-- 5' extension (extend viewed window upstream from point, default 30)
-- 3' extension (extend viewed window downstreamfrom point, default 30)
+-   5' extension (extend viewed window upstream from point, default 30)
 
-- Extension works like this, first extend to transcript coordinates.
-- After gene end extend in genomic coordinates
-- If chromosome boundary is reached, remove those genes from the full set.
+-   3' extension (extend viewed window downstreamfrom point, default 30)
+
+-   Summary top track - summarized coverage from all readlengths
+
+-   p-shifted - display either P-sites (default), or reads 5' ends. 
+
+Metagene analysis with heatmap module can be used, for example, to investigate how well P-site positioning was performed (Fig. 4)
+
+## Codon analysis
+
+This tab displays a heatmap of codons dwell times over all genes
+selected, for both A and P sites. When pressing "Differential" you swap
+to a between library differential codon dwell time comparison (minimum 2
+libraries selected is required for this method!)
+
+### Display panel (codon)
+
+Study and gene select works same as for browser specified above. In
+addition to have the option to specify all genes (default).
+
+-   Select libraries (multiple allowed)
+
+#### Filters {#codonfilt}
+
+-   Codon filter value (Minimum reads in ORF to be included)
+-   Codon score, all scores are normalized for both codon and count per
+    gene level (except for sum):
+    -   percentage (percentage use relative to max codon, transcript
+        normalized percentages)
+    -   dispersion(NB) (negative binomial dispersion values)
+    -   alpha(DMN) (Dirichlet-multinomial distribution alpha parameter)
+    -   sum (raw sum, (a very biased estimator, since some codons are
+        used much more than others!))
+
+#### Codon plot
+
+Display is the score per codon (amino acid), in addition there are 2
+custom "amino acids", \* as in \* : TGA, means TGA is a stop codon (last
+codon in CDS). Similar is #, as in \# : ATG which means ATG as start
+codon (first codon in CDS). For P-sites start codons should be enriched,
+while for A-sites there should be a richer variability, often with a
+small enrichment for stop-codons. We will implement a richer model
+eventually using the more correct negative binomial relationships
+between E, P and A sites, i.g. the motif PPP (triplet-proline in E,P,A
+site) is much stronger than a single P in the A site etc. alone etc.
+
+## 
 
 ## Differential gene expression {#diffexp}
-Given an experiment with a least 1 design column with two values,
-like wild-type (WT) vs knock out (of a specific gene),
-you can run differential expression of genes.
-The output is an interactive plot, where you
-can also search for you target genes, making it more useable
+
+Given an experiment with a least 1 design column with two values, like
+wild-type (WT) vs knock out (of a specific gene), you can run
+differential expression of genes. The output is an interactive plot,
+where you can also search for you target genes, making it more useable
 than normal expression plots, which often are very hard to read.
 
-### Display panel (Differential expression)
-Organism and experiment explained above
-- Differential method: FPKM ratio is a pure FPKM ratio calculation without
-factor normalization (like batch effects), fast and crude check.
-DESeq2 argument gives a robust version, but only works for experiments
-with valid experimental design (i.e. design matrix must be full ranked, 
-see deseq2 tutorial for details!)
-- Select two conditions (which 2 factors to group by)
+### Selection panel (Differential expression)
 
-### Display panel (settings)
-- draw unregulated (show dots for unregulated genes, makes it much slower!)
-- Full annotation (all transcript isoforms, default is primary isoform only!)
-- P-value (sliding bar for p-value cutoff, default 0.05)
-- export format for plot (explained above)
+Organism and experiment explained above - Differential method: FPKM
+ratio is a pure FPKM ratio calculation without factor normalization
+(like batch effects), fast and crude check. DESeq2 argument gives a
+robust version, but only works for experiments with valid experimental
+design (i.e. design matrix must be full ranked, see deseq2 tutorial for
+details!) - Select two conditions (which 2 factors to group by)
+
+### Selection panel (settings)
+
+-   draw unregulated (show dots for unregulated genes, makes it much
+    slower!)
+-   Full annotation (all transcript isoforms, default is primary isoform
+    only!)
+-   P-value (sliding bar for p-value cutoff, default 0.05)
+-   export format for plot (explained above)
 
 ## Meta Browser {#mbrowser}
-Display all samples for a specific organism over selected gene.
-This tab does not use bigwig files to load (as that would be very slow).
-It uses precomputed fst files of coverage over all libraries. Note: Not
-all isoforms are computed, by default the longest isoform is computed. 
 
-### Display panel (Meta browser)
+Display all samples for a specific organism over selected gene (Fig. 5). This tab
+does not use bigwig files to load (as that would be very slow). It uses
+precomputed fst files of coverage over all libraries. Note: Not all
+isoforms are computed, by default the longest isoform is computed.
+```{r, echo = FALSE, out.width = "1000px", out.height="500px", fig.align="left"}
+knitr::include_graphics("../images/tutorial_fig5.png")
+```
+Figure 5. Heatmap of thousands of libraries coverage over ATF4 transcript. Clustered using k-means = 2, with summary track displayed on top. 
+
+### Selection panel (Browser)
 
 Organism, experiment and gene explained above
 
-- Group on: the metadata column to order plot by
-- K-means clusters: How many k-means clusters to use, if > 1, Group will be
-sorted within the clusters, but K-means have priority.
+-   Group on: the metadata column to order plot by
+-   K-means clusters: How many k-means clusters to use, if \> 1, Group
+    will be sorted within the clusters, but K-means have priority.
 
-### Display panel (settings)
-- Normalization (all scores are tpm normalized and log scaled)
-  - transcriptNormalized (each sample counts sum to 1) (default)
-  - Max normalized (each position count divided by maximum)
-  - zscore (zscore normalization, (count * mean / sd) variance scaled normalization)
-  - tpm (raw tpm of counts, is very sensitive to extreme peaks)
-- Color theme: Which color theme to use
-- Color scale multiplier: how much to amplify the color signal (if all is single color, 
-  try to reduce or increase this depending on which color is the majority)
-- Sort by other gene: Sort heatmap on expression of another gene (increasing).
-  A line plot will be shown left that display the expression of that other gene 
-  per row. Also the enrichment analysis is done on bins of the other genes expression
-  instead of metadata term.
-- Summary top track (same as in browser, the aggregate of all rows, useful to see
-  the frame information, which is not represented in the heatmap)
-- Split by frame: (Not active yet!): When completed will display the heatmap 
-  with frame information, so rgb colors from white to dark red etc.
-- Summary display type: Same as in browser
-- Region to view: By default uses entire transcript. Can subset to only view
-  cds or leader+cds etc.
-- Select a transcript: Which transcript isoforms not all isoforms have
-  computed fsts. By default the longest isoforms have been computed for all genes.
-- K-mer length: Smoothens out the signal by applying a mean sliding window, 
-  default 1 (off)
+### Selection panel (Settings)
+
+-   Normalization (all scores are tpm normalized and log scaled)
+    -   transcriptNormalized (each sample counts sum to 1) (default)
+    -   Max normalized (each position count divided by maximum)
+    -   zscore (zscore normalization, (count \* mean / sd) variance
+        scaled normalization)
+    -   tpm (raw tpm of counts, is very sensitive to extreme peaks)
+-   Color theme: Which color theme to use
+-   Color scale multiplier: how much to amplify the color signal (if all
+    is single color, try to reduce or increase this depending on which
+    color is the majority)
+-   Sort by other gene: Sort heatmap on expression of another gene
+    (increasing). A line plot will be shown left that display the
+    expression of that other gene per row. Also the enrichment analysis
+    is done on bins of the other genes expression instead of metadata
+    term.
+-   Summary top track (same as in browser, the aggregate of all rows,
+    useful to see the frame information, which is not represented in the
+    heatmap)
+-   Split by frame: (Not active yet!): When completed will display the
+    heatmap with frame information, so rgb colors from white to dark red
+    etc.
+-   Summary display type: Same as in browser
+-   Region to view: By default uses entire transcript. Can subset to
+    only view cds or leader+cds etc.
+-   Select a transcript: Which transcript isoforms not all isoforms have
+    computed fsts. By default the longest isoforms have been computed
+    for all genes.
+-   K-mer length: Smoothens out the signal by applying a mean sliding
+    window, default 1 (off)
 
 ### Statistics tab
-This tab gives the statistics of over representation analysis per cluster
-of the metabrowser plot.
-Using chi squared test, it gives the residuals per term from metadata 
-(like tissue, cell-line etc). If a value is bigger than +/- 3, it means
-it is quite certain this is over represented. This is shown as a red line.
+
+This tab gives the statistics of over representation analysis per
+cluster of the metabrowser plot. Using chi squared test, it gives the
+residuals per term from metadata (like tissue, cell-line etc). If a
+value is bigger than +/- 3, it means it is quite certain this is over
+represented. This is shown as a red line.
 
 If no clustering was applied, this tab gives the number of items per
 metadata term (40 brain samples, 30 kidney samples etc).
 
-  
 ### Requirements
-This mode is very intensive on CPU, so it requires certain pre-computed results
-for the back end.
-That is namely:
-- Premade collection experiments (an ORFik experiment of all experiments per organism)
-- Premade collection count table and library sizes (for normalizations purpose)
-- Premade fst serialized coverage calculation per gene (for instant loading of coverage over thousands of libraries)
 
-Note that on the live app, the human collection (4000 Ribo-seq samples) takes
-around 30 seconds to plot for a ~ 2K nucleotides gene, ~99% of the time is spent
-on rendering the plot, not actual computation. Future investigation into optimization
-will be done. 
+This mode is very intensive on CPU, so it requires certain pre-computed
+results for the back end. That is namely: - Premade collection
+experiments (an ORFik experiment of all experiments per organism) -
+Premade collection count table and library sizes (for normalizations
+purpose) - Premade fst serialized coverage calculation per gene (for
+instant loading of coverage over thousands of libraries)
+
+Note that on the live app, the human collection (4000 Ribo-seq samples)
+takes around 30 seconds to plot for a \~ 2K nucleotides gene, \~99% of
+the time is spent on rendering the plot, not actual computation. Future
+investigation into optimization will be done.
 
 ## Read length (QC)
 
-This tab displays a QC of pshifted coverage per readlength 
-(like start site of coding sequences) over all genes selected. 
+This tab displays a QC of pshifted coverage per readlength (like start
+site of coding sequences) over all genes selected.
 
 ### Display panel (Read length QC)
+
 The display panel shows what can be specified to display, the possible
 select boxes are same as for heatmap above:
 
 ### Plot panel
-From the options specified in the display panel, when you press "plot" the data will be displayed.
-It contains the specific parts:
+
+From the options specified in the display panel, when you press "plot"
+the data will be displayed. It contains the specific parts:
 
 Top plot: Read length relative usage
 
-1. Y-axis: Score
-3. Color: Per frame (red, green, blue)
-4. Facet box: the read length
+1.  Y-axis: Score
+2.  Color: Per frame (red, green, blue)
+3.  Facet box: the read length
 
-Bottom plot:
-Fourier transform (3nt periodicity quality, clean peak means good periodicity)
+Bottom plot: Fourier transform (3 nucleotide periodicity quality, clean peak
+means good periodicity)
 
 ## Fastq (QC)
 
 This tab displays the fastq QC output from fastp, as a html page.
 
 ### Display panel (Read length QC)
-The display panel shows what can be specified to display, you can
-select from organism, study and library.
 
+The display panel shows what can be specified to display, you can select
+from organism, study and library.
 
 ### Plot panel
+
 Displays the html page.
 
 # Metadata
 
-Metadata tab displays information about studies and custom predictions.
-## SRA search 
+Metadata tab displays information about studies and custom predictions. RiboCrypt is integrated with [Ribo-seq Data Portal](https://rdp.ucc.ie/home), refer to [this paper](https://doi.org/10.1093/nar/gkae1020) for details on metadata curation and standardization.
+
+\## SRA search
 
 Search SRA for full information of supported study
 
 ### Study accession number
- Here you input a study accession number in the form of either:
- 
- - SRP
- - GEO (GSE)
- - PRJNA (PRJ....)
- - PRJID (Only numbers)
+
+Here you input a study accession number in the form of either:
+
+-   SRP
+-   GEO (GSE)
+-   PRJNA (PRJ....)
+-   PRJID (Only numbers)
 
 ### Output
-On top the abstract of the study is displayed, and on bottom a table
-of all metadata found from the study is displayed.
+
+On top the abstract of the study is displayed, and on bottom a table of
+all metadata found from the study is displayed.
 
 ## Studies
 
 Full table of supported studies with information about sample counts
 
-## Predicted translons
+## Predicted translons {#translon}
 
 Full list of predicted translons on all_merged tracks per species.
 
@@ -359,117 +461,133 @@ Full list of predicted translons on all_merged tracks per species.
 
 Translon annotation scheme:
 
- - Prediction algorithm: ORFik::detect_ribo_orfs 
- - translon_types <- c("uORF", "uoORF","doORF","dORF")
- - start_codons <- "ATG|TTG|CTG"
- - additional arguments: add sequence and amino acid sequence per translon
- - All other arguments default.
-
+-   Prediction algorithm: ORFik::detect_ribo_orfs
+-   translon_types \<- c("uORF", "uoORF","doORF","dORF")
+-   start_codons \<- "ATG\|TTG\|CTG"
+-   additional arguments: add sequence and amino acid sequence per
+    translon
+-   All other arguments default.
 
 # Additional information
-All files are packed into ORFik experiments for easy access
-through the ORFik backend package:
+
+All files are packed into ORFik experiments for easy access through the
+ORFik backend package:
 
 File formats used internally in experiments are:
 
-- Annotation (gtf + TxDb for random access)
-- Fasta genome (.fasta, + index for random access)
-- Sequencing libraries (all duplicated reads are collapsed)
-  - random access (only for collapsed read lengths): bigwig
-  - Full genome coverage (only for collapsed read lengths): covRLE
-  - Full genome coverage (split by read lengths): covRLElist
-- count Tables (Summarized experiments, r data serialized .rds)
-- Library size list (Integer vector, .rds)
-- Precomputed gene coverages per organism: fst (used for metabrowser)
+-   Annotation (gtf + TxDb for random access)
+-   Fasta genome (.fasta, + index for random access)
+-   Sequencing libraries (all duplicated reads are collapsed)
+    -   random access (only for collapsed read lengths): bigwig
+    -   Full genome coverage (only for collapsed read lengths): covRLE
+    -   Full genome coverage (split by read lengths): covRLElist
+-   count Tables (Summarized experiments, r data serialized .rds)
+-   Library size list (Integer vector, .rds)
+-   Precomputed gene coverages per organism: fst (used for metabrowser)
 
 ## massiveNGSpipe
-For our webpage the processing pipeline used is massiveNGSpipe 
-which wraps over multiple tools:
+
+For our webpage the processing pipeline used is [massiveNGSpipe](https://github.com/rc-biotech/massiveNGSpipe) which
+wraps multiple tools:
 
 1.  Fastq files are download with ORFik download.sra
-2.  Adapter is detected with either fastqc (sequence detection) and falls
-    back to fastp auto detection. 
+2.  Adapter is detected with either fastqc (sequence detection) and
+    falls back to fastp auto detection.
 3.  Reads are then trimmed with fastp (using the wrapper in ORFik)
-  - Adapter removal specified
-  - minimum read size (20nt)
-4.  Read are collapsed (get the set of unique reads and put duplication count in read header)
-5. Reads are aligned with the STAR aligner (using the wrapper in ORFik), that supports
-contamination removal. Settings: 
-  - genomic coordinates (to allow both genomic and transcriptomic coordinates)
-  - local alignment (to remove unknown flank effects)
-  - minimum read size (20nt)
-6. When all samples of study are aligned, an ORFik experiment is created that
-connects each sample to metadata (condition, inhibitor, fraction, replicate etc)
-7. Bam files are then converted to ORFik ofst format
-8. These ofst files are then pshifted
-9. Faster formats are then created (bigwig, fst and covRLE) for faster visualization
 
-## Introduction to Ribo-seq
+-   Adapter removal specified
+-   minimum read size (20nt)
 
-If you're not familiar with terms like "p-shifting" or "p-site offset", it's best to walk through ORFikOverview vignette, especially chapter 6 "RiboSeq footprints automatic shift detection and shifting"
+4.  Read are collapsed (get the set of unique reads and put duplication
+    count in read header)
+5.  Reads are aligned with the STAR aligner (using the wrapper in
+    ORFik), that supports contamination removal. Settings:
 
-https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting
+-   genomic coordinates (to allow both genomic and transcriptomic
+    coordinates)
+-   local alignment (to remove unknown flank effects)
+-   minimum read size (20nt)
+
+6.  When all samples of study are aligned, an ORFik experiment is
+    created that connects each sample to metadata (condition, inhibitor,
+    fraction, replicate etc)
+7.  Bam files are then converted to ORFik ofst format
+8.  These ofst files are then pshifted
+9.  Faster formats are then created (bigwig, fst and covRLE) for faster
+    visualization
+
 
 ## API for URL access and sharing
 
-RiboCrypt uses the shiny router API system for creating runable links and backspacing etc.
-The API specificiation is the following:
+RiboCrypt uses the shiny router API system for creating runable links
+and backspacing etc. The API specificiation is the following:
 
 ### Primary url:
-https://ribocrypt.org/ (This leads to browser page)
+
+<https://ribocrypt.org/> (This leads to browser page)
 
 ### Page selection API:
-Page selection is done with "#" followed by the page short name, the list 
-is the following:
 
-- broser page (/ or /#browser)
-- heatmap (/#heatmap)
-- codon (/#codon)
-- Differential expression (/#Differential expression)
-- Periodicity plot (/#periodicity)
-- fastq QC report (/#fastq)
-- MetaBrowser (/#MetaBrowser)
-- SRA search (/#SRA search)
-- Studies supported (/#Studies)
-- This tutorial (/#tutorial)
+Page selection is done with "\#" followed by the page short name, the
+list is the following:
 
-Example: https://ribocrypt.org/#tutorial sends you to this tutorial page
+-   broser page (/ or /#browser)
+-   heatmap (/#heatmap)
+-   codon (/#codon)
+-   Differential expression (/#Differential expression)
+-   Periodicity plot (/#periodicity)
+-   fastq QC report (/#fastq)
+-   MetaBrowser (/#MetaBrowser)
+-   SRA search (/#SRA search)
+-   Studies supported (/#Studies)
+-   This tutorial (/#tutorial)
 
-### Parameter API: 
+Example: <https://ribocrypt.org/#tutorial> sends you to this tutorial
+page
+
+### Parameter API: {#API}
+
 Settings can be specified by using the standard web parameter API:
 
-- "?", Starts the parameter specification
-- "&", to combine terms:
+-   "?", Starts the parameter specification
+-   "&", to combine terms:
 
-Example: https://RiboCrypt.org/?dff=all_merged-Homo_sapiens&gene=ATF4-ENSG00000128272#browser
-will lead you to browser and insert gene ATF4 (all other settings being default).
+Example:
+<https://RiboCrypt.org/?dff=all_merged-Homo_sapiens&gene=ATF4-ENSG00000128272#browser>
+will lead you to browser and insert gene ATF4 (all other settings being
+default).
 
 A more complicated call would be:
-https://RiboCrypt.org/?dff=all_merged-Homo_sapiens&gene=ATF4-ENSG00000128272&tx=ENST00000404241&frames_type=area&kmer=9&go=TRUE&extendLeaders=100&extendTrailers=100&viewMode=TRUE&other_tx=TRUE#browser
+<https://RiboCrypt.org/?dff=all_merged-Homo_sapiens&gene=ATF4-ENSG00000128272&tx=ENST00000404241&frames_type=area&kmer=9&go=TRUE&extendLeaders=100&extendTrailers=100&viewMode=TRUE&other_tx=TRUE#browser>
 
-#### browser: 
+#### browser:
 
-- dff=all_merged-Homo_sapiens (The Experiment to select: for webpage it is "study id"_"Organism")
-- gene=ATF4-ENSG00000128272 (For webpage it is: "Gene symbol"-"Ensembl gene id")
-- tx=ENST00000404241(isoform)
-- frames_type=area (plot type)
-- kmer=9 (window smoothing)
-- go=TRUE (plot on entry, you do not need to click plot for it to happen)
-- extendLeaders=100 (extend 100 nt upstream of 5' UTR / Leader)
-- extendTrailers=100 (extend 100 nt downstream of 3' UTR / Trailer)
-- viewMode=TRUE (Genomic coordinates, i.e. with introns)
-- other_tx=TRUE (Full annotation, show transcript graph for all genes/isoforms in area)
-- #browser (open browser window)
-
+-   dff=all_merged-Homo_sapiens (The Experiment to select: for webpage
+    it is "study id"\_"Organism")
+-   gene=ATF4-ENSG00000128272 (For webpage it is: "Gene symbol"-"Ensembl
+    gene id")
+-   tx=ENST00000404241(isoform)
+-   frames_type=area (plot type)
+-   kmer=9 (window smoothing)
+-   go=TRUE (plot on entry, you do not need to click plot for it to
+    happen)
+-   extendLeaders=100 (extend 100 nt upstream of 5' UTR / Leader)
+-   extendTrailers=100 (extend 100 nt downstream of 3' UTR / Trailer)
+-   viewMode=TRUE (Genomic coordinates, i.e. with introns)
+-   other_tx=TRUE (Full annotation, show transcript graph for all
+    genes/isoforms in area)
+-   #browser (open browser window)
 
 ## About
 
 This app is created as a collaboration with:
 
-- University of Warsaw, Poland
-- University of Bergen, Norway
+-   University of Warsaw, Poland
+-   University of Bergen, Norway
 
 Main authors and contact:
 
-- Michal Swirski (Warsaw), email: michal.swirski@uw.edu.pl
-- Håkon Tjeldnes (Bergen), email: hauken_heyken@hotmail.com
+-   Michal Swirski (Warsaw), email:
+    [michal.swirski\@uw.edu.pl](mailto:michal.swirski@uw.edu.pl){.email}
+-   Håkon Tjeldnes (Bergen), email:
+    [hauken_heyken\@hotmail.com](mailto:hauken_heyken@hotmail.com){.email}

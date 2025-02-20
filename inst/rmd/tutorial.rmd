@@ -3,6 +3,7 @@ title: "Tutorial"
 output:
   html_document:
     self_contained: no
+    css: "custom.css"
   pdf_document: default
 editor_options:
   markdown:
@@ -20,49 +21,50 @@ Welcome to `RiboCrypt`
 `RiboCrypt` is an R package and web server for interactive visualization
 and analysis in genomics. `RiboCrypt` works with most NGS-based methods,
 but much emphasis is put on Ribo-seq data visualization. RiboCrypt uses
-ORFik experiment objects, so to ensure compatibility use  <a href="https://doi.org/10.1186/s12859-021-04254-w" target="_blank">ORFik</a> and
-<a href="https://github.com/rc-biotech/massiveNGSpipe" target="_blank">massiveNGSpipe</a> for processing own (unpublished) data. If you encounter
-any issues, please, contact us using the info in the footnote.
+ORFik experiment objects, so to ensure compatibility use
+<a href="https://doi.org/10.1186/s12859-021-04254-w" target="_blank">ORFik</a>
+and
+<a href="https://github.com/rc-biotech/massiveNGSpipe" target="_blank">massiveNGSpipe</a>
+for processing own (unpublished) data. If you encounter any issues,
+please, contact us using the info in the footnote.
 
 The following is web server walk through listing all utilities and
 options therein.
 
 ## Ribo-seq overview
 
-<<<<<<< HEAD
-For more general material about ribosome profiling, we suggest reading <a href="https://cshperspectives.cshlp.org/content/11/5/a032698.full.pdf+html" target="_blank">this review</a>.
-For more technical explanation of data processing steps and specific analyses, it's best to see <a href="https://bioconductor.org/packages/release/bioc/html/ORFik.html" target="_blank">ORFik</a> Overview vignette, especially chapter 6
-<a href="https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting" target="_blank">"RiboSeq footprints automatic shift detection and shifting"</a>.
-=======
-For more general material about ribosome profiling, we suggest reading <a href="" target="_blank"></a> [this review](https://cshperspectives.cshlp.org/content/11/5/a032698.full.pdf+html).
-For more technical explanation of data processing steps and specific analyses, it's best to see <a href="" target="_blank"></a> [ORFik](https://bioconductor.org/packages/release/bioc/html/ORFik.html) Overview vignette, especially chapter 6
-["RiboSeq footprints automatic shift detection and shifting"](https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting)
-
->>>>>>> 29a8eb736ce694ad392ca30e1115947e50d1bdbf
+For more general material about ribosome profiling, we suggest reading
+<a href="https://cshperspectives.cshlp.org/content/11/5/a032698.full.pdf+html" target="_blank">this
+review</a>. For more technical explanation of data processing steps and
+specific analyses, it's best to see
+<a href="https://bioconductor.org/packages/release/bioc/html/ORFik.html" target="_blank">ORFik</a>
+Overview vignette, especially chapter 6
+<a href="https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting" target="_blank">"RiboSeq
+footprints automatic shift detection and shifting"</a>.
 
 # Browser {#browser}
 
 The browser is the basic coverage display page. It contains a selection
-panel on the left side and a display window (browser) on the right. It displays
-coverage of sequencing data in either transcript coordinates (default, collapsed introns), or
-<<<<<<< HEAD
-genomic coordinates. The following (Fig. 1), SRD5A1 gene, <a href="https://doi.org/10.21203/rs.3.rs-5390104/v1" target="_blank">has recently been shown to be decoded in three frames</a>.
-=======
-genomic coordinates. The following (Fig. 1), SRD5A1 gene, <a href="" target="_blank"></a>[has recently been shown to be decoded in three frames](https://doi.org/10.21203/rs.3.rs-5390104/v1).
->>>>>>> 29a8eb736ce694ad392ca30e1115947e50d1bdbf
+panel on the left side and a display window (browser) on the right. It
+displays coverage of sequencing data in either transcript coordinates
+(default, collapsed introns), or genomic coordinates. The following
+(Fig. 1), SRD5A1 gene,
+<a href="https://doi.org/10.21203/rs.3.rs-5390104/v1" target="_blank">has
+recently been shown to be decoded in three frames</a>.
 
 ```{r, echo = FALSE, out.width = "1000px", out.height="600px", fig.align="left"}
 knitr::include_graphics("../images/tutorial_fig1.png")
 ```
 
-Figure 1. SRD5A1 gene displayed using default options. Using [API](#API), this
-browser view can be re-generated using this
+Figure 1. SRD5A1 gene displayed using default options. Using
+[API](#API), this browser view can be re-generated using this
 [link](https://ribocrypt.org/?&dff=all_merged-Homo_sapiens_modalities&gene=SRD5A1-ENSG00000145545&tx=ENST00000274192&library=RFP&frames_type=area&kmer=9&log_scale=FALSE&extendLeaders=0&extendTrailers=0&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE).
 
 ## Browser window
 
-When you press the "plot" button on the selection panel, the selected data will be displayed according to
-specified options, explained later in the tutorial.
+When you press the "plot" button on the selection panel, the selected
+data will be displayed according to specified options, explained later
+in the tutorial.
 
 The browser window consists of the specific parts:
 
@@ -89,15 +91,19 @@ The browser window consists of the specific parts:
 
     When zoomed in, the amino acid sequence is displayed within each
     frame.
-5. Additional displays, for example protein structure viewer, which appears after clicking on isoform ID on annotation track.
 
-In the example above (Fig. 1), notice green coverage preceding CDS (in Blue). It
-corresponds to overlapping open reading frame, so it is clear that there
-are two regions that undergo translation simultaneously in this locus.
+5.  Additional displays, for example protein structure viewer, which
+    appears after clicking on isoform ID on annotation track.
+
+In the example above (Fig. 1), notice green coverage preceding CDS (in
+Blue). It corresponds to overlapping open reading frame, so it is clear
+that there are two regions that undergo translation simultaneously in
+this locus.
 
 ## Selection panel (browser)
 
-The display panel shows the primary settings, (study, gene, sample, etc):   
+The display panel shows the primary settings, (study, gene, sample,
+etc):
 
 ### Experiment {#exp}
 
@@ -121,8 +127,11 @@ The display panel shows the primary settings, (study, gene, sample, etc):
 
 ### Library {#lib}
 
-Usually each experiment have multiple libraries. In the case of merged experiments, different modalities (RFP, RNA, disome, TI, see Fig. 2) can be selected in this field.
-Select which one to display, if you select multiple libraries they will be stacked in the browser as multiple tracks.
+Usually each experiment have multiple libraries. In the case of merged
+experiments, different modalities (RFP, RNA, disome, TI, see Fig. 2) can
+be selected in this field. Select which one to display, if you select
+multiple libraries they will be stacked in the browser as multiple
+tracks.
 
 Library are by default named:
 
@@ -137,32 +146,53 @@ The resuting name could for example be:
 
 -   RFP_WT_5h_chx_cytosolic_r1
 
-It's normal to see that if condition is KO (knockout), the
-fraction column contains a gene name (the name of the gene that was
-knocked out). Currently the best way to find SRR run number for
-respective sample is to go to metadata tab and search for the study.
+It's normal to see that if condition is KO (knockout), the fraction
+column contains a gene name (the name of the gene that was knocked out).
+Currently the best way to find SRR run number for respective sample is
+to go to metadata tab and search for the study.
 
 ### Display type {#linetype}
 
 -   Select reading frames display type:
     -   lines (single line per frame, most clear for middle distance (\>
         100 nt))
-    -   columns (single bars per position, most clear for single nucleotide
-        resolution)
+    -   columns (single bars per position, most clear for single
+        nucleotide resolution)
     -   stacks (Area under curve, stacked, most clear for large regions
         (\> 1000 nt))
-    -   area (Area under curve, with semitransparent overlapping frames, most clear for
-        large regions (\> 1000 nt))
-    -   heatmap (good for displaying large number of libraries, see metabrowser for display of thousands of libraries)
+    -   area (Area under curve, with semitransparent overlapping frames,
+        most clear for large regions (\> 1000 nt))
+    -   heatmap (good for displaying large number of libraries, see
+        metabrowser for display of thousands of libraries)
 -   K-mer length: sliding window of selected length applying averaging
-    coverage per frame. K-mer = 1 means unaltered data. When looking at a large region (\> 100nt), pure coverage can usually be hard to inspect due to intrinsic Ribo-seq spikyness. Using K-mer length \> 1 (9, the default, is a good starting point), you can easily look at patterns over larger regions.
+    coverage per frame. K-mer = 1 means unaltered data. When looking at
+    a large region (\> 100nt), pure coverage can usually be hard to
+    inspect due to intrinsic Ribo-seq spikyness. Using K-mer length \> 1
+    (9, the default, is a good starting point), you can easily look at
+    patterns over larger regions.
 
-Notice, how in figure 2 reducing K-mer length to 1, changing display type to columns and adding TI-seq (Translation Initiation profiling, samples treated with translation initiation inhibitors - either lactimidomycin or harringtonin) enables detection of translation in all three reading frames. In fact, experienced user can notice drop of signal in red frame after stop codon of the corresponding ORF (hidden behind most abundant, green), further corroborating overlapping translation.
-If this process seems somewhat imprecise and not fully defined - it is by design - annotating such elusive phenomena is notoriously difficult to tackle algorithmically, and doing so successfully requires deep intuition in how the signal and noise behave, so manual investigation into many instances like this. Thus, RiboCrypt can be treated as a hypothesis building tool, rather a database of fixed answers. [Try](https://ribocrypt.org/?&dff=all_merged-Homo_sapiens_modalities&gene=SRD5A1-ENSG00000145545&tx=ENST00000274192&library=RFP,TI&frames_type=columns&kmer=1&log_scale=FALSE&extendLeaders=0&extendTrailers=0&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE) modifying yourself, for example switching on RNA-seq track, or altering smoothing window width.
+Notice, how in figure 2 reducing K-mer length to 1, changing display
+type to columns and adding TI-seq (Translation Initiation profiling,
+samples treated with translation initiation inhibitors - either
+lactimidomycin or harringtonin) enables detection of translation in all
+three reading frames. In fact, experienced user can notice drop of
+signal in red frame after stop codon of the corresponding ORF (hidden
+behind most abundant, green), further corroborating overlapping
+translation. If this process seems somewhat imprecise and not fully
+defined - it is by design - annotating such elusive phenomena is
+notoriously difficult to tackle algorithmically, and doing so
+successfully requires deep intuition in how the signal and noise behave,
+so manual investigation into many instances like this. Thus, RiboCrypt
+can be treated as a hypothesis building tool, rather a database of fixed
+answers.
+[Try](https://ribocrypt.org/?&dff=all_merged-Homo_sapiens_modalities&gene=SRD5A1-ENSG00000145545&tx=ENST00000274192&library=RFP,TI&frames_type=columns&kmer=1&log_scale=FALSE&extendLeaders=0&extendTrailers=0&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE)
+modifying yourself, for example switching on RNA-seq track, or altering
+smoothing window width.
 
 ```{r, echo = FALSE, out.width = "500px", out.height="600px", fig.align="left"}
 knitr::include_graphics("../images/tutorial_fig2.png")
 ```
+
 Figure 2. Comparison of display types and smoothing window widths.
 
 ## Selection panel (Settings)
@@ -177,35 +207,50 @@ Settings tab contains additional parameters:
     chromosome:start-stop:strand, human/mouse/zebrafish: 1:10000-20000:+
     , yeast: I:10000-20000:+. Both 1 and chr1 works, conversion will be
     done automatically)
--   Genomic View (Activate/deactivate genomic view, displaying full introns, see Figure 3)
+-   Genomic View (Activate/deactivate genomic view, displaying full
+    introns, see Figure 3)
 -   Protein structures (If you click the annotation name of a transcript
     in the plot panel it will display the alpha-fold protein colored by
     the ribo-seq data displayed in the plot panel)
--   Full annotation (display all transcript isoforms annotation or just the selected
-    isoform)
--   Predicted translons - display [predicted translons](#translons) in the annotation track.
-    Try turning it on for the [example](https://ribocrypt.org/?&dff=all_merged-Homo_sapiens_modalities&gene=SRD5A1-ENSG00000145545&tx=ENST00000274192&library=RFP&frames_type=area&kmer=9&log_scale=FALSE&extendLeaders=0&extendTrailers=0&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE) in Figures 1 and 2 - notice that the red (second) translon was missed
+-   Full annotation (display all transcript isoforms annotation or just
+    the selected isoform)
+-   Predicted translons - display [predicted translons](#translons) in
+    the annotation track. Try turning it on for the
+    [example](https://ribocrypt.org/?&dff=all_merged-Homo_sapiens_modalities&gene=SRD5A1-ENSG00000145545&tx=ENST00000274192&library=RFP&frames_type=area&kmer=9&log_scale=FALSE&extendLeaders=0&extendTrailers=0&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE)
+    in Figures 1 and 2 - notice that the red (second) translon was
+    missed
 -   Summary top track (Add an additional plot track on top, summarizing
     all selected libraries)
 -   Select Summary display type (same as frames display type above, but
     for the summary track)
 -   Export format (Choose plot export format from plotly controls. The
     default is svg vector graphics that allows for high customizability)
-    
-Uniquely, RiboCrypt allows for toggling between transcriptomic and genomic views, while displaying coding exons in colors according to the correct reading frame. Moreover, extensions allow for exploration of large chunks of the genome, even tens of thousands of bases. [Try](https://ribocrypt.org/?&dff=all_merged-Saccharomyces_cerevisiae_modalities&gene=EFM5-YGR001C&tx=YGR001C_mRNA&library=RFP&frames_type=area&kmer=5&log_scale=FALSE&extendLeaders=15000&extendTrailers=15000&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE) finding all genes in this browser window, and then turn full annotation on to see what you missed! (loading may be a bit slow, but displaying over region 30 thousands bases long here isn't practical)
 
+Uniquely, RiboCrypt allows for toggling between transcriptomic and
+genomic views, while displaying coding exons in colors according to the
+correct reading frame. Moreover, extensions allow for exploration of
+large chunks of the genome, even tens of thousands of bases.
+[Try](https://ribocrypt.org/?&dff=all_merged-Saccharomyces_cerevisiae_modalities&gene=EFM5-YGR001C&tx=YGR001C_mRNA&library=RFP&frames_type=area&kmer=5&log_scale=FALSE&extendLeaders=15000&extendTrailers=15000&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE)
+finding all genes in this browser window, and then turn full annotation
+on to see what you missed! (loading may be a bit slow, but displaying
+over region 30 thousands bases long here isn't practical)
 
 ```{r, echo = FALSE, out.width = "900px", out.height="600px", fig.align="left"}
 knitr::include_graphics("../images/tutorial_fig3.png")
 ```
-Figure 3. Comparison between transcriptomic and genomic view on yeast [EFM5](https://ribocrypt.org/?&dff=all_merged-Saccharomyces_cerevisiae_modalities&gene=EFM5-YGR001C&tx=YGR001C_mRNA&library=RFP&frames_type=area&kmer=5&log_scale=FALSE&extendLeaders=1&extendTrailers=150&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE) and [ABP140](https://ribocrypt.org/?&dff=all_merged-Saccharomyces_cerevisiae_modalities&gene=ABP140-YOR239W&tx=YOR239W_mRNA&library=RFP&frames_type=area&kmer=5&log_scale=FALSE&extendLeaders=1&extendTrailers=150&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE) genes.
 
+Figure 3. Comparison between transcriptomic and genomic view on yeast
+[EFM5](https://ribocrypt.org/?&dff=all_merged-Saccharomyces_cerevisiae_modalities&gene=EFM5-YGR001C&tx=YGR001C_mRNA&library=RFP&frames_type=area&kmer=5&log_scale=FALSE&extendLeaders=1&extendTrailers=150&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE)
+and
+[ABP140](https://ribocrypt.org/?&dff=all_merged-Saccharomyces_cerevisiae_modalities&gene=ABP140-YOR239W&tx=YOR239W_mRNA&library=RFP&frames_type=area&kmer=5&log_scale=FALSE&extendLeaders=1&extendTrailers=150&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE)
+genes.
 
 ## 
 
 # Analysis
 
-Here we collect the analysis possibilities, which are usually operating on meta-gene or multi locus scale.
+Here we collect the analysis possibilities, which are usually operating
+on meta-gene or multi locus scale.
 
 ## Heatmap {#heatmap}
 
@@ -216,7 +261,8 @@ region (like start site of coding sequences) over all genes selected.
 knitr::include_graphics("../images/tutorial_fig4.png")
 ```
 
-Figure 4. Metagene per-readlength heatmap of before (upper panel) and after (bottom panel) P-shifting. Notice emerging periodicity.
+Figure 4. Metagene per-readlength heatmap of before (upper panel) and
+after (bottom panel) P-shifting. Notice emerging periodicity.
 
 ### Selection panel (heatmap)
 
@@ -235,8 +281,8 @@ addition to have the option to specify all genes (default).
     -   sum (raw sum of counts, is very sensitive to extreme peaks)
     -   log10sum (log10 sum of counts, is less sensitive to extreme
         peaks)
--   Min Readlength The minimum readlength to display 
--   Max readlength The maximum readlength to display 
+-   Min Readlength The minimum readlength to display
+-   Max readlength The maximum readlength to display
 
 ### Selection panel (settings)
 
@@ -248,9 +294,10 @@ Here additional options are shown:
 
 -   Summary top track - summarized coverage from all readlengths
 
--   p-shifted - display either P-sites (default), or reads 5' ends. 
+-   p-shifted - display either P-sites (default), or reads 5' ends.
 
-Metagene analysis with heatmap module can be used, for example, to investigate how well P-site positioning was performed (Fig. 4)
+Metagene analysis with heatmap module can be used, for example, to
+investigate how well P-site positioning was performed (Fig. 4)
 
 ## Codon analysis
 
@@ -320,14 +367,18 @@ details!) - Select two conditions (which 2 factors to group by)
 
 ## Meta Browser {#mbrowser}
 
-Display all samples for a specific organism over selected gene (Fig. 5). This tab
-does not use bigwig files to load (as that would be very slow). It uses
-precomputed fst files of coverage over all libraries. Note: Not all
-isoforms are computed, by default the longest isoform is computed.
+Display all samples for a specific organism over selected gene (Fig. 5).
+This tab does not use bigwig files to load (as that would be very slow).
+It uses precomputed fst files of coverage over all libraries. Note: Not
+all isoforms are computed, by default the longest isoform is computed.
+
 ```{r, echo = FALSE, out.width = "1000px", out.height="500px", fig.align="left"}
 knitr::include_graphics("../images/tutorial_fig5.png")
 ```
-Figure 5. Heatmap of thousands of libraries coverage over ATF4 transcript. Clustered using k-means = 2, with summary track displayed on top. 
+
+Figure 5. Heatmap of thousands of libraries coverage over ATF4
+transcript. Clustered using k-means = 2, with summary track displayed on
+top.
 
 ### Selection panel (Browser)
 
@@ -415,8 +466,8 @@ Top plot: Read length relative usage
 2.  Color: Per frame (red, green, blue)
 3.  Facet box: the read length
 
-Bottom plot: Fourier transform (3 nucleotide periodicity quality, clean peak
-means good periodicity)
+Bottom plot: Fourier transform (3 nucleotide periodicity quality, clean
+peak means good periodicity)
 
 ## Fastq (QC)
 
@@ -433,7 +484,12 @@ Displays the html page.
 
 # Metadata
 
-Metadata tab displays information about studies and custom predictions. RiboCrypt is integrated with <a href="https://rdp.ucc.ie/home" target="_blank">Ribo-seq Data Portal</a>, refer to <a href="https://doi.org/10.1093/nar/gkae1020" target="_blank">this paper</a> for details on metadata curation and standardization.
+Metadata tab displays information about studies and custom predictions.
+RiboCrypt is integrated with
+<a href="https://rdp.ucc.ie/home" target="_blank">Ribo-seq Data
+Portal</a>, refer to
+<a href="https://doi.org/10.1093/nar/gkae1020" target="_blank">this
+paper</a> for details on metadata curation and standardization.
 
 \## SRA search
 
@@ -491,8 +547,9 @@ File formats used internally in experiments are:
 
 ## massiveNGSpipe
 
-For our webpage the processing pipeline used is <a href="https://github.com/rc-biotech/massiveNGSpipe" target="_blank">massiveNGSpipe</a> which
-wraps multiple tools:
+For our webpage the processing pipeline used is
+<a href="https://github.com/rc-biotech/massiveNGSpipe" target="_blank">massiveNGSpipe</a>
+which wraps multiple tools:
 
 1.  Fastq files are download with ORFik download.sra
 2.  Adapter is detected with either fastqc (sequence detection) and
@@ -519,7 +576,6 @@ wraps multiple tools:
 8.  These ofst files are then pshifted
 9.  Faster formats are then created (bigwig, fst and covRLE) for faster
     visualization
-
 
 ## API for URL access and sharing
 

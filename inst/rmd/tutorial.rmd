@@ -29,16 +29,27 @@ options therein.
 
 ## Ribo-seq overview
 
+<<<<<<< HEAD
 For more general material about ribosome profiling, we suggest reading <a href="https://cshperspectives.cshlp.org/content/11/5/a032698.full.pdf+html" target="_blank">this review</a>.
 For more technical explanation of data processing steps and specific analyses, it's best to see <a href="https://bioconductor.org/packages/release/bioc/html/ORFik.html" target="_blank">ORFik</a> Overview vignette, especially chapter 6
 <a href="https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting" target="_blank">"RiboSeq footprints automatic shift detection and shifting"</a>.
+=======
+For more general material about ribosome profiling, we suggest reading <a href="" target="_blank"></a> [this review](https://cshperspectives.cshlp.org/content/11/5/a032698.full.pdf+html).
+For more technical explanation of data processing steps and specific analyses, it's best to see <a href="" target="_blank"></a> [ORFik](https://bioconductor.org/packages/release/bioc/html/ORFik.html) Overview vignette, especially chapter 6
+["RiboSeq footprints automatic shift detection and shifting"](https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting)
+
+>>>>>>> 29a8eb736ce694ad392ca30e1115947e50d1bdbf
 
 # Browser {#browser}
 
 The browser is the basic coverage display page. It contains a selection
 panel on the left side and a display window (browser) on the right. It displays
 coverage of sequencing data in either transcript coordinates (default, collapsed introns), or
+<<<<<<< HEAD
 genomic coordinates. The following (Fig. 1), SRD5A1 gene, <a href="https://doi.org/10.21203/rs.3.rs-5390104/v1" target="_blank">has recently been shown to be decoded in three frames</a>.
+=======
+genomic coordinates. The following (Fig. 1), SRD5A1 gene, <a href="" target="_blank"></a>[has recently been shown to be decoded in three frames](https://doi.org/10.21203/rs.3.rs-5390104/v1).
+>>>>>>> 29a8eb736ce694ad392ca30e1115947e50d1bdbf
 
 ```{r, echo = FALSE, out.width = "1000px", out.height="600px", fig.align="left"}
 knitr::include_graphics("../images/tutorial_fig1.png")

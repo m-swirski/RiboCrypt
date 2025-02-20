@@ -3,12 +3,6 @@ title: "Tutorial"
 output:
   html_document:
     self_contained: no
-    toc: true
-    toc_depth: 3
-    toc_float:
-      collapsed: false
-      smooth_scroll: true
-    css: "custom.css"
   pdf_document: default
 editor_options:
   markdown:
@@ -26,8 +20,8 @@ Welcome to `RiboCrypt`
 `RiboCrypt` is an R package and web server for interactive visualization
 and analysis in genomics. `RiboCrypt` works with most NGS-based methods,
 but much emphasis is put on Ribo-seq data visualization. RiboCrypt uses
-ORFik experiment objects, so to ensure compatibility use [ORFik](https://doi.org/10.1186/s12859-021-04254-w) and
-[massiveNGSpipe](https://github.com/rc-biotech/massiveNGSpipe) for processing own (unpublished) data. If you encounter
+ORFik experiment objects, so to ensure compatibility use  <a href="https://doi.org/10.1186/s12859-021-04254-w" target="_blank">ORFik</a> and
+<a href="https://github.com/rc-biotech/massiveNGSpipe" target="_blank">massiveNGSpipe</a> for processing own (unpublished) data. If you encounter
 any issues, please, contact us using the info in the footnote.
 
 The following is web server walk through listing all utilities and
@@ -35,8 +29,8 @@ options therein.
 
 ## Ribo-seq overview
 
-For more general material about ribosome profiling, we suggest reading [this review](https://cshperspectives.cshlp.org/content/11/5/a032698.full.pdf+html).
-For more technical explanation of data processing steps and specific analyses, it's best to see [ORFik](https://bioconductor.org/packages/release/bioc/html/ORFik.html) Overview vignette, especially chapter 6
+For more general material about ribosome profiling, we suggest reading <a href="" target="_blank"></a> [this review](https://cshperspectives.cshlp.org/content/11/5/a032698.full.pdf+html).
+For more technical explanation of data processing steps and specific analyses, it's best to see <a href="" target="_blank"></a> [ORFik](https://bioconductor.org/packages/release/bioc/html/ORFik.html) Overview vignette, especially chapter 6
 ["RiboSeq footprints automatic shift detection and shifting"](https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting)
 
 
@@ -45,7 +39,7 @@ For more technical explanation of data processing steps and specific analyses, i
 The browser is the basic coverage display page. It contains a selection
 panel on the left side and a display window (browser) on the right. It displays
 coverage of sequencing data in either transcript coordinates (default, collapsed introns), or
-genomic coordinates. The following (Fig. 1), SRD5A1 gene, [has recently shown to be decoded in three frames](https://doi.org/10.21203/rs.3.rs-5390104/v1).
+genomic coordinates. The following (Fig. 1), SRD5A1 gene, <a href="" target="_blank"></a>[has recently been shown to be decoded in three frames](https://doi.org/10.21203/rs.3.rs-5390104/v1).
 
 ```{r, echo = FALSE, out.width = "1000px", out.height="600px", fig.align="left"}
 knitr::include_graphics("../images/tutorial_fig1.png")

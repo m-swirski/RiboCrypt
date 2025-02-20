@@ -29,9 +29,6 @@
        h6 {font-size: 12px;}
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
-<script src="tutorial_files/jqueryui-1.11.4/jquery-ui.min.js"></script>
-<link href="tutorial_files/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
-<script src="tutorial_files/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="tutorial_files/navigation-1.1/tabsets.js"></script>
 <link href="tutorial_files/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="tutorial_files/highlightjs-9.12.0/highlight.js"></script>
@@ -61,7 +58,6 @@ if (window.hljs) {
 
 
 
-<link rel="stylesheet" href="custom.css" type="text/css" />
 
 
 
@@ -149,75 +145,6 @@ pre code {
 
 
 
-<style type="text/css">
-
-#TOC {
-  margin: 25px 0px 20px 0px;
-}
-@media (max-width: 768px) {
-#TOC {
-  position: relative;
-  width: 100%;
-}
-}
-
-@media print {
-.toc-content {
-  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
-  float: right;
-}
-}
-
-.toc-content {
-  padding-left: 30px;
-  padding-right: 40px;
-}
-
-div.main-container {
-  max-width: 1200px;
-}
-
-div.tocify {
-  width: 20%;
-  max-width: 260px;
-  max-height: 85%;
-}
-
-@media (min-width: 768px) and (max-width: 991px) {
-  div.tocify {
-    width: 25%;
-  }
-}
-
-@media (max-width: 767px) {
-  div.tocify {
-    width: 100%;
-    max-width: none;
-  }
-}
-
-.tocify ul, .tocify li {
-  line-height: 20px;
-}
-
-.tocify-subheader .tocify-item {
-  font-size: 0.90em;
-}
-
-.tocify .list-group-item {
-  border-radius: 0px;
-}
-
-.tocify-subheader {
-  display: inline;
-}
-.tocify-subheader .tocify-item {
-  font-size: 0.95em;
-}
-
-</style>
-
-
 
 </head>
 
@@ -225,16 +152,6 @@ div.tocify {
 
 
 <div class="container-fluid main-container">
-
-
-<!-- setup 3col/9col grid for toc_float and main content  -->
-<div class="row">
-<div class="col-xs-12 col-sm-4 col-md-3">
-<div id="TOC" class="tocify">
-</div>
-</div>
-
-<div class="toc-content col-xs-12 col-sm-8 col-md-9">
 
 
 
@@ -255,9 +172,10 @@ div.tocify {
 visualization and analysis in genomics. <code>RiboCrypt</code> works
 with most NGS-based methods, but much emphasis is put on Ribo-seq data
 visualization. RiboCrypt uses ORFik experiment objects, so to ensure
-compatibility use <a
-href="https://doi.org/10.1186/s12859-021-04254-w">ORFik</a> and <a
-href="https://github.com/rc-biotech/massiveNGSpipe">massiveNGSpipe</a>
+compatibility use
+<a href="https://doi.org/10.1186/s12859-021-04254-w" target="_blank">ORFik</a>
+and
+<a href="https://github.com/rc-biotech/massiveNGSpipe" target="_blank">massiveNGSpipe</a>
 for processing own (unpublished) data. If you encounter any issues,
 please, contact us using the info in the footnote.</p>
 <p>The following is web server walk through listing all utilities and
@@ -265,10 +183,10 @@ options therein.</p>
 <div id="ribo-seq-overview" class="section level2">
 <h2>Ribo-seq overview</h2>
 <p>For more general material about ribosome profiling, we suggest
-reading <a
+reading <a href="" target="_blank"></a> <a
 href="https://cshperspectives.cshlp.org/content/11/5/a032698.full.pdf+html">this
 review</a>. For more technical explanation of data processing steps and
-specific analyses, it’s best to see <a
+specific analyses, it’s best to see <a href="" target="_blank"></a> <a
 href="https://bioconductor.org/packages/release/bioc/html/ORFik.html">ORFik</a>
 Overview vignette, especially chapter 6 <a
 href="https://bioconductor.org/packages/release/bioc/vignettes/ORFik/inst/doc/ORFikOverview.html#riboseq-footprints-automatic-shift-detection-and-shifting">“RiboSeq
@@ -281,9 +199,9 @@ footprints automatic shift detection and shifting”</a></p>
 selection panel on the left side and a display window (browser) on the
 right. It displays coverage of sequencing data in either transcript
 coordinates (default, collapsed introns), or genomic coordinates. The
-following (Fig. 1), SRD5A1 gene, <a
-href="https://doi.org/10.21203/rs.3.rs-5390104/v1">has recently shown to
-be decoded in three frames</a>.</p>
+following (Fig. 1), SRD5A1 gene, <a href="" target="_blank"></a><a
+href="https://doi.org/10.21203/rs.3.rs-5390104/v1">has recently been
+shown to be decoded in three frames</a>.</p>
 <p><img src="../images/tutorial_fig1.png" width="1000px" height="600px" style="display: block; margin: auto auto auto 0;" /></p>
 <p>Figure 1. SRD5A1 gene displayed using default options. Using <a
 href="#API">API</a>, this browser view can be re-generated using this <a
@@ -916,8 +834,6 @@ class="email">hauken_heyken@hotmail.com</a></li>
 
 
 
-</div>
-</div>
 
 </div>
 
@@ -950,35 +866,6 @@ $(document).ready(function () {
 
 <!-- code folding -->
 
-<script>
-$(document).ready(function ()  {
-
-    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
-    $('.unlisted.unnumbered').addClass('toc-ignore')
-
-    // move toc-ignore selectors from section div to header
-    $('div.section.toc-ignore')
-        .removeClass('toc-ignore')
-        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
-
-    // establish options
-    var options = {
-      selectors: "h1,h2,h3",
-      theme: "bootstrap3",
-      context: '.toc-content',
-      hashGenerator: function (text) {
-        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
-      },
-      ignoreSelector: ".toc-ignore",
-      scrollTo: 0
-    };
-    options.showAndHide = false;
-    options.smoothScroll = true;
-
-    // tocify
-    var toc = $("#TOC").tocify(options).data("toc-tocify");
-});
-</script>
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>

@@ -52,7 +52,8 @@ Imports:
   shinyhelper,
   shinyjs,
   shinyjqui,
-  stringr
+  stringr,
+  writexl
 Suggests:
   testthat,
   rmarkdown,

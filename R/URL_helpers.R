@@ -93,6 +93,36 @@ check_url_for_basic_parameters <- function() {
     }, priority = -5)
 
     observeEvent(session$clientData$url_hash, {
+      # Update experiment from url api
+      page <- getPageFromURL(session)
+      req(id == "predicted_translons" && page %in% c("predicted_translons", "Predicted Translons"))
+      query <- getQueryString()
+      req(length(query) > 0)
+      message("URL with predicted translons!")
+      tag <- "dff"
+      value <- query[tag][[1]]
+      if (is.null(input[[tag]]) || !is.null(value) && value != input[[tag]]) {
+        updateSelectizeInput(
+          inputId = "dff",
+          selected = value,
+          server = FALSE
+        )
+        # rv$exp <- value
+      }
+
+
+      tag <- "download_format"
+      value <- query[tag][[1]]
+      if (is.null(input[[tag]]) || !is.null(value) && value %in% c("xlsx", "csv")) {
+        type <- ifelse(value == "xlsx", "excel", value)
+        trigger_input <- paste0("trigger_download_", type)
+        download_button <- paste0("download_", type)
+        message("Downloading translon dataset!")
+        download_trigger(type)
+      }
+    }, priority = -5)
+
+    observeEvent(session$clientData$url_hash, {
       page <- getPageFromURL(session)
       req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
       query <- getQueryString()

@@ -37,6 +37,7 @@ predicted_translons_server <- function(id) {
     function(input, output, session) {
       # Track if "Plot" has been clicked
       plot_triggered <- reactiveVal(FALSE)
+      download_trigger <- reactiveVal(NULL)
       # Reactive vector to store downloaded filenames (for full dataset downloads)
       downloaded_files <- reactiveVal(character(0))
       # Reactive to store data (loads when needed)
@@ -74,6 +75,20 @@ predicted_translons_server <- function(id) {
         req(plot_triggered())
         render_translon_datatable(md()$translon_table)
       }, server = TRUE)
+      observeEvent(download_trigger(), {
+        req(download_trigger())  # Ensure a value is set
+        type <- download_trigger()
+        trigger_input <- paste0("trigger_download_", type)
+        message("Firing button: ", trigger_input)
+
+        # Fire the actual button event
+        shinyjs::click(trigger_input)
+
+        # Reset download trigger after firing
+        download_trigger(NULL)
+      })
+      check_url_for_basic_parameters()
+
     }
   )
 }

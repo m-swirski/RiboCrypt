@@ -19,7 +19,7 @@ load_data <- function(species) {
 handle_download_trigger <- function(input, output, current_format, trigger_input, download_button, md, session) {
   with(rlang::caller_env(), {
     observeEvent(input[[trigger_input]], {
-      if (is.null(md())) md(load_data(isolate(input$dff)))
+      if (is.null(md()) || isolate(input$dff) != name(md()$df)) md(load_data(isolate(input$dff)))
       req(md()$df)
       # For Excel, check that a table is available (otherwise abort)
       if (is.null(md()$translon_table)) {

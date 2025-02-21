@@ -42,6 +42,7 @@
 #' @importFrom DT datatable renderDT DTOutput formatStyle styleInterval
 #' @importFrom grid grid.grabExpr
 #' @importFrom rtracklayer BigWigFile
+#' @importFrom writexl write_xlsx
 #' @return RiboCrypt shiny app
 #' @export
 #' @examples

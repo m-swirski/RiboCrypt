@@ -67,11 +67,15 @@ helper_button_redirect_call <- function() {
                               var link = dropdownList[i];
                               if(link.getAttribute("data-value") == tabName) {
                                 link.click();
-                                document.getElementById(anchorName).scrollIntoView({
-                                  behavior: "smooth"
-                                  });
+                                console.log("Jumping to: ", anchorName);
+                                setTimeout(() => {
+                                document.querySelector("iframe").contentDocument.getElementById(anchorName).scrollIntoView({behavior: "smooth"});
+                                }, 300);
+
                               };
                             }
                           };
         '))))
 }
+
+

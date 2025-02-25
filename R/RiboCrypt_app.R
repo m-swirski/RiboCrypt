@@ -80,6 +80,7 @@ RiboCrypt_app <- function(
   # User interface
   ui <- tagList(
     rc_header_image(),
+    helper_button_redirect_call(),
     navbarPage(
       id = "navbarID",
       lang = "en",

@@ -13,7 +13,7 @@
 
 <title>Tutorial</title>
 
-<script src="tutorial_files/header-attrs-2.17/header-attrs.js"></script>
+<script src="tutorial_files/header-attrs-2.26/header-attrs.js"></script>
 <script src="tutorial_files/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="tutorial_files/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
@@ -833,6 +833,29 @@ class="email">michal.swirski@uw.edu.pl</a></li>
 href="mailto:hauken_heyken@hotmail.com"
 class="email">hauken_heyken@hotmail.com</a></li>
 </ul>
+<script>
+console.log("Tutorial JavaScript Loaded!"); // Debugging
+</script>
+<script>
+window.addEventListener("message", function(event) {
+  console.log("Received message:", event);  // Debugging
+  if (event.origin !== window.location.origin) {
+    console.log("Invalid origin:", event.origin);
+    return;
+  }
+
+  if (event.data.scrollTo) {
+    var target = document.getElementById(event.data.scrollTo);
+    if (target) {
+      console.log("Scrolling to:", event.data.scrollTo);  // Debugging
+      target.scrollIntoView({ behavior: "smooth" });
+    } else {
+      console.log("Anchor not found:", event.data.scrollTo);  // Debugging
+      console.log("Available elements in iframe:", document.body.innerHTML); // Debugging
+    }
+  }
+});
+</script>
 </div>
 </div>
 

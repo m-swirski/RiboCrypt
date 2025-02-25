@@ -651,3 +651,34 @@ Main authors and contact:
     [michal.swirski\@uw.edu.pl](mailto:michal.swirski@uw.edu.pl){.email}
 -   Håkon Tjeldnes (Bergen), email:
     [hauken_heyken\@hotmail.com](mailto:hauken_heyken@hotmail.com){.email}
+
+
+```{=html}
+<script>
+console.log("Tutorial JavaScript Loaded!"); // Debugging
+</script>
+```
+
+    
+```{=html}
+<script>
+window.addEventListener("message", function(event) {
+  console.log("Received message:", event);  // Debugging
+  if (event.origin !== window.location.origin) {
+    console.log("Invalid origin:", event.origin);
+    return;
+  }
+
+  if (event.data.scrollTo) {
+    var target = document.getElementById(event.data.scrollTo);
+    if (target) {
+      console.log("Scrolling to:", event.data.scrollTo);  // Debugging
+      target.scrollIntoView({ behavior: "smooth" });
+    } else {
+      console.log("Anchor not found:", event.data.scrollTo);  // Debugging
+      console.log("Available elements in iframe:", document.body.innerHTML); // Debugging
+    }
+  }
+});
+</script>
+```

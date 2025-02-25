@@ -67,6 +67,7 @@ predicted_translons_server <- function(id) {
               stop("Invalid format for translon download!")
             }
           }, md)
+          outputOptions(output, download_button, suspendWhenHidden = FALSE)
         })
       }
 
@@ -82,13 +83,13 @@ predicted_translons_server <- function(id) {
         message("Firing button: ", trigger_input)
 
         # Fire the actual button event
+        Sys.sleep(0.3)
         shinyjs::click(trigger_input)
 
         # Reset download trigger after firing
         download_trigger(NULL)
-      })
+      }, priority = -100)
       check_url_for_basic_parameters()
-
     }
   )
 }

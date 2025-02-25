@@ -9,8 +9,7 @@ tutorial_ui <- function(id) {
 
 tutorial_server <- function(id) {
   moduleServer(id, function(input, output, session) {
-      # browser()
-      addResourcePath("rmd", system.file("rmd",package = "RiboCrypt"))
+      addResourcePath("rmd", system.file("rmd", package = "RiboCrypt"))
       output$tutorial <- renderUI({
         tags$iframe(
           seamless="seamless",

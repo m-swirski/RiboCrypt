@@ -29,7 +29,6 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                                        browser_options["default_frame_type"]),
                    sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
                           value = as.numeric(browser_options["default_kmer"])),
-                   helper_button_redirect_call(), # Here are settings ->
                    shinyjs::useShinyjs(),
                    rclipboardSetup(),
                    copy_button_formatting
@@ -87,6 +86,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       output$c <- renderPlotly(browser_track_panel_shiny(mainPlotControls, bottom_panel(), session)) %>%
         bindCache(mainPlotControls()$hash_browser) %>%
         bindEvent(bottom_panel(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
 
       # Protein display
       module_protein(input, output, gene_name_list, session)

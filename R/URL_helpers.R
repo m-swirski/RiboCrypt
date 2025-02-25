@@ -77,7 +77,8 @@ reactive_url <- function() {
 
 check_url_for_basic_parameters <- function() {
   with(rlang::caller_env(), {
-    observeEvent(session$clientData$url_hash, {
+
+    observeEvent(session$clientData$url_hash, { # PAGE: Browsers
       # Update experiment from url api
       page <- getPageFromURL(session)
       req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
@@ -92,7 +93,8 @@ check_url_for_basic_parameters <- function() {
       }
     }, priority = -5)
 
-    observeEvent(session$clientData$url_hash, {
+
+    observeEvent(session$clientData$url_hash, { # PAGE: Predicted translons tables
       # Update experiment from url api
       page <- getPageFromURL(session)
       req(id == "predicted_translons" && page %in% c("predicted_translons", "Predicted Translons"))
@@ -107,7 +109,6 @@ check_url_for_basic_parameters <- function() {
           selected = value,
           server = FALSE
         )
-        # rv$exp <- value
       }
 
 
@@ -120,9 +121,9 @@ check_url_for_basic_parameters <- function() {
         message("Downloading translon dataset!")
         download_trigger(type)
       }
-    }, priority = -5)
+    }, priority = -150)
 
-    observeEvent(session$clientData$url_hash, {
+    observeEvent(session$clientData$url_hash, { # PAGE: Browsers
       page <- getPageFromURL(session)
       req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
       query <- getQueryString()

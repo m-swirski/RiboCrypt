@@ -6,7 +6,6 @@
 #' @return selectizeInput object
 #' @importFrom shinyhelper helper
 organism_input_select <- function(genomes, ns) {
-  #genomes <- stringr::str_to_sentence(gsub("_", " ", list.genomes()$name))
   selectizeInput(
     inputId = ns("genome"),
     label = "Select an Organism",

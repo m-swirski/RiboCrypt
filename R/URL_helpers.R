@@ -95,7 +95,6 @@ check_url_for_basic_parameters <- function() {
       }
     }, priority = -5)
 
-
     observeEvent(session$clientData$url_hash, { # PAGE: Predicted translons tables
       # Update experiment from url api
       page <- getPageFromURL(session)
@@ -112,7 +111,14 @@ check_url_for_basic_parameters <- function() {
           server = FALSE
         )
       }
+    }, priority = -6)
 
+    observeEvent(session$clientData$url_hash, { # PAGE: Predicted translons tables
+      # Update experiment from url api
+      page <- getPageFromURL(session)
+      req(id == "predicted_translons" && page %in% c("predicted_translons", "Predicted Translons"))
+      query <- getQueryString()
+      req(length(query) > 0)
 
       tag <- "download_format"
       value <- query[tag][[1]]
@@ -272,7 +278,7 @@ check_go_flag <- function() {
       as.logical(query[tag][[1]][1])
     })())
 
-    if (length(go_flag) > 0) {
+    if (length(go_flag) > 0 && go_flag %in% c(TRUE, FALSE)) {
       over_ride_plot_on_start <- as.logical(go_flag) == FALSE && as.logical(browser_options["plot_on_start"])
       if (over_ride_plot_on_start) {
         browser_options["plot_on_start"] <- "FALSE"

@@ -83,12 +83,12 @@ predicted_translons_server <- function(id) {
         message("Firing button: ", trigger_input)
 
         # Fire the actual button event
-        Sys.sleep(0.3)
+        Sys.sleep(0.6)
         shinyjs::click(trigger_input)
 
         # Reset download trigger after firing
         download_trigger(NULL)
-      }, priority = -100)
+      }, priority = -300)
       check_url_for_basic_parameters()
     }
   )

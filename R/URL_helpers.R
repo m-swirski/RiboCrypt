@@ -72,6 +72,8 @@ reactive_url <- function() {
         updateQueryString(pushQueryString, mode = "push", session)
       }
     }, priority = 0, ignoreInit = TRUE)
+
+    check_go_flag()
   })
 }
 
@@ -232,7 +234,6 @@ check_url_for_go_on_init <- function() {
           print("Ready, set...")
           no_go_yet(FALSE)
           browser_options["plot_on_start"] <- "FALSE"
-          print("Set plot_on_start to FALSE")
         }
       }
     }, ignoreNULL = TRUE, ignoreInit = FALSE, priority = -100)
@@ -259,6 +260,25 @@ check_url_for_go_on_init <- function() {
         no_go_yet(TRUE)
       }
     }, ignoreInit = TRUE, ignoreNULL = TRUE, priority = -200)
+
+  })
+}
+
+check_go_flag <- function() {
+  with(rlang::caller_env(), {
+    go_flag <- isolate(reactive({
+      query <- getQueryString()
+      tag <- "go"
+      as.logical(query[tag][[1]][1])
+    })())
+
+    if (length(go_flag) > 0) {
+      over_ride_plot_on_start <- as.logical(go_flag) == FALSE && as.logical(browser_options["plot_on_start"])
+      if (over_ride_plot_on_start) {
+        browser_options["plot_on_start"] <- "FALSE"
+        print("Set plot_on_start to FALSE")
+      }
+    }
 
   })
 }

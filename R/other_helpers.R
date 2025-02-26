@@ -167,8 +167,6 @@ colour_bars <- function(locations, overlaps, display_range) {
 }
 
 #'
-#' @import data.table
-#' @importFrom Biostrings width
 #' @keywords internal
 getRelativeFrames <- function(overlaps) {
   dt <- data.table(names = names(overlaps),

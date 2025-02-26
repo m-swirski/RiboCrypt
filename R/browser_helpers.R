@@ -70,7 +70,8 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                          proportions, seq_render_dist,
                                          display_sequence, display_dist,
                                          aa_letter_code, input_id, plot_name,
-                                         plot_title,  width, height, export.format) {
+                                         plot_title,  width, height, export.format,
+                                         zoom_range = NULL) {
   nplots <- track_panel$nplots
   plots <- track_panel$plots
   gene_model_panel <- bottom_panel$gene_model_panel
@@ -110,7 +111,13 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   filename <- ifelse(plot_name == "default", names(display_range), plot_name)
   multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
                                              width, height, format = export.format)
-  if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
+  if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>%
+    plotly::layout(title = plot_title)
+  if (!is.null(zoom_range)) {
+    multiomics_plot <- multiomics_plot %>%
+      plotly::layout(xaxis = list(range = zoom_range))
+  }
+
   return(multiomics_plot)
 }
 
@@ -156,7 +163,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
 }
 
 genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6,
-                                  viewMode, extendLeaders, extendTrailers) {
+                                  viewMode, extendLeaders, extendTrailers, type = "region") {
   input_given <- !is.null(genomic_string) && genomic_string != ""
   if (input_given) {
     gr <- try(GRanges(genomic_string))
@@ -168,7 +175,7 @@ genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6
       if (!(as.character(seqnames(gr)) %in% seqnames(seqinfo(display_region))))
         stop("Invalid chromosome selected!")
       display_region <- GRangesList(Region = gr)
-    } else stop("Malformed genomic region: format: chr1:39517672-39523668:+")
+    } else stop("Malformed genomic ", type, ": format: chr1:39517672-39523668:+")
   }
 
   extension_size <- extendLeaders + extendTrailers
@@ -179,6 +186,37 @@ genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6
   return(display_region)
 }
 
+get_zoom_range <- function(zoom_range, display_region, max_size,
+                           viewMode, leader_extension, trailer_extension) {
+  if (!is.null(zoom_range)) {
+    valid_zoom <- is.character(zoom_range) && nchar(zoom_range) > 0
+    if (valid_zoom) {
+      count_colon <- stringr::str_count(zoom_range, ":")
+      tx_coord_interval <- count_colon == 1
+      geomic_coord_interval <- count_colon > 1
+      if (tx_coord_interval) {
+        zoom_interval <- as.numeric(unlist(strsplit(zoom_range, ":")))
+        stopifnot(length(zoom_interval) == 1 && zoom_interval[1] >= zoom_interval[2])
+        zoom_range <- zoom_interval
+      } else if (geomic_coord_interval) {
+        gr <- genomic_string_to_grl(zoom_range, display_region, max_size,
+                                    viewMode, leader_extension, trailer_extension,
+                                    "zoom region")
+        display_range_zoom <- display_region
+        if (!is.null(leader_extension) && is.numeric(leader_extension) && leader_extension != 0)
+          display_range_zoom <- extendLeaders(display_range_zoom, leader_extension)
+        if (!is.null(trailer_extension) && is.numeric(trailer_extension) &&  trailer_extension != 0)
+          display_range_zoom <- extendTrailers(display_range_zoom, trailer_extension)
+        ir <- suppressWarnings(pmapToTranscriptF(gr, display_range_zoom))
+        if (as.numeric(width(ir)) > 0) {
+          zoom_range <- c(as.numeric(start(ir)), as.numeric(end(ir)))
+        }
+      }
+    } else zoom_range <- NULL
+  }
+  return(zoom_range)
+}
+
 hash_strings_browser <- function(input, dff) {
   full_names <- ORFik:::name_decider(dff, naming = "full")
   hash_bottom <- paste(input$tx, input$other_tx,
@@ -186,6 +224,7 @@ hash_strings_browser <- function(input, dff) {
                        input$extendTrailers, input$extendLeaders,
                        input$genomic_region, input$viewMode,
                        input$customSequence, input$phyloP,
+                       input$zoom_range,
                        collapse = "|_|")
   # Until plot and coverage is split (bottom must be part of browser hash)
   hash_browser <- paste(hash_bottom,

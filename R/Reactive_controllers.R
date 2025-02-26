@@ -20,6 +20,10 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                                             isolate(input$extendLeaders),
                                             isolate(input$extendTrailers))
     dff <- observed_exp_subset(isolate(input$library), libs, df)
+    zoom_range <- get_zoom_range(isolate(input$zoom_range), display_region,
+                                 max_size = 1e6, isolate(input$viewMode),
+                                 isolate(input$extendLeaders),
+                                 isolate(input$extendTrailers))
 
 
     if (isolate(input$withFrames)) {
@@ -55,6 +59,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    log_scale = input$log_scale,
                    phyloP = input$phyloP,
                    withFrames = withFrames,
+                   zoom_range = zoom_range,
                    hash_bottom = hash_strings[["hash_bottom"]],
                    hash_browser = hash_strings[["hash_browser"]],
                    hash_expression = hash_strings[["hash_expression"]])

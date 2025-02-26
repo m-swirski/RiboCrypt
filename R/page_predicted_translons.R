@@ -74,7 +74,7 @@ predicted_translons_server <- function(id) {
       # Render DT Table ONLY if "Plot" was clicked
       output$translon_table <- DT::renderDT({
         req(plot_triggered())
-        render_translon_datatable(md()$translon_table)
+        render_translon_datatable(md()$translon_table, session)
       }, server = TRUE)
       observeEvent(download_trigger(), {
         req(download_trigger())  # Ensure a value is set

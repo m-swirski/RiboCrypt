@@ -17,6 +17,8 @@ make_rc_url(
   plot_on_start = TRUE,
   frames_type = "columns",
   kmer = 1,
+  add_translons = FALSE,
+  zoom_range = NULL,
   host = "https://ribocrypt.org"
 )
 }

@@ -18,7 +18,7 @@ automateTicksLetters <- function(plot) {
 
 automateTicksGMP <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE, tooltip = "gene_names") %>%
-    plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>%
+    plotly::layout(yaxis=list(autorange = FALSE), xaxis=list(autorange=FALSE)) %>%
     style(hoverinfo = "text")
 }
 #'
@@ -27,7 +27,7 @@ automateTicksGMP <- function(plot) {
 automateTicksRNA <- function(plot, as_plotly = TRUE) {
   if (!as_plotly) return(plot)
   plot %>% ggplotly(dynamicTicks = TRUE) %>%
-    plotly::layout(yaxis=list(autorange = FALSE,nticks=3), xaxis=list(autorange=FALSE))
+    plotly::layout(yaxis=list(autorange = FALSE, nticks=3), xaxis=list(autorange=FALSE))
 }
 
 automateTicksX <- function(plot) {

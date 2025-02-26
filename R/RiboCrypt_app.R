@@ -29,14 +29,14 @@
 #' It is the subset of all_exp which are collections (the set of
 #' all experiments per organism), this will be fed to the metabrowser, while
 #' remaining all_exp are used in all other modules.
-#' @import shiny bslib ORFik NGLVieweR ggplot2 fst rclipboard
-#' @importFrom Biostrings strsplit
+#' @import shiny bslib ORFik NGLVieweR ggplot2 fst rclipboard data.table
+#' @importFrom Biostrings strsplit width
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
 #' @importFrom shinyjqui jqui_resizable jqui_draggable
 #' @importFrom shinyjs click useShinyjs
 #' @importFrom knitr knit
-#' @importFrom stringr str_sub
+#' @importFrom stringr str_sub str_count
 #' @importFrom httr GET write_disk
 #' @importFrom ComplexHeatmap Heatmap row_order draw
 #' @importFrom DT datatable renderDT DTOutput formatStyle styleInterval

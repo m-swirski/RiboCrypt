@@ -4,11 +4,13 @@ load_data <- function(species) {
   table_path <- file.path(dirname(df@fafile),
                           "predicted_translons",
                           "predicted_translons_with_sequence.fst")
-  translon_table <- if (file.exists(table_path)) {
-    fst::read_fst(table_path)
+  if (file.exists(table_path)) {
+    translon_table <- setDT(fst::read_fst(table_path))
+    setattr(translon_table, "exp", species)
   } else {
     NULL
   }
+
   reactiveValues(translon_table = translon_table, df = df)
 }
 
@@ -65,9 +67,31 @@ generate_filename <- function(df, format, show_message = TRUE) {
 }
 
 # Generalized function to render the DT table.
-render_translon_datatable <- function(data) {
+render_translon_datatable <- function(data, session, add_links = T) {
+  # Add URL
+  if (add_links) {
+    host <- getHostFromURL(session) #"https://ribocrypt.org"
+    exp <- attr(data, "exp")
+    # exp <- "all_merged-Homo_sapiens_modalities"
+    symbols <- if(!is.null(data$external_gene_name)) {data$external_gene_name} else NULL
+    gene_ids <- if(!is.null(data$ensembl_gene_id)) {data$ensembl_gene_id} else data$GENE
+    tx_ids <- if(!is.null(data$ensembl_tx_name)) {data$ensembl_tx_name} else data$TX
+    urls <- make_rc_url(symbol = symbols, gene_id = gene_ids, tx_id = tx_ids,
+                        exp = exp,
+                        libraries = NULL, leader_extension = 2000, trailer_extension = 0,
+                        viewMode = FALSE, other_tx = FALSE,
+                        plot_on_start = TRUE, frames_type = "columns", kmer=1,
+                        add_translons = TRUE, zoom_range = data$coordinates,
+                        host = host)
+
+    data <- cbind(link = sprintf(
+      paste0('<a href=', urls, ' target="_blank">%s</a>'),
+      paste0("Translon_", seq(length(urls)))), data)
+  }
+
   datatable(data,
             extensions = 'Buttons',
+            escape = FALSE,
             filter = "top",
             options = list(
               dom = 'Bfrtip',

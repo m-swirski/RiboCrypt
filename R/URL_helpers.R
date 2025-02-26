@@ -2,13 +2,17 @@ getPageFromURL <- function(session = NULL, url = session$clientData$url_hash) {
   utils::URLdecode(sub("#", "", session$clientData$url_hash))
 }
 
+getHostFromURL <- function(session) {
+  host <- session$clientData$url_hostname
+  if (host != "ribocrypt.org") {
+    host <- paste0("http://", host, ":", session$clientData$url_port)
+  }
+}
+
 #' Make URL from shiny reactive input
 #' @noRd
 make_url_from_inputs <- function(input, session) {
-  host <- session$clientData$url_hostname
-  if (host != "ribocrypt.org") {
-    host <- paste0(host, ":", session$clientData$url_port)
-  }
+  host <- getHostFromURL(session)
   settings <- "/?"
   settings <- paste(settings,
                     paste("dff", input$dff, sep = "="),
@@ -23,7 +27,9 @@ make_url_from_inputs <- function(input, session) {
                     paste("viewMode", input$viewMode, sep = "="),
                     paste("other_tx", input$other_tx, sep = "="),
                     paste("add_uorfs", input$add_uorfs, sep = "="),
+                    paste("add_translon", input$add_translon, sep = "="),
                     paste("genomic_region", sub("\\+$", "p", input$genomic_region), sep = "="),
+                    paste("zoom_range", sub("\\+$", "p", input$zoom_range), sep = "="),
                     paste("customSequence", input$customSequence, sep = "="),
                     paste("phyloP", input$phyloP, sep = "="),
                     paste("summary_track", input$summary_track, sep = "="),
@@ -206,10 +212,10 @@ check_url_for_basic_parameters <- function() {
         }
       }
       # Free character box updated
-      for (tag in c("customSequence", "genomic_region")) {
+      for (tag in c("customSequence", "genomic_region", "zoom_range")) {
         value <- query[tag][[1]]
         if (!is.null(value)) {
-          if (tag == "genomic_region") value <- sub("p$", "+", value)
+          if (tag %in% c("genomic_region", "zoom_range")) value <- sub("p$", "+", value)
           updateTextInput(inputId = tag, value = as.character(value))
         }
       }
@@ -341,23 +347,27 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                         libraries = NULL, leader_extension = 0, trailer_extension = 0,
                         viewMode = FALSE, other_tx = FALSE,
                         plot_on_start = TRUE, frames_type = "columns", kmer=1,
+                        add_translons = FALSE, zoom_range = NULL,
                         host = "https://ribocrypt.org") {
-  if (is.null(symbol) & is.null(gene_id))
+  if (any(is.null(symbol) & is.null(gene_id)))
     stop("At least on of symbol and gene_id must be defined!")
   settings <- "/?"
   settings <- paste(settings,
                     paste("dff", exp, sep = "="),
-                    paste0("frames_type", frames_type, sep = "="),
-                    paste0("kmer", kmer, sep = "="),
-                    paste0("extendLeaders", leader_extension, sep = "="),
-                    paste0("extendTrailers", trailer_extension, sep = "="),
-                    paste0("viewMode", viewMode, sep = "="),
-                    paste0("other_tx", other_tx, sep = "="),
+                    paste("frames_type", frames_type, sep = "="),
+                    paste("kmer", kmer, sep = "="),
+                    paste("extendLeaders", leader_extension, sep = "="),
+                    paste("extendTrailers", trailer_extension, sep = "="),
+                    paste("viewMode", viewMode, sep = "="),
+                    paste("other_tx", other_tx, sep = "="),
+                    paste("add_translon", add_translons, sep = "="),
                     sep = "&")
+  if (all(!is.null(zoom_range)))
+    settings <- paste(settings, paste("zoom_range", sub("\\+$", "p", zoom_range), sep = "="), sep = "&")
   prefix_url <- paste0(host, settings)
-  gene <- paste0(if (!is.na(symbol) & !is.null(symbol)) {paste0(symbol, "-")} else NULL, gene_id)
-  if (!is.null(tx_id)) tx_id <- paste0("&tx=", tx_id)
-  if (!is.null(libraries)) libraries <- paste0("&library=", paste(libraries, collapse = ","))
+  gene <- paste0(ifelse(!is.na(symbol) & !is.null(symbol), paste0(symbol, "-"), ""), gene_id)
+  if (all(!is.null(tx_id))) tx_id <- paste0("&tx=", tx_id)
+  if (all(!is.null(libraries))) libraries <- paste0("&library=", paste(libraries, collapse = ","))
 
   select <- paste0("&gene=", gene, tx_id, libraries)
   plot_on_start <- paste0("&go=", as.logical(plot_on_start))

@@ -47,6 +47,8 @@ make_rc_url(
 
 \item{kmer}{integer, default 1 (no binning), binning size of windows, to smear out the signal.}
 
+\item{zoom_range}{character, zoom values.}
+
 \item{host}{url, default "https://ribocrypt.org". Set to localhost for local version.}
 }
 \value{

@@ -196,7 +196,7 @@ get_zoom_range <- function(zoom_range, display_region, max_size,
       geomic_coord_interval <- count_colon > 1
       if (tx_coord_interval) {
         zoom_interval <- as.numeric(unlist(strsplit(zoom_range, ":")))
-        stopifnot(length(zoom_interval) == 1 && zoom_interval[1] >= zoom_interval[2])
+        stopifnot(length(zoom_interval) == 2 && zoom_interval[1] <= zoom_interval[2])
         zoom_range <- zoom_interval
       } else if (geomic_coord_interval) {
         gr <- genomic_string_to_grl(zoom_range, display_region, max_size,

@@ -221,7 +221,7 @@ check_url_for_basic_parameters <- function() {
       }
 
       # Checkbox updates
-      for (tag in c("viewMode", "other_tx", "add_uorfs", "summary_track", "log_scale", "phyloP")) {
+      for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon","summary_track", "log_scale", "phyloP")) {
         value <- query[tag][[1]]
         if (!is.null(value)) {
           updateCheckboxInput(inputId = tag, value = as.logical(value))
@@ -337,6 +337,7 @@ browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
 #' @param viewMode FALSE (transcript view), TRUE gives genomic.
 #' @param other_tx FALSE, show all other annotation in region (isoforms etc.)
 #' @param kmer integer, default 1 (no binning), binning size of windows, to smear out the signal.
+#' @param zoom_range character, zoom values.
 #' @param host url, default "https://ribocrypt.org". Set to localhost for local version.
 #' @return character, URL.
 #' @export

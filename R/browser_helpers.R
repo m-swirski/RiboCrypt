@@ -209,7 +209,8 @@ get_zoom_range <- function(zoom_range, display_region, max_size,
           display_range_zoom <- extendTrailers(display_range_zoom, trailer_extension)
         ir <- suppressWarnings(pmapToTranscriptF(gr, display_range_zoom))
         if (as.numeric(width(ir)) > 0) {
-          zoom_range <- c(as.numeric(start(ir)), as.numeric(end(ir)))
+          zoom_range <- c(max(as.numeric(start(ir)) - 10, 1),
+                          min(as.numeric(end(ir)) + 10, widthPerGroup(display_range_zoom, FALSE)))
         }
       }
     } else zoom_range <- NULL

@@ -47,7 +47,7 @@ multiOmicsControllerView <- function() {
       } else { # tx coordinates
         annotation_proportions <- c(0.2,0.2,0.6)
         if (bottom_panel$annotation_layers > 1) {
-          annotation_proportions[2] <- annotation_proportions*sqrt(bottom_panel$annotation_layers)
+          annotation_proportions[2] <- annotation_proportions[2]*sqrt(bottom_panel$annotation_layers)
         }
       }
     } else annotation_proportions <- annotation_proportions / sum(annotation_proportions)

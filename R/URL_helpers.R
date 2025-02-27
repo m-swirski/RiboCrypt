@@ -28,7 +28,7 @@ make_url_from_inputs <- function(input, session) {
                     paste("other_tx", input$other_tx, sep = "="),
                     paste("add_uorfs", input$add_uorfs, sep = "="),
                     paste("add_translon", input$add_translon, sep = "="),
-                    paste("genomic_region", sub("\\+$", "p", input$genomic_region), sep = "="),
+                    paste("genomic_region", sub("\\+;", "p;", sub("\\+$", "p", input$genomic_region)), sep = "="),
                     paste("zoom_range", sub("\\+$", "p", input$zoom_range), sep = "="),
                     paste("customSequence", input$customSequence, sep = "="),
                     paste("phyloP", input$phyloP, sep = "="),
@@ -215,7 +215,7 @@ check_url_for_basic_parameters <- function() {
       for (tag in c("customSequence", "genomic_region", "zoom_range")) {
         value <- query[tag][[1]]
         if (!is.null(value)) {
-          if (tag %in% c("genomic_region", "zoom_range")) value <- sub("p$", "+", value)
+          if (tag %in% c("genomic_region", "zoom_range")) value <-  sub("p;", "+;", sub("p$", "+", value))
           updateTextInput(inputId = tag, value = as.character(value))
         }
       }
@@ -363,8 +363,11 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                     paste("other_tx", other_tx, sep = "="),
                     paste("add_translon", add_translons, sep = "="),
                     sep = "&")
-  if (!is.null(zoom_range))
-    settings <- paste(settings, paste("zoom_range", sub("\\+$", "p", zoom_range), sep = "="), sep = "&")
+  if (!is.null(zoom_range)){
+    zoom_range <- sub("\\+;", "p;", sub("\\+$", "p", zoom_range))
+    settings <- paste(settings, paste("zoom_range", zoom_range, sep = "="), sep = "&")
+  }
+
   prefix_url <- paste0(host, settings)
   if (!is.null(symbol)) {
     dt <- data.table(gene_id, symbol)

@@ -168,16 +168,17 @@ genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6
                                   viewMode, extendLeaders, extendTrailers, type = "region") {
   input_given <- !is.null(genomic_string) && genomic_string != ""
   if (input_given) {
-    gr <- try(GRanges(genomic_string))
+    gr <- try(as(unlist(strsplit(genomic_string, ";")), "GRanges"))
     if (is(gr, "GRanges")) {
-      if (start(gr) < 1) stop("Position 1 is minimum position to show on a chromosome! (input ", start(gr), ")")
+      if (any(start(gr) < 1)) stop("Position 1 is minimum position to show on a chromosome! (input ",
+                                   paste(start(gr), collapse = ", "), ")")
 
       suppressWarnings(try(seqlevelsStyle(gr) <- seqlevelsStyle(display_region)[1], silent = TRUE))
 
-      if (!(as.character(seqnames(gr)) %in% seqnames(seqinfo(display_region))))
+      if (any(!(as.character(seqnames(gr)) %in% seqnames(seqinfo(display_region)))))
         stop("Invalid chromosome selected!")
       display_region <- GRangesList(Region = gr)
-    } else stop("Malformed genomic ", type, ": format: chr1:39517672-39523668:+")
+    } else stop("Malformed genomic ", type, ": format: chr1:39517672-39523668:+;chr1:39527673-39520669:+")
   }
 
   extension_size <- extendLeaders + extendTrailers
@@ -205,14 +206,18 @@ get_zoom_range <- function(zoom_range, display_region, max_size,
                                     viewMode, leader_extension, trailer_extension,
                                     "zoom region")
         display_range_zoom <- display_region
+        if (viewMode) {
+          display_range_zoom <- flankPerGroup(display_range_zoom)
+          gr <- flankPerGroup(gr)
+        }
         if (!is.null(leader_extension) && is.numeric(leader_extension) && leader_extension != 0)
           display_range_zoom <- extendLeaders(display_range_zoom, leader_extension)
         if (!is.null(trailer_extension) && is.numeric(trailer_extension) &&  trailer_extension != 0)
           display_range_zoom <- extendTrailers(display_range_zoom, trailer_extension)
         ir <- suppressWarnings(pmapToTranscriptF(gr, display_range_zoom))
         if (as.numeric(width(ir)) > 0) {
-          zoom_range <- c(max(as.numeric(start(ir)) - 10, 1),
-                          min(as.numeric(end(ir)) + 10, widthPerGroup(display_range_zoom, FALSE)))
+          zoom_range <- c(max(as.numeric(start(ir))[1] - 10, 1),
+                          min(as.numeric(end(ir))[1] + 10, widthPerGroup(display_range_zoom, FALSE)))
         }
       }
     } else zoom_range <- NULL

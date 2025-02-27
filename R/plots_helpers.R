@@ -23,7 +23,11 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
   } else if (type == "area") {
     profile_plot <- profile_plot +
       geom_area(aes(y = count, x = position, fill = frame), size = 0.1,
-                alpha = 0.8, col = "black", position = 'identity')
+                alpha = 0.8, col = "black", position = 'identity') +
+      geom_point(aes(x = position, y = count, group = frame),
+                 fill = NA,  # Make points invisible (no fill)
+                 color = NA, size = 0.1, position = 'identity',
+                 inherit.aes = FALSE)
   } else if (type == "heatmap") {
     hm_colors <- c("white", "yellow1","yellow2", "yellow3",
                    "lightblue", "blue", "navy")

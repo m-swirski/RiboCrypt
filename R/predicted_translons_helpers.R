@@ -83,10 +83,9 @@ render_translon_datatable <- function(data, session, add_links = T) {
                         plot_on_start = TRUE, frames_type = "columns", kmer=1,
                         add_translons = TRUE, zoom_range = data$coordinates,
                         host = host)
-
-    data <- cbind(link = sprintf(
-      paste0('<a href=', urls, ' target="_blank">%s</a>'),
-      paste0("Translon_", seq(length(urls)))), data)
+    data <- cbind(link = paste0('<a href=', urls, ' target=\"_blank\">',
+                                "Translon_", seq(length(urls)), '</a>'),
+                  data)
   }
 
   datatable(data,

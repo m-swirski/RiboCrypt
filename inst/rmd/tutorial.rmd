@@ -83,11 +83,11 @@ The browser window consists of the specific parts:
     according to relative reading frame
 4.  Frame track (bottom), the 3 frames displayed with given color bars:
 
--   white (start codons, ATG)
+-   white (start codon, ATG)
 
 -   black (stop codons, TAA \| TAG \| TGA)
 
--   brown (custom motifs)
+-   brown (custom motifs, e.g. NTG all start codon alternatives)
 
     When zoomed in, the amino acid sequence is displayed within each
     frame.
@@ -114,7 +114,7 @@ etc):
     with organism (some studies are multi species, so sometimes one
     study have multiple experiments). Select which one you want. There
     also exist merged experiments (all samples merged for the organism,
-    etc)
+    etc). RNA-seq experiments have an addition "_RNA" as suffix.
 
 ### Gene {#gene}
 
@@ -207,24 +207,41 @@ Settings tab contains additional parameters:
     chromosome:start-stop:strand, human/mouse/zebrafish: 1:10000-20000:+
     , yeast: I:10000-20000:+. Both 1 and chr1 works, conversion will be
     done automatically)
+-   Zoom interval (start with a zoom and highlight on a subsection):
+    Either specified in tx/view coordinates, i.e. 20:50 will give zoom 
+    on region (20-10):(50+10) = 10:60, and a highlight color (light yellow)
+    at coordinates 20:50. You can also specify in genomic coordinates as above
+    for genomic region (remember the genomic coordinates must then be within
+    the gene / region you are displaying).
 -   Genomic View (Activate/deactivate genomic view, displaying full
     introns, see Figure 3)
--   Protein structures (If you click the annotation name of a transcript
-    in the plot panel it will display the alpha-fold protein colored by
-    the ribo-seq data displayed in the plot panel)
 -   Full annotation (display all transcript isoforms annotation or just
     the selected isoform)
+-   uORF annotation (display candidate uORFs in the annotation track) this is not the
+    predicted set, but all possible uORFs by seqnece. For predicted set, check 
+    the predicted translons checkbox.
 -   Predicted translons - display [predicted translons](#translons) in
     the annotation track. Try turning it on for the
     [example](https://ribocrypt.org/?&dff=all_merged-Homo_sapiens_modalities&gene=SRD5A1-ENSG00000145545&tx=ENST00000274192&library=RFP&frames_type=area&kmer=9&log_scale=FALSE&extendLeaders=0&extendTrailers=0&viewMode=FALSE&other_tx=FALSE&add_uorfs=FALSE&genomic_region=&customSequence=&phyloP=FALSE&summary_track=FALSE&go=TRUE)
     in Figures 1 and 2 - notice that the red (second) translon was
     missed
+-   Log scale (Log scale the coverage, reduces effect of extreme peaks)
+
+-   Protein structures (If you click the annotation name of a transcript
+    in the plot panel it will display the alpha-fold protein colored by
+    the ribo-seq data displayed in the plot panel)
+-   PhyloP (PhyloP conservation track will be added on the bottom)
+-   Split color frame (Split riboseq signal into colors by frame) 
+    i.e. red, green and blue. If this is on, then Ribo-seq and 
+    Ti-seq will be displayed with colors split by frame.
 -   Summary top track (Add an additional plot track on top, summarizing
     all selected libraries)
 -   Select Summary display type (same as frames display type above, but
     for the summary track)
 -   Export format (Choose plot export format from plotly controls. The
     default is svg vector graphics that allows for high customizability)
+-   Plot (red button, render selected gene/region as plotly html, 
+    with specified settings)
 
 Uniquely, RiboCrypt allows for toggling between transcriptomic and
 genomic views, while displaying coding exons in colors according to the
@@ -365,7 +382,7 @@ details!) - Select two conditions (which 2 factors to group by)
 -   P-value (sliding bar for p-value cutoff, default 0.05)
 -   export format for plot (explained above)
 
-## Meta Browser {#mbrowser}
+## Mega Browser {#mbrowser}
 
 Display all samples for a specific organism over selected gene (Fig. 5).
 This tab does not use bigwig files to load (as that would be very slow).

@@ -5,7 +5,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   experiments <- all_exp$name
   normalizations <- normalizations("metabrowser")
   tabPanel(
-    title = "MetaBrowser", icon = icon("chart-line"),
+    title = "MegaBrowser", icon = icon("chart-line"),
     sidebarLayout(
       jqui_resizable(sidebarPanel(
         tabsetPanel(

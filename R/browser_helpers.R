@@ -74,6 +74,26 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                          zoom_range = NULL) {
   nplots <- track_panel$nplots
   plots <- track_panel$plots
+  if (!is.null(zoom_range)) {
+    stopifnot(length(zoom_range) == 2)
+    plots_highlighted <- lapply(plots, function (p) {
+      p$x$layout$shapes <- c(
+        p$x$layout$shapes,
+        list(list(
+          type = "rect",
+          yref = "paper",  # "paper" ensures full Y-axis coverage
+          x0 = zoom_range[1], x1 = zoom_range[2],
+          y0 = 0, y1 = 1,  # Full height
+          fillcolor = "rgba(255, 255, 102, 0.18)",  # Light yellow
+          line = list(width = 0) # Remove border
+        ))
+      )
+      return(p)
+    })
+    plots <- plots_highlighted
+  }
+
+
   gene_model_panel <- bottom_panel$gene_model_panel
   seq_panel <- bottom_panel$seq_panel
   custom_seq_panel <- bottom_panel$custom_bigwig_panels

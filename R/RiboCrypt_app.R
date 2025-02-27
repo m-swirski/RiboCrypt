@@ -89,6 +89,7 @@ RiboCrypt_app <- function(
       theme = rc_theme(),
       selected = init_tab_focus,
       browser_ui("browser", all_exp, browser_options, names_init, libs),
+      browser_allsamp_ui("browser_allsamp", all_exp_meta, browser_options, metadata),
       analysis_ui("analysis", all_exp, browser_options, libs, metadata, all_exp_meta),
       metadata_ui("metadata", all_exp),
       tutorial_ui("tutorial")
@@ -102,6 +103,10 @@ RiboCrypt_app <- function(
     rv <- browser_server("browser", all_exp, without_readlengths_env, df,
                          experiments, tx, cds, libs, org, gene_name_list, rv,
                          browser_options)
+    if (nrow(all_exp_meta) > 0) {
+      browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata,
+                             names_init, browser_options)
+    }
     rv <- analysis_server("analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
             gene_name_list, rv, metadata, all_exp_meta, exp_init_meta, df_meta,

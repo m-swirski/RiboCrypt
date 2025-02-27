@@ -89,7 +89,7 @@ check_url_for_basic_parameters <- function() {
     observeEvent(session$clientData$url_hash, { # PAGE: Browsers
       # Update experiment from url api
       page <- getPageFromURL(session)
-      req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
+      req(id == page || (page == "" && id == "browser") || (page == "MegaBrowser" && id == "browser_allsamp"))
       query <- getQueryString()
 
       tag <- "dff"
@@ -139,7 +139,7 @@ check_url_for_basic_parameters <- function() {
 
     observeEvent(session$clientData$url_hash, { # PAGE: Browsers
       page <- getPageFromURL(session)
-      req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
+      req(id == page || (page == "" && id == "browser") || (page == "MegaBrowser" && id == "browser_allsamp"))
       query <- getQueryString()
       req(length(query) > 0)
       print(paste("Page:", id))
@@ -237,7 +237,7 @@ check_url_for_go_on_init <- function() {
     no_go_yet <- reactiveVal(TRUE)
     observeEvent(session$clientData$url_hash, {
       page <- getPageFromURL(session)
-      req(id == page || (page == "" && id == "browser") || (page == "MetaBrowser" && id == "browser_allsamp"))
+      req(id == page || (page == "" && id == "browser") || (page == "MegaBrowser" && id == "browser_allsamp"))
       query <- getQueryString()
       tag <- "go"
       value <- query[tag][[1]]
@@ -363,10 +363,19 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                     paste("other_tx", other_tx, sep = "="),
                     paste("add_translon", add_translons, sep = "="),
                     sep = "&")
-  if (all(!is.null(zoom_range)))
+  if (!is.null(zoom_range))
     settings <- paste(settings, paste("zoom_range", sub("\\+$", "p", zoom_range), sep = "="), sep = "&")
   prefix_url <- paste0(host, settings)
-  gene <- paste0(ifelse(!is.na(symbol) & !is.null(symbol), paste0(symbol, "-"), ""), gene_id)
+  if (!is.null(symbol)) {
+    dt <- data.table(gene_id, symbol)
+    dt[, merged_name := do.call(paste, .SD, ), .SDcols = c(2,1)]
+    dt[, merged_name := sub(" ",  "-", merged_name, fixed = TRUE)]
+    dt[, merged_name := sub("(^-)|(^NA-)",  "", merged_name, perl = TRUE)]
+    gene <- dt$merged_name
+  } else {
+    gene <- gene_id
+  }
+
   if (all(!is.null(tx_id))) tx_id <- paste0("&tx=", tx_id)
   if (all(!is.null(libraries))) libraries <- paste0("&library=", paste(libraries, collapse = ","))
 

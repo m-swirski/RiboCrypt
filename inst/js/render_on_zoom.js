@@ -45,8 +45,10 @@
         start = 1;
         end = Math.ceil(ed["width"]);
       } else {
-        start = 20;
-        end = 50;
+        let fullRange = elem.layout.xaxis.range;
+        start = Math.floor(fullRange[0]);
+        end = Math.ceil(fullRange[1]);
+
       }
 
     }

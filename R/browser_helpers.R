@@ -14,9 +14,10 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
                                            custom_regions = custom_regions,
                                            viewMode = viewMode)
   lines <- gene_model_panel[[2]]
+  layers <- max(gene_model_panel[[1]]$layers)
   gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]])
   return(list(seq_panel = seq_panel, gene_model_panel = gene_model_panel,
-              lines = lines, target_seq = target_seq))
+              lines = lines, target_seq = target_seq, annotation_layers = layers))
 }
 
 multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels,
@@ -73,25 +74,8 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                          plot_title,  width, height, export.format,
                                          zoom_range = NULL) {
   nplots <- track_panel$nplots
-  plots <- track_panel$plots
-  if (!is.null(zoom_range)) {
-    stopifnot(length(zoom_range) == 2)
-    plots_highlighted <- lapply(plots, function (p) {
-      p$x$layout$shapes <- c(
-        p$x$layout$shapes,
-        list(list(
-          type = "rect",
-          yref = "paper",  # "paper" ensures full Y-axis coverage
-          x0 = zoom_range[1], x1 = zoom_range[2],
-          y0 = 0, y1 = 1,  # Full height
-          fillcolor = "rgba(255, 255, 102, 0.18)",  # Light yellow
-          line = list(width = 0) # Remove border
-        ))
-      )
-      return(p)
-    })
-    plots <- plots_highlighted
-  }
+  plots <- browser_plots_highlighted(track_panel$plots, zoom_range)
+
 
 
   gene_model_panel <- bottom_panel$gene_model_panel
@@ -110,8 +94,6 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   if (!is.null(custom_seq_panel)) {
     plots <- c(plots, list(automateTicksX(custom_seq_panel)))
     nplots_all <- nplots + 1
-    proportions <- c(proportions, 0.07)
-    proportions <- proportions/sum(proportions)
   } else nplots_all <- nplots
 
   plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),
@@ -236,6 +218,28 @@ get_zoom_range <- function(zoom_range, display_region, max_size,
     } else zoom_range <- NULL
   }
   return(zoom_range)
+}
+
+browser_plots_highlighted <- function(plots, zoom_range, color = "rgba(255, 255, 102, 0.18)") {
+  if (!is.null(zoom_range)) {
+    stopifnot(length(zoom_range) == 2)
+    plots_highlighted <- lapply(plots, function (p) {
+      p$x$layout$shapes <- c(
+        p$x$layout$shapes,
+        list(list(
+          type = "rect",
+          yref = "paper",  # "paper" ensures full Y-axis coverage
+          x0 = zoom_range[1], x1 = zoom_range[2],
+          y0 = 0, y1 = 1,  # Full height
+          fillcolor = color,  # Light yellow
+          line = list(width = 0) # Remove border
+        ))
+      )
+      return(p)
+    })
+    plots <- plots_highlighted
+  }
+  return(plots)
 }
 
 hash_strings_browser <- function(input, dff) {

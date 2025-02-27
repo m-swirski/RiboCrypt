@@ -269,7 +269,7 @@ geneModelPanelPlot <- function(dt, frame = 1) {
                fill = dt$cols, color = "grey45") +
       geom_text(data = dt[,.(layers = layers[1], labels_locations = mean(labels_locations)),gene_names],
                 mapping = aes(y = 0.50 - layers, x = labels_locations,
-                              label = gene_names), color = "black", hjust = "center")
+                              label = gene_names), color = "black", hjust = "center", vjust = "center")
     })
 
   return(result_plot)

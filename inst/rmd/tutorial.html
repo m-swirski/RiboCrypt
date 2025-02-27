@@ -233,9 +233,9 @@ to relative reading frame</li>
 bars:</li>
 </ol>
 <ul>
-<li><p>white (start codons, ATG)</p></li>
+<li><p>white (start codon, ATG)</p></li>
 <li><p>black (stop codons, TAA | TAG | TGA)</p></li>
-<li><p>brown (custom motifs)</p>
+<li><p>brown (custom motifs, e.g. NTG all start codon alternatives)</p>
 <p>When zoomed in, the amino acid sequence is displayed within each
 frame.</p></li>
 </ul>
@@ -261,7 +261,8 @@ experiments in experiment select tab.</li>
 <li>Select an experiment: The experiments contain study names combined
 with organism (some studies are multi species, so sometimes one study
 have multiple experiments). Select which one you want. There also exist
-merged experiments (all samples merged for the organism, etc)</li>
+merged experiments (all samples merged for the organism, etc). RNA-seq
+experiments have an addition “_RNA” as suffix.</li>
 </ul>
 </div>
 <div id="gene" class="section level3">
@@ -351,33 +352,51 @@ widths.</p>
 <h2>Selection panel (Settings)</h2>
 <p>Settings tab contains additional parameters:</p>
 <ul>
-<li>5’ extension (extend viewed window upstream)</li>
-<li>3’ extension (extend viewed window downstream)</li>
-<li>Custom sequences highlight (Motif search, given in brown color,
-support IUPAC, examples: CTG or NTG)</li>
-<li>Genomic region (Browse genomic window instead of gene, syntax:
+<li><p>5’ extension (extend viewed window upstream)</p></li>
+<li><p>3’ extension (extend viewed window downstream)</p></li>
+<li><p>Custom sequences highlight (Motif search, given in brown color,
+support IUPAC, examples: CTG or NTG)</p></li>
+<li><p>Genomic region (Browse genomic window instead of gene, syntax:
 chromosome:start-stop:strand, human/mouse/zebrafish: 1:10000-20000:+ ,
 yeast: I:10000-20000:+. Both 1 and chr1 works, conversion will be done
-automatically)</li>
-<li>Genomic View (Activate/deactivate genomic view, displaying full
-introns, see Figure 3)</li>
-<li>Protein structures (If you click the annotation name of a transcript
-in the plot panel it will display the alpha-fold protein colored by the
-ribo-seq data displayed in the plot panel)</li>
-<li>Full annotation (display all transcript isoforms annotation or just
-the selected isoform)</li>
-<li>Predicted translons - display <a href="#translons">predicted
+automatically)</p></li>
+<li><p>Zoom interval (start with a zoom and highlight on a subsection):
+Either specified in tx/view coordinates, i.e. 20:50 will give zoom on
+region (20-10):(50+10) = 10:60, and a highlight color (light yellow) at
+coordinates 20:50. You can also specify in genomic coordinates as above
+for genomic region (remember the genomic coordinates must then be within
+the gene / region you are displaying).</p></li>
+<li><p>Genomic View (Activate/deactivate genomic view, displaying full
+introns, see Figure 3)</p></li>
+<li><p>Full annotation (display all transcript isoforms annotation or
+just the selected isoform)</p></li>
+<li><p>uORF annotation (display candidate uORFs in the annotation track)
+this is not the predicted set, but all possible uORFs by seqnece. For
+predicted set, check the predicted translons checkbox.</p></li>
+<li><p>Predicted translons - display <a href="#translons">predicted
 translons</a> in the annotation track. Try turning it on for the <a
 href="https://ribocrypt.org/?&amp;dff=all_merged-Homo_sapiens_modalities&amp;gene=SRD5A1-ENSG00000145545&amp;tx=ENST00000274192&amp;library=RFP&amp;frames_type=area&amp;kmer=9&amp;log_scale=FALSE&amp;extendLeaders=0&amp;extendTrailers=0&amp;viewMode=FALSE&amp;other_tx=FALSE&amp;add_uorfs=FALSE&amp;genomic_region=&amp;customSequence=&amp;phyloP=FALSE&amp;summary_track=FALSE&amp;go=TRUE">example</a>
 in Figures 1 and 2 - notice that the red (second) translon was
-missed</li>
-<li>Summary top track (Add an additional plot track on top, summarizing
-all selected libraries)</li>
-<li>Select Summary display type (same as frames display type above, but
-for the summary track)</li>
-<li>Export format (Choose plot export format from plotly controls. The
-default is svg vector graphics that allows for high
-customizability)</li>
+missed</p></li>
+<li><p>Log scale (Log scale the coverage, reduces effect of extreme
+peaks)</p></li>
+<li><p>Protein structures (If you click the annotation name of a
+transcript in the plot panel it will display the alpha-fold protein
+colored by the ribo-seq data displayed in the plot panel)</p></li>
+<li><p>PhyloP (PhyloP conservation track will be added on the
+bottom)</p></li>
+<li><p>Split color frame (Split riboseq signal into colors by frame)
+i.e. red, green and blue. If this is on, then Ribo-seq and Ti-seq will
+be displayed with colors split by frame.</p></li>
+<li><p>Summary top track (Add an additional plot track on top,
+summarizing all selected libraries)</p></li>
+<li><p>Select Summary display type (same as frames display type above,
+but for the summary track)</p></li>
+<li><p>Export format (Choose plot export format from plotly controls.
+The default is svg vector graphics that allows for high
+customizability)</p></li>
+<li><p>Plot (red button, render selected gene/region as plotly html,
+with specified settings)</p></li>
 </ul>
 <p>Uniquely, RiboCrypt allows for toggling between transcriptomic and
 genomic views, while displaying coding exons in colors according to the
@@ -397,6 +416,86 @@ genes.</p>
 </div>
 <div id="section" class="section level2">
 <h2></h2>
+</div>
+</div>
+<div id="mbrowser" class="section level1">
+<h1>Mega Browser</h1>
+<p>Display all samples for a specific organism over selected gene (Fig.
+5). This tab does not use bigwig files to load (as that would be very
+slow). It uses precomputed fst files of coverage over all libraries.
+Note: Not all isoforms are computed, by default the longest isoform is
+computed.</p>
+<p><img src="../images/tutorial_fig5.png" width="1000px" height="500px" style="display: block; margin: auto auto auto 0;" /></p>
+<p>Figure 5. Heatmap of thousands of libraries coverage over ATF4
+transcript. Clustered using k-means = 2, with summary track displayed on
+top.</p>
+<div id="selection-panel-browser-1" class="section level2">
+<h2>Selection panel (Browser)</h2>
+<p>Organism, experiment and gene explained above</p>
+<ul>
+<li>Group on: the metadata column to order plot by</li>
+<li>K-means clusters: How many k-means clusters to use, if &gt; 1, Group
+will be sorted within the clusters, but K-means have priority.</li>
+</ul>
+</div>
+<div id="selection-panel-settings-1" class="section level2">
+<h2>Selection panel (Settings)</h2>
+<ul>
+<li>Normalization (all scores are tpm normalized and log scaled)
+<ul>
+<li>transcriptNormalized (each sample counts sum to 1) (default)</li>
+<li>Max normalized (each position count divided by maximum)</li>
+<li>zscore (zscore normalization, (count * mean / sd) variance scaled
+normalization)</li>
+<li>tpm (raw tpm of counts, is very sensitive to extreme peaks)</li>
+</ul></li>
+<li>Color theme: Which color theme to use</li>
+<li>Color scale multiplier: how much to amplify the color signal (if all
+is single color, try to reduce or increase this depending on which color
+is the majority)</li>
+<li>Sort by other gene: Sort heatmap on expression of another gene
+(increasing). A line plot will be shown left that display the expression
+of that other gene per row. Also the enrichment analysis is done on bins
+of the other genes expression instead of metadata term.</li>
+<li>Summary top track (same as in browser, the aggregate of all rows,
+useful to see the frame information, which is not represented in the
+heatmap)</li>
+<li>Split by frame: (Not active yet!): When completed will display the
+heatmap with frame information, so rgb colors from white to dark red
+etc.</li>
+<li>Summary display type: Same as in browser</li>
+<li>Region to view: By default uses entire transcript. Can subset to
+only view cds or leader+cds etc.</li>
+<li>Select a transcript: Which transcript isoforms not all isoforms have
+computed fsts. By default the longest isoforms have been computed for
+all genes.</li>
+<li>K-mer length: Smoothens out the signal by applying a mean sliding
+window, default 1 (off)</li>
+</ul>
+</div>
+<div id="statistics-tab" class="section level2">
+<h2>Statistics tab</h2>
+<p>This tab gives the statistics of over representation analysis per
+cluster of the metabrowser plot. Using chi squared test, it gives the
+residuals per term from metadata (like tissue, cell-line etc). If a
+value is bigger than +/- 3, it means it is quite certain this is over
+represented. This is shown as a red line.</p>
+<p>If no clustering was applied, this tab gives the number of items per
+metadata term (40 brain samples, 30 kidney samples etc).</p>
+</div>
+<div id="requirements" class="section level2">
+<h2>Requirements</h2>
+<p>This mode is very intensive on CPU, so it requires certain
+pre-computed results for the back end. That is namely: - Premade
+collection experiments (an ORFik experiment of all experiments per
+organism) - Premade collection count table and library sizes (for
+normalizations purpose) - Premade fst serialized coverage calculation
+per gene (for instant loading of coverage over thousands of
+libraries)</p>
+<p>Note that on the live app, the human collection (4000 Ribo-seq
+samples) takes around 30 seconds to plot for a ~ 2K nucleotides gene,
+~99% of the time is spent on rendering the plot, not actual computation.
+Future investigation into optimization will be done.</p>
 </div>
 </div>
 <div id="analysis" class="section level1">
@@ -436,7 +535,7 @@ peaks)</li>
 <li>Max readlength The maximum readlength to display</li>
 </ul>
 </div>
-<div id="selection-panel-settings-1" class="section level3">
+<div id="selection-panel-settings-2" class="section level3">
 <h3>Selection panel (settings)</h3>
 <p>Here additional options are shown:</p>
 <ul>
@@ -516,7 +615,7 @@ robust version, but only works for experiments with valid experimental
 design (i.e. design matrix must be full ranked, see deseq2 tutorial for
 details!) - Select two conditions (which 2 factors to group by)</p>
 </div>
-<div id="selection-panel-settings-2" class="section level3">
+<div id="selection-panel-settings-3" class="section level3">
 <h3>Selection panel (settings)</h3>
 <ul>
 <li>draw unregulated (show dots for unregulated genes, makes it much
@@ -526,86 +625,6 @@ only!)</li>
 <li>P-value (sliding bar for p-value cutoff, default 0.05)</li>
 <li>export format for plot (explained above)</li>
 </ul>
-</div>
-</div>
-<div id="mbrowser" class="section level2">
-<h2>Meta Browser</h2>
-<p>Display all samples for a specific organism over selected gene (Fig.
-5). This tab does not use bigwig files to load (as that would be very
-slow). It uses precomputed fst files of coverage over all libraries.
-Note: Not all isoforms are computed, by default the longest isoform is
-computed.</p>
-<p><img src="../images/tutorial_fig5.png" width="1000px" height="500px" style="display: block; margin: auto auto auto 0;" /></p>
-<p>Figure 5. Heatmap of thousands of libraries coverage over ATF4
-transcript. Clustered using k-means = 2, with summary track displayed on
-top.</p>
-<div id="selection-panel-browser-1" class="section level3">
-<h3>Selection panel (Browser)</h3>
-<p>Organism, experiment and gene explained above</p>
-<ul>
-<li>Group on: the metadata column to order plot by</li>
-<li>K-means clusters: How many k-means clusters to use, if &gt; 1, Group
-will be sorted within the clusters, but K-means have priority.</li>
-</ul>
-</div>
-<div id="selection-panel-settings-3" class="section level3">
-<h3>Selection panel (Settings)</h3>
-<ul>
-<li>Normalization (all scores are tpm normalized and log scaled)
-<ul>
-<li>transcriptNormalized (each sample counts sum to 1) (default)</li>
-<li>Max normalized (each position count divided by maximum)</li>
-<li>zscore (zscore normalization, (count * mean / sd) variance scaled
-normalization)</li>
-<li>tpm (raw tpm of counts, is very sensitive to extreme peaks)</li>
-</ul></li>
-<li>Color theme: Which color theme to use</li>
-<li>Color scale multiplier: how much to amplify the color signal (if all
-is single color, try to reduce or increase this depending on which color
-is the majority)</li>
-<li>Sort by other gene: Sort heatmap on expression of another gene
-(increasing). A line plot will be shown left that display the expression
-of that other gene per row. Also the enrichment analysis is done on bins
-of the other genes expression instead of metadata term.</li>
-<li>Summary top track (same as in browser, the aggregate of all rows,
-useful to see the frame information, which is not represented in the
-heatmap)</li>
-<li>Split by frame: (Not active yet!): When completed will display the
-heatmap with frame information, so rgb colors from white to dark red
-etc.</li>
-<li>Summary display type: Same as in browser</li>
-<li>Region to view: By default uses entire transcript. Can subset to
-only view cds or leader+cds etc.</li>
-<li>Select a transcript: Which transcript isoforms not all isoforms have
-computed fsts. By default the longest isoforms have been computed for
-all genes.</li>
-<li>K-mer length: Smoothens out the signal by applying a mean sliding
-window, default 1 (off)</li>
-</ul>
-</div>
-<div id="statistics-tab" class="section level3">
-<h3>Statistics tab</h3>
-<p>This tab gives the statistics of over representation analysis per
-cluster of the metabrowser plot. Using chi squared test, it gives the
-residuals per term from metadata (like tissue, cell-line etc). If a
-value is bigger than +/- 3, it means it is quite certain this is over
-represented. This is shown as a red line.</p>
-<p>If no clustering was applied, this tab gives the number of items per
-metadata term (40 brain samples, 30 kidney samples etc).</p>
-</div>
-<div id="requirements" class="section level3">
-<h3>Requirements</h3>
-<p>This mode is very intensive on CPU, so it requires certain
-pre-computed results for the back end. That is namely: - Premade
-collection experiments (an ORFik experiment of all experiments per
-organism) - Premade collection count table and library sizes (for
-normalizations purpose) - Premade fst serialized coverage calculation
-per gene (for instant loading of coverage over thousands of
-libraries)</p>
-<p>Note that on the live app, the human collection (4000 Ribo-seq
-samples) takes around 30 seconds to plot for a ~ 2K nucleotides gene,
-~99% of the time is spent on rendering the plot, not actual computation.
-Future investigation into optimization will be done.</p>
 </div>
 </div>
 <div id="read-length-qc" class="section level2">
@@ -677,8 +696,10 @@ counts</p>
 </div>
 <div id="translon" class="section level2">
 <h2>Predicted translons</h2>
-<p>Full list of predicted translons on all_merged tracks per
-species.</p>
+<p>Full list of predicted translons on all_merged tracks per species.
+Each translons has a link that directs you to the browser tab and
+displays the transcript zoomed in on the translons with a light yellow
+highlighting of the region.</p>
 <div id="settings" class="section level3">
 <h3>Settings:</h3>
 <p>Translon annotation scheme:</p>
@@ -764,14 +785,15 @@ class="uri">https://ribocrypt.org/</a> (This leads to browser page)</p>
 list is the following:</p>
 <ul>
 <li>broser page (/ or /#browser)</li>
+<li>MegaBrowser (/#MegaBrowser)</li>
 <li>heatmap (/#heatmap)</li>
 <li>codon (/#codon)</li>
 <li>Differential expression (/#Differential expression)</li>
 <li>Periodicity plot (/#periodicity)</li>
 <li>fastq QC report (/#fastq)</li>
-<li>MetaBrowser (/#MetaBrowser)</li>
 <li>SRA search (/#SRA search)</li>
 <li>Studies supported (/#Studies)</li>
+<li>Predicted Translons (/#Predicted Translons)</li>
 <li>This tutorial (/#tutorial)</li>
 </ul>
 <p>Example: <a href="https://ribocrypt.org/#tutorial"
@@ -809,9 +831,15 @@ happen)</li>
 <li>extendLeaders=100 (extend 100 nt upstream of 5’ UTR / Leader)</li>
 <li>extendTrailers=100 (extend 100 nt downstream of 3’ UTR /
 Trailer)</li>
-<li>viewMode=TRUE (Genomic coordinates, i.e. with introns)</li>
+<li>viewMode=FALSE (If TRUE, Genomic coordinates, i.e. with
+introns)</li>
 <li>other_tx=TRUE (Full annotation, show transcript graph for all
 genes/isoforms in area)</li>
+<li>add_translon=FALSE (TRUE makes predicted translons be
+displayed)</li>
+<li>zoom_region: format tx coord: 20:50, format genomic coord:
+1:2000-3000:p;1:4000:5000:p (p is converted to +, as url does not
+support +)</li>
 <li>#browser (open browser window)</li>
 </ul>
 </div>

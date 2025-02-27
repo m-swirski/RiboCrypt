@@ -264,6 +264,86 @@ genes.
 
 ## 
 
+# Mega Browser {#mbrowser}
+
+Display all samples for a specific organism over selected gene (Fig. 5).
+This tab does not use bigwig files to load (as that would be very slow).
+It uses precomputed fst files of coverage over all libraries. Note: Not
+all isoforms are computed, by default the longest isoform is computed.
+
+```{r, echo = FALSE, out.width = "1000px", out.height="500px", fig.align="left"}
+knitr::include_graphics("../images/tutorial_fig5.png")
+```
+
+Figure 5. Heatmap of thousands of libraries coverage over ATF4
+transcript. Clustered using k-means = 2, with summary track displayed on
+top.
+
+## Selection panel (Browser)
+
+Organism, experiment and gene explained above
+
+-   Group on: the metadata column to order plot by
+-   K-means clusters: How many k-means clusters to use, if \> 1, Group
+    will be sorted within the clusters, but K-means have priority.
+
+## Selection panel (Settings)
+
+-   Normalization (all scores are tpm normalized and log scaled)
+    -   transcriptNormalized (each sample counts sum to 1) (default)
+    -   Max normalized (each position count divided by maximum)
+    -   zscore (zscore normalization, (count \* mean / sd) variance
+        scaled normalization)
+    -   tpm (raw tpm of counts, is very sensitive to extreme peaks)
+-   Color theme: Which color theme to use
+-   Color scale multiplier: how much to amplify the color signal (if all
+    is single color, try to reduce or increase this depending on which
+    color is the majority)
+-   Sort by other gene: Sort heatmap on expression of another gene
+    (increasing). A line plot will be shown left that display the
+    expression of that other gene per row. Also the enrichment analysis
+    is done on bins of the other genes expression instead of metadata
+    term.
+-   Summary top track (same as in browser, the aggregate of all rows,
+    useful to see the frame information, which is not represented in the
+    heatmap)
+-   Split by frame: (Not active yet!): When completed will display the
+    heatmap with frame information, so rgb colors from white to dark red
+    etc.
+-   Summary display type: Same as in browser
+-   Region to view: By default uses entire transcript. Can subset to
+    only view cds or leader+cds etc.
+-   Select a transcript: Which transcript isoforms not all isoforms have
+    computed fsts. By default the longest isoforms have been computed
+    for all genes.
+-   K-mer length: Smoothens out the signal by applying a mean sliding
+    window, default 1 (off)
+
+## Statistics tab
+
+This tab gives the statistics of over representation analysis per
+cluster of the metabrowser plot. Using chi squared test, it gives the
+residuals per term from metadata (like tissue, cell-line etc). If a
+value is bigger than +/- 3, it means it is quite certain this is over
+represented. This is shown as a red line.
+
+If no clustering was applied, this tab gives the number of items per
+metadata term (40 brain samples, 30 kidney samples etc).
+
+## Requirements
+
+This mode is very intensive on CPU, so it requires certain pre-computed
+results for the back end. That is namely: - Premade collection
+experiments (an ORFik experiment of all experiments per organism) -
+Premade collection count table and library sizes (for normalizations
+purpose) - Premade fst serialized coverage calculation per gene (for
+instant loading of coverage over thousands of libraries)
+
+Note that on the live app, the human collection (4000 Ribo-seq samples)
+takes around 30 seconds to plot for a \~ 2K nucleotides gene, \~99% of
+the time is spent on rendering the plot, not actual computation. Future
+investigation into optimization will be done.
+
 # Analysis
 
 Here we collect the analysis possibilities, which are usually operating
@@ -382,85 +462,6 @@ details!) - Select two conditions (which 2 factors to group by)
 -   P-value (sliding bar for p-value cutoff, default 0.05)
 -   export format for plot (explained above)
 
-## Mega Browser {#mbrowser}
-
-Display all samples for a specific organism over selected gene (Fig. 5).
-This tab does not use bigwig files to load (as that would be very slow).
-It uses precomputed fst files of coverage over all libraries. Note: Not
-all isoforms are computed, by default the longest isoform is computed.
-
-```{r, echo = FALSE, out.width = "1000px", out.height="500px", fig.align="left"}
-knitr::include_graphics("../images/tutorial_fig5.png")
-```
-
-Figure 5. Heatmap of thousands of libraries coverage over ATF4
-transcript. Clustered using k-means = 2, with summary track displayed on
-top.
-
-### Selection panel (Browser)
-
-Organism, experiment and gene explained above
-
--   Group on: the metadata column to order plot by
--   K-means clusters: How many k-means clusters to use, if \> 1, Group
-    will be sorted within the clusters, but K-means have priority.
-
-### Selection panel (Settings)
-
--   Normalization (all scores are tpm normalized and log scaled)
-    -   transcriptNormalized (each sample counts sum to 1) (default)
-    -   Max normalized (each position count divided by maximum)
-    -   zscore (zscore normalization, (count \* mean / sd) variance
-        scaled normalization)
-    -   tpm (raw tpm of counts, is very sensitive to extreme peaks)
--   Color theme: Which color theme to use
--   Color scale multiplier: how much to amplify the color signal (if all
-    is single color, try to reduce or increase this depending on which
-    color is the majority)
--   Sort by other gene: Sort heatmap on expression of another gene
-    (increasing). A line plot will be shown left that display the
-    expression of that other gene per row. Also the enrichment analysis
-    is done on bins of the other genes expression instead of metadata
-    term.
--   Summary top track (same as in browser, the aggregate of all rows,
-    useful to see the frame information, which is not represented in the
-    heatmap)
--   Split by frame: (Not active yet!): When completed will display the
-    heatmap with frame information, so rgb colors from white to dark red
-    etc.
--   Summary display type: Same as in browser
--   Region to view: By default uses entire transcript. Can subset to
-    only view cds or leader+cds etc.
--   Select a transcript: Which transcript isoforms not all isoforms have
-    computed fsts. By default the longest isoforms have been computed
-    for all genes.
--   K-mer length: Smoothens out the signal by applying a mean sliding
-    window, default 1 (off)
-
-### Statistics tab
-
-This tab gives the statistics of over representation analysis per
-cluster of the metabrowser plot. Using chi squared test, it gives the
-residuals per term from metadata (like tissue, cell-line etc). If a
-value is bigger than +/- 3, it means it is quite certain this is over
-represented. This is shown as a red line.
-
-If no clustering was applied, this tab gives the number of items per
-metadata term (40 brain samples, 30 kidney samples etc).
-
-### Requirements
-
-This mode is very intensive on CPU, so it requires certain pre-computed
-results for the back end. That is namely: - Premade collection
-experiments (an ORFik experiment of all experiments per organism) -
-Premade collection count table and library sizes (for normalizations
-purpose) - Premade fst serialized coverage calculation per gene (for
-instant loading of coverage over thousands of libraries)
-
-Note that on the live app, the human collection (4000 Ribo-seq samples)
-takes around 30 seconds to plot for a \~ 2K nucleotides gene, \~99% of
-the time is spent on rendering the plot, not actual computation. Future
-investigation into optimization will be done.
 
 ## Read length (QC)
 
@@ -533,6 +534,9 @@ Full table of supported studies with information about sample counts
 ## Predicted translons {#translon}
 
 Full list of predicted translons on all_merged tracks per species.
+Each translons has a link that directs you to the browser tab
+and displays the transcript zoomed in on the translons with
+a light yellow highlighting of the region.
 
 ### Settings:
 
@@ -609,14 +613,15 @@ Page selection is done with "\#" followed by the page short name, the
 list is the following:
 
 -   broser page (/ or /#browser)
+-   MegaBrowser (/#MegaBrowser)
 -   heatmap (/#heatmap)
 -   codon (/#codon)
 -   Differential expression (/#Differential expression)
 -   Periodicity plot (/#periodicity)
 -   fastq QC report (/#fastq)
--   MetaBrowser (/#MetaBrowser)
 -   SRA search (/#SRA search)
 -   Studies supported (/#Studies)
+-   Predicted Translons (/#Predicted Translons)
 -   This tutorial (/#tutorial)
 
 Example: <https://ribocrypt.org/#tutorial> sends you to this tutorial
@@ -650,9 +655,12 @@ A more complicated call would be:
     happen)
 -   extendLeaders=100 (extend 100 nt upstream of 5' UTR / Leader)
 -   extendTrailers=100 (extend 100 nt downstream of 3' UTR / Trailer)
--   viewMode=TRUE (Genomic coordinates, i.e. with introns)
+-   viewMode=FALSE (If TRUE, Genomic coordinates, i.e. with introns)
 -   other_tx=TRUE (Full annotation, show transcript graph for all
     genes/isoforms in area)
+-   add_translon=FALSE (TRUE makes predicted translons be displayed)
+-   zoom_region: format tx coord: 20:50, format genomic coord: 1:2000-3000:p;1:4000:5000:p 
+    (p is converted to +, as url does not support +)
 -   #browser (open browser window)
 
 ## About

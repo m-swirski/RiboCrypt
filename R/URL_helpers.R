@@ -1,5 +1,21 @@
-getPageFromURL <- function(session = NULL, url = session$clientData$url_hash) {
-  utils::URLdecode(sub("#", "", session$clientData$url_hash))
+#' Make URL from shiny reactive input
+#' @noRd
+make_url_from_inputs <- function(input, session) {
+  host <- getHostFromURL(session)
+  parameters <- make_url_from_inputs_parameters()
+  page <- getPageFromURL(session, with_hash = TRUE)
+
+  # Now combine
+  url <- paste0(host, parameters, page)
+  print(paste("URL:", url))
+  return(url)
+}
+
+getPageFromURL <- function(session = NULL, url = session$clientData$url_hash,
+                           with_hash = FALSE) {
+  page <- utils::URLdecode(sub("#", "", session$clientData$url_hash))
+  if (with_hash) page <- ifelse(page == "", "", paste0("#", page))
+  return(page)
 }
 
 getHostFromURL <- function(session) {
@@ -7,41 +23,31 @@ getHostFromURL <- function(session) {
   if (host != "ribocrypt.org") {
     host <- paste0("http://", host, ":", session$clientData$url_port)
   }
+  return(host)
 }
 
-#' Make URL from shiny reactive input
-#' @noRd
-make_url_from_inputs <- function(input, session) {
-  host <- getHostFromURL(session)
-  settings <- "/?"
-  settings <- paste(settings,
-                    paste("dff", input$dff, sep = "="),
-                    paste("gene", input$gene, sep = "="),
-                    paste("tx", input$tx, sep = "="),
-                    paste("library", paste(input$library, collapse = ","), sep = "="),
-                    paste("frames_type", input$frames_type, sep = "="),
-                    paste("kmer", input$kmer, sep = "="),
-                    paste("log_scale", input$log_scale, sep = "="),
-                    paste("extendLeaders", input$extendLeaders, sep = "="),
-                    paste("extendTrailers", input$extendTrailers, sep = "="),
-                    paste("viewMode", input$viewMode, sep = "="),
-                    paste("other_tx", input$other_tx, sep = "="),
-                    paste("add_uorfs", input$add_uorfs, sep = "="),
-                    paste("add_translon", input$add_translon, sep = "="),
-                    paste("genomic_region", sub("\\+;", "p;", sub("\\+$", "p", input$genomic_region)), sep = "="),
-                    paste("zoom_range", sub("\\+$", "p", input$zoom_range), sep = "="),
-                    paste("customSequence", input$customSequence, sep = "="),
-                    paste("phyloP", input$phyloP, sep = "="),
-                    paste("summary_track", input$summary_track, sep = "="),
-                    paste("go", "TRUE", sep = "="),
-                    sep = "&")
-
-  page <- getPageFromURL(session)
-  page <- ifelse(page == "", "", paste0("#", page))
-  # Now combine
-  url <- paste0(host, settings, page)
-  print(paste("URL:", url))
-  return(url)
+make_url_from_inputs_parameters <-function(go = TRUE, settings = "/?") {
+  paste(settings,
+        paste("dff", input$dff, sep = "="),
+        paste("gene", input$gene, sep = "="),
+        paste("tx", input$tx, sep = "="),
+        paste("library", paste(input$library, collapse = ","), sep = "="),
+        paste("frames_type", input$frames_type, sep = "="),
+        paste("kmer", input$kmer, sep = "="),
+        paste("log_scale", input$log_scale, sep = "="),
+        paste("extendLeaders", input$extendLeaders, sep = "="),
+        paste("extendTrailers", input$extendTrailers, sep = "="),
+        paste("viewMode", input$viewMode, sep = "="),
+        paste("other_tx", input$other_tx, sep = "="),
+        paste("add_uorfs", input$add_uorfs, sep = "="),
+        paste("add_translon", input$add_translon, sep = "="),
+        paste("genomic_region", sub("\\+;", "p;", sub("\\+$", "p", input$genomic_region)), sep = "="),
+        paste("zoom_range", sub("\\+$", "p", input$zoom_range), sep = "="),
+        paste("customSequence", input$customSequence, sep = "="),
+        paste("phyloP", input$phyloP, sep = "="),
+        paste("summary_track", input$summary_track, sep = "="),
+        paste("go", go, sep = "="),
+        sep = "&")
 }
 
 clipboard_url_button <- function(input, session) {
@@ -350,6 +356,7 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                         plot_on_start = TRUE, frames_type = "columns", kmer=1,
                         add_translons = FALSE, zoom_range = NULL,
                         host = "https://ribocrypt.org") {
+  # TODO: Update to use input function above, to avoid writing twice
   if (any(is.null(symbol) & is.null(gene_id)))
     stop("At least on of symbol and gene_id must be defined!")
   settings <- "/?"

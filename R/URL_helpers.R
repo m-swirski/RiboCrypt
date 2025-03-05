@@ -20,15 +20,15 @@ getPageFromURL <- function(session = NULL, url = session$clientData$url_hash,
 
 getHostFromURL <- function(session) {
   host <- session$clientData$url_hostname
-  if (host != "ribocrypt.org") {
+  if (!(host %in% c("ribocrypt.org", "https://ribocrypt.org"))) {
     host <- paste0("http://", host, ":", session$clientData$url_port)
   }
   return(host)
 }
 
 make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
-  paste(settings,
-        paste("dff", input$dff, sep = "="),
+  paste0(settings,
+  paste(paste("dff", input$dff, sep = "="),
         paste("gene", input$gene, sep = "="),
         paste("tx", input$tx, sep = "="),
         paste("library", paste(input$library, collapse = ","), sep = "="),
@@ -47,7 +47,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
         paste("phyloP", input$phyloP, sep = "="),
         paste("summary_track", input$summary_track, sep = "="),
         paste("go", go, sep = "="),
-        sep = "&")
+        sep = "&"))
 }
 
 clipboard_url_button <- function(input, session) {

@@ -20,10 +20,11 @@ getPageFromURL <- function(session = NULL, url = session$clientData$url_hash,
 
 getHostFromURL <- function(session) {
   host <- session$clientData$url_hostname
-  if (!(host %in% c("ribocrypt.org", "https://ribocrypt.org"))) {
+  if (host == "ribocrypt.org") {
+    host <- paste0("https://", host)
+  } else { # Else local user / other server
     host <- paste0("http://", host, ":", session$clientData$url_port)
   }
-  host <- gsub("ribocrypt.org/ribocrypt.org", "ribocrypt.org", host)
   return(host)
 }
 

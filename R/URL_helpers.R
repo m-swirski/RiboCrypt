@@ -2,7 +2,7 @@
 #' @noRd
 make_url_from_inputs <- function(input, session) {
   host <- getHostFromURL(session)
-  parameters <- make_url_from_inputs_parameters()
+  parameters <- make_url_from_inputs_parameters(input)
   page <- getPageFromURL(session, with_hash = TRUE)
 
   # Now combine
@@ -26,7 +26,7 @@ getHostFromURL <- function(session) {
   return(host)
 }
 
-make_url_from_inputs_parameters <-function(go = TRUE, settings = "/?") {
+make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
   paste(settings,
         paste("dff", input$dff, sep = "="),
         paste("gene", input$gene, sep = "="),

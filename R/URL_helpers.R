@@ -15,7 +15,6 @@ getPageFromURL <- function(session = NULL, url = session$clientData$url_hash,
                            with_hash = FALSE) {
   page <- utils::URLdecode(sub("#", "", session$clientData$url_hash))
   if (with_hash) page <- ifelse(page == "", "", paste0("#", page))
-  page <- gsub("ribocrypt.org/ribocrypt.org", "ribocrypt.org", page)
   return(page)
 }
 
@@ -24,6 +23,7 @@ getHostFromURL <- function(session) {
   if (!(host %in% c("ribocrypt.org", "https://ribocrypt.org"))) {
     host <- paste0("http://", host, ":", session$clientData$url_port)
   }
+  host <- gsub("ribocrypt.org/ribocrypt.org", "ribocrypt.org", host)
   return(host)
 }
 

@@ -67,7 +67,7 @@ generate_filename <- function(df, format, show_message = TRUE) {
 }
 
 # Generalized function to render the DT table.
-render_translon_datatable <- function(data, session, add_links = T) {
+render_translon_datatable <- function(data, session, add_links = TRUE) {
   # Add URL
   if (add_links) {
     host <- getHostFromURL(session) #"https://ribocrypt.org"

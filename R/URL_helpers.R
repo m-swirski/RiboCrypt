@@ -15,6 +15,7 @@ getPageFromURL <- function(session = NULL, url = session$clientData$url_hash,
                            with_hash = FALSE) {
   page <- utils::URLdecode(sub("#", "", session$clientData$url_hash))
   if (with_hash) page <- ifelse(page == "", "", paste0("#", page))
+  page <- gsub("ribocrypt.org/ribocrypt.org", "ribocrypt.org", page)
   return(page)
 }
 
@@ -360,8 +361,8 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
   if (any(is.null(symbol) & is.null(gene_id)))
     stop("At least on of symbol and gene_id must be defined!")
   settings <- "/?"
-  settings <- paste(settings,
-                    paste("dff", exp, sep = "="),
+  settings <- paste0(settings,
+                    paste(paste("dff", exp, sep = "="),
                     paste("frames_type", frames_type, sep = "="),
                     paste("kmer", kmer, sep = "="),
                     paste("extendLeaders", leader_extension, sep = "="),
@@ -369,7 +370,7 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                     paste("viewMode", viewMode, sep = "="),
                     paste("other_tx", other_tx, sep = "="),
                     paste("add_translon", add_translons, sep = "="),
-                    sep = "&")
+                    sep = "&"))
   if (!is.null(zoom_range)){
     zoom_range <- sub("\\+;", "p;", sub("\\+$", "p", zoom_range))
     settings <- paste(settings, paste("zoom_range", zoom_range, sep = "="), sep = "&")

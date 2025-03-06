@@ -82,8 +82,8 @@ frame_type_select <- function(ns, name = "frames_type",
 }
 
 frame_subsetter_select <- function(ns, name = "frames_subset",
-                                   label = "Subset to frame color",
-                                   selected = "all") {
+                                   label = "Subset frames",
+                                   selected = NULL) {
   selectizeInput(
     inputId = ns(name),
     label = label,

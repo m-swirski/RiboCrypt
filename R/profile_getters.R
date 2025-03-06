@@ -84,10 +84,10 @@ getProfileWrapper <- function(display_range, reads, withFrames, kmers = 1, log_s
 
   if (withFrames) {
     profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
-    if (frames_subset != "all") {
+    if (all(frames_subset != "all")) {
       color_options <- c("red", "green", "blue")
       frame_to_use <- which(color_options %in% frames_subset) - 1
-      profile <- profile[frame != frame_to_use, count := 0]
+      profile <- profile[!(frame %in% frame_to_use), count := 0]
     }
   } else {
     profile <- getCoverageProfile(display_range, reads, kmers, kmers_type = kmers_type)

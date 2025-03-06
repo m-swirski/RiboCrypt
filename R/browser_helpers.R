@@ -48,7 +48,7 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels
 }
 
 multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
-                                        kmers_type, frames_type,
+                                        kmers_type, frames_type, frames_subset,
                                         withFrames, log_scale, BPPARAM) {
   force(display_range)
   force(reads)
@@ -57,12 +57,16 @@ multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
   force(frames_type)
   force(withFrames)
   force(log_scale)
+  force(frames_subset)
   if (is(BPPARAM, "SerialParam")) {
-    profiles <- mapply(function(x,y,c,l) getProfileWrapper(display_range, x,y,c,l,kmers_type, type = frames_type),
+    profiles <- mapply(function(x,y,c,l) getProfileWrapper(display_range, x, y, c, l, kmers_type,
+                                                           type = frames_type, frames_subset = frames_subset),
                        reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE)
   } else {
-    profiles <- bpmapply(function(x,y,c,l) getProfileWrapper(display_range, x,y,c,l,kmers_type, type = frames_type),
-                         reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+    profiles <- bpmapply(function(x,y,c,l) getProfileWrapper(display_range, x,y,c,l, kmers_type,
+                                                             type = frames_type, frames_subset = frames_subset),
+                         reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE,
+                         BPPARAM = BPPARAM)
   }
   return(profiles)
 }
@@ -254,7 +258,6 @@ hash_strings_browser <- function(input, dff) {
                        input$extendTrailers, input$extendLeaders,
                        input$genomic_region, input$viewMode,
                        input$customSequence, input$phyloP,
-                       input$zoom_range,
                        collapse = "|_|")
   # Until plot and coverage is split (bottom must be part of browser hash)
   hash_browser <- paste(hash_bottom,
@@ -262,7 +265,8 @@ hash_strings_browser <- function(input, dff) {
                         input$plot_export_format,
                         input$summary_track, input$summary_track_type,
                         input$kmer, input$frames_type, input$withFrames,
-                        input$log_scale, collapse = "|_|")
+                        input$log_scale, input$zoom_range, input$frames_subset,
+                        collapse = "|_|")
   hash_expression <- paste(full_names, input$tx,
                            input$expression_plot, input$extendTrailers,
                            input$extendLeaders, collapse = "|_|")

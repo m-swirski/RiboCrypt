@@ -50,6 +50,7 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    checkboxInput(ns("withFrames"), label = "Split color Frames", value = TRUE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
+                   frame_subsetter_select(ns),
                    uiOutput(ns("clip")),
                    export_format_of_plot(ns)
           )

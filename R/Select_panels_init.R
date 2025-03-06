@@ -81,6 +81,19 @@ frame_type_select <- function(ns, name = "frames_type",
     helper(onclick = "fakeClick('tutorial', 'linetype')")
 }
 
+frame_subsetter_select <- function(ns, name = "frames_subset",
+                                   label = "Subset to frame color",
+                                   selected = "all") {
+  selectizeInput(
+    inputId = ns(name),
+    label = label,
+    choices = c("all", "red", "green", "blue"),
+    selected = selected,
+    multiple = TRUE
+  ) %>%
+    helper(onclick = "fakeClick('tutorial', 'settings')")
+}
+
 region_view_select <- function(ns, name, label,
                                selected = "mrna") {
   selectizeInput(

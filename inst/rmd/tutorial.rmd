@@ -195,7 +195,7 @@ knitr::include_graphics("../images/tutorial_fig2.png")
 
 Figure 2. Comparison of display types and smoothing window widths.
 
-## Selection panel (Settings)
+## Selection panel (Settings) {#settings}
 
 Settings tab contains additional parameters:
 
@@ -234,6 +234,8 @@ Settings tab contains additional parameters:
 -   Split color frame (Split riboseq signal into colors by frame) 
     i.e. red, green and blue. If this is on, then Ribo-seq and 
     Ti-seq will be displayed with colors split by frame.
+-   Frames subset (If split color frame is TRUE, 
+    you can display only wanted color)
 -   Summary top track (Add an additional plot track on top, summarizing
     all selected libraries)
 -   Select Summary display type (same as frames display type above, but

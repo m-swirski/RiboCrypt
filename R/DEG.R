@@ -71,15 +71,18 @@ DE_model_results <- function(dt, controls) {
 #' @examples
 #' # Load experiment
 #' df <- ORFik.template.experiment()
+#' df_rna <- df[df$libtype == "RNA",]
 #' # 1 Dimensional analysis
-#' dt <- DEG.analysis(df[df$libtype == "RNA",])
+#' dt <- DEG.analysis(df_rna)
 #' dt$Regulation[1] <- "Significant" # Fake sig level
 #' DEG_plot(dt, draw_non_regulated = TRUE)
 #' # 2 Dimensional analysis
-#' dt_2d <- DTEG.analysis(df[df$libtype == "RFP",], df[df$libtype == "RNA",],
-#'                     output.dir = NULL)
+#' df_rfp <- df[df$libtype == "RFP",]
+#' dt_2d <- DTEG.analysis(df_rfp, df_rna, output.dir = NULL)
 #' dt_2d$Regulation[4] <- "Translation" # Fake sig level
+#' dt_2d$rfp.lfc[4] <- -0.3 # Fake sig level
 #' dt_2d$Regulation[5] <- "Buffering" # Fake sig level
+#' dt_2d$rna.lfc[5] <- -0.3 # Fake sig level
 #' DEG_plot(dt_2d, draw_non_regulated = TRUE)
 DEG_plot <- function(dt, draw_non_regulated = FALSE,
                      xlim = ifelse(two_dimensions, "bidir.max", "auto"),
@@ -135,7 +138,6 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
 
    #vis <- ifelse(unique(dt$Regulation) == "", TRUE, "legendonly") #add_trace(visible = vis)
   #removed partial_bundle() - it's incompatible with shiny
-   # removed toWebGL() - it's incompatible with animations
    select <- highlight(
      ggplotly(gg, tooltip = hovertip) %>%
        layout(autosize = TRUE),
@@ -151,6 +153,10 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
 
 DEG_plot_input_validation <- function() {
   with(rlang::caller_env(), {
+    colnames(dt)[colnames(dt) == "rna.lfc"] <- "rna"
+    colnames(dt)[colnames(dt) == "rfp.lfc"] <- "rfp"
+    colnames(dt)[colnames(dt) == "te.lfc"] <- "te"
+
     stopifnot(is(dt, "data.table"))
     if (is.character(xlim)) stopifnot(xlim %in% c("bidir.max", "auto"))
     if (is.character(ylim)) stopifnot(ylim %in% c("bidir.max", "auto"))

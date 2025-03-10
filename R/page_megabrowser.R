@@ -15,7 +15,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                            "default_experiment_meta"),
                    gene_input_select(ns, FALSE, browser_options),
                    metadata_input_select(ns, metadata = metadata),
-                   sliderInput(ns("clusters"), "K-means clusters", min = 1, max = 15,
+                   sliderInput(ns("clusters"), "K-means clusters", min = 1, max = 20,
                                value = 5),
                    helper_button_redirect_call()
           ),

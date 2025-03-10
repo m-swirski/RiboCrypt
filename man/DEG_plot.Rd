@@ -63,14 +63,17 @@ Gives you interactive 1D or 2D DE plots
 \examples{
 # Load experiment
 df <- ORFik.template.experiment()
+df_rna <- df[df$libtype == "RNA",]
 # 1 Dimensional analysis
-dt <- DEG.analysis(df[df$libtype == "RNA",])
+dt <- DEG.analysis(df_rna)
 dt$Regulation[1] <- "Significant" # Fake sig level
 DEG_plot(dt, draw_non_regulated = TRUE)
 # 2 Dimensional analysis
-dt_2d <- DTEG.analysis(df[df$libtype == "RFP",], df[df$libtype == "RNA",],
-                    output.dir = NULL)
+df_rfp <- df[df$libtype == "RFP",]
+dt_2d <- DTEG.analysis(df_rfp, df_rna, output.dir = NULL)
 dt_2d$Regulation[4] <- "Translation" # Fake sig level
+dt_2d$rfp.lfc[4] <- -0.3 # Fake sig level
 dt_2d$Regulation[5] <- "Buffering" # Fake sig level
+dt_2d$rna.lfc[5] <- -0.3 # Fake sig level
 DEG_plot(dt_2d, draw_non_regulated = TRUE)
 }

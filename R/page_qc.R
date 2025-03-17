@@ -3,7 +3,7 @@ quality_ui <- function(id, all_exp, browser_options, libs, label = "Periodicity"
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
   tabPanel(
-    title = "periodicity", icon = icon("layer-group"),
+    title = "Frame bias", icon = icon("layer-group"),
     sidebarLayout(
       sidebarPanel(
         tabsetPanel(

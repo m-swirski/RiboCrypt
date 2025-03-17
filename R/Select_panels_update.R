@@ -107,10 +107,14 @@ library_update_select <- function(libs, selected = isolate(libs()[1]),
 }
 
 condition_update_select <- function(cond) {
+  selected <- if (length(unique(cond())) > 1) {
+    2
+  } else 1
+  selected <- unique(cond())[seq(selected)]
   updateSelectizeInput(
     inputId = "condition",
     choices = cond(),
-    selected = cond()[1]
+    selected = selected
   )
 }
 

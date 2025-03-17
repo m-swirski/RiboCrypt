@@ -3,7 +3,7 @@ fastq_ui <- function(id, all_exp, browser_options, libs, label = "fastq") {
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
   tabPanel(
-    title = "fastq", icon = icon("layer-group"),
+    title = "FastQ report", icon = icon("layer-group"),
     sidebarLayout(
       sidebarPanel(
         tabPanel("fastq",

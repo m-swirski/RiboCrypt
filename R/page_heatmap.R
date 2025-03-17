@@ -3,7 +3,7 @@ heatmap_ui <- function(id, all_exp, browser_options, libs, label = "Heatmap") {
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
   tabPanel(
-    title = "heatmap", icon = icon("layer-group"),
+    title = "Heatmap", icon = icon("layer-group"),
     sidebarLayout(
       sidebarPanel(
         tabsetPanel(

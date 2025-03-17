@@ -3,7 +3,7 @@ codon_ui <- function(id, all_exp, browser_options, libs, label = "Codon") {
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
   tabPanel(
-    title = "codon", icon = icon("layer-group"),
+    title = "Codon dwell time", icon = icon("layer-group"),
     sidebarLayout(
       sidebarPanel(
         tabsetPanel(

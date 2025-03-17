@@ -90,7 +90,7 @@ RiboCrypt_app <- function(
       selected = init_tab_focus,
       browser_ui("browser", all_exp, browser_options, names_init, libs),
       browser_allsamp_ui("browser_allsamp", all_exp_meta, browser_options, metadata),
-      analysis_ui("analysis", all_exp, browser_options, libs, metadata, all_exp_meta),
+      analysis_ui("Analysis", all_exp, browser_options, libs, metadata, all_exp_meta),
       metadata_ui("metadata", all_exp),
       tutorial_ui("tutorial")
     ))
@@ -109,7 +109,7 @@ RiboCrypt_app <- function(
       browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata,
                              names_init, browser_options)
     }
-    rv <- analysis_server("analysis", all_exp, without_readlengths_env,
+    rv <- analysis_server("Analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
             gene_name_list, rv, metadata, all_exp_meta, exp_init_meta, df_meta,
             names_init, browser_options)

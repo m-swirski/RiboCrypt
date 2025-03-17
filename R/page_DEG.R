@@ -12,6 +12,8 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
                    experiment_input_select(experiments, ns, browser_options),
                    diff_method_input_select(ns),
                    condition_input_select(ns),
+                   library_input_select(ns, label = "Libraries (Group1)", id = "library1"),
+                   library_input_select(ns, label = "Libraries (Group2)", id = "library2"),
                    helper_button_redirect_call()
           ),
           tabPanel("Settings",
@@ -19,7 +21,6 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
                    checkboxInput(ns("other_tx"), label = "Full annotation (all isoforms)", value = FALSE),
                    sliderInput(ns("pval"), "P-value", min = 0, max = 1,
                                value = 0.05, step = 0.01),
-                   library_input_select(ns, label = "Libraries (Group1)"),
                    export_format_of_plot(ns)
           ),
         ),
@@ -51,9 +52,21 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
         } else "")
       observeEvent(cond(), condition_update_select(cond))
 
+      observeEvent(cond(), {
+        cond_1 <- cond()[1]
+        library_update_select(libs, libs()[cond() == cond_1], "library1")
+        }, ignoreNULL = TRUE, ignoreInit = TRUE)
+
+      observeEvent(cond(), {
+        cond_2 <- unique(cond())
+        req(length(cond_2) > 1)
+        cond_2 <- cond_2[2]
+        library_update_select(libs, libs()[cond() == cond_2], "library2")
+      }, ignoreNULL = TRUE, ignoreInit = TRUE)
+
       # Main plot, this code is only run if 'plot' is pressed
       controls <- eventReactive(input$go,
-                                click_plot_DEG_main_controller(input, df))
+                                click_plot_DEG_main_controller(input, df, libs))
       model <- reactive(DE_model_from_ctrl(controls)) %>%
         bindCache(controls()$hash_string_pre)
       #

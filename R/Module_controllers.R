@@ -193,7 +193,7 @@ study_and_gene_observers <- function(input, output, session) {
                    ignoreInit = TRUE)
       observeEvent(input$gene, {
         req(input$gene != "")
-        tx_update_select(isolate(input$gene), gene_name_list, "all")
+        tx_update_select(isolate(input$gene), gene_name_list, "all", page = id)
       }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
     } else if (uses_gene) {
@@ -222,7 +222,7 @@ study_and_gene_observers <- function(input, output, session) {
                 isolate(gene_name_list())[label == input$gene,]$value)))
         }
         print(paste("Page:", id, "(General observer)"))
-        tx_update_select(isolate(input$gene), gene_name_list)},
+        tx_update_select(isolate(input$gene), gene_name_list, page = id)},
         ignoreNULL = TRUE, ignoreInit = TRUE, priority = -15)
       browser_option_id <-ifelse(id == "browser_allsamp",
                                  "default_gene_meta", "default_gene")

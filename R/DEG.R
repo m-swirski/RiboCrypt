@@ -1,17 +1,27 @@
 DE_model_from_ctrl <- function(controls) {
   DE_model(controls()$dff, controls()$diff_method, controls()$full,
-           controls()$target.contrast, controls()$design)
+           controls()$target.contrast, controls()$design, controls()$all_libs,
+           controls()$group_1, controls()$group_2)
 }
 
 DE_model <- function(df, method, other_tx, target.contrast = design[1],
-                     design = ORFik::design(df)) {
+                     design = ORFik::design(df), all_libs, group_1, group_2) {
   print("DE model activated!")
   if (nrow(df) < 2) stop("Differential expression only allowed for studies with > 1 sample")
   # TODO: add in design correctly
+  if (any(group_1 %in% group_2))
+    stop("Sample can not be in both contrast groups: ",
+         paste(group_1[group_1 %in% group_2], collapse = " ,"))
+  if (length(group_1) == 0) stop("Contrast group 1 is empty!")
+  if (length(group_2) == 0) stop("Contrast group 2 is empty!")
+  df <- df[all_libs %in% c(group_1, group_2),]
+  if (nrow(df) < 2) stop("You selected < 2 samples, even though study has more!")
   counts <- countTable(df, "mrna", type = "summarized")
+  counts <- counts[colnames(counts) %in% c(group_1, group_2)]
   if (!other_tx) {
     counts <- counts[filterTranscripts(df, 0, 1, 0)]
   }
+
   if (method == "DESeq2") {
     ORFik::DEG_model(df, counts = counts)
   } else if (method == "FPKM ratio") {

@@ -53,8 +53,9 @@ gene_update_select_heatmap <- function(gene_name_list, selected = "all") {
 }
 
 tx_update_select <- function(gene = NULL, gene_name_list, additionals = NULL,
-                             selected = NULL) {
-  print(paste("Updating isoform:"))
+                             selected = NULL, page = "") {
+  page <- paste0("(", page, ")")
+  print(paste("Updating isoform", page, ":"))
   isoforms <- tx_from_gene_list(isolate(gene_name_list()), gene, selected,
                                 additionals)
 
@@ -95,9 +96,10 @@ frame_type_update_select <- function(selected) {
   )
 }
 
-library_update_select <- function(libs, selected = isolate(libs()[1])) {
+library_update_select <- function(libs, selected = isolate(libs()[1]),
+                                  id = "library") {
   updateSelectizeInput(
-    inputId = "library",
+    inputId = id,
     choices = libs(),
     selected = selected,
     server = TRUE

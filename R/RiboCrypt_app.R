@@ -94,8 +94,10 @@ RiboCrypt_app <- function(
       metadata_ui("metadata", all_exp),
       tutorial_ui("tutorial")
     ))
+  cat("Done (UI setup):"); print(round(Sys.time() - time_before, 2))
 
   server <- function(input, output, session) {
+    this_time_before <- Sys.time()
     reactive_url()
     cds <- NULL
     org_and_study_changed_checker(input, output, session)
@@ -111,8 +113,9 @@ RiboCrypt_app <- function(
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
             gene_name_list, rv, metadata, all_exp_meta, exp_init_meta, df_meta,
             names_init, browser_options)
-    metadata_server("metadata", all_exp)
-    cat("Server: "); print(round(Sys.time() - time_before, 2))
+    metadata_server("metadata", all_exp, metadata)
+    cat("Server this: "); print(round(Sys.time() - this_time_before, 2))
+    cat("Server total: "); print(round(Sys.time() - time_before, 2))
   }
   cat("Init: "); print(round(Sys.time() - time_before, 2))
   shinyApp(ui, server, options = options)

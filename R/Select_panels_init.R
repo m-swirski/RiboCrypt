@@ -57,9 +57,9 @@ tx_input_select <- function(ns, multiple = FALSE, choices = NULL,
 
 library_input_select <- function(ns, multiple = TRUE, choices = "",
                                  selected = choices[1],
-                                 label = "Select libraries") {
+                                 label = "Select libraries", id = "library") {
   selectizeInput(
-    inputId = ns("library"),
+    inputId = ns(id),
     label = label,
     choices = choices,
     selected = selected,

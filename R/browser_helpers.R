@@ -110,7 +110,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                              titleY = TRUE, titleX = TRUE)
   if (!without_sequence_track) {
     multiomics_plot <- addJSrender(multiomics_plot, bottom_panel$target_seq,
-                                   nplots-3, seq_render_dist,
+                                   nplots - 3, seq_render_dist,
                                    display_dist, aa_letter_code, input_id)
   }
 

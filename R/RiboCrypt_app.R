@@ -93,7 +93,7 @@ RiboCrypt_app <- function(
       analysis_ui("Analysis", all_exp, browser_options, libs, metadata, all_exp_meta),
       metadata_ui("metadata", all_exp),
       tutorial_ui("tutorial")
-    ))
+  ))
   cat("Done (UI setup):"); print(round(Sys.time() - time_before, 2))
 
   server <- function(input, output, session) {

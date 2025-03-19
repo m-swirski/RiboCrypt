@@ -128,8 +128,15 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     print(paste("here is tx!", isolate(input$tx)))
     id <- isolate(input$tx)
     dff <- df()
+    motif <- isolate(input$motif)
+    display_annot <- isolate(input$display_annot)
 
-    table_path <- collection_path_from_exp(dff, id, isolate(gene_name_list()))
+    if (!is.null(motif) && motif != "") {
+      table_path <- meta_motif_files(dff)[motif]
+      display_annot <- FALSE
+      message("Using motif: ", table_path)
+    } else table_path <- collection_path_from_exp(dff, id, isolate(gene_name_list()))
+
     lib_sizes <- file.path(QCfolder(dff), "totalCounts_mrna.rds")
     if (!file.exists(lib_sizes))
       stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
@@ -173,7 +180,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     table_hash <- paste(name(dff), table_path, lib_sizes, clusters, min_count,
                         region_type, metadata_field, normalization, frame,
                         kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
-                        summary_track, sep = "|_|")
+                        summary_track, display_annot, sep = "|_|")
 
     print(paste("Table hash: ", table_hash))
     reactiveValues(dff = dff,
@@ -190,6 +197,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    group_on_tx_tpm = other_tx,
                    ratio_interval = ratio_interval,
                    frame = frame,
+                   display_annot = display_annot,
                    summary_track = summary_track)
   }
 }

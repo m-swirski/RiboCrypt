@@ -68,6 +68,21 @@ library_input_select <- function(ns, multiple = TRUE, choices = "",
     helper(onclick = "fakeClick('tutorial', 'lib')")
 }
 
+motif_input_select <- function(ns, multiple = FALSE, browser_options = NULL,
+                              choices = NULL,
+                              label = "Select a meta motif",
+                              id = "motif",
+                              selected = NULL) {
+  selectizeInput(
+    inputId = ns(id),
+    choices = choices,
+    selected = selected,
+    label = label,
+    multiple = multiple,
+    options = list(placeholder = 'Select valid Motif')
+  )
+}
+
 frame_type_select <- function(ns, name = "frames_type",
                               label = "Select frames display type",
                               selected = "lines") {

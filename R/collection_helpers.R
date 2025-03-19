@@ -121,7 +121,12 @@ compute_collection_table <- function(path, lib_sizes, df,
                                 split_by_frame)
   ## # Sort table by metadata column selected
   # Match metadata table and collection runIDs
-  if (!is.null(ratio_interval)) {
+  matchings <- match_collection_to_exp(metadata, df)
+  meta_sub_temp <- metadata[matchings, metadata_field, with = FALSE][[1]]
+
+  order_on_ratios <- !is.null(ratio_interval)
+  order_on_other_tx_tpm <- !is.null(group_on_tx_tpm)
+  if (order_on_ratios) {
     tpm <- subset_fst_interval_sum(ratio_interval[seq(2)], table)
     is_ratio <- length(ratio_interval) == 4
     if (is_ratio) {
@@ -131,7 +136,7 @@ compute_collection_table <- function(path, lib_sizes, df,
 
     meta_sub <- tpm
     table[, library := factor(library, levels = names(tpm), ordered = TRUE)]
-  } else if (!is.null(group_on_tx_tpm)) {
+  } else if (order_on_other_tx_tpm) {
     isoform <- group_on_tx_tpm
     table_path_other <- collection_path_from_exp(df, isoform)
     table_other <- load_collection(table_path_other)
@@ -141,15 +146,15 @@ compute_collection_table <- function(path, lib_sizes, df,
     names(tpm) <- counts$library
     meta_sub <- tpm
   } else {
-    matchings <- match_collection_to_exp(metadata, df)
-    meta_sub <- metadata[matchings, metadata_field, with = FALSE][[1]]
+    meta_sub <- meta_sub_temp
   }
+
   meta_order <- order(meta_sub)
 
   table[, library := factor(library, levels = levels(library)[meta_order], ordered = TRUE)]
-  if (min_count > 0 & is.null(ratio_interval)) {
+  if (min_count > 0 & !order_on_ratios) {
     meta_sub <- meta_sub[meta_order][lib_names[meta_order] %in% filt_libs]
-  } else if (!is.null(ratio_interval)) {
+  } else if (order_on_ratios) {
     meta_sub <- meta_sub[meta_order]
   }
   # Cast to wide format and return

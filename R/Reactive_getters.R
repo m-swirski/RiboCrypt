@@ -26,8 +26,8 @@ get_gene_name_categories_collection <- function(df) {
 }
 
 get_exp <- function(dff, experiments, env,
-                    exps_dir = ORFik::config()["exp"]) {
-  print(paste("Loading exp"))
+                    exps_dir = ORFik::config()["exp"], page = "") {
+  print(paste("Loading exp", page))
   req(dff %in% experiments)
   print("New experiment loaded")
   return(read.experiment(dff, output.env = env, validate = FALSE,

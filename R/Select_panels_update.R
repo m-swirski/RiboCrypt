@@ -52,6 +52,7 @@ gene_update_select_heatmap <- function(gene_name_list, selected = "all") {
   )
 }
 
+
 tx_update_select <- function(gene = NULL, gene_name_list, additionals = NULL,
                              selected = NULL, page = "") {
   page <- paste0("(", page, ")")
@@ -67,6 +68,15 @@ tx_update_select <- function(gene = NULL, gene_name_list, additionals = NULL,
     inputId = "tx",
     choices = isoforms,
     selected = selected,
+    server = TRUE
+  )
+}
+
+motif_update_select <- function(motif_name_list, selected = "") {
+  updateSelectizeInput(
+    inputId = "motif",
+    choices = c(selected, motif_name_list),
+    selected = NULL,
     server = TRUE
   )
 }

@@ -322,7 +322,7 @@ allsamples_observer_controller <- function(input, output, session) {
   observe({update_rv(rv, df)}) %>%
     bindEvent(df(), ignoreInit = TRUE)
 
-  observe({df(get_exp(rv$exp, experiments, .GlobalEnv, "(allsamples)"))}) %>%
+  observe({df(get_exp(rv$exp, experiments, .GlobalEnv, page = "(allsamples)"))}) %>%
     bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
 
   uses_libs <- FALSE
@@ -332,9 +332,22 @@ allsamples_observer_controller <- function(input, output, session) {
     else {get_gene_name_categories_collection(df())}}) %>%
     bindCache(rv$curval) %>%
     bindEvent(rv$changed)
+  motif_name_list <- reactive({
+    names(meta_motif_files(df()))}) %>%
+    bindCache(rv$curval) %>%
+    bindEvent(rv$changed)
+
+  init_motfis <- names(meta_motif_files(isolate(df())))
+  motif_update_select(init_motfis)
+  observeEvent(motif_name_list(), motif_update_select(motif_name_list()),
+               ignoreInit = TRUE)
   study_and_gene_observers(input, output, session)
   })
 }
 
-
+meta_motif_files <- function(df) {
+  motif_files <- list.files(file.path(resFolder(df), "meta_collection_tables"), pattern = "fst$", full.names = TRUE)
+  names(motif_files) <- sub("\\.fst$", "", gsub(".*_", "", basename(motif_files)))
+  return(motif_files)
+}
 

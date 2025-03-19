@@ -13,7 +13,9 @@ metadata_ui <- function(id, all_exp, metadata, label = "metadata") {
 }
 
 metadata_server <- function(id, all_experiments, metadata) {
-  sample_info_server("sample_info", metadata)
+  if (!is.null(metadata)) {
+    sample_info_server("sample_info", metadata)
+  }
   study_info_server("study_info", all_experiments)
   sra_search_server("sra_search")
   predicted_translons_server("predicted_translons")

@@ -4,6 +4,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
   normalizations <- normalizations("metabrowser")
+  enrichment_test_types <- c("Clusters", "Ratio bins", "Other gene tpm bins")
   tabPanel(
     title = "MegaBrowser", icon = icon("chart-line"),
     sidebarLayout(
@@ -14,7 +15,11 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                    experiment_input_select(experiments, ns, browser_options,
                                            "default_experiment_meta"),
                    gene_input_select(ns, FALSE, browser_options),
-                   metadata_input_select(ns, metadata = metadata),
+                   metadata_input_select(ns, metadata, TRUE),
+                   metadata_input_select(ns, metadata, FALSE,
+                                         label = "Enrichment test on:",
+                                         id = "enrichment_term",
+                                         add = enrichment_test_types),
                    sliderInput(ns("clusters"), "K-means clusters", min = 1, max = 20,
                                value = 5),
                    helper_button_redirect_call()
@@ -92,9 +97,11 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindCache(controller()$table_hash, input$heatmap_color,
                   isolate(input$color_mult)) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      # Addition plots
       meta_and_clusters <- reactive(
-          allsamples_metadata_clustering(table()$metadata_field, plot_object()
-                                       )) %>%
+          allsamples_metadata_clustering(table()$metadata_field, plot_object(),
+                                         controller()$enrichment_term)) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 

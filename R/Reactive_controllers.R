@@ -124,8 +124,8 @@ click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
 click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
   {
     # browser()
-    print(paste("here is gene!", isolate(input$gene)))
-    print(paste("here is tx!", isolate(input$tx)))
+    print(paste("Gene (Megabrowser):", isolate(input$gene)))
+    print(paste("Tx (Megabrowser):", isolate(input$tx)))
     id <- isolate(input$tx)
     dff <- df()
     motif <- isolate(input$motif)
@@ -141,16 +141,28 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     if (!file.exists(lib_sizes))
       stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
            " see vignette for more information on how to make these.")
-    metadata_field <- isolate(input$metadata)
     clusters <- isolate(input$clusters)
+    ratio_interval <- isolate(input$ratio_interval)
+    metadata_field <- isolate(input$metadata)
+    other_gene <- isolate(input$other_gene)
+
+    valid_enrichment_clusterings <- c(clusters != 1, isTruthy(ratio_interval), isTruthy(other_gene))
+    enrichment_test_types <- c("Clusters", "Ratio bins", "Other gene tpm bins")[valid_enrichment_clusterings]
+    enrichment_term <- isolate(input$enrichment_term)
+    valid_enrichment_terms <- c(metadata_field, enrichment_test_types)
+    if (!(enrichment_term %in% valid_enrichment_terms)) {
+      stop("Enrichment term is not valid, valid options:\n",
+           paste(valid_enrichment_terms, collapse = ", "))
+    }
+
+
     normalization <- isolate(input$normalization)
     kmer <- isolate(input$kmer)
     min_count <- isolate(input$min_count)
     region_type <- isolate(input$region_type)
-    other_gene <- isolate(input$other_gene)
     frame <- isolate(input$frame)
     summary_track <- isolate(input$summary_track)
-    ratio_interval <- isolate(input$ratio_interval)
+
     if (!is.null(ratio_interval)) {
       if (ratio_interval != "") {
         split_ratio <- unlist(strsplit(ratio_interval, ";"))
@@ -178,7 +190,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     }
 
     table_hash <- paste(name(dff), table_path, lib_sizes, clusters, min_count,
-                        region_type, metadata_field, normalization, frame,
+                        region_type, paste(metadata_field, collapse = ":"), normalization, frame,
                         kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
                         summary_track, display_annot, sep = "|_|")
 
@@ -198,7 +210,8 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    ratio_interval = ratio_interval,
                    frame = frame,
                    display_annot = display_annot,
-                   summary_track = summary_track)
+                   summary_track = summary_track,
+                   enrichment_term = enrichment_term)
   }
 }
 

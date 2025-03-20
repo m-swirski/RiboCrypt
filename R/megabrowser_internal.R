@@ -61,7 +61,12 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
                                        rel_heights = c(0.2, 0.75, 0.05)) {
   stopifnot(is.numeric(rel_heights) && length(rel_heights) == 3)
   gene_model_panel <- summary_plot <- NULL
-  if (!summary & !annotation) return(heatmap)
+  to_use_logicals <- c(summary, TRUE, annotation)
+
+  if (!summary & !annotation) {
+    gene_model_panel <- ggplot() + theme_classic()
+    to_use_logicals[3] <- TRUE
+  }
 
   if (summary) {
     summary_plot <- summary_track_allsamples(m)
@@ -73,7 +78,6 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
   }
 
   grob <- grid::grid.grabExpr(draw(heatmap))
-  to_use_logicals <- c(summary, TRUE, annotation)
   final_plot <- cowplot::plot_grid(plotlist = list(summary_plot, grob, gene_model_panel)[to_use_logicals],
                                    ncol = 1, rel_heights = rel_heights[to_use_logicals])
   return(final_plot)

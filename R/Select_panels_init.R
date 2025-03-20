@@ -213,17 +213,20 @@ condition_input_select <- function(ns, multiple = TRUE) {
     helper(onclick = "fakeClick('tutorial', 'diffexp')")
 }
 
-metadata_input_select <- function(ns, multiple = FALSE, browser_options = NULL,
-                              choices = NULL, selected = NULL, metadata) {
-  cols <- colnames(metadata)
-  cols <- cols[-which(cols %in% "Run")]
+metadata_input_select <- function(ns, metadata,
+                                  multiple = FALSE, browser_options = NULL,
+                                  choices = colnames(metadata), selected = "TISSUE",
+                                  label = "Order on:", id = "metadata",
+                                  add = NULL) {
+  choices <- choices[-which(choices %in% "Run")]
+  choices <- c(choices, add)
   selectizeInput(
-    inputId = ns("metadata"),
-    choices = cols,
-    selected = "TISSUE",
-    label = "Group on:",
+    inputId = ns(id),
+    choices = choices,
+    selected = selected,
+    label = label,
     multiple = multiple,
-    options = list(placeholder = 'Group on:')
+    options = list(placeholder = label)
   )
   #  %>%
   #   helper(onclick = "fakeClick('tutorial', 'metadata')")

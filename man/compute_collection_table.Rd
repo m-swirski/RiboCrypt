@@ -19,7 +19,8 @@ compute_collection_table(
   subset = NULL,
   group_on_tx_tpm = NULL,
   split_by_frame = FALSE,
-  ratio_interval = NULL
+  ratio_interval = NULL,
+  decreasing_order = FALSE
 )
 }
 \arguments{

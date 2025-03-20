@@ -35,14 +35,16 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
   } else table[, score_tpm := count]
   # Transcript normalization mode
   norm_opts <- normalizations("metabrowser")
-  if (normalization == norm_opts[1]) {
+  if (normalization == "transcriptNormalized") {
     table[,score := score_tpm / sum(score_tpm), by = library]
     table[,score := score * 1e6]
-  } else if (normalization == norm_opts[2]) {
+  } else if (normalization == "maxNormalized") {
     table[,score := score_tpm / max(score_tpm), by = library]
-  } else if (normalization == norm_opts[3]) {
+  } else if (normalization == "zscore") {
     table[, score := (score_tpm - mean(score_tpm)) / sd(score_tpm), by = library]
-  } else table[, score := score_tpm]
+  } else if (normalization == "tpm") {
+    table[, score := score_tpm]
+  } else stop("Invalid normalization for collection!")
   table[is.na(score), score := 0]
   if (add_logscore) table[,logscore := log(score + 1)]
   return(table)
@@ -54,6 +56,60 @@ match_collection_to_exp <- function(metadata, df) {
   if (length(matchings) != nrow(df))
     stop("Metadata does not contain information on all collection samples!")
   return(matchings)
+}
+
+filter_collection_on_count <- function(table, min_count) {
+  if (min_count > 0) {
+    lib_names <- unique(table$library)
+    libs_counts_total <- table[,.(count = sum(count)),library][, valid := count >= min_count]
+    valid_libs <- libs_counts_total$valid
+    if (sum(valid_libs) == 0)
+      stop("Count filter too strict, no libraries with that much reads for this transcript!")
+
+    filt_libs <- libs_counts_total[valid == TRUE,]$library
+    table <- table[library %in% filt_libs]
+    table[, library := factor(library, levels = unique(library), ordered = TRUE)]
+    setattr(table, "valid_libs", valid_libs)
+  }
+  return(table)
+}
+
+compute_collection_table_grouping <- function(metadata, df, metadata_field, table,
+                                              ratio_interval, group_on_tx_tpm,
+                                              decreasing_order = FALSE) {
+  matchings <- match_collection_to_exp(metadata, df)
+  all_metadata_fields <- metadata[matchings, metadata_field, with = FALSE][attr(table, "valid_libs") == TRUE,]
+  ordering_vector_temp <- all_metadata_fields[, 1][[1]]
+  other_columns <- all_metadata_fields
+
+  order_on_ratios <- !is.null(ratio_interval)
+  order_on_other_tx_tpm <- !is.null(group_on_tx_tpm)
+  if (order_on_ratios) {
+    tpm <- subset_fst_interval_sum(ratio_interval[seq(2)], table)
+    is_ratio <- length(ratio_interval) == 4
+    if (is_ratio) {
+      tpm2 <- subset_fst_interval_sum(ratio_interval[seq(3,4)], table)
+      tpm <- (tpm + 1) / (tpm2 + 1) # Pseudo ratio
+    }
+    ordering_vector <- tpm
+  } else if (order_on_other_tx_tpm) {
+    isoform <- group_on_tx_tpm
+    table_path_other <- collection_path_from_exp(df, isoform)
+    table_other <- load_collection(table_path_other)
+    table_other <- normalize_collection(table_other, "tpm", lib_sizes, 1)
+    counts <- table_other[ , .(tpm = sum(score)), by = library]
+    tpm <- counts$tpm
+    ordering_vector <- tpm[valid_libs]
+  } else {
+    ordering_vector <- ordering_vector_temp
+    other_columns <- other_columns[, -1]
+  }
+
+  meta_order <- order(ordering_vector, decreasing = decreasing_order)
+  ordering_vector <- ordering_vector[meta_order]
+  attr(ordering_vector, "meta_order") <- meta_order
+  attr(ordering_vector, "other_columns") <- other_columns[meta_order, ]
+  return(ordering_vector)
 }
 
 #' Cast a collection table to wide format
@@ -104,59 +160,25 @@ compute_collection_table <- function(path, lib_sizes, df,
                                      value.var = "logscore", as_list = FALSE,
                                      subset = NULL, group_on_tx_tpm = NULL,
                                      split_by_frame = FALSE,
-                                     ratio_interval = NULL) {
+                                     ratio_interval = NULL,
+                                     decreasing_order = FALSE) {
   table <- load_collection(path)
   if (!is.null(subset)) {
     table <- subset_fst_by_interval(table, subset)
   }
+  table <- filter_collection_on_count(table, min_count)
+
   # Normalize
-  if (min_count > 0) {
-    lib_names <- unique(table$library)
-    filt_libs <- table[,.(count = sum(count)),library][count >= min_count,]$library
-    table <- table[library %in% filt_libs]
-    if (length(filt_libs) == 0)
-      stop("Count filter too strict, no libraries with that much reads for this transcript!")
-  }
   table <- normalize_collection(table, normalization, lib_sizes, kmer, TRUE,
                                 split_by_frame)
   ## # Sort table by metadata column selected
   # Match metadata table and collection runIDs
-  matchings <- match_collection_to_exp(metadata, df)
-  meta_sub_temp <- metadata[matchings, metadata_field, with = FALSE][[1]]
-
-  order_on_ratios <- !is.null(ratio_interval)
-  order_on_other_tx_tpm <- !is.null(group_on_tx_tpm)
-  if (order_on_ratios) {
-    tpm <- subset_fst_interval_sum(ratio_interval[seq(2)], table)
-    is_ratio <- length(ratio_interval) == 4
-    if (is_ratio) {
-      tpm2 <- subset_fst_interval_sum(ratio_interval[seq(3,4)], table)
-      tpm <- (tpm + 1) / (tpm2 + 1) # Pseudo ratio
-    }
-
-    meta_sub <- tpm
-    table[, library := factor(library, levels = names(tpm), ordered = TRUE)]
-  } else if (order_on_other_tx_tpm) {
-    isoform <- group_on_tx_tpm
-    table_path_other <- collection_path_from_exp(df, isoform)
-    table_other <- load_collection(table_path_other)
-    table_other <- normalize_collection(table_other, "tpm", lib_sizes, 1)
-    counts <- table_other[ , .(tpm = sum(score)), by = library]
-    tpm <- counts$tpm
-    names(tpm) <- counts$library
-    meta_sub <- tpm
-  } else {
-    meta_sub <- meta_sub_temp
-  }
-
-  meta_order <- order(meta_sub)
-
-  table[, library := factor(library, levels = levels(library)[meta_order], ordered = TRUE)]
-  if (min_count > 0 & !order_on_ratios) {
-    meta_sub <- meta_sub[meta_order][lib_names[meta_order] %in% filt_libs]
-  } else if (order_on_ratios) {
-    meta_sub <- meta_sub[meta_order]
-  }
+  meta_sub <- compute_collection_table_grouping(metadata, df, metadata_field, table,
+                                                ratio_interval, group_on_tx_tpm,
+                                                decreasing_order)
+  # Update order of libraries to follow grouping created
+  table[, library := factor(library, levels = levels(library)[attr(meta_sub, "meta_order")],
+                            ordered = TRUE)]
   # Cast to wide format and return
   if (format == "wide") {
     table <- collection_to_wide(table, value.var = value.var)

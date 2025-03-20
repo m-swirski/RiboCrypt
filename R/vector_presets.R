@@ -4,7 +4,7 @@ normalizations <- function(use_case = "heatmap") {
   if (use_case == "heatmap") {
     c("transcriptNormalized", "zscore", "sum", "log10sum")
   } else if (use_case == "metabrowser") {
-    c("transcriptNormalized", "maxNormalized", "zscore","tpm")
+    c("maxNormalized", "transcriptNormalized", "zscore","tpm")
   } else stop("Invalid use case option")
   return(norm)
 }

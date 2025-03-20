@@ -29,8 +29,8 @@ allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "C
     meta[, grouping := other_cols[,1][[1]]]
   } else if (is.numeric(meta$grouping)) { #Make numeric bins
       meta[, grouping_numeric_bins := cut(grouping, breaks=numeric_bins)]
-    }
-  enrich_dt <- allsamples_meta_stats(meta)
+  }
+  enrich_dt <- allsamples_meta_stats(meta, attr(values, "xlab"))
   cat("metabrowser clustering info done"); print(round(Sys.time() - time_before, 2))
   return(list(meta = meta, enrich_dt = enrich_dt))
 }
@@ -76,7 +76,7 @@ allsamples_meta_stats_shiny <- function(dt) {
                                           backgroundColor = styleInterval(c(-3, 3), c('yellow', 'white', 'yellow')))
 }
 
-allsamples_meta_stats <- function(meta) {
+allsamples_meta_stats <- function(meta, attr_xlab = "TISSUE", attr_ylab = "Enrichment") {
   time_before <- Sys.time()
   print("Starting metabrowser statistics")
   res <- copy(meta)
@@ -97,8 +97,11 @@ allsamples_meta_stats <- function(meta) {
     rownames(res) <- names(concat_table)
     colnames(res) <- "counts"
   }
+  res <- as.data.frame.matrix(res)
+  attr(res, "xlab") <- attr_xlab
+  attr(res, "ylab") <- attr_ylab
   cat("metabrowser statistics done"); print(round(Sys.time() - time_before, 2))
-  return(as.data.frame.matrix(res))
+  return(res)
 }
 
 allsamples_enrich_bar_plot <- function(enrich) {
@@ -109,7 +112,7 @@ allsamples_enrich_bar_plot <- function(enrich) {
 
   enrichment_plot <- ggplot(enrich_dt) +
     geom_bar(aes(x = rn, y = value, fill = variable), stat="identity", position=position_dodge()) +
-    theme_minimal() + labs(fill = "Cluster") + xlab("Tissue") + ylab("Enrichment") +
+    theme_minimal() + labs(fill = "Cluster") + xlab(attr(enrich, "xlab")) + ylab(attr(enrich, "ylab")) +
     geom_hline(yintercept = c(3, -3), linetype="dashed", color = "red", linewidth=1) +
     theme(axis.title = element_text(size = 32),
           axis.text.x = element_text(size = (22), angle = 45),

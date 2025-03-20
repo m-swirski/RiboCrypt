@@ -78,7 +78,8 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
                                               ratio_interval, group_on_tx_tpm,
                                               decreasing_order = FALSE) {
   matchings <- match_collection_to_exp(metadata, df)
-  all_metadata_fields <- metadata[matchings, metadata_field, with = FALSE][attr(table, "valid_libs") == TRUE,]
+  valid_libs <- attr(table, "valid_libs")
+  all_metadata_fields <- metadata[matchings, metadata_field, with = FALSE][valid_libs == TRUE,]
   ordering_vector_temp <- all_metadata_fields[, 1][[1]]
   other_columns <- all_metadata_fields
 
@@ -102,6 +103,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
     ordering_vector <- tpm[valid_libs]
   } else {
     ordering_vector <- ordering_vector_temp
+    names(ordering_vector) <- levels(table$library)
     other_columns <- other_columns[, -1]
   }
 
@@ -109,6 +111,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
   ordering_vector <- ordering_vector[meta_order]
   attr(ordering_vector, "meta_order") <- meta_order
   attr(ordering_vector, "other_columns") <- other_columns[meta_order, ]
+  attr(ordering_vector, "xlab") <- colnames(all_metadata_fields)[1]
   return(ordering_vector)
 }
 

@@ -29,7 +29,7 @@ DE_model <- function(df, method, other_tx, target.contrast = design[1],
   } else stop("Invalid Differential method selected")
 }
 
-DE_model_results <- function(dt, controls) {
+DE_model_results <- function(dt, controls, symbols_dt = symbols(controls()$dff)) {
   method <- controls()$diff_method
   if (method == "DESeq2") {
     dt <- DEG_model_results(dt,
@@ -42,7 +42,32 @@ DE_model_results <- function(dt, controls) {
     regulation[abs(dt$LFC) * (dt$meanCounts + 1) > 100 & dt$meanCounts > 10 & abs(dt$LFC) > 0.5] <- "Significant"
     dt[, Regulation := regulation]
   } else stop("Invalid Differential method selected")
-  return(dt)
+  return(append_gene_symbols(dt, symbols_dt))
+}
+
+append_gene_symbols <- function(dt, symbols_dt) {
+  stopifnot(is(dt, "data.table"))
+  stopifnot(!is.null(dt$id))
+
+  dt_with_symbols <- copy(dt)
+  if (length(symbols_dt) > 0 & nrow(symbols_dt) > 0) {
+    tx_column <- grep("tx|transcript|value", colnames(symbols_dt), ignore.case = TRUE, value = TRUE)
+    if (length(tx_column) != 1) {
+      if (length(tx_column) == 0) {
+        warning("Could not find any column of symbols table with tx, transcript or value in column name, please rename/add")
+      } else{
+        warning("Found multiple columns of symbols table with tx, transcript or value in column name, please rename/remove")
+      }
+    }
+
+    dt_with_symbols <- data.table::merge.data.table(dt, symbols_dt, by.x = "id", by.y = tx_column, sort = FALSE)
+    if (!is.null(dt_with_symbols$external_gene_name)) {
+      dt_with_symbols[, id := paste0(id, "(", external_gene_name, ")")]
+    } else if (!is.null(dt_with_symbols$label)) {
+      dt_with_symbols[, id := paste0(id, "(", sub("-.*", "", label), ")")]
+    } else warning("Could not find any column of symbols table with external_gene_name or label in column name, please rename/add")
+  }
+  return(dt_with_symbols)
 }
 
 #' Differential expression plots (1D or 2D)

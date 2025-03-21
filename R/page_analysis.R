@@ -22,7 +22,7 @@ analysis_server <- function(id, all_experiments, without_readlengths_env,
   rv <- codon_server("Codon", all_experiments, without_readlengths_env,
                      df, experiments, tx, cds, libs, org, gene_name_list, rv)
   rv <- DEG_server("DEG", all_experiments, without_readlengths_env, df,
-                   experiments, libs, org, rv)
+                   experiments, libs, org, gene_name_list, rv)
   rv <- quality_server("quality", all_experiments, with_readlengths_env,
                 df_with, experiments, tx, cds, libs, org, gene_name_list, rv)
   rv <- fastq_server("FastQ_report", all_experiments, df, experiments, libs, org, rv)

@@ -25,13 +25,16 @@ get_gene_name_categories_collection <- function(df) {
   return(all_genes[value%in% valid,])
 }
 
-get_exp <- function(dff, experiments, env,
+get_exp <- function(exp_name, experiments, env,
                     exps_dir = ORFik::config()["exp"], page = "") {
-  print(paste("Loading exp", page))
-  req(dff %in% experiments)
-  print("New experiment loaded")
-  return(read.experiment(dff, output.env = env, validate = FALSE,
-                         in.dir = exps_dir))
+
+  req(exp_name %in% experiments)
+  print(paste0("Loading exp: ", exp_name, if (page != "") {paste0("(", page, ")")}))
+
+  exp <- read.experiment(exp_name, output.env = env, validate = FALSE,
+                         in.dir = exps_dir)
+  print("- New experiment loaded")
+  return(exp)
 }
 
 bottom_panel_shiny <- function(mainPlotControls) {

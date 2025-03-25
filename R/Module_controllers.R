@@ -261,7 +261,7 @@ org_and_study_changed_checker <- function(input, output, session) {
     if (nrow(all_exp_meta) > 0) {
       df_meta <- reactiveVal(get_exp(browser_options["default_experiment_meta"],
                                      all_exp_meta$name, .GlobalEnv, exps_dir))
-    }
+    } else print("No MegaBrowser exps given, ignoring MegaBrowser exp.")
 
     libs <- reactive(bamVarName(df()))
     # The shared reactive values (rv)

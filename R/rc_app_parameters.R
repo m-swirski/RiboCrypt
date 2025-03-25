@@ -4,14 +4,16 @@ rc_parameter_setup <- function() {
     stopifnot(is(all_exp, "data.table"))
     stopifnot(!is.null(all_exp$name))
     stopifnot(nrow(all_exp) > 0)
-    print(paste("Running with", nrow(all_exp), "experiments"))
+
     if (is.null(all_exp_meta)) {
       all_exp_meta <- data.table(name = character(), organism = character())
-    }
+    } else stopifnot(is(all_exp_meta, "data.table"))
     if (nrow(all_exp_meta) > 0) {
       all_exp <- all_exp[!(name %in% all_exp_meta$name),]
-      print(paste("Running with", nrow(all_exp_meta), "collections"))
     }
+    print(paste("Running with", nrow(all_exp), "experiments"))
+    print(paste("Running with", nrow(all_exp_meta), "collections"))
+
     if (!is.null(metadata)) {
       if (is.character(metadata)) metadata <- fread(metadata)
       stopifnot(is(metadata, "data.table"))
@@ -29,9 +31,14 @@ rc_parameter_setup <- function() {
     if (!isTruthy(browser_options["default_experiment"])) {
       browser_options["default_experiment"] <- all_exp$name[1]
     }
+
     if (!isTruthy(browser_options["default_experiment_meta"]) &
         nrow(all_exp_meta) > 1) {
       browser_options["default_experiment_meta"] <- all_exp_meta$name[1]
+    }
+    if (isTruthy(browser_options["default_experiment_meta"]) &
+        nrow(all_exp_meta) > 0) {
+      stopifnot(browser_options["default_experiment_meta"] %in% all_exp_meta$name)
     }
     if (is.na(browser_options["plot_on_start"])) {
       browser_options["plot_on_start"] <- FALSE

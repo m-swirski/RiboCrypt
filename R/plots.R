@@ -4,8 +4,12 @@ createSinglePlot <- function(profile, withFrames, colors, ylabels,
                              as_plotly = TRUE){
   profile_plot <- singlePlot_select_plot_type(profile, withFrames, colors,
                                               lines, type)
+  no_coverage <- sum(profile$count) == 0
+  max_1_coverage <- max(profile$count) == 1
+  browser()
   return(singlePlot_add_theme(profile_plot, ylabels, type, flip_ylabel,
-                              total_libs, ylabels_full_name, as_plotly))
+                              total_libs, ylabels_full_name, as_plotly, no_coverage,
+                              ifelse(no_coverage, 1, ifelse(max_1_coverage, 2, 3))))
 }
 
 

@@ -101,7 +101,9 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   } else nplots_all <- nplots
 
   plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),
-                                                   yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16))))
+                                                   yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16),
+                                                                rangemode = "tozero", tick0 = 0, dtick = 1,
+                                                                zeroline = TRUE)))
   multiomics_plot <- subplot(plots,
                              margin = 0,
                              nrows = nplots_all,

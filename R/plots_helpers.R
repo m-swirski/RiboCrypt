@@ -43,7 +43,8 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
 
 singlePlot_add_theme <- function(profile_plot, ylabels, type,
                                  flip_ylabel = type == "heatmap", total_libs,
-                                 ylabels_full_name = ylabels, as_plotly = TRUE) {
+                                 ylabels_full_name = ylabels, as_plotly = TRUE,
+                                 y_autorange = FALSE, y_nticks = 3) {
   y_text_size <- ifelse(total_libs < 30, 8, 6)
   profile_plot <- profile_plot +
     ylab(ylabels) +
@@ -79,5 +80,5 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
     }
     return(profile_plot)
   }
-  return(automateTicksRNA(profile_plot, as_plotly))
+  return(automateTicksRNA(profile_plot, as_plotly, y_autorange, y_nticks))
 }

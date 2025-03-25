@@ -11,7 +11,7 @@ automateTicks <- function(plot) {
 
 automateTicksLetters <- function(plot) {
   suppressWarnings(plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
-                     plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE)) %>%
+                     plotly::layout(yaxis=list(autorange = FALSE), xaxis=list(autorange=FALSE)) %>%
                      toWebGL())
 }
 
@@ -24,10 +24,11 @@ automateTicksGMP <- function(plot) {
 #'
 #' @rawNamespace import(plotly, except = c(config, last_plot))
 #' @keywords internal
-automateTicksRNA <- function(plot, as_plotly = TRUE) {
+automateTicksRNA <- function(plot, as_plotly = TRUE, y_autorange = FALSE, y_nticks = 3) {
   if (!as_plotly) return(plot)
   plot %>% ggplotly(dynamicTicks = TRUE) %>%
-    plotly::layout(yaxis=list(autorange = FALSE, nticks=3), xaxis=list(autorange=FALSE))
+    plotly::layout(yaxis=list(autorange = y_autorange, nticks = y_nticks),
+                   xaxis=list(autorange=FALSE))
 }
 
 automateTicksX <- function(plot) {

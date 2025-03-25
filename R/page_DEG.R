@@ -5,7 +5,7 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
   tabPanel(
     title = "Differential expression", icon = icon("layer-group"),
     sidebarLayout(
-      jqui_resizable(jqui_draggable(sidebarPanel(
+      sidebarPanel(
         tabsetPanel(
           tabPanel("Differential expression",
                    organism_input_select(c("ALL", genomes), ns),
@@ -25,10 +25,9 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
           ),
         ),
         actionButton(ns("go"), "Plot", icon = icon("rocket")),
-      ))),
+      ),
       mainPanel(
         jqui_resizable(plotlyOutput(outputId = ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
-        uiOutput(ns("variableUi")),
         uiOutput(ns("selected_info"))
         )
     )
@@ -80,7 +79,6 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
         p
         }) %>%
         bindCache(controls()$hash_string_full)
-
 
 
       output$selected_info <- renderUI({

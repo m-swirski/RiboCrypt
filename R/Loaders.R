@@ -1,4 +1,4 @@
-load_reads <- function(dff, prefered_read_type,
+load_reads <- function(dff, prefered_read_type, validate_libs = FALSE,
                        BPPARAM = BiocParallel::SerialParam()) {
   pref_dir <- if (prefered_read_type == "cov") {
     "cov_RLE"
@@ -21,6 +21,7 @@ load_reads <- function(dff, prefered_read_type,
       paths = paths,
       output.mode = "envirlist",
       naming = "fullexp",
+      validate_libs = validate_libs,
       BPPARAM = BPPARAM
     )
   )

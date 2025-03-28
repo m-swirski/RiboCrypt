@@ -55,6 +55,7 @@
 #'  You can also add a time remaining bar, for a more detailed pipeline.
 #' @param export.format character, default: "svg". alternative: "png".
 #' when you click the top right image button export, what should it export as?
+#' @param frames_subset character, default "all". Alternatives: "red", "green", "blue".
 #' @inheritParams createSeqPanelPattern
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
@@ -87,7 +88,7 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                 custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
                                 log_scale = FALSE, BPPARAM = BiocParallel::SerialParam(), summary_track = FALSE,
                                 summary_track_type = frames_type,
-                                export.format = "svg") {
+                                export.format = "svg", frames_subset = "all") {
 
   multiOmicsPlot_internal(display_range, df = NULL, annotation,reference_sequence,
     reads,
@@ -103,7 +104,7 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
     aa_letter_code,
     annotation_names, start_codons, stop_codons,
     custom_motif, log_scale, BPPARAM, "",
-    summary_track, summary_track_type, export.format)
+    summary_track, summary_track_type, export.format, frames_subset)
 
 }
 

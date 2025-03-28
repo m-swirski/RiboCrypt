@@ -38,7 +38,8 @@ multiOmicsPlot_list(
   BPPARAM = BiocParallel::SerialParam(),
   summary_track = FALSE,
   summary_track_type = frames_type,
-  export.format = "svg"
+  export.format = "svg",
+  frames_subset = "all"
 )
 }
 \arguments{
@@ -132,6 +133,8 @@ argument}
 
 \item{export.format}{character, default: "svg". alternative: "png".
 when you click the top right image button export, what should it export as?}
+
+\item{frames_subset}{character, default "all". Alternatives: "red", "green", "blue".}
 }
 \value{
 the plot object

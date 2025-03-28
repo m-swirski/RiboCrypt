@@ -6,7 +6,6 @@ multiOmicsController <- function() {
                                   leader_extension, trailer_extension, viewMode)
   display_range <- annotation_list$display_range
   annotation <- annotation_list$annotation
-  multiOmicsControllerView()
   }
   )
 }

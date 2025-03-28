@@ -28,7 +28,7 @@
 #' library(RiboCrypt)
 #' df <- ORFik.template.experiment()[9,] #Use third library in experiment only
 #' cds <- loadRegion(df, "cds")
-#' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
+#' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df,
 #'                         frames_type = "columns")
 multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
                                 reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
@@ -47,7 +47,7 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                 custom_motif = NULL, log_scale = FALSE,
                                 BPPARAM = BiocParallel::SerialParam(),
                                 input_id = "", summary_track = FALSE,
-                                summary_track_type = frames_type, export.format = "svg") {
+                                summary_track_type = frames_type, export.format = "svg", frames_subset = "all") {
 
   multiOmicsPlot_internal(display_range, df, annotation,reference_sequence,
                           reads,
@@ -63,6 +63,6 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                           aa_letter_code,
                           annotation_names, start_codons, stop_codons,
                           custom_motif, log_scale, BPPARAM, input_id,
-                          summary_track, summary_track_type, export.format)
+                          summary_track, summary_track_type, export.format, frames_subset)
 
 }

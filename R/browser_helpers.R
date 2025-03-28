@@ -147,17 +147,20 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                     custom_motif = NULL, log_scale = FALSE, BPPARAM = BiocParallel::SerialParam(),
                                     input_id = "", summary_track = FALSE,
-                                    summary_track_type = frames_type, export.format = "svg") {
+                                    summary_track_type = frames_type, export.format = "svg", frames_subset = "all") {
 
   multiOmicsController()
   # Get Bottom annotation and sequence panels
   bottom_panel <- multiOmicsPlot_bottom_panels(reference_sequence, display_range, annotation,
                                                start_codons, stop_codons, custom_motif,
                                                custom_regions, viewMode)
+  multiOmicsControllerView()
+
   # Get NGS data track panels
   profiles <- multiOmicsPlot_all_profiles(display_range, reads, kmers,
-                                          kmers_type, frames_type,
+                                          kmers_type, frames_type, frames_subset,
                                           withFrames, log_scale, BPPARAM)
+
   track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, colors, ylabels,
                                           ylabels_full_name, bottom_panel$lines,
                                           frames_type, total_libs,

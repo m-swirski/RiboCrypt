@@ -22,23 +22,32 @@ allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "C
     meta[, cluster := rep(seq(length(row_orders)), lengths(row_orders))]
   }
   meta[, index := .I]
+  attr(meta, "ylab") <- "Enrichment"
   if (enrichment_test_on %in% c("Ratio bins", "Other gene tpm bins")) {
     meta[, cluster := cut(grouping, breaks=numeric_bins)]
     meta[, grouping_numeric_bins_temp := cluster]
     other_cols <- attr(values, "other_columns")
     meta[, grouping := other_cols[,1][[1]]]
+    attr(meta, "xlab") <- attr(values, "xlab")
   } else if (is.numeric(meta$grouping)) { #Make numeric bins
       meta[, grouping_numeric_bins := cut(grouping, breaks=numeric_bins)]
+    attr(meta, "xlab") <- paste(attr(values, "xlab"), "(Numeric Bins)")
+  } else if (enrichment_test_on == "Clusters") {
+    attr(meta, "xlab") <- paste(attr(values, "xlab"), "Clusters (K-means)")
+  } else {
+    attr(meta, "xlab") <- paste0(attr(values, "xlab"), ifelse(clustering_was_done, " Clusters (K-means)", ""))
+    attr(meta, "ylab") <- ifelse(clustering_was_done, "Enrichment", "Counts")
   }
-  enrich_dt <- allsamples_meta_stats(meta, attr(values, "xlab"))
+
+
+  enrich_dt <- allsamples_meta_stats(meta)
   cat("metabrowser clustering info done"); print(round(Sys.time() - time_before, 2))
   return(list(meta = meta, enrich_dt = enrich_dt))
 }
 
 allsamples_sidebar <- function(meta) {
-
   gg <- allsamples_sidebar_ggproto(meta)
-  columns_to_drop <- c("order", "index", "cluster")
+  columns_to_drop <- c("order", "index", "cluster", attr(meta, "xlab"))
   other_columns <- meta[, !(colnames(meta) %in% columns_to_drop), with = FALSE]
   plot_list <- lapply(other_columns, function(column) {
     if (is.numeric(column)) {
@@ -76,7 +85,7 @@ allsamples_meta_stats_shiny <- function(dt) {
                                           backgroundColor = styleInterval(c(-3, 3), c('yellow', 'white', 'yellow')))
 }
 
-allsamples_meta_stats <- function(meta, attr_xlab = "TISSUE", attr_ylab = "Enrichment") {
+allsamples_meta_stats <- function(meta, attr_xlab = attr(meta, "xlab"), attr_ylab = attr(meta, "ylab")) {
   time_before <- Sys.time()
   print("Starting metabrowser statistics")
   res <- copy(meta)

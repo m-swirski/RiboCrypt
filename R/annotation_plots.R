@@ -1,7 +1,9 @@
 #' Create sequence panel for RiboCrypt
 #'
+#' @param sequence the DNAStringSet
 #' @param start_codons character vector, default "ATG"
 #' @param stop_codons character vector, default c("TAA", "TAG", "TGA")
+#' @param frame frame not used
 #' @param custom_motif character vector, default NULL.
 #' @return a ggplot object
 #' @keywords internal

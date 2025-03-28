@@ -33,8 +33,13 @@ multiOmicsPlot_animate(
   start_codons = "ATG",
   stop_codons = c("TAA", "TAG", "TGA"),
   custom_motif = NULL,
+  AA_code = Biostrings::GENETIC_CODE,
   log_scale = FALSE,
-  BPPARAM = BiocParallel::SerialParam()
+  BPPARAM = BiocParallel::SerialParam(),
+  summary_track = FALSE,
+  summary_track_type = frames_type,
+  export.format = "svg",
+  frames_subset = "all"
 )
 }
 \arguments{
@@ -110,11 +115,26 @@ If TRUE or "both", display nucleotide and aa sequence in plot.}
 
 \item{custom_motif}{character vector, default NULL.}
 
+\item{AA_code}{Genetic code for amino acid display. Default is SGC0 (standard: Vertebrate).
+See \code{Biostrings::GENETIC_CODE_TABLE} for options. To change to bacterial, do:
+\code{Biostrings::getGeneticCode("11")}}
+
 \item{log_scale}{logical, default FALSE. Log2 scale the count values, for easier visualization of shapes.}
 
 \item{BPPARAM}{how many cores/threads to use? default: \code{BiocParallel::SerialParam()}.
 To see number of threads used for multicores, do \code{BiocParallel::bpparam()$workers}.
 You can also add a time remaining bar, for a more detailed pipeline.}
+
+\item{summary_track}{logical, default FALSE. Display a top track, that is the sum
+of all tracks.}
+
+\item{summary_track_type}{character, default is same as 'frames_type'
+argument}
+
+\item{export.format}{character, default: "svg". alternative: "png".
+when you click the top right image button export, what should it export as?}
+
+\item{frames_subset}{character, default "all". Alternatives: "red", "green", "blue".}
 }
 \value{
 the plot object
@@ -128,8 +148,8 @@ library(RiboCrypt)
 df <- ORFik.template.experiment()[9:10,]
 cds <- loadRegion(df, "cds")
 mrna <- loadRegion(df, "mrna")
-# multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
-#                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
-#                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
-#                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
+multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
+                    frames_type = "columns", leader_extension = 30, trailer_extension = 30, withFrames = c(T, T),
+                    reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+                                  naming = "full", BPPARAM = BiocParallel::SerialParam()))
 }

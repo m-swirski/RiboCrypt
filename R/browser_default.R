@@ -120,10 +120,10 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
 #' df <- ORFik.template.experiment()[9:10,]
 #' cds <- loadRegion(df, "cds")
 #' mrna <- loadRegion(df, "mrna")
-#' # multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
-#' #                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
-#' #                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
-#' #                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
+#' multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
+#'                     frames_type = "columns", leader_extension = 30, trailer_extension = 30, withFrames = c(T, T),
+#'                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+#'                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
 multiOmicsPlot_animate <- function(display_range, annotation = display_range, reference_sequence,
                                    reads, viewMode = c("tx", "genomic")[1], custom_regions = NULL,
                                    leader_extension = 0, trailer_extension = 0,
@@ -138,16 +138,21 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
                                    aa_letter_code = c("one_letter", "three_letters")[1],
                                    annotation_names = NULL,
                                    start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                   custom_motif = NULL, log_scale = FALSE,
-                                   BPPARAM = BiocParallel::SerialParam()) {
+                                   custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
+                                   log_scale = FALSE, BPPARAM = BiocParallel::SerialParam(), summary_track = FALSE,
+                                   summary_track_type = frames_type,
+                                   export.format = "svg", frames_subset = "all") {
   multiOmicsController()
+  bottom_panel <- list(annotation_layers = 1)
+  multiOmicsControllerView()
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   read_names <- names(reads) # Names for frames for seq panels
-  seq_panel <- createSeqPanelPattern(
+  seq_panel_hits <- createSeqPanelPattern(
     target_seq[[1]], start_codons = start_codons,
     stop_codons = stop_codons, custom_motif = custom_motif,
     frame = read_names)
+  seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]])
 
 
   # Get the panel for the annotation track
@@ -157,6 +162,7 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
                                            frame = read_names)
   lines <- gene_model_panel[[2]]
   gene_model_panel <- gene_model_panel[[1]]
+  gene_model_panel <- geneModelPanelPlot(gene_model_panel, frame = read_names)
 
   # profiles <- mapply(function(x,y,z) getProfileAnimate(display_range, x, y, z, kmers_type),
   #                    reads, withFrames, kmers,  SIMPLIFY = FALSE)
@@ -184,12 +190,12 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
             axis.text = element_blank()) +
       theme(plot.margin = unit(c(0,0,0,0), "pt"))+
       scale_x_continuous(expand = c(0,0))
-    plots <- c(plot, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel),
-                           automateTicksX(seq_panel)))
+
+    plots <- plot # c(plot, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
     multiomics_plot <- subplot(plots,
                                margin = 0,
-                               nrows = 4,
-                               heights = c(0.7, 0.05,  0.15, 0.1),
+                               nrows =1, #4
+                               heights = c(0.7), #0.15, 0.1, 0.05
                                shareX = TRUE,
                                titleY = TRUE,
                                titleX = TRUE)
@@ -198,7 +204,7 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
   multiomics_plot <- multiomics_plot %>% plotly::config(
     toImageButtonOptions = list(
       format = "svg",
-      filename = ifelse(plot_name == "default",names(display_range),plot_name),
+      filename = ifelse(plot_name == "default", names(display_range),plot_name),
       width = width,
       height = height))
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)

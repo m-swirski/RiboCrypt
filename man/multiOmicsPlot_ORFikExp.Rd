@@ -40,7 +40,8 @@ multiOmicsPlot_ORFikExp(
   input_id = "",
   summary_track = FALSE,
   summary_track_type = frames_type,
-  export.format = "svg"
+  export.format = "svg",
+  frames_subset = "all"
 )
 }
 \arguments{
@@ -140,6 +141,8 @@ argument}
 
 \item{export.format}{character, default: "svg". alternative: "png".
 when you click the top right image button export, what should it export as?}
+
+\item{frames_subset}{character, default "all". Alternatives: "red", "green", "blue".}
 }
 \value{
 the plot object
@@ -151,6 +154,6 @@ Customizable html plots for visualizing genomic data.
 library(RiboCrypt)
 df <- ORFik.template.experiment()[9,] #Use third library in experiment only
 cds <- loadRegion(df, "cds")
-multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df = df,
+multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df,
                         frames_type = "columns")
 }

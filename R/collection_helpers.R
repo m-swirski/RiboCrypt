@@ -155,6 +155,8 @@ collection_to_wide <- function(table, value.var = "logscore") {
 #' If 2, means you should
 #' sort libraries on coverage in that region. If 4, means to sort on ratio
 #' of that region in this gene vs the other region in another gene.
+#' @param decreasing_order logical, default FALSE. Sort you ordering vector from lowest (default).
+#' If TRUE, sort from highest downwards.
 #' @return a data.table in long or wide (default) format, if as list, it is a
 #' list of size 2 (see argument as_list)
 compute_collection_table <- function(path, lib_sizes, df,

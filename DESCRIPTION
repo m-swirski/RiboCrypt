@@ -52,6 +52,7 @@ Imports:
   shinyhelper,
   shinyjs,
   shinyjqui,
+  shinyWidgets,
   stringr,
   writexl
 Suggests:

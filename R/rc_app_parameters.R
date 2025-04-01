@@ -17,6 +17,11 @@ rc_parameter_setup <- function() {
     if (!is.null(metadata)) {
       if (is.character(metadata)) metadata <- fread(metadata)
       stopifnot(is(metadata, "data.table"))
+      columns_to_show <- c("study_accession", "Run", "ScientificName", "sample_title", "BioProject",
+                           "LIBRARYTYPE", "REPLICATE", "CONDITION", "INHIBITOR",
+                           "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION")
+      metadata <- metadata[, colnames(metadata) %in% columns_to_show, with = FALSE]
+      print(paste("Running with", nrow(metadata), "metadata rows"))
     }
     # Set environments
     with_readlengths_env <- new.env()

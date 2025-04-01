@@ -218,7 +218,6 @@ metadata_input_select <- function(ns, metadata,
                                   choices = colnames(metadata), selected = "TISSUE",
                                   label = "Order on:", id = "metadata",
                                   add = NULL) {
-  choices <- choices[-which(choices %in% "Run")]
   choices <- c(choices, add)
   selectizeInput(
     inputId = ns(id),

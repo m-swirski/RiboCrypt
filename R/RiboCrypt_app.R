@@ -35,6 +35,7 @@
 #' @importFrom markdown mark_html
 #' @importFrom shinyjqui jqui_resizable jqui_draggable
 #' @importFrom shinyjs click useShinyjs
+#' @importFrom shinyWidgets prettySwitch
 #' @importFrom knitr knit
 #' @importFrom stringr str_sub str_count
 #' @importFrom httr GET write_disk

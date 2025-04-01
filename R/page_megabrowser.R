@@ -5,6 +5,9 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   experiments <- all_exp$name
   normalizations <- normalizations("metabrowser")
   enrichment_test_types <- c("Clusters", "Ratio bins", "Other gene tpm bins")
+  columns_to_show <- c("BioProject", "CONDITION", "INHIBITOR",
+                       "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION")
+  metadata <- metadata[, colnames(metadata) %in% columns_to_show, with = FALSE]
   tabPanel(
     title = "MegaBrowser", icon = icon("chart-line"),
     sidebarLayout(

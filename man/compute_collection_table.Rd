@@ -66,6 +66,9 @@ For kmer sliding window, should it split by frame}
 If 2, means you should
 sort libraries on coverage in that region. If 4, means to sort on ratio
 of that region in this gene vs the other region in another gene.}
+
+\item{decreasing_order}{logical, default FALSE. Sort you ordering vector from lowest (default).
+If TRUE, sort from highest downwards.}
 }
 \value{
 a data.table in long or wide (default) format, if as list, it is a

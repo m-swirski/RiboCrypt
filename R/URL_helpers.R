@@ -347,6 +347,7 @@ browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
 #' @param viewMode FALSE (transcript view), TRUE gives genomic.
 #' @param other_tx FALSE, show all other annotation in region (isoforms etc.)
 #' @param kmer integer, default 1 (no binning), binning size of windows, to smear out the signal.
+#' @param add_translons logical, default FALSE. If TRUE, add translons predicted sequences in annotation.
 #' @param zoom_range character, zoom values.
 #' @param host url, default "https://ribocrypt.org". Set to localhost for local version.
 #' @return character, URL.

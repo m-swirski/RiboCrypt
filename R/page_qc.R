@@ -13,14 +13,15 @@ quality_ui <- function(id, all_exp, browser_options, libs, label = "Periodicity"
                    gene_input_select(ns),
                    tx_input_select(ns),
                    library_input_select(ns, FALSE, libs),
-                   heatmap_region_select(ns),
+                   fluidRow(column(6, heatmap_region_select(ns)),
+                            column(3, numericInput(ns("extendLeaders"), "5' extension", 30)),
+                            column(3, numericInput(ns("extendTrailers"), "3' extension", 30))),
                    normalization_input_select(ns),
-                   numericInput(ns("readlength_min"), "Min Readlength", 26),
-                   numericInput(ns("readlength_max"), "Max Readlength", 34)),
-          tabPanel("Settings",
-                   numericInput(ns("extendLeaders"), "5' extension", 30),
-                   numericInput(ns("extendTrailers"), "3' extension", 30)), ),
-        actionButton(ns("go"), "Plot", icon = icon("rocket")), ),
+                   fluidRow(column(6, numericInput(ns("readlength_min"), "Min Readlength", 26)),
+                            column(6, numericInput(ns("readlength_max"), "Max Readlength", 34)))),
+        ),
+        plot_button(ns("go"))
+      ),
       mainPanel(
         plotlyOutput(outputId = ns("c")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
         uiOutput(ns("variableUi"))))
@@ -42,22 +43,21 @@ quality_server <- function(id, all_experiments, env, df, experiments,
 
       # Main plot, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,
-        click_plot_heatmap_main_controller(input, tx, cds, libs, df,
-                                           length_table))
+        click_plot_heatmap_main_controller(input, tx, cds, libs, df))
 
-      coverage <- reactive(heatmap_data(mainPlotControls, tx, length_table)) %>%
-        bindCache(mainPlotControls()$extendLeaders, mainPlotControls()$extendTrailers,
-                  mainPlotControls()$normalization, mainPlotControls()$region,
-                  ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
-                  mainPlotControls()$readlength_min,
-                  mainPlotControls()$readlength_max)
+      anchor_points <- reactive(anchor_points_shiny(mainPlotControls)) %>%
+        bindCache(mainPlotControls()$hash_string_anchor) %>%
+        bindEvent(mainPlotControls(), ignoreNULL = TRUE)
 
-
+      coverage <- reactive(heatmap_data(mainPlotControls, tx, anchor_points())) %>%
+        bindCache(mainPlotControls()$hash_string) %>%
+        bindEvent(anchor_points(), ignoreNULL = TRUE)
 
       output$c <- renderPlotly({
         coverage()[, frame := as.factor(position %% 3), by = fraction]
         return(periodicity_plot(coverage(), fft = TRUE))
-      })
+      }) %>%
+        bindEvent(coverage(), ignoreNULL = TRUE)
       return(rv)
     }
   )

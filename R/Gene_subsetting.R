@@ -14,22 +14,18 @@ extend_needed <- function(windows, length, wanted_length, direction = "up") {
   return(windows)
 }
 
-extend_all_to <- function(point, tx, length_table, mainPlotControls) {
-  windows <- startRegion(point, tx()[names(point)], TRUE,
-                         upstream = mainPlotControls()$extendLeaders,
-                         downstream = mainPlotControls()$extendTrailers - 1)
-  length_table_sub <- length_table()[tx_name %in% names(point),]
-  if (mainPlotControls()$region == "Start codon") {
-    windows <- extend_needed(windows, length_table_sub$utr5_len,
-                             mainPlotControls()$extendLeaders, "up")
-    windows <- extend_needed(windows, length_table_sub$cds_len,
-                             mainPlotControls()$extendTrailers - 1, "down")
-  } else {
-    windows <- extend_needed(windows, length_table_sub$cds_len,
-                             mainPlotControls()$extendLeaders, "up")
-    windows <- extend_needed(windows, length_table_sub$utr3_len,
-                             mainPlotControls()$extendTrailers  - 1, "down")
-  }
+extend_all_to <- function(point, tx, upstream, downstream) {
+  windows <- startRegion(point, tx[names(point)], TRUE,
+                         upstream,
+                         downstream)
+
+  TSS_to_anchor_dist <- pmapToTranscriptF(windows, tx[names(windows)])
+  max_length_upstream <- unlist(end(TSS_to_anchor_dist), use.names = FALSE)
+  max_length_downstream <- widthPerGroup(tx[names(windows)], keep.names = FALSE) - max_length_upstream
+
+  windows <- extend_needed(windows, max_length_upstream, upstream, "up")
+  windows <- extend_needed(windows, max_length_downstream, downstream, "down")
+
   window_lengths <- widthPerGroup(windows, FALSE)
   if (length(unique(window_lengths)) > 1) {
     warning("Some genes hit chromosome boundary, removing them.")

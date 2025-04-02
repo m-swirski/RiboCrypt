@@ -17,7 +17,8 @@ codon_ui <- function(id, all_exp, browser_options, libs, label = "Codon") {
                    codon_score_input_select(ns),
                    checkboxInput(ns("differential"), label = "Differential", value = FALSE),
                    )),
-        actionButton(ns("go"), "Plot", icon = icon("rocket")), ),
+        plot_button(ns("go"))
+      ),
       mainPanel(
         plotlyOutput(outputId = ns("c"), height = "750px") %>%
           shinycssloaders::withSpinner(color="#0dc5c1")))

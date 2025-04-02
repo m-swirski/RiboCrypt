@@ -216,10 +216,10 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
 }
 
 click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
-                                               length_table, minFiveUTR = NULL) {
+                                               minFiveUTR = NULL) {
   display_region <- observed_gene_heatmap(isolate(input$tx), tx)
-  cds_display <- observed_cds_heatmap(isolate(input$tx), cds, length_table,
-                              minFiveUTR = minFiveUTR)
+  cds_display <- observed_cds_heatmap(isolate(input$tx), cds, length_table = NULL,
+                              minFiveUTR = minFiveUTR, df = df())
   dff <- observed_exp_subset(isolate(input$library), libs, df)
 
   additional_extension <- 0
@@ -236,9 +236,12 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
     shift_table <- data.table()
   }
 
-  hash_string <- paste(input$extendLeaders + additional_extension,
-                       input$extendTrailers + additional_extension,
-                       input$normalization, input$region,
+  hash_string_anchor <-  paste(input$extendLeaders + additional_extension,
+                               input$extendTrailers + additional_extension,
+                               input$region, input$customSequence, sep = "|__|")
+
+  hash_string <- paste(hash_string_anchor,
+                       input$normalization,
                        paste(ORFik:::name_decider(dff, naming = "full"), collapse = "|__|"),
                        input$readlength_min,
                        input$readlength_max, sep = "|__|")
@@ -259,10 +262,12 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
                  readlength_max = input$readlength_max,
                  normalization = input$normalization,
                  summary_track = input$summary_track,
+                 custom_sequence = input$customSequence,
                  p_shifted = input$p_shifted,
                  shift_table = shift_table,
-                 hash_string = hash_string,
-                 reads = reads)
+                 reads = reads,
+                 hash_string_anchor = hash_string_anchor,
+                 hash_string = hash_string,)
 }
 
 click_plot_codon_main_controller <- function(input, tx, cds, libs, df,

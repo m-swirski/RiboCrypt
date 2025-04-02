@@ -34,7 +34,7 @@
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
 #' @importFrom shinyjqui jqui_resizable jqui_draggable
-#' @importFrom shinyjs click useShinyjs
+#' @importFrom shinyjs click useShinyjs hideElement showElement
 #' @importFrom shinyWidgets prettySwitch
 #' @importFrom knitr knit
 #' @importFrom stringr str_sub str_count

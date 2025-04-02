@@ -215,6 +215,7 @@ get_fastq_page <- function(input, libs, df, relative_dir) {
   print(path)
   addResourcePath("tmpuser", dirname(path))
   path <- file.path("tmpuser", basename(path))
+  Sys.sleep(0.5)
   page <- tags$iframe(seamless="seamless", src= path, width=1000, height=900)
 }
 

@@ -24,7 +24,7 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
                    export_format_of_plot(ns)
           ),
         ),
-        actionButton(ns("go"), "Plot", icon = icon("rocket")),
+        plot_button(ns("go")),
       ),
       mainPanel(
         jqui_resizable(plotlyOutput(outputId = ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),

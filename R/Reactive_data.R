@@ -1,14 +1,12 @@
-heatmap_data <- function(mainPlotControls, tx, length_table) {
-  message("-- Region: ", mainPlotControls()$region)
+heatmap_data <- function(mainPlotControls, tx, anchor_points) {
+  message("-- Region (motif anchor): ", mainPlotControls()$region)
   if (length(mainPlotControls()$cds_display) > 0) {
-    print(paste("Number of input ranges: ",
-                length(mainPlotControls()$cds_display)))
-    print(class(mainPlotControls()$reads[[1]]))
-    # Pick start or stop region
-    point <- observed_cds_point(mainPlotControls)
-    windows <- extend_all_to(point, tx, length_table, mainPlotControls)
+
+    windows <- extend_all_to(anchor_points, tx(),
+                             mainPlotControls()$extendLeaders,
+                             mainPlotControls()$extendTrailers - 1)
     time_before <- Sys.time()
-    dt <- windowPerReadLength(point, tx(),
+    dt <- windowPerReadLength(anchor_points, tx(),
                               reads = mainPlotControls()$reads[[1]],
                               pShifted = FALSE, upstream = mainPlotControls()$extendLeaders,
                               downstream = mainPlotControls()$extendTrailers - 1,

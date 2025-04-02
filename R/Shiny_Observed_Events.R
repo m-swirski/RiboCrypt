@@ -15,7 +15,7 @@ observed_cds_annotation <- function(gene, cds, all = TRUE) {
 
 observed_cds_heatmap <- function(gene, cds, length_table = NULL,
                                  longestPerGene = TRUE,
-                                 minFiveUTR = NULL) {
+                                 minFiveUTR = NULL, df = NULL) {
   if (gene %in% c("", "NULL")) {
     cds()[0]
   } else {
@@ -28,7 +28,13 @@ observed_cds_heatmap <- function(gene, cds, length_table = NULL,
                                  utr5_len >= minFiveUTR,]$tx_name]
         }
 
-      } else cds()
+      } else {
+        if (is.null(df)) {
+          cds()
+        } else {
+          cds()[filterTranscripts(df, NULL, 1, NULL, longestPerGene = TRUE)]
+        }
+      }
 
     } else if (gene %in% names(cds())) {
       cds()[gene]
@@ -61,11 +67,40 @@ observed_cds_point <- function(mainPlotControls) {
   if (mainPlotControls()$region == "Start codon") {
     region <- groupGRangesBy(
       startSites(mainPlotControls()$cds_display, TRUE, TRUE, TRUE))
-  } else {
+  } else if (mainPlotControls()$region == "Stop codon"){
     region <- groupGRangesBy(
       stopSites(mainPlotControls()$cds_display, TRUE, TRUE, TRUE))
+  } else {
+    custom_motif <- mainPlotControls()$custom_sequence
+    custom_motif <- toupper(custom_motif)
+    custom_motif <- gsub("U", "T", custom_motif)
+
+    grl <- mainPlotControls()$cds_display
+    if (is.null(custom_motif) || custom_motif == "") stop("When anchor region is motif, you must specify a valid motif in settings")
+    seqs <- txSeqsFromFa(grl, mainPlotControls()$dff, is.sorted = TRUE, keep.names = TRUE)
+    hits <- vmatchPattern(custom_motif, seqs)
+    hits <- hits[lengths(hits) > 0]
+    if (length(hits) == 0) stop("There are not hits for this motif")
+    hits <- IRangesList(hits)
+    end(hits) <- start(hits)
+    grl <- grl[names(hits)]
+    names(hits) <- seq_along(hits)
+    region <- pmapFromTranscriptF(hits, grl, removeEmpty = TRUE)
   }
   return(region)
+}
+
+anchor_points_shiny <- function(mainPlotControls) {
+  if (length(mainPlotControls()$cds_display) > 0) {
+    print(paste("Number of input ranges: ",
+                length(mainPlotControls()$cds_display)))
+    print(class(mainPlotControls()$reads[[1]]))
+    # Pick start or stop region
+    return(observed_cds_point(mainPlotControls))
+  } else {
+    print("This is not a mRNA / valid mRNA")
+    return(NULL)
+  }
 }
 
 observed_uorf_annotation <- function(gene, df, all = TRUE, add_uorfs = FALSE) {

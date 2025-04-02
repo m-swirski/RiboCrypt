@@ -70,7 +70,7 @@ library_input_select <- function(ns, multiple = TRUE, choices = "",
 
 motif_input_select <- function(ns, multiple = FALSE, browser_options = NULL,
                               choices = NULL,
-                              label = "Select a meta motif",
+                              label = "or Select a meta motif",
                               id = "motif",
                               selected = NULL) {
   selectizeInput(
@@ -120,12 +120,13 @@ region_view_select <- function(ns, name, label,
   )
 }
 
-heatmap_region_select <- function(ns) {
+heatmap_region_select <- function(ns, add = NULL) {
+  choices <- c("Start codon", "Stop codon", add)
   selectizeInput(
     inputId = ns("region"),
-    label = "View region",
-    choices = c("Start codon", "Stop codon"),
-    selected = "Start codon",
+    label = "Anchor region",
+    choices = choices,
+    selected = choices[1],
     multiple = FALSE
   )
 }

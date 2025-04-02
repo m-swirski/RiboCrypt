@@ -1,6 +1,7 @@
 rc_parameter_setup <- function() {
   with(rlang::caller_env(), {
     time_before <- Sys.time()
+    print(paste("- Starting app instance at time:", format(Sys.time(), "%Y-%m-%d %H:%M")))
     stopifnot(is(all_exp, "data.table"))
     stopifnot(!is.null(all_exp$name))
     stopifnot(nrow(all_exp) > 0)

@@ -10,8 +10,8 @@ fastq_ui <- function(id, all_exp, browser_options, libs, label = "fastq") {
                  organism_input_select(c("ALL", genomes), ns),
                  experiment_input_select(experiments, ns, browser_options),
                  library_input_select(ns, FALSE, libs)),
-        actionButton(ns("go"), "find", icon = icon("magnifying-glass")),
-      ),
+        plot_button(ns("go"), "View report", icon_type = icon("magnifying-glass")),
+        width = 3),
       mainPanel(
         htmlOutput(ns('fastq')) %>% shinycssloaders::withSpinner(color="#0dc5c1")
       )

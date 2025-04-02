@@ -4,7 +4,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
   normalizations <- normalizations("metabrowser")
-  enrichment_test_types <- c("Clusters", "Ratio bins", "Other gene tpm bins")
+  enrichment_test_types <- c(`Clusters (Order factor 1)` = "Clusters", `Ratio bins` = "Ratio bins", `Other gene tpm bins` = "Other gene tpm bins")
   columns_to_show <- c("BioProject", "CONDITION", "INHIBITOR",
                        "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION")
   metadata <- metadata[, colnames(metadata) %in% columns_to_show, with = FALSE]
@@ -17,12 +17,14 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                    organism_input_select(c("ALL", genomes), ns),
                    experiment_input_select(experiments, ns, browser_options,
                                            "default_experiment_meta"),
-                   gene_input_select(ns, FALSE, browser_options),
-                   metadata_input_select(ns, metadata, TRUE),
-                   metadata_input_select(ns, metadata, FALSE,
+                   fluidRow(column(6, gene_input_select(ns, FALSE, browser_options)),
+                            column(6, motif_input_select(ns))),
+                   fluidRow(column(6, metadata_input_select(ns, metadata, TRUE)),
+                            column(6, metadata_input_select(ns, metadata, FALSE,
                                          label = "Enrichment test on:",
                                          id = "enrichment_term",
-                                         add = enrichment_test_types),
+                                         selected = enrichment_test_types[1],
+                                         add = enrichment_test_types))),
                    sliderInput(ns("clusters"), "K-means clusters", min = 1, max = 20,
                                value = 5),
                    helper_button_redirect_call()
@@ -30,25 +32,24 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
           tabPanel("Settings",
                    normalization_input_select(ns, choices = normalizations,
                                               help_link = "mbrowser"),
-                   heatmap_color_select(ns),
-                   sliderInput(ns("color_mult"), "Color scale zoom", min = 1, max = 10,
-                               value = 3),
-                   gene_input_select(ns, label = "Sort by other gene", id = "other_gene"),
-                   motif_input_select(ns),
-                   textInput(ns("ratio_interval"), label = "Sort on interval/ratio : a:b;x:y", value = NULL),
+                   fluidRow(column(6, heatmap_color_select(ns)),
+                            column(6, sliderInput(ns("color_mult"), "Color scale zoom", min = 1, max = 10,
+                               value = 3))),
+                   fluidRow(column(6, gene_input_select(ns, label = "Sort by other gene", id = "other_gene")),
+                            column(6, textInput(ns("ratio_interval"), label = "Sort on interval/ratio : a:b;x:y", value = NULL))),
                    checkboxInput(ns("display_annot"), label = "Display annotation", value = TRUE),
                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                    checkboxInput(ns("frame"), label = "Split by frame", value = FALSE),
                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
                    region_view_select(ns, "region_type", "Select region to view"),
                    tx_input_select(ns, FALSE),
-                   numericInput(ns("min_count"), "Minimum counts", min = 0, value = 100),
-                   sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
-                               value = as.numeric(browser_options["default_kmer"]))
+                   fluidRow(column(6, numericInput(ns("min_count"), "Minimum counts", min = 0, value = 100)),
+                            column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
+                                                  value = as.numeric(browser_options["default_kmer"]))))
           )
         ),
-        actionButton(ns("go"), "Plot", icon = icon("rocket")), width=3
-      )),
+        plot_button(ns("go")),
+      width=3)),
       mainPanel(
         tabsetPanel(type = "tabs",
           tabPanel("Heatmap", fluidRow(

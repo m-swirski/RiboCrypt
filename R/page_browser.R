@@ -51,13 +51,13 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                    fluidRow(column(6, checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE)),
                             column(6, frame_type_select(ns, "summary_track_type", "Select summary display type"))),
                    uiOutput(ns("clip")),
+                   downloadButton(ns("download_plot_html"), "Download HTML", style = "width: 100%; font-size: 16px; font-weight: bold; background-color: #007bff; color: white; border: none;"),
                    export_format_of_plot(ns)
           )
         ),
         tags$hr(style = "border: 1px solid black; margin-top: 0px; margin-bottom: 10px;"),
-        fluidRow(column(8, actionButton(ns("go"), "Generate Plot", icon = icon("rocket"),
-                                        class = "btn-primary", style = "width: 100%; font-size: 16px;")),
-                 column(4, prettySwitch(inputId = ns("viewMode"), label = "Genomic View", value = viewMode,
+        fluidRow(column(7, plot_button(ns("go"))),
+                 column(5, prettySwitch(inputId = ns("viewMode"), label = "Genomic View", value = viewMode,
                    status = "success", fill = TRUE, bigger = TRUE))
         ), width=3
       )),
@@ -89,10 +89,30 @@ browser_server <- function(id, all_experiments, env, df, experiments,
         bindCache(mainPlotControls()$hash_bottom) %>%
         bindEvent(mainPlotControls(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      output$c <- renderPlotly(browser_track_panel_shiny(mainPlotControls, bottom_panel(), session)) %>%
+      browser_plot <- reactive(browser_track_panel_shiny(mainPlotControls, bottom_panel(), session)) %>%
         bindCache(mainPlotControls()$hash_browser) %>%
         bindEvent(bottom_panel(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
+      output$c <- renderPlotly(browser_plot()) %>%
+        bindCache(mainPlotControls()$hash_browser) %>%
+        bindEvent(browser_plot(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+
+      output$download_plot_html <- downloadHandler(
+        filename = function() {
+          paste0("RiboCrypt_", isolate(input$tx), Sys.Date(), ".html")
+        },
+        content = function(file) {
+          htmlwidgets::saveWidget(as_widget(browser_plot()), file)
+        }
+      )
+      observe({
+        if(!isTruthy(input$go)) {
+          shinyjs::hideElement(id = "download_plot_html")
+        } else {
+          shinyjs::showElement(id = "download_plot_html")
+        }
+      })
 
       # Protein display
       module_protein(input, output, gene_name_list, session)

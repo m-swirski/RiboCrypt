@@ -16,13 +16,15 @@ codon_ui <- function(id, all_exp, browser_options, libs, label = "Codon") {
                    codon_filter_input_select(ns),
                    codon_score_input_select(ns),
                    checkboxInput(ns("differential"), label = "Differential", value = FALSE),
+                   checkboxInput(ns("exclude_start_stop"), label = "Exclude start stop", value = TRUE)
                    )),
         plot_button(ns("go"))
       ),
       mainPanel(
-        plotlyOutput(outputId = ns("c"), height = "750px") %>%
-          shinycssloaders::withSpinner(color="#0dc5c1")))
-  )
+        tabsetPanel(type = "tabs",
+                    tabPanel("Codon plot", plotlyOutput(outputId = ns("c"), height = "850px") %>% shinycssloaders::withSpinner(color="#0dc5c1")),
+                    tabPanel("Codon table", tableOutput(outputId = ns("codon_table")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))))
+  ))
 }
 
 codon_server <- function(id, all_experiments, env, df, experiments, tx, cds,
@@ -68,6 +70,7 @@ codon_server <- function(id, all_experiments, env, df, experiments, tx, cds,
                   mainPlotControls()$filter_value)
       output$c <- renderPlotly(click_plot_codon(input, coverage)) %>%
         bindEvent(coverage(), ignoreInit = FALSE, ignoreNULL = TRUE)
+      output$codon_table <- renderTable(coverage())
       return(rv)
     }
   )

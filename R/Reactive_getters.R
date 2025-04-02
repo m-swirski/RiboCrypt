@@ -221,54 +221,68 @@ get_fastq_page <- function(input, libs, df, relative_dir) {
 
 click_plot_codon <- function(input, coverage) {
   message("-- Plotting codon usage")
+  dt <- coverage()
+  if (input$exclude_start_stop) {
+    dt <- dt[grep("(\\*)|(\\#)", seqs, invert = TRUE)]
+    dt[, relative_to_max_score := relative_to_max_score / max(relative_to_max_score), by = .(variable, type)]
+    dt[, seqs := factor(seqs, levels = levels(seqs)[levels(seqs) %in% unique(seqs)], ordered = TRUE)]
+  }
 
   score_column <-
     if (input$codon_score == "percentage") {
       score_column_name <- "relative_to_max_score"
-      coverage()$relative_to_max_score
+      dt$relative_to_max_score
     } else if (input$codon_score == "dispersion(NB)") {
       score_column_name <- "dispersion_txNorm"
-      coverage()$dispersion_txNorm
+      dt$dispersion_txNorm
     } else if (input$codon_score == "alpha(DMN)") {
       score_column_name <- "alpha"
-      coverage()$alpha
+      dt$alpha
     } else if (input$codon_score == "sum") {
       score_column_name <- "sum"
-      coverage()$sum
+      dt$sum
     }
+
+  if (nrow(dt[type == "A"]) > 0 & !input$differential) {
+    levels <- as.character(unique(dt$seqs)[order(score_column[which(dt$type == "A" & dt$variable == dt$variable[1])], decreasing = TRUE)])
+    levels <- c(levels, levels(dt$seqs)[!(levels(dt$seqs) %in% levels)])
+    dt[, seqs := factor(seqs, levels = levels, ordered = TRUE)]
+    dt <- dt[order(seqs, decreasing = TRUE),][order(type, decreasing = TRUE),]
+  }
+
+
 
   if (input$differential) {
     pairs <- ORFik::combn.pairs(unique(coverage()$variable))
-    dt <- data.table()
+    dt_final <- data.table()
     type <- NULL # avoid BiocCheck error
     for (pair in pairs) {
-      sample1 <- coverage()[variable == pair[1],]
-      sample2 <- coverage()[variable == pair[2],]
+      sample1 <- dt[variable == pair[1],]
+      sample2 <- dt[variable == pair[2],]
       score_column <-
         sample1[, score_column_name, with = FALSE] /
         sample2[, score_column_name, with = FALSE]
-      dt <- rbindlist(list(dt,
+      dt_final <- rbindlist(list(dt_final,
                  data.table(variable = paste(sample1$variable,
                                             sample2$variable, sep = " vs "),
                             seqs = sample1$seqs,
                             type = sample1$type,
                             score_column = score_column[[1]])))
     }
-    plotly::ggplotly(ggplot(dt,
-                            aes(score_column, seqs)) +
-                       geom_point(color = "blue") +
-                       scale_fill_gradient2(low = "blue", high = "orange",
-                                            mid = "white") +
-                       theme(axis.text.y = element_text(family = "monospace")) +
-                       facet_grid(type ~ variable))
+    browser()
+    plot <- ggplot(dt_final, aes(score_column, seqs)) +
+      geom_point(color = "blue") + facet_grid(type ~ variable) #+ geom_vline(xintercept = 1, color = "red", linetype = "dashed", size = 0.8, alpha = 0.2)
   } else {
-    plotly::ggplotly(ggplot(coverage(),
-                            aes(type, seqs, fill = score_column)) +
-                       geom_tile(color = "white") +
-                       scale_fill_gradient2(low = "blue", high = "orange",
-                                            mid = "white") +
-                       theme(axis.text.y = element_text(family = "monospace")) +
-                       facet_wrap(coverage()$variable, ncol = 4))
+    plot <- ggplot(dt, aes(score_column, seqs)) + # fill = score_column
+      geom_point(color = "blue") + facet_wrap(variable ~ type, ncol = 4)
+    # geom_tile(color = "white") + scale_fill_gradient2(low = "blue", high = "orange", mid = "white")
   }
+  plot <- plot + theme_minimal() +
+    theme(axis.title = element_text(family = "monospace", size = 14, face = "bold"),
+          axis.text = element_text(family = "monospace", size = 12),
+          strip.text = element_text(size = 14, face = "bold"),
+          plot.margin = margin(t = 20, b = 20, l = 10)) +
+     ylab("AA:Codon") + xlab("Ribosome site")
 
+  plotly::ggplotly(plot)
 }

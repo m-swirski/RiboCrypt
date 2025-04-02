@@ -38,11 +38,6 @@ heatmap_server <- function(id, all_experiments, env, df, experiments, tx, cds,
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
-      # Gene objects
-      length_table <- reactive(optimizedTranscriptLengths(df(), TRUE, TRUE)) %>%
-        bindCache(rv$curval) %>%
-        bindEvent(rv$changed, ignoreNULL = TRUE)
-
       # Update main side panels
       all_is_gene <- TRUE
       study_and_gene_observers(input, output, session)

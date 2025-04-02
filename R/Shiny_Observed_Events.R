@@ -87,6 +87,11 @@ observed_cds_point <- function(mainPlotControls) {
     names(hits) <- seq_along(hits)
     region <- pmapFromTranscriptF(hits, grl, removeEmpty = TRUE)
   }
+  if (length(region) > 3e4) {
+    print("Subsetting to 30k ranges")
+    region <- region[sample(3e4, replace = FALSE)]
+  }
+  print(paste("Number of final ranges:", length(region)))
   return(region)
 }
 

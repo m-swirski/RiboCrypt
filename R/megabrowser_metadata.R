@@ -38,6 +38,7 @@ allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "C
     attr(meta, "xlab") <- paste0(attr(values, "xlab"), ifelse(clustering_was_done, " Clusters (K-means)", ""))
     attr(meta, "ylab") <- ifelse(clustering_was_done, "Enrichment", "Counts")
   }
+  attr(meta, "runIDs") <- attr(values, "runIDs")[orders,]
 
 
   enrich_dt <- allsamples_meta_stats(meta)
@@ -100,17 +101,24 @@ allsamples_meta_stats <- function(meta, attr_xlab = attr(meta, "xlab"), attr_yla
     concat_table <- table(res$grouping, res$cluster)
     chi_test <- chisq.test(concat_table)
     res <- chi_test$stdres
+    tooltipe <- "Chi-squared-stdres: "
   } else {
     concat_table <- table(res$grouping)
     res <- matrix(concat_table, ncol = 1)
     rownames(res) <- names(concat_table)
     colnames(res) <- "counts"
+    tooltipe <- "Counts: "
   }
   res <- as.data.frame.matrix(res)
   attr(res, "xlab") <- attr_xlab
   attr(res, "ylab") <- attr_ylab
+  attr(res, "tooltip") <- tooltipe
+
   cat("metabrowser statistics done"); print(round(Sys.time() - time_before, 2))
   return(res)
+}
+allsamples_enrich_bar_plotly <- function(enrich) {
+  ggplotly(allsamples_enrich_bar_plot(enrich), tooltip = "text")
 }
 
 allsamples_enrich_bar_plot <- function(enrich) {
@@ -119,14 +127,26 @@ allsamples_enrich_bar_plot <- function(enrich) {
   enrich_dt[, variable := factor(as.character(variable))]
   enrich_dt <- enrich_dt[rn != "",]
 
-  enrichment_plot <- ggplot(enrich_dt) +
-    geom_bar(aes(x = rn, y = value, fill = variable), stat="identity", position=position_dodge()) +
+  did_enrichment_test <- all(enrich_dt$variable != "counts")
+  enrich_dt[, tooltip_text := paste0(
+    "Category : ", rn, "<br>",
+    attr(enrich, "tooltip"), round(value, 2), "<br>",
+    if (did_enrichment_test) {
+      paste0(sub("s \\(K-means\\)", "", attr(enrich, "xlab")), ": ", variable)
+    }
+  )]
+
+  enrichment_plot <- ggplot(enrich_dt, aes(x = rn, y = value, fill = variable, text = tooltip_text)) +
+    geom_bar(stat="identity", position=position_dodge()) +
     theme_minimal() + labs(fill = "Cluster") + xlab(attr(enrich, "xlab")) + ylab(attr(enrich, "ylab")) +
-    geom_hline(yintercept = c(3, -3), linetype="dashed", color = "red", linewidth=1) +
     theme(axis.title = element_text(size = 32),
           axis.text.x = element_text(size = (22), angle = 45),
           axis.text.y = element_text(size = (22)),
           legend.text = element_text(size = 22),
           legend.title = element_text(size = 32))
+  if (did_enrichment_test) {
+    enrichment_plot <- enrichment_plot +
+      geom_hline(yintercept = c(3, -3), linetype="dashed", color = "red", linewidth=0.7, alpha = 0.7)
+  }
   return(enrichment_plot)
 }

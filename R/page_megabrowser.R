@@ -61,7 +61,8 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                         width=9, cellArgs = list(style = "padding: 0px")))
         ),
         plotlyOutput(outputId = ns("e"))),
-        tabPanel("Statistics", DTOutput(outputId = ns("stats")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))
+        tabPanel("Statistics", DTOutput(outputId = ns("stats")) %>% shinycssloaders::withSpinner(color="#0dc5c1")),
+        tabPanel("Result table", DTOutput(outputId = ns("result_table")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))
       ))
     )
   )
@@ -114,12 +115,22 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
-      output$e <- renderPlotly(allsamples_enrich_bar_plot(meta_and_clusters()$enrich_dt)) %>%
+      output$e <- renderPlotly(allsamples_enrich_bar_plotly(meta_and_clusters()$enrich_dt)) %>%
         bindCache(controller()$table_hash, controller()$enrichment_term) %>%
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
       output$stats <- renderDT(allsamples_meta_stats_shiny(meta_and_clusters()$enrich_dt)) %>%
+        bindEvent(meta_and_clusters(),
+                  ignoreInit = FALSE,
+                  ignoreNULL = TRUE)
+      output$result_table <- renderDT(cbind(attr(meta_and_clusters()$meta, "runIDs"),
+                                            meta_and_clusters()$meta)[, c("index", "order") := NULL],
+                                      extensions = 'Buttons',
+                                      filter = "top",
+                                      options = list(dom = 'Bfrtip',
+                                                     buttons = NULL,
+                                                     pageLength = 130)) %>%
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)

@@ -13,7 +13,9 @@ codon_ui <- function(id, all_exp, browser_options, libs, label = "Codon") {
                    gene_input_select(ns),
                    tx_input_select(ns),
                    library_input_select(ns, TRUE, libs),
-                   codon_filter_input_select(ns),
+                   fluidRow(column(6, codon_filter_input_select(ns, 1000)),
+                            column(6, sliderInput(ns("ratio_thresh"), "Ratio threshold", min = 1.1, max = 3,
+                                                  value =1.7, step = 0.2))),
                    codon_score_input_select(ns),
                    checkboxInput(ns("differential"), label = "Differential", value = FALSE),
                    checkboxInput(ns("exclude_start_stop"), label = "Exclude start stop", value = TRUE)
@@ -22,8 +24,8 @@ codon_ui <- function(id, all_exp, browser_options, libs, label = "Codon") {
       ),
       mainPanel(
         tabsetPanel(type = "tabs",
-                    tabPanel("Codon plot", plotlyOutput(outputId = ns("c"), height = "850px") %>% shinycssloaders::withSpinner(color="#0dc5c1")),
-                    tabPanel("Codon table", tableOutput(outputId = ns("codon_table")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))))
+                    tabPanel("Codon plot", plotlyOutput(outputId = ns("c"), height = "950px") %>% shinycssloaders::withSpinner(color="#0dc5c1")),
+                    tabPanel("Codon table", DTOutput(outputId = ns("codon_table")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))))
   ))
 }
 
@@ -44,33 +46,16 @@ codon_server <- function(id, all_experiments, env, df, experiments, tx, cds,
                      click_plot_codon_main_controller(input, tx, cds, libs, df,
                                                       length_table))
 
-      coverage <- reactive({
-        message("-- Codon analysis: ")
-        if (length(mainPlotControls()$cds_display) > 0) {
-          print("Valid input")
-          filter_val <- mainPlotControls()$filter_value
-          print(paste("Filter value:", filter_val))
-          print(class(mainPlotControls()$reads[[1]]))
-          time_before <- Sys.time()
-          dt <- codon_usage_exp(mainPlotControls()$dff,
-                                reads = mainPlotControls()$reads,
-                                cds = mainPlotControls()$cds_display,
-                                mrna = tx()[names(mainPlotControls()$cds_display)],
-                                min_counts_cds_filter = filter_val)
-          print(paste("Number of rows in dt:", nrow(dt)))
-          cat("Coverage calc: "); print(round(Sys.time() - time_before, 2))
-          return(dt)
-        } else {
-          print("This is not a mRNA / valid mRNA")
-          return(NULL)
-        }
-      }) %>%
-        bindCache(mainPlotControls()$normalization,
-                  ORFik:::name_decider(mainPlotControls()$dff, naming = "full"),
-                  mainPlotControls()$filter_value)
-      output$c <- renderPlotly(click_plot_codon(input, coverage)) %>%
+      coverage <- reactive(codon_data(mainPlotControls, tx)) %>%
+        bindCache(mainPlotControls()$hash_string)
+      output$c <- renderPlotly(click_plot_codon_shiny(mainPlotControls(), coverage())) %>%
         bindEvent(coverage(), ignoreInit = FALSE, ignoreNULL = TRUE)
-      output$codon_table <- renderTable(coverage())
+      output$codon_table <- DT::renderDT(coverage(),
+                                         extensions = 'Buttons',
+                                         filter = "top",
+                                         options = list(dom = 'Bfrtip',
+                                                        buttons = NULL,
+                                                        pageLength = 130))
       return(rv)
     }
   )

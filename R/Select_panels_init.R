@@ -169,11 +169,11 @@ codon_score_input_select <- function(ns) {
   )
 }
 
-codon_filter_input_select <- function(ns) {
+codon_filter_input_select <- function(ns, value = 1000) {
   numericInput(
     inputId = ns("codon_filter_value"),
     label = "Codon filter value",
-    value = 1000,
+    value = value,
     min = 0,
     max = NA,
     step = NA

@@ -112,6 +112,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
   attr(ordering_vector, "meta_order") <- meta_order
   attr(ordering_vector, "other_columns") <- other_columns[meta_order, ]
   attr(ordering_vector, "xlab") <- colnames(all_metadata_fields)[1]
+  attr(ordering_vector, "runIDs") <- metadata[matchings, c("Run", "BioProject"), with = FALSE][valid_libs == TRUE,][meta_order,]
   return(ordering_vector)
 }
 

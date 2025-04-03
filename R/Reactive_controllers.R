@@ -270,22 +270,40 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
                  hash_string = hash_string,)
 }
 
-click_plot_codon_main_controller <- function(input, tx, cds, libs, df,
-                                             length_table) {
+click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_table) {
   cds_display <- observed_cds_heatmap(isolate(input$tx), cds, length_table,
                                       minFiveUTR = 3)
   dff <- observed_exp_subset(isolate(input$library), libs, df)
 
   time_before <- Sys.time()
   reads <- load_reads(dff, "cov")
-  names(reads) <- ORFik:::name_decider(dff, "full")
+  names <- ORFik:::name_decider(dff, "full")
+  names(reads) <- names
+
+  filter_value <- input$codon_filter_value
+  normalization <- input$normalization
+  differential <- input$differential
+  exclude_start_stop <- input$exclude_start_stop
+  ratio_thresh <- input$ratio_thresh
+
+  hash_string <- paste(name(dff), names, filter_value, sep = "|__|")
+  hash_string_plot <- paste(hash_string, normalization, differential,
+                            exclude_start_stop, ratio_thresh, sep = "|__|")
+  if (differential & length(names) == 1) stop("For differential mode you need at least 2 libraries!")
+
   cat("Library loading: "); print(round(Sys.time() - time_before, 2))
   message("-- Data loading complete")
   reactiveValues(dff = dff,
                  cds_display = cds_display,
                  reads = reads,
+                 normalization = input$normalization,
                  codon_score = input$codon_score,
-                 filter_value = input$codon_filter_value)
+                 filter_value = filter_value,
+                 differential = differential,
+                 ratio_thresh = ratio_thresh,
+                 exclude_start_stop = exclude_start_stop,
+                 hash_string = hash_string,
+                 hash_string_plot = hash_string_plot)
 }
 
 click_plot_DEG_main_controller <- function(input, df, all_libs) {

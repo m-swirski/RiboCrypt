@@ -35,7 +35,7 @@ multiOmicsControllerView <- function() {
 
     if (length(lib_proportions) == 0) lib_proportions <- 1
     if (!(length(lib_proportions)  %in% c(1, length(reads)))) stop("length of lib_proportions must be 0, 1 or the same as reads list")
-    if (length(lib_proportions) == 1) lib_proportions <- rep(lib_proportions, length(reads))
+    if (length(lib_proportions) == 1) lib_proportions <- if (frames_type == "animate") {lib_proportions} else rep(lib_proportions, length(reads))
     lib_proportions <- lib_proportions / sum(lib_proportions)
     if (length(annotation_proportions) == 0) {
       if (display_sequence %in% c("none", FALSE)) {

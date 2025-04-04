@@ -33,7 +33,7 @@ plotSeqPanel <- function(hits, sequence, frame = 1) {
   pos <- NULL # avoid dt warning
   # New red: #FFA8A3 ?
   fig <- ggplot() +
-    geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3), frame = frame),
+    geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3)),
               fill = c("#F8766D","#00BA38","#619CFF")) +
     geom_segment(data=hits, mapping = aes(y = 2 - (frames + 1), yend =  2 - frames, x = pos, xend = pos), col=hits$col) +
     ylab("frame") +

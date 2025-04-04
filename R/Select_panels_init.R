@@ -56,14 +56,19 @@ tx_input_select <- function(ns, multiple = FALSE, choices = NULL,
 }
 
 library_input_select <- function(ns, multiple = TRUE, choices = "",
-                                 selected = choices[1],
+                                 selected = if (is(choices, "data.frame")) {
+                                   choices[1, , drop = FALSE]
+                                 } else {
+                                   choices[1]
+                                   },
                                  label = "Select libraries", id = "library") {
   selectizeInput(
     inputId = ns(id),
     label = label,
     choices = choices,
     selected = selected,
-    multiple = multiple
+    multiple = multiple,
+    options = list(plugins = list("remove_button"))
   ) %>%
     helper(onclick = "fakeClick('tutorial', 'lib')")
 }
@@ -89,7 +94,7 @@ frame_type_select <- function(ns, name = "frames_type",
   selectizeInput(
     inputId = ns(name),
     label = label,
-    choices = c("lines", "columns", "stacks", "area", "heatmap"),
+    choices = c("lines", "columns", "stacks", "area", "heatmap", "animate"),
     selected = selected,
     multiple = FALSE
   ) %>%

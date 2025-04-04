@@ -28,11 +28,22 @@ fastq_server <- function(id, all_experiments, df, experiments, libs, org, rv,
              relative_dir = relative_dir_to_bam) {
       uses_gene <- FALSE
       study_and_gene_observers(input, output, session)
-      # Main plot controller, this code is only run if 'plot' is pressed
-      page <- eventReactive(input$go,
-                 get_fastq_page(input, libs, df, relative_dir))
-      # Main plot, this code is only run if 'plot' is pressed
-      output$fastq <- renderUI({page()})
+
+      page <- reactiveVal(NULL)  # Store the path separately
+
+      observeEvent(input$go, {
+        path <- get_fastq_page(input, libs, df, relative_dir)
+        if (!is.null(path)) {
+          page(NULL)  # Reset first
+          invalidateLater(700)  # Delay reactivity by 0.5s
+          page(path)  # Update the path
+        }
+      })
+
+      output$fastq <- renderUI({
+        req(page())  # Ensure path exists
+        tags$iframe(seamless = "seamless", src = page(), width = 1000, height = 900)
+      })
       return(rv)
     }
   )

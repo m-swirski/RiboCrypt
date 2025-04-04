@@ -318,6 +318,7 @@ resolution)</li>
 most clear for large regions (&gt; 1000 nt))</li>
 <li>heatmap (good for displaying large number of libraries, see
 metabrowser for display of thousands of libraries)</li>
+<li>animate (single row with animation changing between libraries)</li>
 </ul></li>
 <li>K-mer length: sliding window of selected length applying averaging
 coverage per frame. K-mer = 1 means unaltered data. When looking at a
@@ -435,7 +436,14 @@ top.</p>
 <h2>Selection panel (Browser)</h2>
 <p>Organism, experiment and gene explained above</p>
 <ul>
-<li>Group on: the metadata column to order plot by</li>
+<li>Meta motif: Amino acid motifs from all genes over all libraries (+/-
+300 nucleotides shown)</li>
+<li>Order on: the metadata column to order plot by. The first factor
+defined will be the one that decided what to cluster / group by.</li>
+<li>Enrichment test on: What factor to do enrichment analysis on: For
+clusters (factor 1), it will do test on the first factor defined in
+“Order on”. For all the others it will create numeric bins of the
+ordering.</li>
 <li>K-means clusters: How many k-means clusters to use, if &gt; 1, Group
 will be sorted within the clusters, but K-means have priority.</li>
 </ul>
@@ -459,6 +467,10 @@ is the majority)</li>
 (increasing). A line plot will be shown left that display the expression
 of that other gene per row. Also the enrichment analysis is done on bins
 of the other genes expression instead of metadata term.</li>
+<li>Sort on interval ratio: If 2 numbers of format x:y, will give
+ordering over all libraries by strength of the region. For format
+x:y;a:b, it will create a ratio ordering of strength of x:y / a:b.
+Useful to compare to regions.</li>
 <li>Summary top track (same as in browser, the aggregate of all rows,
 useful to see the frame information, which is not represented in the
 heatmap)</li>
@@ -466,11 +478,14 @@ heatmap)</li>
 heatmap with frame information, so rgb colors from white to dark red
 etc.</li>
 <li>Summary display type: Same as in browser</li>
-<li>Region to view: By default uses entire transcript. Can subset to
-only view cds or leader+cds etc.</li>
+<li>Selected region to view: By default uses entire transcript. Can
+subset to only view cds or leader+cds etc.</li>
 <li>Select a transcript: Which transcript isoforms not all isoforms have
 computed fsts. By default the longest isoforms have been computed for
 all genes.</li>
+<li>Minimum counts: The minimum raw counts over the total area per
+library to display, useful to filter out low coverage libraries to
+remove noice from enrichment test etc.</li>
 <li>K-mer length: Smoothens out the signal by applying a mean sliding
 window, default 1 (off)</li>
 </ul>
@@ -484,6 +499,11 @@ value is bigger than +/- 3, it means it is quite certain this is over
 represented. This is shown as a red line.</p>
 <p>If no clustering was applied, this tab gives the number of items per
 metadata term (40 brain samples, 30 kidney samples etc).</p>
+</div>
+<div id="result-table" class="section level2">
+<h2>Result table</h2>
+<p>This tab gives the metadata with run ids, bioproject and cluster /
+numeric bin id, for each sample that passes the count filter.</p>
 </div>
 <div id="requirements" class="section level2">
 <h2>Requirements</h2>
@@ -505,7 +525,7 @@ Future investigation into optimization will be done.</p>
 <p>Here we collect the analysis possibilities, which are usually
 operating on meta-gene or multi locus scale.</p>
 <div id="heatmap" class="section level2">
-<h2>Heatmap</h2>
+<h2>Motif metaplot</h2>
 <p>This tab displays a heatmap of coverage per readlength at a specific
 region (like start site of coding sequences) over all genes
 selected.</p>
@@ -519,11 +539,19 @@ addition to have the option to specify all genes (default).</p>
 <ul>
 <li>Select libraries. Currently Only 1 library can be selected in
 heatmap mode.</li>
-<li>View region Select one of:
+<li>Anchor region (Select one of):
 <ul>
 <li>Start codon</li>
 <li>Stop codon</li>
+<li>User defined motif</li>
 </ul></li>
+<li>Anchor on motif: A DNA nucleotide motif to anchor on, will subsample
+to a set of 30k regions for the gene set (if total regions &gt;
+30k).</li>
+<li>5’ extension (extend viewed window upstream from point, default
+30)</li>
+<li>3’ extension (extend viewed window downstreamfrom point, default
+30)</li>
 <li>Normalization Normalization mode for data display, select one of:
 <ul>
 <li>transcriptNormalized (each gene counts sum to 1)</li>
@@ -541,21 +569,18 @@ peaks)</li>
 <h3>Selection panel (settings)</h3>
 <p>Here additional options are shown:</p>
 <ul>
-<li><p>5’ extension (extend viewed window upstream from point, default
-30)</p></li>
-<li><p>3’ extension (extend viewed window downstreamfrom point, default
-30)</p></li>
-<li><p>Summary top track - summarized coverage from all
-readlengths</p></li>
-<li><p>p-shifted - display either P-sites (default), or reads 5’
-ends.</p></li>
+<li>Summary top track - summarized coverage from all readlengths</li>
+<li>p-shifted - display either P-sites (default), or non shifted reads
+5’ ends.</li>
 </ul>
-<p>Metagene analysis with heatmap module can be used, for example, to
-investigate how well P-site positioning was performed (Fig. 4)</p>
+<p>Metagene analysis with anchor points module can be used, for example,
+to investigate how well P-site positioning was performed and biases over
+motifs (Fig. 4). If you want to do custom motif analysis over all
+libraries per organism, we support this in the Mega Browser tab.</p>
 </div>
 </div>
-<div id="codon-analysis" class="section level2">
-<h2>Codon analysis</h2>
+<div id="codon-dwell-time" class="section level2">
+<h2>Codon dwell time</h2>
 <p>This tab displays a heatmap of codons dwell times over all genes
 selected, for both A and P sites. When pressing “Differential” you swap
 to a between library differential codon dwell time comparison (minimum 2
@@ -571,6 +596,10 @@ addition to have the option to specify all genes (default).</p>
 <h4>Filters</h4>
 <ul>
 <li>Codon filter value (Minimum reads in ORF to be included)</li>
+<li>Ratio threshold: The ratio of differential codon usage to define as
+significant. If it is 2, it means the ratio must either be &gt;= 2
+(upregulated in sample 1 vs 2) or &lt;= 1/2 (downregulated in sample 1
+vs 2).</li>
 <li>Codon score, all scores are normalized for both codon and count per
 gene level (except for sum):
 <ul>
@@ -581,6 +610,11 @@ normalized percentages)</li>
 <li>sum (raw sum, (a very biased estimator, since some codons are used
 much more than others!))</li>
 </ul></li>
+<li>Differential: Do differential test (TRUE), or show codon dwell times
+per library (FALSE)</li>
+<li>Exclude start / stop: As the dwell time of these are often highly
+biased, exclude the start and stop codon per gene from the
+analysis.</li>
 </ul>
 </div>
 <div id="codon-plot" class="section level4">
@@ -596,9 +630,11 @@ between E, P and A sites, i.g. the motif PPP (triplet-proline in E,P,A
 site) is much stronger than a single P in the A site etc. alone etc.</p>
 </div>
 </div>
+<div id="codon-table" class="section level3">
+<h3>Codon Table</h3>
+<p>The table of result data with all scores per library and ribosome
+site.</p>
 </div>
-<div id="section-1" class="section level2">
-<h2></h2>
 </div>
 <div id="diffexp" class="section level2">
 <h2>Differential gene expression</h2>
@@ -629,10 +665,11 @@ only!)</li>
 </ul>
 </div>
 </div>
-<div id="read-length-qc" class="section level2">
-<h2>Read length (QC)</h2>
+<div id="frame-bias-read-length-qc" class="section level2">
+<h2>Frame bias (Read length QC)</h2>
 <p>This tab displays a QC of pshifted coverage per readlength (like
-start site of coding sequences) over all genes selected.</p>
+start site of coding sequences) over all genes selected. Useful to see
+the strength of periodicity per read length.</p>
 <div id="display-panel-read-length-qc" class="section level3">
 <h3>Display panel (Read length QC)</h3>
 <p>The display panel shows what can be specified to display, the
@@ -652,11 +689,11 @@ possible select boxes are same as for heatmap above:</p>
 clean peak means good periodicity)</p>
 </div>
 </div>
-<div id="fastq-qc" class="section level2">
-<h2>Fastq (QC)</h2>
+<div id="fastq-report-qc" class="section level2">
+<h2>Fastq report (QC)</h2>
 <p>This tab displays the fastq QC output from fastp, as a html page.</p>
-<div id="display-panel-read-length-qc-1" class="section level3">
-<h3>Display panel (Read length QC)</h3>
+<div id="display-panel" class="section level3">
+<h3>Display panel</h3>
 <p>The display panel shows what can be specified to display, you can
 select from organism, study and library.</p>
 </div>
@@ -674,7 +711,18 @@ predictions. RiboCrypt is integrated with
 Portal</a>, refer to
 <a href="https://doi.org/10.1093/nar/gkae1020" target="_blank">this
 paper</a> for details on metadata curation and standardization.</p>
-<p>## SRA search</p>
+<div id="samples" class="section level2">
+<h2>Samples</h2>
+<p>Full table of supported samples with with linking to SRR run ids,
+Bioproject ids and all metadata terms.</p>
+</div>
+<div id="studies" class="section level2">
+<h2>Studies</h2>
+<p>Full table of supported studies with information about sample
+counts</p>
+</div>
+<div id="sra-search" class="section level2">
+<h2>SRA search</h2>
 <p>Search SRA for full information of supported study</p>
 <div id="study-accession-number" class="section level3">
 <h3>Study accession number</h3>
@@ -691,10 +739,6 @@ paper</a> for details on metadata curation and standardization.</p>
 <p>On top the abstract of the study is displayed, and on bottom a table
 of all metadata found from the study is displayed.</p>
 </div>
-<div id="studies" class="section level2">
-<h2>Studies</h2>
-<p>Full table of supported studies with information about sample
-counts</p>
 </div>
 <div id="translon" class="section level2">
 <h2>Predicted translons</h2>

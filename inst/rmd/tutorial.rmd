@@ -164,6 +164,7 @@ to go to metadata tab and search for the study.
         most clear for large regions (\> 1000 nt))
     -   heatmap (good for displaying large number of libraries, see
         metabrowser for display of thousands of libraries)
+    -   animate (single row with animation changing between libraries)
 -   K-mer length: sliding window of selected length applying averaging
     coverage per frame. K-mer = 1 means unaltered data. When looking at
     a large region (\> 100nt), pure coverage can usually be hard to
@@ -285,7 +286,12 @@ top.
 
 Organism, experiment and gene explained above
 
--   Group on: the metadata column to order plot by
+-   Meta motif: Amino acid motifs from all genes over all libraries (+/- 300 nucleotides shown)
+-   Order on: the metadata column to order plot by. The first factor defined will
+    be the one that decided what to cluster / group by.
+-   Enrichment test on: What factor to do enrichment analysis on: For clusters (factor 1), 
+    it will do test on the first factor defined in "Order on". For all the others it will create 
+    numeric bins of the ordering.
 -   K-means clusters: How many k-means clusters to use, if \> 1, Group
     will be sorted within the clusters, but K-means have priority.
 
@@ -306,6 +312,10 @@ Organism, experiment and gene explained above
     expression of that other gene per row. Also the enrichment analysis
     is done on bins of the other genes expression instead of metadata
     term.
+-   Sort on interval ratio: If 2 numbers of format x:y, will give ordering 
+    over all libraries by strength of the region. For format x:y;a:b, it will 
+    create a ratio ordering of strength of x:y / a:b. Useful to compare
+    to regions.
 -   Summary top track (same as in browser, the aggregate of all rows,
     useful to see the frame information, which is not represented in the
     heatmap)
@@ -313,11 +323,13 @@ Organism, experiment and gene explained above
     heatmap with frame information, so rgb colors from white to dark red
     etc.
 -   Summary display type: Same as in browser
--   Region to view: By default uses entire transcript. Can subset to
+-   Selected region to view: By default uses entire transcript. Can subset to
     only view cds or leader+cds etc.
 -   Select a transcript: Which transcript isoforms not all isoforms have
     computed fsts. By default the longest isoforms have been computed
     for all genes.
+-   Minimum counts: The minimum raw counts over the total area per library to display,
+    useful to filter out low coverage libraries to remove noice from enrichment test etc.
 -   K-mer length: Smoothens out the signal by applying a mean sliding
     window, default 1 (off)
 
@@ -331,6 +343,11 @@ represented. This is shown as a red line.
 
 If no clustering was applied, this tab gives the number of items per
 metadata term (40 brain samples, 30 kidney samples etc).
+
+## Result table
+
+This tab gives the metadata with run ids, bioproject and cluster / numeric bin id,
+for each sample that passes the count filter.
 
 ## Requirements
 
@@ -351,7 +368,7 @@ investigation into optimization will be done.
 Here we collect the analysis possibilities, which are usually operating
 on meta-gene or multi locus scale.
 
-## Heatmap {#heatmap}
+## Motif metaplot {#heatmap}
 
 This tab displays a heatmap of coverage per readlength at a specific
 region (like start site of coding sequences) over all genes selected.
@@ -370,9 +387,14 @@ addition to have the option to specify all genes (default).
 
 -   Select libraries. Currently Only 1 library can be selected in
     heatmap mode.
--   View region Select one of:
+-   Anchor region (Select one of):
     -   Start codon
     -   Stop codon
+    - User defined motif
+-   Anchor on motif: A DNA nucleotide motif to anchor on, will subsample to
+    a set of 30k regions for the gene set (if total regions > 30k).
+-   5' extension (extend viewed window upstream from point, default 30)
+-   3' extension (extend viewed window downstreamfrom point, default 30)
 -   Normalization Normalization mode for data display, select one of:
     -   transcriptNormalized (each gene counts sum to 1)
     -   zscore (zscore normalization, will give better overview if 1
@@ -387,18 +409,15 @@ addition to have the option to specify all genes (default).
 
 Here additional options are shown:
 
--   5' extension (extend viewed window upstream from point, default 30)
-
--   3' extension (extend viewed window downstreamfrom point, default 30)
-
 -   Summary top track - summarized coverage from all readlengths
+-   p-shifted - display either P-sites (default), or non shifted reads 5' ends.
 
--   p-shifted - display either P-sites (default), or reads 5' ends.
+Metagene analysis with anchor points module can be used, for example, to
+investigate how well P-site positioning was performed and biases over motifs (Fig. 4).
+If you want to do custom motif analysis over all libraries per organism, we support
+this in the Mega Browser tab.
 
-Metagene analysis with heatmap module can be used, for example, to
-investigate how well P-site positioning was performed (Fig. 4)
-
-## Codon analysis
+## Codon dwell time
 
 This tab displays a heatmap of codons dwell times over all genes
 selected, for both A and P sites. When pressing "Differential" you swap
@@ -415,6 +434,9 @@ addition to have the option to specify all genes (default).
 #### Filters {#codonfilt}
 
 -   Codon filter value (Minimum reads in ORF to be included)
+-   Ratio threshold: The ratio of differential codon usage to define as significant.
+    If it is 2, it means the ratio must either be >= 2 (upregulated in sample 1 vs 2) 
+    or <= 1/2 (downregulated in sample 1 vs 2).
 -   Codon score, all scores are normalized for both codon and count per
     gene level (except for sum):
     -   percentage (percentage use relative to max codon, transcript
@@ -423,6 +445,9 @@ addition to have the option to specify all genes (default).
     -   alpha(DMN) (Dirichlet-multinomial distribution alpha parameter)
     -   sum (raw sum, (a very biased estimator, since some codons are
         used much more than others!))
+-   Differential: Do differential test (TRUE), or show codon dwell times per library (FALSE)
+-   Exclude start / stop: As the dwell time of these are often highly biased, exclude the start and stop codon
+    per gene from the analysis.
 
 #### Codon plot
 
@@ -436,7 +461,9 @@ eventually using the more correct negative binomial relationships
 between E, P and A sites, i.g. the motif PPP (triplet-proline in E,P,A
 site) is much stronger than a single P in the A site etc. alone etc.
 
-## 
+### Codon Table
+
+The table of result data with all scores per library and ribosome site.
 
 ## Differential gene expression {#diffexp}
 
@@ -465,10 +492,11 @@ details!) - Select two conditions (which 2 factors to group by)
 -   export format for plot (explained above)
 
 
-## Read length (QC)
+## Frame bias (Read length QC)
 
 This tab displays a QC of pshifted coverage per readlength (like start
-site of coding sequences) over all genes selected.
+site of coding sequences) over all genes selected. Useful to
+see the strength of periodicity per read length.
 
 ### Display panel (Read length QC)
 
@@ -489,11 +517,11 @@ Top plot: Read length relative usage
 Bottom plot: Fourier transform (3 nucleotide periodicity quality, clean
 peak means good periodicity)
 
-## Fastq (QC)
+## Fastq report (QC)
 
 This tab displays the fastq QC output from fastp, as a html page.
 
-### Display panel (Read length QC)
+### Display panel
 
 The display panel shows what can be specified to display, you can select
 from organism, study and library.
@@ -511,7 +539,16 @@ Portal</a>, refer to
 <a href="https://doi.org/10.1093/nar/gkae1020" target="_blank">this
 paper</a> for details on metadata curation and standardization.
 
-\## SRA search
+## Samples
+
+Full table of supported samples with with linking to
+SRR run ids, Bioproject ids and all metadata terms. 
+
+## Studies
+
+Full table of supported studies with information about sample counts
+
+## SRA search
 
 Search SRA for full information of supported study
 
@@ -528,10 +565,6 @@ Here you input a study accession number in the form of either:
 
 On top the abstract of the study is displayed, and on bottom a table of
 all metadata found from the study is displayed.
-
-## Studies
-
-Full table of supported studies with information about sample counts
 
 ## Predicted translons {#translon}
 

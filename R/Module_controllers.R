@@ -147,6 +147,34 @@ module_protein <- function(input, output, gene_name_list, session) {
   })
 }
 
+module_additional_browser <- function(input, output, session) {
+  with(rlang::caller_env(), {
+    # Protein display
+    module_protein(input, output, gene_name_list, session)
+
+    output$download_plot_html <- downloadHandler(
+      filename = function() {
+        paste0("RiboCrypt_", isolate(input$tx), Sys.Date(), ".html")
+      },
+      content = function(file) {
+        htmlwidgets::saveWidget(as_widget(browser_plot()), file)
+      }
+    )
+    observe({
+      if(!isTruthy(input$go)) {
+        shinyjs::hideElement(id = "download_plot_html")
+      } else {
+        shinyjs::showElement(id = "download_plot_html")
+      }
+    })
+
+    output$d <- renderPlotly({
+      req(input$expression_plot == TRUE)
+      click_plot_boxplot(mainPlotControls, session)}) %>%
+      bindCache(mainPlotControls()$hash_expression)
+  })
+}
+
 #' This function sets up default backend for genome specific reactives
 #'
 #' It is a rlang module for all submodules.\cr
@@ -237,6 +265,13 @@ study_and_gene_observers <- function(input, output, session) {
     if (uses_libs) {
       observeEvent(libs(), library_update_select(libs),
                    ignoreNULL = TRUE, ignoreInit = FALSE)
+      if (id == "browser") {
+        observeEvent(input$select_all_btn, {
+          print("Pressed select all libs")
+          # Ensure that the updateSelectizeInput works properly
+          library_update_select(libs, selected = libs())
+        }, ignoreNULL = TRUE, ignoreInit = TRUE)  # Ensure the event is triggered on every click, including after initialization
+      }
     }
     check_url_for_go_on_init()
     init_round <- FALSE

@@ -29,16 +29,23 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels
   force(colors)
   force(lines)
   force(ylabels)
-  if (is(BPPARAM, "SerialParam")) {
-    plots <- mapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
-                    profiles, withFrames, colors, ylabels, ylabels_full_name,
-                    SIMPLIFY = FALSE)
+
+  if (frames_type == "animate") {
+    plots <- list(getPlotAnimate(rbindlist(profiles, idcol = "file"), withFrames = withFrames[1],
+                                colors = colors[1], ylabels = ylabels[1], lines = lines))
   } else {
-    plots <- bpmapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
+    if (is(BPPARAM, "SerialParam")) {
+      plots <- mapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
                       profiles, withFrames, colors, ylabels, ylabels_full_name,
-                      SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+                      SIMPLIFY = FALSE)
+    } else {
+      plots <- bpmapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
+                        profiles, withFrames, colors, ylabels, ylabels_full_name,
+                        SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+    }
   }
-  nplots <- length(plots)
+
+  nplots <- ifelse(frames_type == "animate", 1, length(plots))
   if (summary_track) {
     nplots <- nplots + 1
     plots <- make_summary_track(profiles, plots, withFrames, colors,
@@ -79,8 +86,6 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                          zoom_range = NULL) {
   nplots <- track_panel$nplots
   plots <- browser_plots_highlighted(track_panel$plots, zoom_range)
-
-
 
   gene_model_panel <- bottom_panel$gene_model_panel
   seq_panel <- bottom_panel$seq_panel
@@ -125,6 +130,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
     multiomics_plot <- multiomics_plot %>%
       plotly::layout(xaxis = list(range = zoom_range))
   }
+  multiomics_plot <- lineDeSimplify(multiomics_plot)
 
   return(multiomics_plot)
 }

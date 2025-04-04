@@ -15,6 +15,12 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
   tabPanel(
     tags$head(includeHTML(system.file("google_analytics_html",
                                       "google_analytics.html", package = "RiboCrypt"))),
+    tags$style(HTML("
+    .shiny-input-container {
+      position: relative;
+      height: 100px; /* Adjust height as needed */
+    }
+  ")),
     title = "browser", icon = icon("chart-line"),
     sidebarLayout(
       jqui_resizable(sidebarPanel(
@@ -24,7 +30,15 @@ browser_ui = function(id,  all_exp, browser_options, gene_names_init,
                             column(6, experiment_input_select(experiments, ns, browser_options))),
                    fluidRow(column(6, gene_input_select(ns, FALSE, browser_options)),
                            column(6, tx_input_select(ns, FALSE, all_isoforms, browser_options["default_isoform"]))),
-                   library_input_select(ns, TRUE, libs, init_libs),
+                   fluidRow(
+                     column(11, library_input_select(ns, TRUE, libs, init_libs)),
+                     column(1,
+                            div(style = "display: flex; justify-content: center; align-items: center; height: 100%;",
+                                actionButton(ns("select_all_btn"), "Select all", icon = icon("check"),
+                                             class = "btn-primary", style = "font-size: 13px; width: auto;")
+                            )
+                     )
+                   ),
                    fluidRow(column(6, frame_type_select(ns, selected =
                                        browser_options["default_frame_type"])),
                             column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
@@ -97,30 +111,10 @@ browser_server <- function(id, all_experiments, env, df, experiments,
         bindCache(mainPlotControls()$hash_browser) %>%
         bindEvent(browser_plot(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
+      # Additional outputs
+      module_additional_browser(input, output, session)
 
-      output$download_plot_html <- downloadHandler(
-        filename = function() {
-          paste0("RiboCrypt_", isolate(input$tx), Sys.Date(), ".html")
-        },
-        content = function(file) {
-          htmlwidgets::saveWidget(as_widget(browser_plot()), file)
-        }
-      )
-      observe({
-        if(!isTruthy(input$go)) {
-          shinyjs::hideElement(id = "download_plot_html")
-        } else {
-          shinyjs::showElement(id = "download_plot_html")
-        }
-      })
 
-      # Protein display
-      module_protein(input, output, gene_name_list, session)
-
-      output$d <- renderPlotly({
-        req(input$expression_plot == TRUE)
-        click_plot_boxplot(mainPlotControls, session)}) %>%
-          bindCache(mainPlotControls()$hash_expression)
       return(rv)
     }
   )

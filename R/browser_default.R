@@ -170,7 +170,6 @@ multiOmicsPlot_animate <- function(display_range, annotation = display_range, re
                         reads, withFrames, kmers,  SIMPLIFY = FALSE, BPPARAM = BPPARAM)
 
   profiles <- rbindlist(profiles, idcol = "file")
-
   plot <- list(getPlotAnimate(profiles, withFrames = withFrames[1],
                          colors = colors[1], ylabels = ylabels[1], lines = lines))
 

@@ -116,6 +116,16 @@ library_update_select <- function(libs, selected = isolate(libs()[1]),
   )
 }
 
+library_update_select_safe <- function(libs, selected = libs[1],
+                                  id = "library") {
+  updateSelectizeInput(
+    inputId = id,
+    choices = libs,
+    selected = selected,
+    server = TRUE
+  )
+}
+
 condition_update_select <- function(cond) {
   selected <- if (length(unique(cond())) > 1) {
     2

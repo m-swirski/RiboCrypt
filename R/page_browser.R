@@ -1,88 +1,153 @@
-browser_ui = function(id,  all_exp, browser_options, gene_names_init,
-                      libs, label = "Browser") {
+browser_ui <- function(id, all_exp, browser_options, gene_names_init,
+                       libs, label = "Browser") {
 
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
-  # TODO: move init_tx and init_libs to setup module
   all_isoforms <- subset(gene_names_init, label == browser_options["default_gene"])
   init_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
   viewMode <- browser_options["default_view_mode"] == "genomic"
-  copy_button_formatting <- tags$head(
-    tags$style(HTML('#clip{background-color:orange}'))
-  )
 
   tabPanel(
-    tags$head(includeHTML(system.file("google_analytics_html",
-                                      "google_analytics.html", package = "RiboCrypt"))),
-    tags$style(HTML("
-    .shiny-input-container {
-      position: relative;
-      height: 100px; /* Adjust height as needed */
-    }
-  ")),
     title = "browser", icon = icon("chart-line"),
-    sidebarLayout(
-      jqui_resizable(sidebarPanel(
-        tabsetPanel(
-          tabPanel("Browser",
-                   fluidRow(column(6, organism_input_select(c("ALL", genomes), ns)),
-                            column(6, experiment_input_select(experiments, ns, browser_options))),
-                   fluidRow(column(6, gene_input_select(ns, FALSE, browser_options)),
-                           column(6, tx_input_select(ns, FALSE, all_isoforms, browser_options["default_isoform"]))),
-                   fluidRow(
-                     column(11, library_input_select(ns, TRUE, libs, init_libs)),
-                     column(1,
-                            div(style = "display: flex; justify-content: center; align-items: center; height: 100%;",
-                                actionButton(ns("select_all_btn"), "Select all", icon = icon("check"),
-                                             class = "btn-primary", style = "font-size: 13px; width: auto;")
-                            )
-                     )
-                   ),
-                   fluidRow(column(6, frame_type_select(ns, selected =
-                                       browser_options["default_frame_type"])),
-                            column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
-                          value = as.numeric(browser_options["default_kmer"])))),
-                   shinyjs::useShinyjs(),
-                   rclipboardSetup(),
-                   copy_button_formatting
-          ),
-          tabPanel("Settings",
-                   fluidRow(column(6, numericInput(ns("extendLeaders"), "5' extension", 0)),
-                            column(6, numericInput(ns("extendTrailers"), "3' extension", 0))),
-                   textInput(ns("customSequence"), label = "Custom sequences highlight", value = NULL),
-                   textInput(ns("genomic_region"), label = "Genomic region", value = NULL),
-                   textInput(ns("zoom_range"), label = "Zoom interval", value = NULL),
-                   fluidRow(column(4, checkboxInput(ns("other_tx"), label = "Full annotation", value = FALSE)),
-                            column(4, checkboxInput(ns("add_uorfs"), label = "uORF annotation", value = FALSE)),
-                            column(4, checkboxInput(ns("add_translon"), label = "Predicted translons", value = FALSE))),
-                   checkboxInput(ns("log_scale"), label = "Log Scale", value = FALSE),
-                   fluidRow(column(4, checkboxInput(ns("expression_plot"), label = "Gene expression plot", value = FALSE)),
-                            column(4, checkboxInput(ns("useCustomRegions"), label = "Protein structures", value = TRUE)),
-                            column(4, checkboxInput(ns("phyloP"), label = "Conservation (phyloP)", value = FALSE))),
-                   fluidRow(column(6, checkboxInput(ns("withFrames"), label = "Split color Frames", value = TRUE)),
-                            column(6, frame_subsetter_select(ns))),
-                   fluidRow(column(6, checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE)),
-                            column(6, frame_type_select(ns, "summary_track_type", "Select summary display type"))),
-                   uiOutput(ns("clip")),
-                   downloadButton(ns("download_plot_html"), "Download HTML", style = "width: 100%; font-size: 16px; font-weight: bold; background-color: #007bff; color: white; border: none;"),
-                   export_format_of_plot(ns)
+    shinyjs::useShinyjs(),
+    rclipboardSetup(),
+    tags$head(includeHTML(system.file("google_analytics_html", "google_analytics.html", package = "RiboCrypt"))),
+    # ---- HEAD with floating settings style ----
+    tags$style(HTML("
+      [id$='floating_settings'] {
+        position: absolute;
+        top: 80px;
+        left: 20px;
+        width: 350px;
+        z-index: 1000;
+        background-color: rgba(255, 255, 255, 0.95);
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      }
+
+      .floating_settings_panel.hidden {
+        display: none !important;
+      }
+
+      .floating_settings_panel {
+        max-width: 700px;
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+
+      .tab-content > .tab-pane {
+        padding: 10px !important;
+      }
+
+      .form-group {
+        margin-bottom: 10px !important;
+      }
+
+      #clip {
+        background-color: orange;
+      }
+
+      #settingsCollapse .panel-title {
+        font-size: 0.75em;  /* Adjust this value to reduce the font size */
+      }
+    ")),
+    # ---- Floating Settings Panel ----
+    div(style = "position: relative;",
+        actionButton(ns("toggle_settings"), "Show/Hide Settings", icon = icon("sliders-h"),
+                     style = "color: #fff; background-color: rgba(0,123,255,0.6); border-color: rgba(0,123,255,1); font-weight: bold;"),
+
+        # Floating settings panel overlays and drops down
+        div(id = ns("floating_settings"),
+            class = "floating_settings_panel",  # Add a custom class
+            style = "position: absolute; top: 100%; left: 0; z-index: 10; background-color: white; padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: max-content; min-width: 300px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);",
+            tabsetPanel(
+              tabPanel("Browser",
+                       fluidRow(
+                         column(6, organism_input_select(c("ALL", genomes), ns)),
+                         column(6, experiment_input_select(experiments, ns, browser_options))
+                       ),
+                       fluidRow(
+                         column(6, gene_input_select(ns, FALSE, browser_options)),
+                         column(6, tx_input_select(ns, FALSE, all_isoforms, browser_options["default_isoform"]))
+                       ),
+                       fluidRow(
+                         column(11, library_input_select(ns, TRUE, libs, init_libs)),
+                         column(1, actionButton(ns("select_all_btn"), "", icon = icon("check"),
+                                                class = "btn btn-sm btn-primary", title = "Select all"))
+                       ),
+                       fluidRow(
+                         column(6, frame_type_select(ns, selected = browser_options["default_frame_type"])),
+                         column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
+                                               value = as.numeric(browser_options["default_kmer"])))
+                       )
+              ),
+              tabPanel("Settings",
+                       bsCollapse(id = ns("settingsCollapse"), open = NULL,
+                                  bsCollapsePanel("Region & Extensions",
+                                                  fluidRow(
+                                                    column(6, numericInput(ns("extendLeaders"), "5' extension", 0)),
+                                                    column(6, numericInput(ns("extendTrailers"), "3' extension", 0))
+                                                  ),
+                                                  fluidRow(textInput(ns("genomic_region"), "Genomic region", ""),
+                                                           textInput(ns("zoom_range"), "Zoom interval", ""),
+                                                           textInput(ns("customSequence"), "Custom sequences highlight", "")
+                                                  )
+                                  ),
+                                  bsCollapsePanel("Annotations & Display",
+                                                  fluidRow(
+                                                    column(4, checkboxInput(ns("other_tx"), "Full annotation", FALSE)),
+                                                    column(4, checkboxInput(ns("add_uorfs"), "uORF annotation", FALSE)),
+                                                    column(4, checkboxInput(ns("add_translon"), "Predicted translons", FALSE))
+                                                  ),
+                                                  checkboxInput(ns("log_scale"), "Log scale", FALSE),
+                                                  fluidRow(
+                                                    column(4, checkboxInput(ns("expression_plot"), "Gene expression plot", FALSE)),
+                                                    column(4, checkboxInput(ns("useCustomRegions"), "Protein structures", TRUE)),
+                                                    column(4, checkboxInput(ns("phyloP"), "Conservation (phyloP)", FALSE))
+                                                  ),
+                                                  fluidRow(
+                                                    column(6, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),
+                                                    column(6, frame_subsetter_select(ns))
+                                                  ),
+                                                  fluidRow(
+                                                    column(6, checkboxInput(ns("summary_track"), "Summary top track", FALSE)),
+                                                    column(6, frame_type_select(ns, "summary_track_type", "Summary display type"))
+                                                  )
+                                  ),
+                                  bsCollapsePanel("Export",
+                                                  fluidRow(
+                                                    column(4, downloadButton(ns("download_plot_html"), "Download HTML",
+                                                                 style = "width: 100%; font-size: 14px; font-weight: bold; background-color: #007bff; color: white; border-color: white !important;")),
+                                                    column(4, export_format_of_plot(ns)),
+                                                    column(4, uiOutput(ns("clip"))))
+                                  )
+                       )
+              )
+            ),
+            tags$hr(),
+            fluidRow(
+              column(7, plot_button(ns("go"))),
+              column(5, prettySwitch(ns("viewMode"), "Genomic View", value = viewMode,
+                                     status = "success", fill = TRUE, bigger = TRUE))
+            )
           )
-        ),
-        tags$hr(style = "border: 1px solid black; margin-top: 0px; margin-bottom: 10px;"),
-        fluidRow(column(7, plot_button(ns("go"))),
-                 column(5, prettySwitch(inputId = ns("viewMode"), label = "Genomic View", value = viewMode,
-                   status = "success", fill = TRUE, bigger = TRUE))
-        ), width=3
-      )),
-      mainPanel(
-        jqui_resizable(plotlyOutput(outputId = ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
-        plotlyOutput(outputId = ns("e"), height = "50px"),
-        uiOutput(ns("variableUi"),),
-        plotlyOutput(outputId = ns("d")) %>% shinycssloaders::withSpinner(color="#0dc5c1"), width=9)
+    ),
+    # ---- Full Width Main Panel ----
+    fluidRow(
+      column(12,
+             jqui_resizable(plotlyOutput(ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
+             plotlyOutput(ns("e"), height = "50px"),
+             uiOutput(ns("variableUi")),
+             plotlyOutput(ns("d")) %>% shinycssloaders::withSpinner(color="#0dc5c1")
+      )
     )
   )
 }
+
+
 
 browser_server <- function(id, all_experiments, env, df, experiments,
                            tx, cds, libs, org, gene_name_list, rv,
@@ -92,6 +157,11 @@ browser_server <- function(id, all_experiments, env, df, experiments,
     function(input, output, session, all_exp = all_experiments) {
       study_and_gene_observers(input, output, session)
       output$clip <- renderUI({clipboard_url_button(input, session)})
+      observeEvent(input$toggle_settings, {
+        print("Toggle settings tab!")
+        # Toggle visibility by adding/removing 'hidden' class
+        shinyjs::toggleClass(id = "floating_settings", class = "hidden")
+      })
 
       # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,

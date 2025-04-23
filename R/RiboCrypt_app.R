@@ -77,9 +77,9 @@ RiboCrypt_app <- function(
     metadata = NULL, all_exp_meta = all_exp[grep("all_samples-", name),]) {
 
   rc_parameter_setup()
-
   # User interface
   ui <- tagList(
+    rc_header_styling(),
     rc_header_image(),
     helper_button_redirect_call(),
     navbarPage(

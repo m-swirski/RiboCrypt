@@ -16,7 +16,29 @@ rc_title <- function() {
   withTags(
     a(img(src = file.path("images", "logo_traces_update.png"),
           alt = "RiboCrypt",
-          height = 60)))
+          height = 50)))
+}
+
+rc_header_styling <- function() {
+  tags$style(HTML("
+  /* Reduce height of navbar */
+  .navbar {
+    min-height: 50px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+
+  .navbar-brand {
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+    font-size: 18px;
+  }
+
+  .navbar-nav > li > a {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+"))
 }
 
 

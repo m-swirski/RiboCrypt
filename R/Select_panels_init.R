@@ -68,6 +68,7 @@ library_input_select <- function(ns, multiple = TRUE, choices = "",
     choices = choices,
     selected = selected,
     multiple = multiple,
+    width = "100%",
     options = list(plugins = list("remove_button"))
   ) %>%
     helper(onclick = "fakeClick('tutorial', 'lib')")

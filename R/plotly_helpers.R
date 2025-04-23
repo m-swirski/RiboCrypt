@@ -1,6 +1,8 @@
 lineDeSimplify <- function(plot) {
   plot <- plotly_build(plot)
-  for (i in 1:length(plot$x$data)) plot$x$data[[i]]$line$simplify <- FALSE
+  for (i in 1:length(plot$x$data)) {
+    if (!is.null(plot$x$data[[i]]$line)) plot$x$data[[i]]$line$simplify <- FALSE
+  }
   return(plot)
 }
 

@@ -22,17 +22,33 @@ protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVi
   req(dynamicVisible(), selectedRegionProfile())
   ns <- session$ns
 
-  widgetCloseBtn <- actionButton(ns("dynamicClose"), "Close", width = "100%")
-  widgetHeader <- h3(selectedRegion(), style = "text-align: center; transform: translate(0%, -60%);")
+  widgetCloseBtn <- actionButton(
+    ns("dynamicClose"),
+    label = icon("times", class = "text-white"),
+    class = "btn btn-sm btn-primary",
+    style = "width: 100%; background-color: #007bff; border-color: #007bff;",
+    title = "Remove protein structure"
+  )
+
+  widgetHeader <- tags$div(
+    h4(paste("Protein isoform:", selectedRegion())),
+    style = "display: flex; align-items: flex-end; height: 100%;"
+  )
+
   widgetSelector <- selectInput(ns("structureViewerSelector"), NULL, structureChoices(), width = "100%")
 
   tagList(
-    fluidRow(
-      column(2, widgetCloseBtn),
-      column(6, widgetHeader, offset = 1),
-      column(2, widgetSelector, offset = 1)
-      ),
-    # fluidRow(r3dmolOutput(ns("dynamic")))
+    tags$div(
+      style = "border-top: 2px solid black; margin-top: 15px; padding-top: 10px;",
+      fluidRow(
+        column(5),  # Blank space for padding left
+        column(4, widgetHeader),
+        column(2, widgetSelector),
+        column(1, widgetCloseBtn)
+      )
+    ),
     fluidRow(NGLVieweROutput(ns("dynamic")))
-    )
+  )
+
+
 }

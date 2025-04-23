@@ -172,7 +172,7 @@ getRelativeFrames <- function(overlaps) {
   dt <- data.table(names = names(overlaps),
                    width = width(overlaps),
                    type = overlaps$type)
-  dt[,cum_width := cumsum(width), .(names, type)]
+  dt[, cum_width := cumsum(width), .(names, type)]
   dt[, rel_frame := c(0,-cum_width %% 3)[1:length(width)], .(names, type)]
   return(dt$rel_frame)
 }

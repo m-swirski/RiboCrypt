@@ -152,11 +152,6 @@ browser_server <- function(id, all_experiments, env, df, experiments,
     function(input, output, session, all_exp = all_experiments) {
       study_and_gene_observers(input, output, session)
       output$clip <- renderUI({clipboard_url_button(input, session)})
-      observeEvent(input$toggle_settings, {
-        print("Toggle settings tab!")
-        # Toggle visibility by adding/removing 'hidden' class
-        shinyjs::toggleClass(id = "floating_settings", class = "hidden")
-      })
 
       # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(input$go,

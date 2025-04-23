@@ -160,6 +160,12 @@ module_additional_browser <- function(input, output, session) {
         htmlwidgets::saveWidget(as_widget(browser_plot()), file)
       }
     )
+
+    observeEvent(input$toggle_settings, {
+      # Toggle visibility by adding/removing 'hidden' class
+      shinyjs::toggleClass(id = "floating_settings", class = "hidden")
+    })
+
     observe({
       if(!isTruthy(input$go)) {
         shinyjs::hideElement(id = "download_plot_html")

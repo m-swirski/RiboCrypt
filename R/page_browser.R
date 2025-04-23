@@ -85,46 +85,41 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                        )
               ),
               tabPanel("Settings",
-                       bsCollapse(id = ns("settingsCollapse"), open = NULL,
-                                  bsCollapsePanel("Region & Extensions",
-                                                  fluidRow(
-                                                    column(6, numericInput(ns("extendLeaders"), "5' extension", 0)),
-                                                    column(6, numericInput(ns("extendTrailers"), "3' extension", 0))
-                                                  ),
-                                                  fluidRow(textInput(ns("genomic_region"), "Genomic region", ""),
-                                                           textInput(ns("zoom_range"), "Zoom interval", ""),
-                                                           textInput(ns("customSequence"), "Custom sequences highlight", "")
-                                                  )
-                                  ),
-                                  bsCollapsePanel("Annotations & Display",
-                                                  fluidRow(
-                                                    column(4, checkboxInput(ns("other_tx"), "Full annotation", FALSE)),
-                                                    column(4, checkboxInput(ns("add_uorfs"), "uORF annotation", FALSE)),
-                                                    column(4, checkboxInput(ns("add_translon"), "Predicted translons", FALSE))
-                                                  ),
-                                                  checkboxInput(ns("log_scale"), "Log scale", FALSE),
-                                                  fluidRow(
-                                                    column(4, checkboxInput(ns("expression_plot"), "Gene expression plot", FALSE)),
-                                                    column(4, checkboxInput(ns("useCustomRegions"), "Protein structures", TRUE)),
-                                                    column(4, checkboxInput(ns("phyloP"), "Conservation (phyloP)", FALSE))
-                                                  ),
-                                                  fluidRow(
-                                                    column(6, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),
-                                                    column(6, frame_subsetter_select(ns))
-                                                  ),
-                                                  fluidRow(
-                                                    column(6, checkboxInput(ns("summary_track"), "Summary top track", FALSE)),
-                                                    column(6, frame_type_select(ns, "summary_track_type", "Summary display type"))
-                                                  )
-                                  ),
-                                  bsCollapsePanel("Export",
-                                                  fluidRow(
-                                                    column(4, downloadButton(ns("download_plot_html"), "Download HTML",
-                                                                 style = "width: 100%; font-size: 14px; font-weight: bold; background-color: #007bff; color: white; border-color: white !important;")),
-                                                    column(4, export_format_of_plot(ns)),
-                                                    column(4, uiOutput(ns("clip"))))
-                                  )
-                       )
+                                fluidRow(
+                                  column(6, numericInput(ns("extendLeaders"), "5' extension", 0)),
+                                  column(6, numericInput(ns("extendTrailers"), "3' extension", 0))
+                                ),
+                                fluidRow(textInput(ns("genomic_region"), "Genomic region", ""),
+                                         textInput(ns("zoom_range"), "Zoom interval", ""),
+                                         textInput(ns("customSequence"), "Custom sequences highlight", "")
+                                )
+                ,
+
+                                fluidRow(
+                                  column(4, checkboxInput(ns("other_tx"), "Full annotation", FALSE)),
+                                  column(4, checkboxInput(ns("add_uorfs"), "uORF annotation", FALSE)),
+                                  column(4, checkboxInput(ns("add_translon"), "Predicted translons", FALSE))
+                                ),
+                                checkboxInput(ns("log_scale"), "Log scale", FALSE),
+                                fluidRow(
+                                  column(4, checkboxInput(ns("expression_plot"), "Gene expression plot", FALSE)),
+                                  column(4, checkboxInput(ns("useCustomRegions"), "Protein structures", TRUE)),
+                                  column(4, checkboxInput(ns("phyloP"), "Conservation (phyloP)", FALSE))
+                                ),
+                                fluidRow(
+                                  column(6, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),
+                                  column(6, frame_subsetter_select(ns))
+                                ),
+                                fluidRow(
+                                  column(6, checkboxInput(ns("summary_track"), "Summary top track", FALSE)),
+                                  column(6, frame_type_select(ns, "summary_track_type", "Summary display type"))
+                                )
+                ,
+                                fluidRow(
+                                  column(4, downloadButton(ns("download_plot_html"), "Download HTML",
+                                               style = "width: 100%; font-size: 14px; font-weight: bold; background-color: #007bff; color: white; border-color: white !important;")),
+                                  column(4, export_format_of_plot(ns)),
+                                  column(4, uiOutput(ns("clip"))))
               )
             ),
             tags$hr(),

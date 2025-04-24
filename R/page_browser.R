@@ -7,7 +7,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
   all_isoforms <- subset(gene_names_init, label == browser_options["default_gene"])
   init_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
   viewMode <- browser_options["default_view_mode"] == "genomic"
-
+  panel_hidden_or_not_class <- "floating_settings_panel hidden"
   tabPanel(
     title = "browser", icon = icon("chart-line"),
     shinyjs::useShinyjs(),
@@ -61,7 +61,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
 
         # Floating settings panel overlays and drops down
         div(id = ns("floating_settings"),
-            class = "floating_settings_panel",  # Add a custom class
+            class = panel_hidden_or_not_class,  # Add a custom class
             style = "position: absolute; top: 100%; left: 0; z-index: 10; background-color: white; padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: max-content; min-width: 300px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);",
             tabsetPanel(
               tabPanel("Browser",

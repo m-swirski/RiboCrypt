@@ -48,7 +48,6 @@ bottom_panel_shiny <- function(mainPlotControls) {
                                            leader_extension = mainPlotControls()$extendLeaders,
                                            trailer_extension = mainPlotControls()$extendTrailers,
                                            viewMode = viewMode)
-
   bottom_panel <- multiOmicsPlot_bottom_panels(reference_sequence = findFa(df),
                                                annotation_list$display_range,
                                                annotation_list$annotation,
@@ -56,7 +55,8 @@ bottom_panel_shiny <- function(mainPlotControls) {
                                                custom_motif = mainPlotControls()$custom_sequence,
                                                custom_regions = mainPlotControls()$customRegions,
                                                viewMode,
-                                               tx_annotation = mainPlotControls()$tx_annotation)
+                                               tx_annotation = mainPlotControls()$tx_annotation,
+                                               mainPlotControls()$collapsed_introns_width)
   custom_bigwig_panels <- custom_seq_track_panels(mainPlotControls,
                                                   annotation_list$display_range)
   cat("Done (bottom):"); print(round(Sys.time() - time_before, 2))
@@ -135,7 +135,6 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
   # Input controller
   multiOmicsControllerView()
   # Get NGS data track panels
-  # browser()
   profiles <- multiOmicsPlot_all_profiles(bottom_panel$display_range, reads, kmers,
                                           kmers_type, frames_type, frames_subset,
                                           withFrames, log_scale, BPPARAM)

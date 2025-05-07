@@ -10,7 +10,9 @@ module_protein <- function(input, output, gene_name_list, session) {
 
     # Get the Ribo-seq prfile (we select first library for now)
     selectedRegionProfile <- reactive({
+      browser()
       req(selectedRegion(), input$useCustomRegions)
+      req(selectedRegion() != "...")
       coverage_region <- NULL
       uorf_clicked <- length(grep("U[0-9]+$", input$selectedRegion)) == 1
       if (uorf_clicked) {

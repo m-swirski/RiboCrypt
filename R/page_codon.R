@@ -13,7 +13,7 @@ codon_ui <- function(id, all_exp, browser_options, libs, label = "Codon") {
                    gene_input_select(ns),
                    tx_input_select(ns),
                    library_input_select(ns, TRUE, libs),
-                   fluidRow(column(6, codon_filter_input_select(ns, 1000)),
+                   fluidRow(column(6, codon_filter_input_select(ns, as.numeric(browser_options["codon_filter_count"]))),
                             column(6, sliderInput(ns("ratio_thresh"), "Ratio threshold", min = 1.1, max = 3,
                                                   value =1.7, step = 0.2))),
                    codon_score_input_select(ns),

@@ -1,7 +1,7 @@
 multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, annotation,
                                          start_codons, stop_codons, custom_motif,
                                          custom_regions, viewMode,
-                                         tx_annotation = NULL) {
+                                         tx_annotation = NULL, collapse_intron_flank = 100) {
   force(display_range)
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
@@ -9,10 +9,10 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
                                           stop_codons = stop_codons, custom_motif = custom_motif)
   seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]])
   # Get the panel for the annotation track
-  gene_model_panel <- createGeneModelPanel(display_range, annotation,
+  gene_model_panel <- createGeneModelPanel(display_range, annotation, frame = 1,
                                            tx_annotation = tx_annotation,
                                            custom_regions = custom_regions,
-                                           viewMode = viewMode)
+                                           viewMode = viewMode, collapse_intron_flank)
   lines <- gene_model_panel[[2]]
   layers <- max(gene_model_panel[[1]]$layers)
   gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]])
@@ -120,7 +120,6 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                    nplots - 3, seq_render_dist,
                                    display_dist, aa_letter_code, input_id)
   }
-
   filename <- ifelse(plot_name == "default", names(display_range), plot_name)
   multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
                                              width, height, format = export.format)
@@ -180,7 +179,8 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
 }
 
 genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6,
-                                  viewMode, extendLeaders, extendTrailers, type = "region") {
+                                  viewMode, extendLeaders, extendTrailers,
+                                  collapsed_introns_width = 0, type = "region") {
   input_given <- !is.null(genomic_string) && genomic_string != ""
   if (input_given) {
     gr <- try(as(unlist(strsplit(genomic_string, ";")), "GRanges"))
@@ -195,9 +195,16 @@ genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6
       display_region <- GRangesList(Region = gr)
     } else stop("Malformed genomic ", type, ": format: chr1:39517672-39523668:+;chr1:39527673-39520669:+")
   }
-
   extension_size <- extendLeaders + extendTrailers
-  true_sized_grl <- if (viewMode == "tx") {display_region} else flankPerGroup(display_region)
+  true_sized_grl <- if (!viewMode) {
+    display_region
+  }  else {
+    if (collapsed_introns_width > 0) {
+      print("Collapsing introns")
+      display_region <- exonsWithPseudoIntronsPerGroup(display_region, collapsed_introns_width)
+    } else display_region <- flankPerGroup(display_region)
+  }
+
   size <- widthPerGroup(true_sized_grl, FALSE)
   if (size > max_size) stop("Only up to ", round(max_size/1e6, 3) ," million bases can be shown, input: ",
                             round(size/1e6, 3), " million bases")
@@ -268,6 +275,7 @@ hash_strings_browser <- function(input, dff) {
                        input$add_uorfs,  input$add_translon,
                        input$extendTrailers, input$extendLeaders,
                        input$genomic_region, input$viewMode,
+                       input$collapsed_introns_width,
                        input$customSequence, input$phyloP,
                        collapse = "|_|")
   # Until plot and coverage is split (bottom must be part of browser hash)

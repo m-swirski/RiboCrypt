@@ -6,8 +6,15 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
+
+    collapsed_introns_width <- input$collapsed_introns_width
     tx_annotation <- observed_cds_annotation(isolate(input$tx), tx,
                                              isolate(input$other_tx))
+    if (collapsed_introns_width > 0) {
+      tx_annotation <- tx_annotation[tx_annotation %over% flankPerGroup(display_region)]
+      display_region_gr <- reduce(unlistGrl(tx_annotation))
+      display_region <- groupGRangesBy(display_region_gr, rep(names(display_region), length(display_region_gr)))
+    }
     cds_annotation <- observed_cds_annotation(isolate(input$tx), cds,
                                               isolate(input$other_tx))
     uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
@@ -18,7 +25,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     display_region <- genomic_string_to_grl(isolate(input$genomic_region), display_region,
                                             max_size = 1e6, isolate(input$viewMode),
                                             isolate(input$extendLeaders),
-                                            isolate(input$extendTrailers))
+                                            isolate(input$extendTrailers),
+                                            collapsed_introns_width)
     dff <- observed_exp_subset(isolate(input$library), libs, df)
     zoom_range <- get_zoom_range(isolate(input$zoom_range), display_region,
                                  max_size = 1e6, isolate(input$viewMode),
@@ -54,6 +62,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    summary_track = input$summary_track,
                    summary_track_type = input$summary_track_type,
                    viewMode = input$viewMode,
+                   collapsed_introns_width = collapsed_introns_width,
                    kmerLength = input$kmer,
                    frames_type = input$frames_type,
                    annotation = cds_annotation,

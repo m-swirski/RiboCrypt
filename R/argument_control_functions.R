@@ -77,9 +77,7 @@ annotation_controller <- function(df, display_range, annotation, annotation_name
                                     but does not contain this region, did you specify cds on
                                     a non coding RNA or leader for mRNA without defined leader?")
   }
-  if (viewMode == "genomic") {
-    display_range <- flankPerGroup(display_range)
-  }
+
   seqlevels(display_range) <- seqlevels(annotation)
   display_range <- GRangesList(display_range)
 

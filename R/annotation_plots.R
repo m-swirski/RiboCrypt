@@ -97,7 +97,7 @@ geneTrackLayer <- function(grl) {
 #' @keywords internal
 #' @noRd
 createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL,
-                                 frame=1, custom_regions, viewMode) {
+                                 frame=1, custom_regions, viewMode, collapse_intron_flank = 100) {
   # TODO: Explain sections of this function, or split in sub functions
   # It is too complicated right now.
   use_custom_region <- !is.null(custom_regions) & length(custom_regions) > 0
@@ -126,10 +126,12 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
   if (length(overlaps) > 0) overlaps@unlistData$type <- "cds"
   if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <- "utr"
 
-  return(gene_box_fix_overlaps(display_range, c(overlaps, overlaps_tx), custom_regions))
+  return(gene_box_fix_overlaps(display_range, c(overlaps, overlaps_tx), custom_regions,
+                               collapse_intron_flank))
 }
 
-gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
+gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
+                                  collapse_intron_flank) {
   if (length(overlaps) == 0) {
     result_dt <- data.table()
     lines_locations <- NULL
@@ -158,7 +160,7 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
   layers <- geneTrackLayer(groupGRangesBy(locations))
   plot_width <- widthPerGroup(display_range)
   geneBox <- geneBoxFromRanges(locations, plot_width, layers, cols,
-                               custom_regions)
+                               custom_regions, collapse_intron_flank)
   return(geneBox)
 }
 
@@ -170,7 +172,7 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions) {
 geneBoxFromRanges <- function(locations, plot_width,
                               layers = rep(1, length(locations)),
                               cols = rc_rgb()[start(locations) %% 3 + 1],
-                              custom_regions = NULL) {
+                              custom_regions = NULL, collapse_intron_flank = 100) {
   type <- locations$type
   locations <- move_utrs_touching_cds(locations, type, plot_width)
 
@@ -214,9 +216,16 @@ geneBoxFromRanges <- function(locations, plot_width,
   draw_introns <- nrow(dt[no_ex > 1]) > 0
   if (draw_introns) {
     seg_dt <- dt[no_ex > 1]
+    ranges <- reduce(GRanges(seg_dt$gene_names, ranges = IRanges(seg_dt$rect_starts, seg_dt$rect_ends)))
+    did_collapse_introns <- (nrow(seg_dt) > 1 & length(ranges) != 1) & collapse_intron_flank > 0
+    if (did_collapse_introns ) {
+      seg_dt <- data.table(gene_names = as.character(seqnames(ranges)), rect_starts = start(ranges), rect_ends = end(ranges))
+    }
+
     seg_dt <- seg_dt[ , .(layers = layers[1], rect_starts = rect_ends[1:(.N - 1)], rect_ends = rect_starts[2:.N],
                           cols = "grey45", labels_locations = 0, hjusts = "center",
                           type = "intron", no_ex = "1"), by = gene_names]
+    if (did_collapse_introns) seg_dt[rect_ends - rect_starts > collapse_intron_flank*2, type := "intron_collapsed"]
     seg_dt <- seg_dt[, colnames(dt), with = FALSE]
     with_introns_dt <- rbindlist(list(dt, seg_dt))
     result_dt <- with_introns_dt
@@ -244,8 +253,8 @@ geneModelPanelPlot <- function(dt, frame = 1) {
   # If no annotation given, dt is empty, return blank
   if (nrow(dt) == 0) return(ggplot())
   # Else render exon boxes
-  seg_dt <- dt[type == "intron"]
-  dt <- dt[type != "intron"]
+  seg_dt <- dt[type %in% c("intron", "intron_collapsed")]
+  dt <- dt[!(type %in% c("intron", "intron_collapsed"))]
 
   result_plot <- ggplot(frame = frame) + ylab("") + xlab("") +
     theme(axis.title.x = element_blank(),
@@ -259,17 +268,23 @@ geneModelPanelPlot <- function(dt, frame = 1) {
     theme(panel.background = element_rect(fill= "white"))
 
   draw_introns <- nrow(seg_dt) > 0
-  if (draw_introns) result_plot <- result_plot +
-    geom_segment(data = seg_dt,
-                 mapping = aes(x = rect_starts, xend = rect_ends, y = 0.5 - layers, yend = 0.5 - layers, text = gene_names),
-                 color = "grey45", alpha = 0.6)
+  if (draw_introns)  {
+    intron_flank_coords <- seg_dt[type %in% c("intron_collapsed")]
+    intron_flank_coords[, tooltip := "Collapsed Intron"]
+    result_plot <- result_plot +
+      geom_segment(data = seg_dt,
+                   mapping = aes(x = rect_starts, xend = rect_ends, y = 0.5 - layers, yend = 0.5 - layers, text = gene_names),
+                   color = "grey45", alpha = 0.6) +
+      geom_text(data = intron_flank_coords, aes(x = (rect_starts + rect_ends) / 2, y = 0.5 - layers, text = tooltip),
+                label = "...", size = 6)
+  }
 
   suppressWarnings({
     result_plot <-  result_plot +
      geom_rect(data = dt, mapping=aes(ymin=0 - layers + ifelse(type == "cds", 0, 0.33), ymax = 1 - layers - ifelse(type == "cds", 0, 0.33),
                                       xmin=rect_starts,xmax = rect_ends, text = gene_names),
                fill = dt$cols, color = "grey45") +
-      geom_text(data = dt[,.(layers = layers[1], labels_locations = mean(labels_locations)),gene_names],
+      geom_text(data = dt[,.(layers = layers[1], labels_locations = mean(labels_locations)), gene_names],
                 mapping = aes(y = 0.50 - layers, x = labels_locations,
                               label = gene_names), color = "black", hjust = "center", vjust = "center")
     })

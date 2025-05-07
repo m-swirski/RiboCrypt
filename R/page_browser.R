@@ -7,53 +7,18 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
   all_isoforms <- subset(gene_names_init, label == browser_options["default_gene"])
   init_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
   viewMode <- browser_options["default_view_mode"] == "genomic"
-  panel_hidden_or_not_class <- "floating_settings_panel hidden"
+  introns_width <- as.numeric(browser_options["collapsed_introns_width"])
+  full_annotation <- as.logical(browser_options["full_annotation"])
+  panel_hidden_or_not_class <- ifelse(browser_options["hide_settings"] == "TRUE",
+                                      "floating_settings_panel hidden",
+                                      "floating_settings_panel")
   tabPanel(
     title = "browser", icon = icon("chart-line"),
     shinyjs::useShinyjs(),
     rclipboardSetup(),
     tags$head(includeHTML(system.file("google_analytics_html", "google_analytics.html", package = "RiboCrypt"))),
     # ---- HEAD with floating settings style ----
-    tags$style(HTML("
-      [id$='floating_settings'] {
-        position: absolute;
-        top: 80px;
-        left: 20px;
-        width: 350px;
-        z-index: 1000;
-        background-color: rgba(255, 255, 255, 0.95);
-        border: 1px solid #ddd;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      }
-
-      .floating_settings_panel.hidden {
-        display: none !important;
-      }
-
-      .floating_settings_panel {
-        max-width: 700px;
-        max-height: 85vh;
-        overflow-y: auto;
-      }
-
-      .tab-content > .tab-pane {
-        padding: 10px !important;
-      }
-
-      .form-group {
-        margin-bottom: 10px !important;
-      }
-
-      #clip {
-        background-color: orange;
-      }
-
-      #settingsCollapse .panel-title {
-        font-size: 0.75em;  /* Adjust this value to reduce the font size */
-      }
-    ")),
+    browser_ui_settings_style(),
     # ---- Floating Settings Panel ----
     div(style = "position: relative;",
         actionButton(ns("toggle_settings"), "Show/Hide Settings", icon = icon("sliders-h"),
@@ -86,20 +51,20 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
               ),
               tabPanel("Settings",
                                 fluidRow(
-                                  column(6, numericInput(ns("extendLeaders"), "5' extension", 0)),
-                                  column(6, numericInput(ns("extendTrailers"), "3' extension", 0))
+                                  numericInput(ns("extendLeaders"), "5' extension", 0),
+                                  numericInput(ns("extendTrailers"), "3' extension", 0),
+                                  numericInput(ns("collapsed_introns_width"), "Collapse Introns (nt flanks)",
+                                               introns_width)
                                 ),
                                 fluidRow(textInput(ns("genomic_region"), "Genomic region", ""),
                                          textInput(ns("zoom_range"), "Zoom interval", ""),
                                          textInput(ns("customSequence"), "Custom sequences highlight", "")
-                                )
-                ,
-
-                                fluidRow(
-                                  column(4, checkboxInput(ns("other_tx"), "Full annotation", FALSE)),
-                                  column(4, checkboxInput(ns("add_uorfs"), "uORF annotation", FALSE)),
-                                  column(4, checkboxInput(ns("add_translon"), "Predicted translons", FALSE))
                                 ),
+                                fluidRow(
+                                  checkboxInput(ns("other_tx"), "Full annotation", full_annotation),
+                                  checkboxInput(ns("add_uorfs"), "uORF annotation", FALSE),
+                                  checkboxInput(ns("add_translon"), "Predicted translons", FALSE),
+                                  ),
                                 checkboxInput(ns("log_scale"), "Log scale", FALSE),
                                 fluidRow(
                                   column(4, checkboxInput(ns("expression_plot"), "Gene expression plot", FALSE)),
@@ -113,8 +78,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                                 fluidRow(
                                   column(6, checkboxInput(ns("summary_track"), "Summary top track", FALSE)),
                                   column(6, frame_type_select(ns, "summary_track_type", "Summary display type"))
-                                )
-                ,
+                                ),
                                 fluidRow(
                                   column(4, downloadButton(ns("download_plot_html"), "Download HTML",
                                                style = "width: 100%; font-size: 14px; font-weight: bold; background-color: #007bff; color: white; border-color: white !important;")),

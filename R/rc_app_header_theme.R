@@ -41,5 +41,48 @@ rc_header_styling <- function() {
 "))
 }
 
+browser_ui_settings_style <- function() {
+  tags$style(HTML("
+      [id$='floating_settings'] {
+        position: absolute;
+        top: 80px;
+        left: 20px;
+        width: 350px;
+        z-index: 1000;
+        background-color: rgba(255, 255, 255, 0.95);
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      }
+
+      .floating_settings_panel.hidden {
+        display: none !important;
+      }
+
+      .floating_settings_panel {
+        max-width: 700px;
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+
+      .tab-content > .tab-pane {
+        padding: 10px !important;
+      }
+
+      .form-group {
+        margin-bottom: 10px !important;
+      }
+
+      #clip {
+        background-color: orange;
+      }
+
+      #settingsCollapse .panel-title {
+        font-size: 0.75em;  /* Adjust this value to reduce the font size */
+      }
+    "))
+}
+
 
 

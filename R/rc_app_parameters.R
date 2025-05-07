@@ -54,6 +54,14 @@ rc_parameter_setup <- function() {
     }
     stopifnot(is.character(browser_options["default_view_mode"]) &
               browser_options["default_view_mode"] %in% c("tx", "genomic"))
+    if (!isTruthy(browser_options["collapsed_introns_width"])) {
+      browser_options["collapsed_introns_width"] <- "0"
+    }
+    stopifnot(!is.na(as.numeric(browser_options["collapsed_introns_width"])))
+    if (!isTruthy(browser_options["full_annotation"])) {
+      browser_options["full_annotation"] <- FALSE
+    }
+
     if (!isTruthy(browser_options["allow_non_bw"])) {
       browser_options["allow_non_bw"] <- FALSE
     }
@@ -75,11 +83,18 @@ rc_parameter_setup <- function() {
       browser_options["default_isoform"] <- gene_isoforms$value[1]
     }
     stopifnot(browser_options["default_isoform"] %in% gene_isoforms$value)
-
+    if (!isTruthy(browser_options["hide_settings"])) {
+      browser_options["hide_settings"] <- TRUE
+    }
     if (!isTruthy(browser_options["default_kmer"])) {
       browser_options["default_kmer"] <- 1
     } else {
       stopifnot(!is.na(as.numeric(browser_options["default_kmer"])))
+    }
+    if (!isTruthy(browser_options["codon_filter_count"])) {
+      browser_options["codon_filter_count"] <- 1000
+    } else {
+      stopifnot(!is.na(as.numeric(browser_options["codon_filter_count"])))
     }
     if (!isTruthy(browser_options["default_frame_type"])) {
       browser_options["default_frame_type"] <- "lines"

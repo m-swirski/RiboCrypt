@@ -65,7 +65,9 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                                   checkboxInput(ns("add_uorfs"), "uORF annotation", FALSE),
                                   checkboxInput(ns("add_translon"), "Predicted translons", FALSE),
                                   ),
-                                checkboxInput(ns("log_scale"), "Log scale", FALSE),
+                                fluidRow(checkboxInput(ns("log_scale"), "Log scale", FALSE),
+                                         checkboxInput(ns("log_scale_protein"), "Log scale Protein", FALSE)
+                                ),
                                 fluidRow(
                                   column(4, checkboxInput(ns("expression_plot"), "Gene expression plot", FALSE)),
                                   column(4, checkboxInput(ns("useCustomRegions"), "Protein structures", TRUE)),

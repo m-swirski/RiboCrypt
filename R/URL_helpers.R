@@ -39,6 +39,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
         paste("frames_type", input$frames_type, sep = "="),
         paste("kmer", input$kmer, sep = "="),
         paste("log_scale", input$log_scale, sep = "="),
+        paste("log_scale_protein", input$log_scale_protein, sep = "="),
         paste("extendLeaders", input$extendLeaders, sep = "="),
         paste("extendTrailers", input$extendTrailers, sep = "="),
         paste("viewMode", input$viewMode, sep = "="),
@@ -49,7 +50,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
         paste("zoom_range", sub("\\+$", "p", input$zoom_range), sep = "="),
         paste("customSequence", input$customSequence, sep = "="),
         paste("phyloP", input$phyloP, sep = "="),
-        paste("summary_track", input$summary_track, sep = "="),
+        paste("collapsed_introns_width", input$collapsed_introns_width, sep = "="),
         paste("go", go, sep = "="),
         sep = "&"))
 }
@@ -215,7 +216,7 @@ check_url_for_basic_parameters <- function() {
       }
 
       # Numeric box updates
-      for (tag in c("extendLeaders", "extendTrailers")) {
+      for (tag in c("extendLeaders", "extendTrailers", "collapsed_introns_width")) {
         value <- query[tag][[1]]
         if (!is.null(value)) {
           updateNumericInput(inputId = tag, value = value)
@@ -231,7 +232,8 @@ check_url_for_basic_parameters <- function() {
       }
 
       # Checkbox updates
-      for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon","summary_track", "log_scale", "phyloP")) {
+      for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon","summary_track",
+                    "log_scale", "log_scale_protein","phyloP")) {
         value <- query[tag][[1]]
         if (!is.null(value)) {
           updateCheckboxInput(inputId = tag, value = as.logical(value))

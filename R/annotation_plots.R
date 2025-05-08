@@ -220,12 +220,20 @@ geneBoxFromRanges <- function(locations, plot_width,
     did_collapse_introns <- (nrow(seg_dt) > 1 & length(ranges) != 1) & collapse_intron_flank > 0
     if (did_collapse_introns ) {
       seg_dt <- data.table(gene_names = as.character(seqnames(ranges)), rect_starts = start(ranges), rect_ends = end(ranges))
+      unique_layers <- dt[, .(layers = unique(layers)[1]), by = gene_names]
+      seg_dt <- merge.data.table(seg_dt, unique_layers, by = "gene_names", sort = FALSE)
     }
 
     seg_dt <- seg_dt[ , .(layers = layers[1], rect_starts = rect_ends[1:(.N - 1)], rect_ends = rect_starts[2:.N],
                           cols = "grey45", labels_locations = 0, hjusts = "center",
                           type = "intron", no_ex = "1"), by = gene_names]
-    if (did_collapse_introns) seg_dt[rect_ends - rect_starts > collapse_intron_flank*2, type := "intron_collapsed"]
+    if (did_collapse_introns) {
+      dt_unique <- dt[!duplicated(dt[, .(rect_starts, rect_ends)]), ][, .(rect_starts, rect_ends)]
+      dt_unique_all_pos <- unique(unlist(lapply(as.data.table(t(as.matrix(dt_unique))), function(x) {seq.int(x[1], x[2])}), use.names = FALSE))
+      seg_dt_all_pos <- lapply(as.data.table(t(as.matrix(seg_dt[, .(rect_starts, rect_ends)]))), function(x) {seq.int(x[1]+1, x[2]-1)})
+      overlaps_other_exon <- sapply(seq_along(seg_dt_all_pos), function(i) {any(seg_dt_all_pos[[i]] %in% dt_unique_all_pos)})
+      seg_dt[(rect_ends - rect_starts > collapse_intron_flank*2) & !overlaps_other_exon, type := "intron_collapsed"]
+    }
     seg_dt <- seg_dt[, colnames(dt), with = FALSE]
     with_introns_dt <- rbindlist(list(dt, seg_dt))
     result_dt <- with_introns_dt

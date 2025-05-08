@@ -10,7 +10,7 @@ module_protein <- function(input, output, gene_name_list, session) {
 
     # Get the Ribo-seq prfile (we select first library for now)
     selectedRegionProfile <- reactive({
-      browser()
+      # browser()
       req(selectedRegion(), input$useCustomRegions)
       req(selectedRegion() != "...")
       coverage_region <- NULL
@@ -29,6 +29,11 @@ module_protein <- function(input, output, gene_name_list, session) {
         (function (x) {
           x$count[seq.int(1, length(x$count), 3)]
         })()
+      if (input$log_scale_protein) {
+        result <- floor(log2(result))
+        result[!is.finite(result)] <- 0
+      }
+      result
     })
 
     # When user clicks on region

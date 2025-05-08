@@ -20,8 +20,9 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
     # ---- HEAD with floating settings style ----
     browser_ui_settings_style(),
     # ---- Floating Settings Panel ----
-    div(style = "position: relative;",
-        actionButton(ns("toggle_settings"), "Show/Hide Settings", icon = icon("sliders-h"),
+    fluidRow(
+      column(1, div(style = "position: relative;",
+        actionButton(ns("toggle_settings"), "", icon = icon("sliders-h"),
                      style = "color: #fff; background-color: rgba(0,123,255,0.6); border-color: rgba(0,123,255,1); font-weight: bold;"),
 
         # Floating settings panel overlays and drops down
@@ -33,10 +34,6 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                        fluidRow(
                          column(6, organism_input_select(c("ALL", genomes), ns)),
                          column(6, experiment_input_select(experiments, ns, browser_options))
-                       ),
-                       fluidRow(
-                         column(6, gene_input_select(ns, FALSE, browser_options)),
-                         column(6, tx_input_select(ns, FALSE, all_isoforms, browser_options["default_isoform"]))
                        ),
                        fluidRow(
                          column(11, library_input_select(ns, TRUE, libs, init_libs)),
@@ -61,7 +58,6 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                                          textInput(ns("customSequence"), "Custom sequences highlight", "")
                                 ),
                                 fluidRow(
-                                  checkboxInput(ns("other_tx"), "Full annotation", full_annotation),
                                   checkboxInput(ns("add_uorfs"), "uORF annotation", FALSE),
                                   checkboxInput(ns("add_translon"), "Predicted translons", FALSE),
                                   ),
@@ -87,15 +83,17 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                                   column(4, export_format_of_plot(ns)),
                                   column(4, uiOutput(ns("clip"))))
               )
-            ),
-            tags$hr(),
-            fluidRow(
-              column(7, plot_button(ns("go"))),
-              column(5, prettySwitch(ns("viewMode"), "Genomic View", value = viewMode,
-                                     status = "success", fill = TRUE, bigger = TRUE))
             )
-          )
+      ))),
+      column(2, gene_input_select(ns, FALSE, browser_options)),
+      column(2, tx_input_select(ns, FALSE, all_isoforms, browser_options["default_isoform"])),
+      column(1, NULL, plot_button(ns("go"))),
+      column(1, prettySwitch(ns("viewMode"), "Genomic View", value = viewMode,
+                             status = "success", fill = TRUE, bigger = TRUE),
+                prettySwitch(ns("other_tx"), "Full annotation", value = full_annotation,
+                              status = "success", fill = TRUE, bigger = TRUE))
     ),
+    tags$hr(),
     # ---- Full Width Main Panel ----
     fluidRow(
       column(12,
@@ -139,7 +137,6 @@ browser_server <- function(id, all_experiments, env, df, experiments,
 
       # Additional outputs
       module_additional_browser(input, output, session)
-
 
       return(rv)
     }

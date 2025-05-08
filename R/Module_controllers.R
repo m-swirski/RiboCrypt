@@ -173,6 +173,10 @@ module_additional_browser <- function(input, output, session) {
       shinyjs::toggleClass(id = "floating_settings", class = "hidden")
     })
 
+    observeEvent(input$myInput_copy, {
+      showNotification(paste("Copied", nchar(input$myInput_copy), "nt to clipboard"), type = "message")
+    })
+
     observe({
       if(!isTruthy(input$go)) {
         shinyjs::hideElement(id = "download_plot_html")

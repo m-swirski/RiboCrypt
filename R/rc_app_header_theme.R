@@ -81,6 +81,23 @@ browser_ui_settings_style <- function() {
       #settingsCollapse .panel-title {
         font-size: 0.75em;  /* Adjust this value to reduce the font size */
       }
+
+    .selectize-input {
+      font-size: 15px; /* Shrinks the font inside the selectize input box */
+      height: 30px; /* Shrinks the height of the input box */
+    }
+    .selectize-dropdown {
+      font-size: 15px; /* Shrinks the font inside the dropdown list */
+    }
+    .selectize-input .selectize-input-inner {
+      padding: 2px; /* Adjust padding to fit the box */
+    }
+    .selectize-input .selectize-input-default {
+      padding: 2px; /* Adjust padding inside input field */
+    }
+    .shiny-input-container:has(.selectize-control) > label {
+      font-size: 17px;  /* Only affects labels for selectizeInput */
+    }
     "))
 }
 

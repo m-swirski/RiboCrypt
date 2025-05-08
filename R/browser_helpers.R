@@ -91,12 +91,14 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   seq_panel <- bottom_panel$seq_panel
   custom_seq_panel <- bottom_panel$custom_bigwig_panels
   without_sequence_track <- display_sequence %in% c("none", FALSE)
+  browser()
   if (without_sequence_track) { # plotly subplot without sequence track
     nplots <- nplots + 2
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
   } else { # plotly subplot with sequence track
     nplots <- nplots + 3
-    plots <- c(plots, list(automateTicks(nt_area_template()), automateTicksGMP(gene_model_panel),
+    plots <- c(plots, list(automateTicksDNA(c(1, nchar(bottom_panel$target_seq)), 0.5),
+                           automateTicksGMP(gene_model_panel),
                            automateTicksX(seq_panel)))
   }
 

@@ -1,9 +1,10 @@
 fetchJS <- function(script_name) {
-  if (script_name == "render_on_zoom.js") {
-    message("Using local render script!")
-    script <- "~/Desktop/forks/RiboCrypt/inst/js/render_on_zoom.js"
-  } else script = system.file("js", script_name, package =
-                                                "RiboCrypt")
+  # if (script_name == "render_on_zoom.js") {
+  #   message("Using local render script!")
+  #   script <- "~/Desktop/forks/RiboCrypt/inst/js/render_on_zoom.js"
+  # } else
+  script = system.file("js", script_name, package =
+                         "RiboCrypt")
   lines <- readLines(script)
   paste(lines, sep = "", collapse = "\n")
 }

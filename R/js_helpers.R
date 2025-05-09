@@ -1,8 +1,11 @@
 fetchJS <- function(script_name) {
-  script = system.file("js", script_name, package =
+  if (script_name == "render_on_zoom.js") {
+    message("Using local render script!")
+    script <- "~/Desktop/forks/RiboCrypt/inst/js/render_on_zoom.js"
+  } else script = system.file("js", script_name, package =
                                                 "RiboCrypt")
   lines <- readLines(script)
-  paste(lines, sep = "", collapse = "")
+  paste(lines, sep = "", collapse = "\n")
 }
 
 #' Fetch Javascript sequence
@@ -59,7 +62,6 @@ addJSrender <- function(multiomics_plot, target_seq, nplots, seq_render_dist,
                                       distance = seq_render_dist, display_dist = display_dist,
                                       aa_letter_code = aa_letter_code, input_id)
   select_region_on_click_data <- list(nplots = nplots, input_id = input_id)
-
   multiomics_plot <- multiomics_plot %>%
     onRender(fetchJS("render_on_zoom.js"), render_on_zoom_data) %>%
     onRender(fetchJS("select_region_on_click.js"), select_region_on_click_data)

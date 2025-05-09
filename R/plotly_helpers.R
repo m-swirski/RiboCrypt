@@ -11,33 +11,11 @@ automateTicks <- function(plot) {
     plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE))
 }
 
-automateTicksDNA <- function(x_range, y_pos) {
-  x_mid <- mean(x_range)
-  label <- "Zoom in to see sequence (Click here to copy sequence)"
-  automateTicks(nt_area_template()) %>% add_trace(
-    x = x_mid,
-    y = y_pos,
-    text = label,
-    type = "scatter",
-    mode = "text",
-    textfont = list(color = "gray", size = 16),
-    hoverinfo = "none",
-    showlegend = FALSE,
-    xaxis = "x",
-    yaxis = "y",  # adjust if needed
-    name = "sequence_placeholder"
-  ) %>% layout(
-    xaxis = list(range = x_range, autorange=TRUE),  # Keep x_range dynamic based on zoom
-    yaxis = list(range = c(0, 1))   # Adjust if needed for the y-axis
-  )
-}
-
 automateTicksLetters <- function(plot) {
   suppressWarnings(plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
                      plotly::layout(yaxis=list(autorange = FALSE), xaxis=list(autorange=FALSE)) %>%
                      toWebGL())
 }
-
 
 automateTicksGMP <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE, tooltip = "gene_names") %>%

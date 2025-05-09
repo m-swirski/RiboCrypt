@@ -91,13 +91,13 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   seq_panel <- bottom_panel$seq_panel
   custom_seq_panel <- bottom_panel$custom_bigwig_panels
   without_sequence_track <- display_sequence %in% c("none", FALSE)
-  browser()
+
   if (without_sequence_track) { # plotly subplot without sequence track
     nplots <- nplots + 2
     plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
   } else { # plotly subplot with sequence track
     nplots <- nplots + 3
-    plots <- c(plots, list(automateTicksDNA(c(1, nchar(bottom_panel$target_seq)), 0.5),
+    plots <- c(plots, list(automateTicks(nt_area_template()),
                            automateTicksGMP(gene_model_panel),
                            automateTicksX(seq_panel)))
   }
@@ -271,13 +271,13 @@ browser_plots_highlighted <- function(plots, zoom_range, color = "rgba(255, 255,
   return(plots)
 }
 
-hash_strings_browser <- function(input, dff) {
+hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width) {
   full_names <- ORFik:::name_decider(dff, naming = "full")
   hash_bottom <- paste(input$tx, input$other_tx,
                        input$add_uorfs,  input$add_translon,
                        input$extendTrailers, input$extendLeaders,
                        input$genomic_region, input$viewMode,
-                       input$collapsed_introns_width,
+                       ciw,
                        input$customSequence, input$phyloP,
                        collapse = "|_|")
   # Until plot and coverage is split (bottom must be part of browser hash)

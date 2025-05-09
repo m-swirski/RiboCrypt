@@ -8,6 +8,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
 
     collapsed_introns_width <- input$collapsed_introns_width
+    if (!input$collapsed_introns) collapsed_introns_width <- 0
+
     tx_annotation <- observed_cds_annotation(isolate(input$tx), tx,
                                              isolate(input$other_tx))
     if (collapsed_introns_width > 0) {
@@ -39,7 +41,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     } else withFrames <- rep(FALSE, nrow(dff))
 
     # Hash strings for cache
-    hash_strings <- hash_strings_browser(input, dff)
+    hash_strings <- hash_strings_browser(input, dff, collapsed_introns_width)
 
     reads <- try(filepath(dff, "bigwig", suffix_stem = c("_pshifted", "")))
     invalid_reads <- is(reads, "try-error") ||

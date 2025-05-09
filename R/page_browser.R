@@ -91,7 +91,9 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
       column(1, prettySwitch(ns("viewMode"), "Genomic View", value = viewMode,
                              status = "success", fill = TRUE, bigger = TRUE),
                 prettySwitch(ns("other_tx"), "Full annotation", value = full_annotation,
-                              status = "success", fill = TRUE, bigger = TRUE))
+                              status = "success", fill = TRUE, bigger = TRUE),
+                prettySwitch(ns("collapsed_introns"), "Collapse introns", value = FALSE,
+                             status = "success", fill = TRUE, bigger = TRUE))
     ),
     tags$hr(),
     # ---- Full Width Main Panel ----

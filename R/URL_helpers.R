@@ -51,6 +51,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
         paste("customSequence", input$customSequence, sep = "="),
         paste("phyloP", input$phyloP, sep = "="),
         paste("collapsed_introns_width", input$collapsed_introns_width, sep = "="),
+        paste("collapsed_introns", input$collapsed_introns, sep = "="),
         paste("go", go, sep = "="),
         sep = "&"))
 }
@@ -233,7 +234,7 @@ check_url_for_basic_parameters <- function() {
 
       # Checkbox updates
       for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon","summary_track",
-                    "log_scale", "log_scale_protein","phyloP")) {
+                    "log_scale", "log_scale_protein","phyloP", "collapsed_introns")) {
         value <- query[tag][[1]]
         if (!is.null(value)) {
           updateCheckboxInput(inputId = tag, value = as.logical(value))

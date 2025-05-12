@@ -1,23 +1,22 @@
 (elem, _, data) => {
   let tracesVisible = 0;
-  let switchDistance = 300;
-  let targetAxis = data.traces[0]["yaxis"];
-  console.log("Target Y axis:", targetAxis);
+  const switchDistance = 250;
+  const targetAxis = data.traces[0]["yaxis"];
   let currentVisibleSequence = "";
   let lastRange = [null, null];
 
-  // Trace for DNA letters when zoom is < switchDistance
+  // ⚙️ Add DNA base traces
   const tracesToAdd = (traces, start, end) => {
     return traces.map((traceDef, index) => {
-      let frame = index % 3;
+      const frame = index % 3;
 
-      let startFrame = (start - 1) % 3;
-      let startShift = (startFrame > frame) ? 1 : 0;
-      let frameAdjustedStart = Math.max(0, Math.floor(start / 3) + startShift);
+      const startFrame = (start - 1) % 3;
+      const startShift = (startFrame > frame) ? 1 : 0;
+      const frameAdjustedStart = Math.max(0, Math.floor(start / 3) + startShift);
 
-      let endFrame = (end - 1) % 3;
-      let endShift = (endFrame < frame) ? -1 : 0;
-      let frameAdjustedEnd = Math.floor(end / 3) + endShift;
+      const endFrame = (end - 1) % 3;
+      const endShift = (endFrame < frame) ? -1 : 0;
+      const frameAdjustedEnd = Math.floor(end / 3) + endShift;
 
       return {
         x: traceDef.x.slice(frameAdjustedStart, frameAdjustedEnd),
@@ -32,17 +31,37 @@
       };
     });
   };
-  // Logic to fire DNA letters or placeholder text
+
+  // 👁️ Placeholder trace
+  const createPlaceholderTrace = (centerX) => ({
+    x: [centerX],
+    y: [0.5],
+    text: "\u00A0\u00A0\u00A0Click to copy sequence\u00A0\u00A0\u00A0",
+    mode: "markers+text",
+    type: "scatter",
+    textposition: "middle center",
+    textfont: { color: "gray", size: 18 },
+    marker: {
+      size: 100,
+      color: "rgba(0,0,0,0)",
+      opacity: 0.01,
+      line: { width: 0 }
+    },
+    name: "sequence_placeholder",
+    hoverinfo: "text",
+    showlegend: false,
+    xaxis: "x",
+    yaxis: targetAxis
+  });
+
+  // 🔁 Triggered on zoom/pan
   const onRelayout = (ed) => {
     const fallbackRange = elem._fullLayout?.xaxis?.range || [0, data.sequence.length];
     const start = Math.floor("xaxis.range[0]" in ed ? ed["xaxis.range[0]"] : fallbackRange[0]);
     const end = Math.ceil("xaxis.range[1]" in ed ? ed["xaxis.range[1]"] : fallbackRange[1]);
     const distance = end - start;
 
-    // ✅ Prevent infinite relayout loop
-    if (lastRange[0] === start && lastRange[1] === end) {
-      return;
-    }
+    if (lastRange[0] === start && lastRange[1] === end) return;
     lastRange = [start, end];
 
     const clampedStart = Math.max(0, start);
@@ -50,47 +69,39 @@
     currentVisibleSequence = data.sequence.slice(clampedStart, clampedEnd);
     console.log("Updated visible sequence of length:", currentVisibleSequence.length);
 
-    if (distance <= switchDistance && tracesVisible === 0) {
-      const placeholderIndex = elem.data.findIndex((trace) => trace.name === "sequence_placeholder");
+    const placeholderIndex = elem.data.findIndex(trace => trace.name === "sequence_placeholder");
+    const sequenceTraceIndexes = elem.data
+      .map((trace, i) => trace.name === "sequence" ? i : null)
+      .filter(i => i !== null);
+
+    if (distance <= switchDistance) {
+      // Show DNA text traces
+      if (placeholderIndex !== -1) Plotly.deleteTraces(elem, [placeholderIndex]);
+      if (tracesVisible === 0) {
+        Plotly.addTraces(elem, tracesToAdd(data.traces, start - 300, end + 300));
+        tracesVisible = 1;
+      }
+    } else {
+      // Show placeholder trace
+      const centerX = (start + end) / 2;
+
+      // Remove DNA traces if needed
+      const sequenceTraceIndexes = elem.data
+        .map((trace, i) => trace.name === "sequence" ? i : null)
+        .filter(i => i !== null);
+      if (sequenceTraceIndexes.length > 0) {
+        Plotly.deleteTraces(elem, sequenceTraceIndexes);
+        tracesVisible = 0;
+      }
+
+      // Add or update placeholder
       if (placeholderIndex !== -1) {
-        Plotly.deleteTraces(elem, [placeholderIndex]);
+        Plotly.restyle(elem, { x: [[centerX]] }, [placeholderIndex]);
+      } else {
+        Plotly.addTraces(elem, [createPlaceholderTrace(centerX)]);
       }
 
-      Plotly.addTraces(elem, tracesToAdd(data.traces, start - 300, end + 300));
-      tracesVisible = 1;
-    } else if (distance > switchDistance && tracesVisible === 1) {
-      const indexesToRemove = elem.data
-        .map((trace, idx) => (trace.type === "scatter" && trace.mode === "text" && trace.name === "sequence") ? idx : null)
-        .filter((i) => i !== null);
-
-      if (indexesToRemove.length > 0) {
-        Plotly.deleteTraces(elem, indexesToRemove);
-      }
-
-      tracesVisible = 0;
-
-      const xMid = (start + end) / 2;
-      Plotly.addTraces(elem, [{
-        x: [xMid],
-        y: [0.5],
-        text: "\u00A0\u00A0\u00A0Click to copy sequence\u00A0\u00A0\u00A0",
-        mode: "markers+text",
-        type: "scatter",
-        textposition: "middle center",
-        textfont: { color: "gray", size: 18 },
-        marker: {
-          size: 100,
-          color: "rgba(0,0,0,0)",
-          opacity: 0.01, // Very low opacity to keep it interactable
-          line: { width: 0 }
-        },
-        name: "sequence_placeholder",
-        hoverinfo: "text", // Make the point interactive on hover
-        showlegend: false,
-        xaxis: "x",
-        yaxis: targetAxis
-      }]);
-
+      // Clean up axes visuals
       Plotly.relayout(elem, {
         "xaxis.showticklabels": false,
         "xaxis.ticks": "",
@@ -101,41 +112,33 @@
     }
   };
 
-  // Function to display a message in the bottom left of the plot
+  // 📋 Show copied popup
   const showCopiedMessage = (message) => {
     const messageDiv = document.createElement("div");
     messageDiv.innerHTML = message;
-    messageDiv.style.position = "absolute";
-    messageDiv.style.bottom = "10px";
-    messageDiv.style.left = "10px";
-    messageDiv.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-    messageDiv.style.color = "white";
-    messageDiv.style.padding = "5px 10px";
-    messageDiv.style.borderRadius = "5px";
-    messageDiv.style.fontSize = "14px";
-    messageDiv.style.zIndex = "10";  // Ensure it's on top of the plot
+    Object.assign(messageDiv.style, {
+      position: "absolute",
+      bottom: "10px",
+      left: "10px",
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      color: "white",
+      padding: "5px 10px",
+      borderRadius: "5px",
+      fontSize: "14px",
+      zIndex: "10"
+    });
     document.body.appendChild(messageDiv);
-
-    // Remove the message after 3 seconds
-    setTimeout(() => {
-      document.body.removeChild(messageDiv);
-    }, 3000);
+    setTimeout(() => document.body.removeChild(messageDiv), 3000);
   };
 
-  // Modified onClick to trigger the copied message
+  // 📦 Click handler
   const onClick = (ed) => {
     const point = ed.points?.[0];
     if (!point) return;
 
-    const xaxis = point.data.xaxis;
-    const yaxis = point.data.yaxis;
-    const traceName = point.data.name;
-
-    console.log("Clicked axis:", xaxis, yaxis);
-    console.log("Trace name:", traceName);
-
-    if (xaxis === "x" && yaxis === targetAxis && traceName && (traceName === "sequence" || traceName === "sequence_placeholder")) {
-      // Get visible window from layout
+    const { xaxis, yaxis, name } = point.data;
+    if (xaxis === "x" && yaxis === targetAxis &&
+        (name === "sequence" || name === "sequence_placeholder")) {
       const layout = elem._fullLayout || {};
       const range = layout.xaxis?.range || [0, data.sequence.length];
       const start = Math.max(0, Math.floor(range[0]));
@@ -145,46 +148,22 @@
       console.log("Copied sequence of length:", visibleSequence.length);
       Shiny.setInputValue(data.input_id, visibleSequence, { priority: "event" });
 
-      // Trigger the copy action to clipboard
       navigator.clipboard.writeText(visibleSequence)
         .then(() => {
           console.log("Copied to clipboard!");
-          showCopiedMessage(`Sequence copied: ${visibleSequence.length} nt`); // Show the copied message
+          showCopiedMessage(`Sequence copied: ${visibleSequence.length} nt`);
         })
         .catch(err => console.error("Clipboard copy failed:", err));
-    } else {
-      console.log("Not copying, not DNA sequence or placeholder");
-      Shiny.setInputValue(data.input_id, null);
     }
   };
 
-  // Add text on initial load: Ensure initial rendering of "Click to copy" marker
-  Plotly.addTraces(elem, [{
-    x: [data.sequence.length / 2],
-    y: [0.5],
-    text: "\u00A0\u00A0\u00A0Click to copy sequence\u00A0\u00A0\u00A0",
-    mode: "markers+text",
-    type: "scatter",
-    textposition: "middle center",
-    textfont: { color: "gray", size: 18 },
-    marker: {
-      size: 100,
-      color: "rgba(0,0,0,0)",
-      opacity: 0.01, // Keep it invisible but clickable
-      line: { width: 0 }
-    },
-    name: "sequence_placeholder",
-    hoverinfo: "text",
-    showlegend: false,
-    xaxis: "x",
-    yaxis: targetAxis
-  }]);
-
-  // Initialize the plot with an initial range (force render text)
+  // ✅ Initial render with placeholder
+  Plotly.addTraces(elem, [createPlaceholderTrace(data.sequence.length / 2)]);
   const initialStart = 0;
   const initialEnd = data.sequence.length;
   onRelayout({ "xaxis.range[0]": initialStart, "xaxis.range[1]": initialEnd });
 
+  // Bind events
   elem.on('plotly_click', onClick);
   elem.on("plotly_relayout", onRelayout);
-};
+}

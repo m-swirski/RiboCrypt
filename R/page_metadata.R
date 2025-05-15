@@ -1,4 +1,4 @@
-metadata_ui <- function(id, all_exp, metadata, label = "metadata") {
+metadata_ui <- function(id, all_exp, all_exp_meta, label = "metadata") {
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
@@ -8,7 +8,8 @@ metadata_ui <- function(id, all_exp, metadata, label = "metadata") {
     sample_info_ui("sample_info"),
     study_info_ui("study_info"),
     sra_search_ui("sra_search"),
-    predicted_translons_ui("predicted_translons", all_merged)
+    predicted_translons_ui("predicted_translons", all_merged),
+    umap_ui("umap", all_exp_meta)
   )
 }
 
@@ -19,4 +20,5 @@ metadata_server <- function(id, all_experiments, metadata) {
   study_info_server("study_info", all_experiments)
   sra_search_server("sra_search")
   predicted_translons_server("predicted_translons")
+  umap_server("umap")
 }

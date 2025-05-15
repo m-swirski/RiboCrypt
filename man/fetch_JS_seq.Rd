@@ -9,7 +9,8 @@ fetch_JS_seq(
   nplots,
   distance = 50,
   display_dist,
-  aa_letter_code = "one_letter"
+  aa_letter_code = "one_letter",
+  input_id
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ fetch_JS_seq(
 \item{display_dist}{display distance}
 
 \item{aa_letter_code}{"one_letter"}
+
+\item{input_id}{shiny id of the object}
 }
 \value{
 a list of 2 lists, the nt list (per frame, total 3)

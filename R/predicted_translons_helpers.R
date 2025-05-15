@@ -1,17 +1,32 @@
 # Function to load data
 load_data <- function(species) {
   df <- read.experiment(species, validate = FALSE)
-  table_path <- file.path(dirname(df@fafile),
+  table_path <- file.path(refFolder(df),
                           "predicted_translons",
                           "predicted_translons_with_sequence.fst")
   if (file.exists(table_path)) {
-    translon_table <- setDT(fst::read_fst(table_path))
+    translon_table <- fst::read_fst(table_path, as.data.table = TRUE)
     setattr(translon_table, "exp", species)
   } else {
     NULL
   }
 
   reactiveValues(translon_table = translon_table, df = df)
+}
+
+# Function to load data
+load_data_umap <- function(species) {
+  df <- read.experiment(species, validate = FALSE)
+  dir <- file.path(refFolder(df), "UMAP")
+  table_path <- file.path(dir, "UMAP_by_gene_counts.fst")
+  if (file.exists(table_path)) {
+    dt_umap <- fst::read_fst(table_path, as.data.table = TRUE)
+    setattr(dt_umap, "exp", species)
+  } else {
+    NULL
+  }
+
+  reactiveValues(dt_umap = dt_umap, df = df)
 }
 
 # Generalized function to handle download trigger buttons.

@@ -1,4 +1,4 @@
-analysis_ui <- function(id, all_exp, browser_options, libs, metadata, all_exp_meta,
+analysis_ui <- function(id, all_exp, browser_options, libs, metadata,
                         label = "Analysis") {
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
@@ -16,7 +16,7 @@ analysis_ui <- function(id, all_exp, browser_options, libs, metadata, all_exp_me
 analysis_server <- function(id, all_experiments, without_readlengths_env,
                          with_readlengths_env, df, df_with, experiments,
                          tx, cds, libs, org, gene_name_list, rv, metadata,
-                         all_exp_meta, exp_init_meta, df_meta, names_init, browser_options) {
+                         names_init, browser_options) {
   rv <- heatmap_server("Heatmap", all_experiments, with_readlengths_env,
                 df_with, experiments, tx, cds, libs, org, gene_name_list, rv)
   rv <- codon_server("Codon", all_experiments, without_readlengths_env,

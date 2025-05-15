@@ -4,7 +4,7 @@ predicted_translons_ui <- function(id, all_exp_translons, label = "predicted_tra
     title = "Predicted Translons", icon = icon("rectangle-list"),
     h2("Predicted Translons Overview"),
     # Include shinyjs so we can trigger hidden buttons
-    shinyjs::useShinyjs(debug = TRUE),
+    shinyjs::useShinyjs(),
     sidebarLayout(
       sidebarPanel(
         experiment_input_select(all_exp_translons$name, ns),

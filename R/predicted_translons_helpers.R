@@ -15,13 +15,18 @@ load_data <- function(species) {
 }
 
 # Function to load data
-load_data_umap <- function(species) {
+load_data_umap <- function(species, color.by = NULL) {
   df <- read.experiment(species, validate = FALSE)
   dir <- file.path(refFolder(df), "UMAP")
   table_path <- file.path(dir, "UMAP_by_gene_counts.fst")
   if (file.exists(table_path)) {
     dt_umap <- fst::read_fst(table_path, as.data.table = TRUE)
+    if (length(color.by) > 1) {
+      dt_umap[, color_column := do.call(paste, c(.SD, sep = " | ")), .SDcols = color.by]
+    } else dt_umap[, color_column := get(color.by)]
+
     setattr(dt_umap, "exp", species)
+    setattr(dt_umap, "color.by", color.by)
   } else {
     NULL
   }

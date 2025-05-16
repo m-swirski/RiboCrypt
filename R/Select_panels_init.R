@@ -238,3 +238,32 @@ metadata_input_select <- function(ns, metadata,
   #   helper(onclick = "fakeClick('tutorial', 'metadata')")
 }
 
+umap_color_by_input_select <- function(ns, names = "auto",
+                                       browser_options = NULL,
+                                       option_name = "default_experiment") {
+  if (names == "auto") {
+    names <- c('Tissue' = "tissue", 'Cell line' = "cell_line",
+               'Inhibitor' = "inhibitors", 'BioProject' = "BioProject",
+               'Author' = "author")
+  }
+  selectizeInput(
+    inputId = ns("umap_col"),
+    label = "Color on",
+    choices = names,
+    selected = names[seq(2)],
+    multiple = TRUE
+  )
+}
+
+umap_plot_type <- function(ns, names = c("UMAP", "UMAP centroids"),
+                           browser_options = NULL,
+                           option_name = "default_experiment") {
+  selectizeInput(
+    inputId = ns("umap_plot_type"),
+    label = "Plot type",
+    choices = names,
+    selected = names[1],
+    multiple = FALSE
+  )
+}
+

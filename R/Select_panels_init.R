@@ -212,7 +212,7 @@ export_format_of_plot <- function(ns) {
 condition_input_select <- function(ns, multiple = TRUE) {
   selectizeInput(
     inputId = ns("condition"),
-    label = "Select two conditions",
+    label = "Select two levels",
     choices = "",
     selected = "",
     multiple = multiple

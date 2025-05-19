@@ -47,8 +47,8 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
       cond <- reactive(
         if (nrow(df()) > 1) {
           design <- design(df(), batch.correction.design = TRUE, multi.factor = FALSE)
-          target.contrast <- design[1]
-          df()[, target.contrast]
+          target.factor <- design[1]
+          df()[, target.factor]
         } else "")
       observeEvent(cond(), condition_update_select(cond))
 

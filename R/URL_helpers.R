@@ -25,7 +25,9 @@ getHostFromURL <- function(session) {
   } else if (host == "ribocrypt.neutrino.re") {
     host <- paste0("https://", host, "/app/ribocrypt")
   } else { # Else local user / other server
-    host <- paste0("http://", host, ":", session$clientData$url_port)
+    port <- session$clientData$url_port
+    pathname <- sub("/$", "", session$clientData$url_pathname)
+    host <- paste0("http://", host, ":", port, pathname)
   }
   return(host)
 }

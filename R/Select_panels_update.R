@@ -126,6 +126,14 @@ library_update_select_safe <- function(libs, selected = libs[1],
   )
 }
 
+factor_update_select <- function(factor) {
+  updateSelectizeInput(
+    inputId = "factor",
+    choices = factor(),
+    selected = factor()[1]
+  )
+}
+
 condition_update_select <- function(cond) {
   selected <- if (length(unique(cond())) > 1) {
     2

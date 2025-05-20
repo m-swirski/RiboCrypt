@@ -11,6 +11,7 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
                    organism_input_select(c("ALL", genomes), ns),
                    experiment_input_select(experiments, ns, browser_options),
                    diff_method_input_select(ns),
+                   factor_input_select(ns),
                    condition_input_select(ns),
                    library_input_select(ns, label = "Libraries (Group1)", id = "library1"),
                    library_input_select(ns, label = "Libraries (Group2)", id = "library2"),
@@ -40,33 +41,44 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
-
       # Update main side panels
       uses_gene <- FALSE
       study_and_gene_observers(input, output, session)
-      cond <- reactive(
+
+      factor <- reactive(
         if (nrow(df()) > 1) {
-          design <- design(df(), batch.correction.design = TRUE, multi.factor = FALSE)
-          target.factor <- design[1]
-          df()[, target.factor]
+          design <- design(df(), batch.correction.design = TRUE, multi.factor = TRUE)
+          names(design) <- stringr::str_to_sentence(design)
+          names(design)[design == "rep"] <- "Replicate"
+          return(design)
         } else "")
+      observeEvent(factor(), factor_update_select(factor))
+
+      cond <- reactive({
+        req(isTruthy(input$factor))
+        factor <- isolate(input$factor)
+        if (nrow(df()) > 1 & factor != "") {
+          df()[, input$factor]
+        } else ""
+      })
       observeEvent(cond(), condition_update_select(cond))
 
-      observeEvent(cond(), {
-        cond_1 <- cond()[1]
+      observeEvent(input$condition, {
+        req(isTruthy(input$condition))
+        cond_1 <- input$condition[1]
         library_update_select(libs, libs()[cond() == cond_1], "library1")
         }, ignoreNULL = TRUE, ignoreInit = FALSE)
 
-      observeEvent(cond(), {
-        cond_2 <- unique(cond())
-        req(length(cond_2) > 1)
-        cond_2 <- cond_2[2]
+      observeEvent(input$condition, {
+        req(isTruthy(input$condition))
+        req(length(input$condition) > 1)
+        cond_2 <- input$condition[2]
         library_update_select(libs, libs()[cond() == cond_2], "library2")
       }, ignoreNULL = TRUE, ignoreInit = FALSE)
 
       # Main plot, this code is only run if 'plot' is pressed
       controls <- eventReactive(input$go,
-                                click_plot_DEG_main_controller(input, df, libs))
+                                click_plot_DEG_main_controller(input, df, libs, factor()))
       model <- reactive(DE_model_from_ctrl(controls)) %>%
         bindCache(controls()$hash_string_pre)
       #

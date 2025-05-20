@@ -209,15 +209,25 @@ export_format_of_plot <- function(ns) {
   )
 }
 
-condition_input_select <- function(ns, multiple = TRUE) {
+factor_input_select <- function(ns, multiple = FALSE) {
   selectizeInput(
-    inputId = ns("condition"),
-    label = "Select two levels",
+    inputId = ns("factor"),
+    label = "Select factor",
     choices = "",
     selected = "",
     multiple = multiple
   ) %>%
     helper(onclick = "fakeClick('tutorial', 'diffexp')")
+}
+
+condition_input_select <- function(ns, multiple = TRUE) {
+  selectizeInput(
+    inputId = ns("condition"),
+    label = "Select two levels (contrast)",
+    choices = "",
+    selected = "",
+    multiple = multiple
+  )
 }
 
 metadata_input_select <- function(ns, metadata,

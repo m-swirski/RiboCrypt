@@ -317,14 +317,14 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_ta
                  hash_string_plot = hash_string_plot)
 }
 
-click_plot_DEG_main_controller <- function(input, df, all_libs) {
+click_plot_DEG_main_controller <- function(input, df, all_libs, factor = NULL) {
   if (nrow(df()) < 2) stop("Differential expression only allowed for studies with > 1 sample")
   draw_unregulated <- isolate(input$draw_unnreg)
   conditions <- isolate(input$condition)
   # dff <- df()[which(df()$condition %in% conditions),]
   dff <- df()
-  design <- design(dff, batch.correction.design = TRUE, multi.factor = FALSE)
-  target.contrast <- design[1]
+  design <- factor
+  target.contrast <- input$factor
 
   pairs <- combn.pairs(unlist(dff[, target.contrast]))
   pval <- isolate(input$pval)

@@ -102,31 +102,58 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
           tx_clicked_dt <- gene_name_list()[value == tx_clicked_raw]
           tx_clicked <- tx_clicked_dt$value
 
-
           host <- getHostFromURL(session)
           exp <- name(df())
           gene_and_symbol <- tx_clicked_dt$label
           libraries_to_use <- c(input$library1, input$library2)
+
           urls <- make_rc_url(symbol = NULL, gene_id = gene_and_symbol, tx_id = tx_clicked,
                               exp = exp,
                               libraries = libraries_to_use, leader_extension = 0, trailer_extension = 0,
                               viewMode = FALSE, other_tx = FALSE,
-                              plot_on_start = TRUE, frames_type = "area", kmer=1,
+                              plot_on_start = TRUE, frames_type = "area", kmer = 1,
                               add_translons = FALSE, host = host)
+
           google_url <- paste0("https://www.google.com/search?q=", URLencode(selected_key))
           ribocrypt_browser_url <- urls
 
-          # Create two clickable hyperlinks
           tagList(
             strong("Selected ID: "), selected_key, br(), br(),
             strong("Search ID on: "),
-            a("RiboCrypt Browser", href = ribocrypt_browser_url, target = "_blank", style = "color: blue; text-decoration: underline; margin-right: 10px;"),
-            a("Google", href = google_url, target = "_blank", style = "color: green; text-decoration: underline;")
+            a("RiboCrypt Browser", href = ribocrypt_browser_url, target = "_blank",
+              style = "color: blue; text-decoration: underline; margin-right: 10px;"),
+            a("Google", href = google_url, target = "_blank",
+              style = "color: green; text-decoration: underline; margin-right: 10px;"),
+            actionButton(NS(id)("show_description"), "Show Description", icon = icon("info-circle"),
+                         class = "btn btn-sm btn-outline-secondary"), br(), br(),
+            uiOutput(NS(id)("gene_description")) %>% shinycssloaders::withSpinner(color="#0dc5c1")
           )
         } else if (isolate(input$go) > 0) {
           "Click a point to see details here"
-        } else {""}
+        } else {
+          ""
+        }
       }) %>% bindEvent(c(input$go, event_data("plotly_click", source = NS(id)("c"))), ignoreInit = TRUE)
+
+
+      output$gene_description <- renderUI({
+        selected_id <- suppressMessages(event_data("plotly_click", source = NS(id)("c")))
+        if (!is.null(selected_id)) {
+          selected_key <- selected_id$key
+          tx_clicked_raw <- sub("\\(.*", "", selected_key)
+          tx_clicked_dt <- gene_name_list()[value == tx_clicked_raw]
+          gene_and_symbol <- tx_clicked_dt$label
+          gene_subset <- sub("-.*", "", gene_and_symbol)
+          format <- ifelse(gene_and_symbol == gene_subset, "ensembl_id", "symbol")
+          gene_desc <- ORFik::download_gene_info(gene_subset, organism = organism(df()), by = format)
+          if (is.null(gene_desc) || is.na(gene_desc) || gene_desc == "") {
+            gene_desc <- "No description available for this gene."
+          }
+          div(style = "white-space: pre-wrap; font-size: 14px; color: #333; padding-top: 5px;",
+              gene_desc)
+        }
+      }) %>% bindEvent(c(input$show_description, event_data("plotly_click", source = NS(id)("c"))), ignoreInit = TRUE)
+
 
 
       return(rv)

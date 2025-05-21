@@ -319,27 +319,34 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_ta
 
 click_plot_DEG_main_controller <- function(input, df, all_libs, factor = NULL) {
   if (nrow(df()) < 2) stop("Differential expression only allowed for studies with > 1 sample")
+  diff_method <- isolate(input$diff_method)
   draw_unregulated <- isolate(input$draw_unnreg)
   conditions <- isolate(input$condition)
+  target.contrast <- input$factor
+  if (diff_method == "DESeq2" & length(conditions) != 2)
+    stop("For DESeq2 method, you must specify 2 levels for the contrast on factor: ", target.contrast)
   # dff <- df()[which(df()$condition %in% conditions),]
   dff <- df()
   design <- factor
-  target.contrast <- input$factor
 
-  pairs <- combn.pairs(unlist(dff[, target.contrast]))
+
+  pairs <- list(conditions)
+  # pairs <- combn.pairs(unlist(dff[, target.contrast]))
   pval <- isolate(input$pval)
-  diff_method = isolate(input$diff_method)
+
   full <- isolate(input$other_tx)
   libs <- paste(ORFik:::name_decider(dff, naming = "full"), collapse = "")
   group_1 <- input$library1
   group_2 <- input$library2
+  plot_export_format <- isolate(input$plot_export_format)
 
-  hash_string_pre <- paste(draw_unregulated,
-                           libs, diff_method, full, paste(group_1, collapse = "|"),
+  hash_string_pre <- paste(libs, diff_method, full, paste(group_1, collapse = "|"),
                            paste(group_2, collapse = "|"),
                            sep = "_|-|_")
-  hash_string_full <- paste(pval, conditions,
+  hash_string_full <- paste(pval, conditions, plot_export_format,
                             hash_string_pre, sep = "_|-|_")
+  hash_string_plot <- paste(draw_unregulated, plot_export_format, hash_string_full,
+                            sep = "_|-|_")
   time_before <- Sys.time()
   print("experiment subsetting based on condition")
   reactiveValues(dff = dff, draw_unregulated = draw_unregulated,
@@ -350,6 +357,8 @@ click_plot_DEG_main_controller <- function(input, df, all_libs, factor = NULL) {
                  pairs = pairs, pval = pval,
                  diff_method = diff_method,
                  full = full,
+                 plot_export_format = plot_export_format,
                  hash_string_pre = hash_string_pre,
-                 hash_string_full = hash_string_full)
+                 hash_string_full = hash_string_full,
+                 hash_string_plot = hash_string_plot)
 }

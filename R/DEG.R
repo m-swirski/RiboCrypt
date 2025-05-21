@@ -128,7 +128,8 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
                      color.values = c("No change" = "black", "Significant" = "red",
                                       "Buffering" = "purple", "mRNA abundance" = "darkgreen",
                                       "Expression" = "blue", "Forwarded" = "yellow",
-                                      "Inverse" = "aquamarine", "Translation" = "orange4")) {
+                                      "Inverse" = "aquamarine", "Translation" = "orange4"),
+                     format = "png") {
   DEG_plot_input_validation()
   if (nrow(dt) == 0) return(invisible(NULL))
 
@@ -175,7 +176,10 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
   #removed partial_bundle() - it's incompatible with shiny
    select <- highlight(
      ggplotly(gg, tooltip = hovertip) %>%
-       layout(autosize = TRUE),
+       layout(autosize = TRUE) %>% plotly::config(
+         toImageButtonOptions = list(
+           format = format),
+         displaylogo = FALSE),
      on = c('plotly_selected'), off = c('plotly_deselect'),
      selectize = TRUE, persistent = FALSE
    )

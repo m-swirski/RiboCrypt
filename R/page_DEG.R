@@ -85,12 +85,13 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
       analysis_dt <- reactive(DE_model_results(model(), controls, gene_name_list())) %>%
         bindCache(controls()$hash_string_full)
       output$c <- renderPlotly({
-        p <- DEG_plot(analysis_dt(), draw_non_regulated = controls()$draw_unregulated)
+        p <- DEG_plot(analysis_dt(), draw_non_regulated = controls()$draw_unregulated,
+                      format = controls()$plot_export_format)
         p$x$source <- NS(id)("c")
         event_register(p, "plotly_click")
         p
         }) %>%
-        bindCache(controls()$hash_string_full)
+        bindCache(controls()$hash_string_plot)
 
 
       output$selected_info <- renderUI({

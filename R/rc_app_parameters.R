@@ -38,8 +38,7 @@ rc_parameter_setup <- function() {
       browser_options["default_experiment"] <- all_exp$name[1]
     }
 
-    if (!isTruthy(browser_options["default_experiment_meta"]) &
-        nrow(all_exp_meta) > 1) {
+    if (!isTruthy(browser_options["default_experiment_meta"])) {
       browser_options["default_experiment_meta"] <- all_exp_meta$name[1]
     }
     if (isTruthy(browser_options["default_experiment_meta"]) &
@@ -72,10 +71,23 @@ rc_parameter_setup <- function() {
       browser_options["default_gene"] <- names_init$label[1]
     }
     stopifnot(browser_options["default_gene"] %in% names_init$label)
-    if (!isTruthy(browser_options["default_gene_meta"])) {
-      browser_options["default_gene_meta"] <- names_init$label[1]
+
+    names_init_meta <- NULL
+    if (nrow(all_exp_meta) > 0) {
+      meta_org <- all_exp_meta[name == browser_options["default_experiment_meta"]]$organism[1]
+      browser_org <- all_exp[name == browser_options["default_experiment"]]$organism[1]
+      names_init_meta <- if (meta_org == browser_org) {
+        copy(names_init)
+        } else {
+        exp_init_meta <- read.experiment(browser_options["default_experiment_meta"],
+                                    validate = FALSE)
+        get_gene_name_categories(exp_init_meta)
+      }
+      if (!isTruthy(browser_options["default_gene_meta"])) {
+        browser_options["default_gene_meta"] <- names_init_meta$label[1]
+      }
+      stopifnot(browser_options["default_gene_meta"] %in% names_init_meta$label)
     }
-    stopifnot(browser_options["default_gene_meta"] %in% names_init$label)
 
     gene_isoforms <- names_init[label == browser_options["default_gene"],]
     if (nrow(gene_isoforms) == 0) stop("Selected gene has no isoforms!")

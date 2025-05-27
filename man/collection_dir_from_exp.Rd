@@ -4,7 +4,7 @@
 \alias{collection_dir_from_exp}
 \title{Get collection directory}
 \usage{
-collection_dir_from_exp(df, must_exists = FALSE)
+collection_dir_from_exp(df, must_exists = FALSE, new_format = TRUE)
 }
 \arguments{
 \item{df}{ORFik experiment}

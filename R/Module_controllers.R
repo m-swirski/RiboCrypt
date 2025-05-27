@@ -381,7 +381,7 @@ allsamples_observer_controller <- function(input, output, session) {
   org <- reactive("ALL")
   gene_name_list <- reactive({
     if(rv$changed == FALSE) {names_init}
-    else {get_gene_name_categories_collection(df())}}) %>%
+    else {get_gene_name_categories(df)}}) %>%
     bindCache(rv$curval) %>%
     bindEvent(rv$changed)
   motif_name_list <- reactive({

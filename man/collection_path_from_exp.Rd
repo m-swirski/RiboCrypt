@@ -9,7 +9,8 @@ collection_path_from_exp(
   id,
   gene_name_list = NULL,
   must_exists = TRUE,
-  collection_dir = collection_dir_from_exp(df, must_exists)
+  collection_dir = collection_dir_from_exp(df, must_exists),
+  grl_all = loadRegion(df)
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ collection_path_from_exp(
 \item{must_exists}{logical, stop if dir does not exists}
 
 \item{collection_dir}{= collection_dir_from_exp(df, must_exists)}
+
+\item{grl_all}{a GRangesList for new format, what genomic range to get.}
 }
 \value{
 file.path(resFolder(df), "collection_tables")

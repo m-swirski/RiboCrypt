@@ -4,10 +4,13 @@
 \alias{load_collection}
 \title{Load a ORFik collection table}
 \usage{
-load_collection(path)
+load_collection(path, grl = attr(path, "range"))
 }
 \arguments{
 \item{path}{the path to gene counts}
+
+\item{grl}{a GRangesList, default attr(path, "range"),
+for new fst format, which range to get.}
 }
 \value{
 a data.table in long format

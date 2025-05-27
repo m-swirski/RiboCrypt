@@ -17,14 +17,6 @@ get_gene_name_categories <- function(df) {
   return(output_dt)
 }
 
-get_gene_name_categories_collection <- function(df) {
-  valid <- list.files(collection_dir_from_exp(df))
-  valid <- gsub("\\.fst", "", valid)
-
-  all_genes <- get_gene_name_categories(df)
-  return(all_genes[value%in% valid,])
-}
-
 get_exp <- function(exp_name, experiments, env,
                     exps_dir = ORFik::config()["exp"], page = "") {
 

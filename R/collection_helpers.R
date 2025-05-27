@@ -1,11 +1,17 @@
 
 #' Load a ORFik collection table
 #' @param path the path to gene counts
+#' @param grl a GRangesList, default attr(path, "range"),
+#' for new fst format, which range to get.
 #' @return a data.table in long format
 #' @importFrom fst read_fst
-load_collection <- function(path) {
-  table  <- fst::read_fst(path)
-  setDT(table)
+load_collection <- function(path, grl = attr(path, "range")) {
+  if (length(names(path)) > 0 && names(path) == "index") {
+    stopifnot(!is.null(grl))
+    table <- setnames(suppressWarnings(data.table::melt.data.table(coverageByTranscriptFST(grl, path)[[1]])),
+                      c("library", "count"))
+  } else table <- fst::read_fst(path, as.data.table = TRUE)
+
   table[, position := 1:.N, by = library]
   table[, `:=`(library, factor(library, levels = unique(library), ordered = TRUE))]
   return(table)
@@ -296,10 +302,11 @@ subset_fst_by_interval <- function(table, subset) {
 #' df <- ORFik.template.experiment()
 #' collection_dir_from_exp(df)
 #'
-collection_dir_from_exp <- function(df, must_exists = FALSE) {
+collection_dir_from_exp <- function(df, must_exists = FALSE, new_format = TRUE) {
   table_dir <- file.path(resFolder(df), "collection_tables")
+  if (new_format) table_dir <- paste0(table_dir, "_indexed")
 
-  if (must_exists & !file.exists(table_dir))
+  if (must_exists & !dir.exists(table_dir))
     stop("There is no collection fst tables directory for this organism,",
          " see vignette for more information on how to make these.")
   return(table_dir)
@@ -308,11 +315,11 @@ collection_dir_from_exp <- function(df, must_exists = FALSE) {
 #' Get collection path
 #'
 #' For directory and id, must be fst format file
-#' @param df ORFik experiment
+#' @inheritParams collection_dir_from_exp
 #' @param id character, transcript ids
 #' @param gene_name_list a data.table, default NULL, with gene ids
-#' @param must_exists logical, stop if dir does not exists
 #' @param collection_dir = collection_dir_from_exp(df, must_exists)
+#' @param grl_all a GRangesList for new format, what genomic range to get.
 #' @return file.path(resFolder(df), "collection_tables")
 #' @export
 #' @examples
@@ -321,19 +328,29 @@ collection_dir_from_exp <- function(df, must_exists = FALSE) {
 #' collection_path_from_exp(df, id = tx_id, must_exists = FALSE)
 collection_path_from_exp <- function(df, id, gene_name_list = NULL,
                                      must_exists = TRUE,
-                                     collection_dir = collection_dir_from_exp(df, must_exists)) {
-  table_path <- file.path(collection_dir, paste0(id, ".fst"))
-  if (must_exists && !file.exists(table_path)) {
-    all_ids_print <- "None"
-    if (!is.null(gene_name_list)) {
-      all_ids <- gene_name_list[label == gene_name_list[value == id,]$label,]$value
-      all_ids_paths <- file.path(collection_dir, paste0(all_ids, ".fst"))
-      all_ids <- all_ids[file.exists(all_ids_paths)]
-      if (length(all_ids) > 0) {
-        all_ids_print <- paste(all_ids, collapse = ", ")
+                                     collection_dir = collection_dir_from_exp(df, must_exists),
+                                     grl_all = loadRegion(df)) {
+  index <- file.path(collection_dir, "coverage_index.fst")
+  if (file.exists(index)) {
+    table_path <- index
+    names(table_path) <- "index"
+    attr(table_path, "range") <- grl_all[id]
+  } else {
+    table_path <- file.path(collection_dir, paste0(id, ".fst"))
+    names(table_path) <- "old_format"
+    if (must_exists && !file.exists(table_path)) {
+      all_ids_print <- "None"
+      if (!is.null(gene_name_list)) {
+        all_ids <- gene_name_list[label == gene_name_list[value == id,]$label,]$value
+        all_ids_paths <- file.path(collection_dir, paste0(all_ids, ".fst"))
+        all_ids <- all_ids[file.exists(all_ids_paths)]
+        if (length(all_ids) > 0) {
+          all_ids_print <- paste(all_ids, collapse = ", ")
+        }
       }
+      stop("Gene isoform has no precomputed table, existing isoforms: ", all_ids_print)
     }
-    stop("Gene isoform has no precomputed table, existing isoforms: ", all_ids_print)
   }
+
   return(table_path)
 }

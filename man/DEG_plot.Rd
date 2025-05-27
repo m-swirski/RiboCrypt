@@ -14,7 +14,8 @@ DEG_plot(
   two_dimensions = ifelse("LFC" \%in\% colnames(dt), FALSE, TRUE),
   color.values = c(`No change` = "black", Significant = "red", Buffering = "purple",
     `mRNA abundance` = "darkgreen", Expression = "blue", Forwarded = "yellow", Inverse =
-    "aquamarine", Translation = "orange4")
+    "aquamarine", Translation = "orange4"),
+  format = "png"
 )
 }
 \arguments{

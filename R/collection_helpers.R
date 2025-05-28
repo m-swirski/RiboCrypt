@@ -232,9 +232,9 @@ subset_fst_interval_sum <- function(ratio_interval, table) {
 
 subset_fst_coord_by_region <- function(df, id, region_type) {
   extend <- 650 # For yeast
+  region <- NULL
   subset <-
     if (region_type != "mrna") {
-
       if (organism(df) == "Saccharomyces cerevisiae") {
         region2 <- loadRegion(df, part = "cds", names.keep = id)
         gene_mrna <- extendTrailers(extendLeaders(region2, extend), extend)
@@ -251,8 +251,6 @@ subset_fst_coord_by_region <- function(df, id, region_type) {
         region <- unlistGrl(c(region, region2))
         region <- GRangesList(region)
         names(region) <- id
-        subset_coordinates_grl_to_ir(df, id = id, gene_mrna = gene_mrna,
-                                     subset = region)
       } else {
         if (organism(df) == "Saccharomyces cerevisiae" & region_type != "cds") {
           if (region_type == "leader") {
@@ -261,11 +259,61 @@ subset_fst_coord_by_region <- function(df, id, region_type) {
             region <- extendTrailers(GRangesList(stopSites(region2, TRUE, FALSE, FALSE)), extend)
           }
         } else region <- loadRegion(df, part = region_type, names.keep = id)
-        subset_coordinates_grl_to_ir(df, id = id, gene_mrna = gene_mrna,
-                                     subset = region)
+      }
+  }
+  if (!is.null(region)) {
+    subset <- subset_coordinates_grl_to_ir(df, id = id, gene_mrna = gene_mrna,
+                                 subset = region)
+    attr(subset, "region") <- region
+    attr(subset, "full_region") <- region
+
+  }
+  return(subset)
+}
+
+subset_tx_by_region <- function(df, id, region_type) {
+  extend <- 650 # For yeast
+  region <- region2 <- NULL
+  if (organism(df) == "Saccharomyces cerevisiae") {
+    region <- region2 <- loadRegion(df, part = "cds")
+    gene_mrna <- extendTrailers(extendLeaders(region2, extend), extend)
+  } else region <- gene_mrna <- loadRegion(df, part = "mrna")
+
+  is_mrna <- id %in% names(region)
+  if (!is_mrna) {
+    region <- gene_mrna <- loadRegion(df, part = "tx")[id]
+    if (organism(df) == "Saccharomyces cerevisiae") {
+      region <- gene_mrna <- extendTrailers(extendLeaders(region, extend), extend)
+    }
+  } else {
+    region <- region2 <- region[id]
+    gene_mrna <- gene_mrna[id]
+  }
+
+  subset <-
+    if (region_type != "mrna" && is_mrna) {
+      if (region_type == "leader+cds") {
+        if (organism(df) == "Saccharomyces cerevisiae") {
+          region <- extendLeaders(GRangesList(startSites(region2, TRUE, FALSE, FALSE)), extend)
+        } else {
+          region2 <- loadRegion(df, part = "cds", names.keep = id)
+          region <- loadRegion(df, part = "leaders", names.keep = id)
+        }
+
+        region <- unlistGrl(c(region, region2))
+        region <- GRangesList(region)
+        names(region) <- id
+      } else {
+        if (organism(df) == "Saccharomyces cerevisiae" & region_type != "cds") {
+          if (region_type == "leader") {
+            region <- extendLeaders(GRangesList(startSites(region2, TRUE, FALSE, FALSE)), extend)
+          } else if (region_type == "trailer") {
+            region <- extendTrailers(GRangesList(stopSites(region2, TRUE, FALSE, FALSE)), extend)
+          }
+        } else region <- loadRegion(df, part = region_type, names.keep = id)
       }
     }
-  return(subset)
+  return(list(region = region, gene_mrna = gene_mrna))
 }
 
 

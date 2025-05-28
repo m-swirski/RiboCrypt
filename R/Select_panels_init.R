@@ -116,7 +116,7 @@ frame_subsetter_select <- function(ns, name = "frames_subset",
 }
 
 region_view_select <- function(ns, name, label,
-                               selected = "mrna") {
+                               selected = "leader+cds") {
   selectizeInput(
     inputId = ns(name),
     label = label,

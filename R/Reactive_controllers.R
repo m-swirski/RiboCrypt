@@ -5,37 +5,44 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
   {
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
+    # Annotation
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
-
-    collapsed_introns_width <- input$collapsed_introns_width
-    if (!input$collapsed_introns) collapsed_introns_width <- 0
-
     tx_annotation <- observed_cds_annotation(isolate(input$tx), tx,
                                              isolate(input$other_tx))
+    cds_annotation <- observed_cds_annotation(isolate(input$tx), cds,
+                                              isolate(input$other_tx))
+    uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
+                                                isolate(input$other_tx), isolate(input$add_uorfs))
+    translon_annotation <- observed_translon_annotation(isolate(input$tx), df(),
+                                                        isolate(input$other_tx), isolate(input$add_translon))
+    customRegions <- c(uorf_annotation, translon_annotation)
+
+    # View controller
+    collapsed_introns_width <- input$collapsed_introns_width
+    if (!input$collapsed_introns) collapsed_introns_width <- 0
     if (collapsed_introns_width > 0) {
       tx_annotation <- tx_annotation[tx_annotation %over% flankPerGroup(display_region)]
       display_region_gr <- reduce(unlistGrl(tx_annotation))
       display_region <- groupGRangesBy(display_region_gr, rep(names(display_region), length(display_region_gr)))
     }
-    cds_annotation <- observed_cds_annotation(isolate(input$tx), cds,
-                                              isolate(input$other_tx))
-    uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
-           isolate(input$other_tx), isolate(input$add_uorfs))
-    translon_annotation <- observed_translon_annotation(isolate(input$tx), df(),
-                                                isolate(input$other_tx), isolate(input$add_translon))
-    customRegions <- c(uorf_annotation, translon_annotation)
     display_region <- genomic_string_to_grl(isolate(input$genomic_region), display_region,
                                             max_size = 1e6, isolate(input$viewMode),
                                             isolate(input$extendLeaders),
                                             isolate(input$extendTrailers),
                                             collapsed_introns_width)
-    dff <- observed_exp_subset(isolate(input$library), libs, df)
     zoom_range <- get_zoom_range(isolate(input$zoom_range), display_region,
                                  max_size = 1e6, isolate(input$viewMode),
                                  isolate(input$extendLeaders),
                                  isolate(input$extendTrailers))
 
+    if (!is.null(attr(zoom_range, "message"))) {
+      showModal(modalDialog(
+        title = "Invalid zoom range",
+        attr(zoom_range, "message")
+      ))
+    }
 
+    dff <- observed_exp_subset(isolate(input$library), libs, df)
     if (isolate(input$withFrames)) {
       withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
     } else withFrames <- rep(FALSE, nrow(dff))
@@ -54,6 +61,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     frames_subset <- input$frames_subset
     use_all_frames <- length(frames_subset) == 0 || any(c("","all") %in% frames_subset)
     if (use_all_frames) frames_subset <- "all"
+
+    shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
 
     reactiveValues(dff = dff,
                    display_region = display_region,
@@ -82,13 +91,139 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
   }
 }
 
+click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
+  {
+    # browser()
+    print(paste("Gene (Megabrowser):", isolate(input$gene)))
+    print(paste("Tx (Megabrowser):", isolate(input$tx)))
+    id <- isolate(input$tx)
+    region_type <- isolate(input$region_type)
+    dff <- df()
+    motif <- isolate(input$motif)
+    leader_extension <- isolate(input$extendLeaders)
+    trailer_extension <- isolate(input$extendTrailers)
+    display_annot <- isolate(input$display_annot)
+
+    annotation_list <- subset_tx_by_region(dff, id, region_type)
+
+    display_region <- annotation_list$region
+
+    if (!is.null(motif) && motif != "") {
+      table_path <- meta_motif_files(dff)[motif]
+      display_annot <- FALSE
+      message("Using motif: ", table_path)
+    } else {
+      collapsed_introns_width <- input$collapsed_introns_width
+      if (!input$collapsed_introns) collapsed_introns_width <- 0
+      if (collapsed_introns_width > 0) {
+        tx_annotation <- subset
+        tx_annotation <- tx_annotation[tx_annotation %over% flankPerGroup(display_region)]
+        display_region_gr <- reduce(unlistGrl(tx_annotation))
+        display_region <- groupGRangesBy(display_region_gr, rep(names(display_region), length(display_region_gr)))
+      }
+      display_region <- genomic_string_to_grl(isolate(input$genomic_region), display_region,
+                                              max_size = 1e6, isolate(input$viewMode),
+                                              leader_extension, trailer_extension,
+                                              collapsed_introns_width)
+      if (!is.null(leader_extension) && is.numeric(leader_extension) && leader_extension != 0) {
+        if (leader_extension > 5e5) stop("Maximum leader extension is 5e5 nt")
+        display_region <- extendLeaders(display_region, leader_extension)
+      }
+
+      if (!is.null(trailer_extension) && is.numeric(trailer_extension) &&  trailer_extension != 0) {
+        if (trailer_extension > 5e5) stop("Maximum leader extension is 5e5 nt")
+        display_region <- extendTrailers(display_region, trailer_extension)
+      }
+
+      table_path <- collection_path_from_exp(dff, id, isolate(gene_name_list()),
+                                             grl_all = display_region)
+    }
+
+    lib_sizes <- file.path(QCfolder(dff), "totalCounts_mrna.rds")
+    if (!file.exists(lib_sizes))
+      stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
+           " see vignette for more information on how to make these.")
+    clusters <- isolate(input$clusters)
+    ratio_interval <- isolate(input$ratio_interval)
+    metadata_field <- isolate(input$metadata)
+    other_gene <- isolate(input$other_gene)
+
+    valid_enrichment_clusterings <- c(clusters != 1, isTruthy(ratio_interval), isTruthy(other_gene))
+    enrichment_test_types <- c("Clusters", "Ratio bins", "Other gene tpm bins")[valid_enrichment_clusterings]
+    enrichment_term <- isolate(input$enrichment_term)
+    valid_enrichment_terms <- c(metadata_field, enrichment_test_types)
+    if (!(enrichment_term %in% valid_enrichment_terms)) {
+      stop("Enrichment term is not valid, valid options:\n",
+           paste(valid_enrichment_terms, collapse = ", "))
+    }
+
+
+    normalization <- isolate(input$normalization)
+    kmer <- isolate(input$kmer)
+    min_count <- isolate(input$min_count)
+    frame <- isolate(input$frame)
+    summary_track <- isolate(input$summary_track)
+
+    if (!is.null(ratio_interval)) {
+      if (ratio_interval != "") {
+        split_ratio <- unlist(strsplit(ratio_interval, ";"))
+
+        temp_interval <- strsplit(split_ratio, ":|-")
+        single_input <- lengths(temp_interval) == 1
+        if (any(lengths(temp_interval) > 2)) stop("Malformed sort in interval input!")
+        if(any(single_input)) {
+          temp_interval[which(single_input)] <- lapply(temp_interval[which(single_input)], function(x) rep(x, 2))
+        }
+        temp_interval <- as.numeric(unlist(temp_interval))
+
+        if (anyNA(temp_interval)) stop("Malformed sort in interval input!")
+        ratio_interval <- temp_interval
+      } else ratio_interval <- NULL
+    }
+
+    if (!is.null(other_gene) && other_gene != "") {
+      print(paste("Sorting on", other_gene))
+      other_tx <- tx_from_gene_list(isolate(gene_name_list()), other_gene)[1]
+      other_tx_hash <- paste0("sortOther:", other_tx)
+    } else {
+      other_tx_hash <- other_tx <- NULL
+    }
+
+    table_hash <- paste(name(dff), id, table_path, lib_sizes, clusters, min_count,
+                        region_type, paste(metadata_field, collapse = ":"), normalization, frame,
+                        kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
+                        leader_extension, trailer_extension,
+                        summary_track, display_annot, sep = "|_|")
+
+    print(paste("Table hash: ", table_hash))
+    shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
+    reactiveValues(dff = dff,
+                   id = id,
+                   table_path = table_path,
+                   lib_sizes = lib_sizes,
+                   table_hash = table_hash,
+                   metadata_field = metadata_field,
+                   normalization = normalization,
+                   kmer = kmer,
+                   min_count = min_count,
+                   subset = NULL,
+                   region_type = region_type,
+                   group_on_tx_tpm = other_tx,
+                   ratio_interval = ratio_interval,
+                   frame = frame,
+                   display_annot = display_annot,
+                   summary_track = summary_track,
+                   enrichment_term = enrichment_term)
+  }
+}
+
 click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
   {
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
     annotation <- observed_cds_annotation(isolate(input$tx), cds,
-                                              isolate(input$other_tx))
+                                          isolate(input$other_tx))
     dff <- observed_exp_subset(isolate(input$library), libs, df)
     customRegions <- load_custom_regions(isolate(input$useCustomRegions), df)
 
@@ -128,101 +263,7 @@ click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {
                    annotation = annotation,
                    reads = reads,
                    withFrames = withFrames,
-                   )
-  }
-}
-
-click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
-  {
-    # browser()
-    print(paste("Gene (Megabrowser):", isolate(input$gene)))
-    print(paste("Tx (Megabrowser):", isolate(input$tx)))
-    id <- isolate(input$tx)
-    dff <- df()
-    motif <- isolate(input$motif)
-    display_annot <- isolate(input$display_annot)
-
-    if (!is.null(motif) && motif != "") {
-      table_path <- meta_motif_files(dff)[motif]
-      display_annot <- FALSE
-      message("Using motif: ", table_path)
-    } else table_path <- collection_path_from_exp(dff, id, isolate(gene_name_list()))
-
-    lib_sizes <- file.path(QCfolder(dff), "totalCounts_mrna.rds")
-    if (!file.exists(lib_sizes))
-      stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
-           " see vignette for more information on how to make these.")
-    clusters <- isolate(input$clusters)
-    ratio_interval <- isolate(input$ratio_interval)
-    metadata_field <- isolate(input$metadata)
-    other_gene <- isolate(input$other_gene)
-
-    valid_enrichment_clusterings <- c(clusters != 1, isTruthy(ratio_interval), isTruthy(other_gene))
-    enrichment_test_types <- c("Clusters", "Ratio bins", "Other gene tpm bins")[valid_enrichment_clusterings]
-    enrichment_term <- isolate(input$enrichment_term)
-    valid_enrichment_terms <- c(metadata_field, enrichment_test_types)
-    if (!(enrichment_term %in% valid_enrichment_terms)) {
-      stop("Enrichment term is not valid, valid options:\n",
-           paste(valid_enrichment_terms, collapse = ", "))
-    }
-
-
-    normalization <- isolate(input$normalization)
-    kmer <- isolate(input$kmer)
-    min_count <- isolate(input$min_count)
-    region_type <- isolate(input$region_type)
-    frame <- isolate(input$frame)
-    summary_track <- isolate(input$summary_track)
-
-    if (!is.null(ratio_interval)) {
-      if (ratio_interval != "") {
-        split_ratio <- unlist(strsplit(ratio_interval, ";"))
-
-        temp_interval <- strsplit(split_ratio, ":|-")
-        single_input <- lengths(temp_interval) == 1
-        if (any(lengths(temp_interval) > 2)) stop("Malformed sort in interval input!")
-        if(any(single_input)) {
-          temp_interval[which(single_input)] <- lapply(temp_interval[which(single_input)], function(x) rep(x, 2))
-        }
-        temp_interval <- as.numeric(unlist(temp_interval))
-
-        if (anyNA(temp_interval)) stop("Malformed sort in interval input!")
-        ratio_interval <- temp_interval
-      } else ratio_interval <- NULL
-    }
-    subset <- subset_fst_coord_by_region(dff, id, region_type)
-
-    if (!is.null(other_gene) && other_gene != "") {
-      print(paste("Sorting on", other_gene))
-      other_tx <- tx_from_gene_list(isolate(gene_name_list()), other_gene)[1]
-      other_tx_hash <- paste0("sortOther:", other_tx)
-    } else {
-      other_tx_hash <- other_tx <- NULL
-    }
-
-    table_hash <- paste(name(dff), id, table_path, lib_sizes, clusters, min_count,
-                        region_type, paste(metadata_field, collapse = ":"), normalization, frame,
-                        kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
-                        summary_track, display_annot, sep = "|_|")
-
-    print(paste("Table hash: ", table_hash))
-    reactiveValues(dff = dff,
-                   id = id,
-                   table_path = table_path,
-                   lib_sizes = lib_sizes,
-                   table_hash = table_hash,
-                   metadata_field = metadata_field,
-                   normalization = normalization,
-                   kmer = kmer,
-                   min_count = min_count,
-                   subset = subset,
-                   region_type = region_type,
-                   group_on_tx_tpm = other_tx,
-                   ratio_interval = ratio_interval,
-                   frame = frame,
-                   display_annot = display_annot,
-                   summary_track = summary_track,
-                   enrichment_term = enrichment_term)
+    )
   }
 }
 

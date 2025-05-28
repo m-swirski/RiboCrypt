@@ -6,9 +6,9 @@ allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "C
   if (!at_least_2_values) message("Single value analysis not possible, skipping!")
 
   req(at_least_2_values)
-  pdf(NULL) # TODO: Make a better fix for blank pdf write
-  row_orders <- suppressWarnings(ComplexHeatmap::row_order(plot))
-  dev.off()
+  # pdf(NULL) # TODO: Make a better fix for blank pdf write
+  row_orders <- suppressWarnings(row_order(plot))
+  # dev.off()
   orders <- unlist(row_orders, use.names = FALSE)
   clustering_was_done <- is.list(row_orders)
 

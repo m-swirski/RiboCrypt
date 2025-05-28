@@ -127,7 +127,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                              width, height, format = export.format)
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>%
     plotly::layout(title = plot_title)
-  if (!is.null(zoom_range)) {
+  if (!is.null(zoom_range) && length(zoom_range) == 2) {
     multiomics_plot <- multiomics_plot %>%
       plotly::layout(xaxis = list(range = zoom_range))
   }
@@ -242,16 +242,26 @@ get_zoom_range <- function(zoom_range, display_region, max_size,
         if (as.numeric(width(ir)) > 0) {
           zoom_range <- c(max(as.numeric(start(ir))[1] - 10, 1),
                           min(as.numeric(end(ir))[1] + 10, widthPerGroup(display_range_zoom, FALSE)))
+        } else {
+          zoom_range <- numeric(0)
+          if (!viewMode) {
+            attr(zoom_range, "message") <-
+            "Zoom range not overlapping displayed region, did you mean to use genomic coordinates?"
+          } else {
+            attr(zoom_range, "message") <-
+              "Zoom range not overlapping displayed region."
+          }
+          warning(attr(zoom_range, "message"))
         }
       }
-    } else zoom_range <- NULL
+    }
   }
+  if (!is.numeric(zoom_range)) zoom_range <- numeric(0)
   return(zoom_range)
 }
 
 browser_plots_highlighted <- function(plots, zoom_range, color = "rgba(255, 255, 102, 0.18)") {
-  if (!is.null(zoom_range)) {
-    stopifnot(length(zoom_range) == 2)
+  if (!is.null(zoom_range) && length(zoom_range) == 2) {
     plots_highlighted <- lapply(plots, function (p) {
       p$x$layout$shapes <- c(
         p$x$layout$shapes,

@@ -32,14 +32,34 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
     c("#000000", "#2CFA1F", "yellow2", rep("#FF2400", color_mult))
   } else stop("Invalid color theme!")
   cat("Creating metabrowser heatmap\n")
-  ComplexHeatmap::Heatmap(t(table), show_row_dend = FALSE,
-                          cluster_columns = FALSE,
-                          cluster_rows = FALSE,
-                          use_raster = TRUE,  raster_quality = 5,
-                          km = clusters,
-                          col =  colors, show_row_names = FALSE,
-                          show_heatmap_legend = FALSE)
+  mat <- t(table)
+
+  km <- kmeans(mat, centers = clusters)
+  row_clusters <- seq_along(km$cluster)
+  row_clusters <- split(row_clusters, km$cluster)
+
+  if (clusters == 1) {
+    row_clusters <- unlist(row_clusters, use.names = FALSE)
+  }
+
+
+  plot <- plotly::plot_ly(
+    z = mat[unlist(row_clusters, use.names = FALSE),],
+    colors = colors,
+    type = "heatmapgl"
+  )
+  attr(plot, "row_order") <- row_clusters
+  return(plot)
+  # ComplexHeatmap::Heatmap(t(table), show_row_dend = FALSE,
+  #                         cluster_columns = FALSE,
+  #                         cluster_rows = FALSE,
+  #                         use_raster = TRUE,  raster_quality = 5,
+  #                         km = clusters,
+  #                         col =  colors, show_row_names = FALSE,
+  #                         show_heatmap_legend = FALSE)
 }
+
+row_order <- function(x) {attr(x, "row_order")}
 
 #' Full plot for allsamples browser
 #'
@@ -77,10 +97,10 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
                                                     tx_width = ncol(heatmap))
   }
 
-  grob <- grid::grid.grabExpr(draw(heatmap))
-  final_plot <- cowplot::plot_grid(plotlist = list(summary_plot, grob, gene_model_panel)[to_use_logicals],
-                                   ncol = 1, rel_heights = rel_heights[to_use_logicals])
-  return(final_plot)
+  # grob <- grid::grid.grabExpr(draw(heatmap))
+  # final_plot <- cowplot::plot_grid(plotlist = list(summary_plot, grob, gene_model_panel)[to_use_logicals],
+  #                                  ncol = 1, rel_heights = rel_heights[to_use_logicals])
+  return(heatmap)
 }
 
 summary_track_allsamples <- function(m, summary_track_type = "area", as_plotly = FALSE) {

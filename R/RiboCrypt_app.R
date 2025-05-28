@@ -90,7 +90,8 @@ RiboCrypt_app <- function(
       theme = rc_theme(),
       selected = init_tab_focus,
       browser_ui("browser", all_exp, browser_options, names_init, libs),
-      browser_allsamp_ui("browser_allsamp", all_exp_meta, browser_options, metadata),
+      browser_allsamp_ui("browser_allsamp", all_exp_meta, browser_options, metadata,
+                         names_init_meta),
       analysis_ui("Analysis", all_exp, browser_options, libs, metadata),
       metadata_ui("metadata", all_exp, all_exp_meta),
       tutorial_ui("tutorial")

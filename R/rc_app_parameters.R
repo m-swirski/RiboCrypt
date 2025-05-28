@@ -87,6 +87,12 @@ rc_parameter_setup <- function() {
         browser_options["default_gene_meta"] <- names_init_meta$label[1]
       }
       stopifnot(browser_options["default_gene_meta"] %in% names_init_meta$label)
+
+      gene_isoforms_meta <- names_init_meta[label == browser_options["default_gene"],]
+      if (!isTruthy(browser_options["default_isoform_meta"])) {
+        browser_options["default_isoform_meta"] <- gene_isoforms_meta$value[1]
+      }
+      stopifnot(browser_options["default_isoform_meta"] %in% gene_isoforms_meta$value)
     }
 
     gene_isoforms <- names_init[label == browser_options["default_gene"],]
@@ -95,6 +101,7 @@ rc_parameter_setup <- function() {
       browser_options["default_isoform"] <- gene_isoforms$value[1]
     }
     stopifnot(browser_options["default_isoform"] %in% gene_isoforms$value)
+
     if (!isTruthy(browser_options["hide_settings"])) {
       browser_options["hide_settings"] <- TRUE
     }

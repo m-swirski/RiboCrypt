@@ -93,21 +93,26 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
 
 click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
   {
-    # browser()
+    shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
     print(paste("Gene (Megabrowser):", isolate(input$gene)))
     print(paste("Tx (Megabrowser):", isolate(input$tx)))
     id <- isolate(input$tx)
+    if (id == "") stop("Emptry transcript isoforom given!")
+
     region_type <- isolate(input$region_type)
     dff <- df()
     motif <- isolate(input$motif)
     leader_extension <- isolate(input$extendLeaders)
     trailer_extension <- isolate(input$extendTrailers)
     display_annot <- isolate(input$display_annot)
-
+    viewMode <- isolate(input$viewMode)
     annotation_list <- subset_tx_by_region(dff, id, region_type)
+    tx_annotation <- display_region <- annotation_list$region
 
-    display_region <- annotation_list$region
-
+    cds_annotation <- observed_cds_annotation_internal(id,
+                                              annotation_list$cds_annotation,
+                                              isolate(input$other_tx))
+    # browser()
     if (!is.null(motif) && motif != "") {
       table_path <- meta_motif_files(dff)[motif]
       display_annot <- FALSE
@@ -116,13 +121,12 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
       collapsed_introns_width <- input$collapsed_introns_width
       if (!input$collapsed_introns) collapsed_introns_width <- 0
       if (collapsed_introns_width > 0) {
-        tx_annotation <- subset
         tx_annotation <- tx_annotation[tx_annotation %over% flankPerGroup(display_region)]
         display_region_gr <- reduce(unlistGrl(tx_annotation))
         display_region <- groupGRangesBy(display_region_gr, rep(names(display_region), length(display_region_gr)))
       }
       display_region <- genomic_string_to_grl(isolate(input$genomic_region), display_region,
-                                              max_size = 1e6, isolate(input$viewMode),
+                                              max_size = 1e6, viewMode,
                                               leader_extension, trailer_extension,
                                               collapsed_introns_width)
       if (!is.null(leader_extension) && is.numeric(leader_extension) && leader_extension != 0) {
@@ -192,20 +196,26 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     table_hash <- paste(name(dff), id, table_path, lib_sizes, clusters, min_count,
                         region_type, paste(metadata_field, collapse = ":"), normalization, frame,
                         kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
-                        leader_extension, trailer_extension,
-                        summary_track, display_annot, sep = "|_|")
+                        leader_extension, trailer_extension, input$plotType,
+                        isolate(input$viewMode), collapsed_introns_width, sep = "|_|")
+    table_plot <- paste(table_hash, isolate(input$other_tx), summary_track,
+                        display_annot, isolate(input$heatmap_color),
+                        isolate(input$color_mult), sep = "|_|")
 
     print(paste("Table hash: ", table_hash))
-    shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
     reactiveValues(dff = dff,
                    id = id,
+                   display_region = display_region,
+                   tx_annotation = tx_annotation,
+                   annotation = cds_annotation,
                    table_path = table_path,
                    lib_sizes = lib_sizes,
-                   table_hash = table_hash,
                    metadata_field = metadata_field,
                    normalization = normalization,
                    kmer = kmer,
                    min_count = min_count,
+                   viewMode = viewMode,
+                   collapsed_introns_width = collapsed_introns_width,
                    subset = NULL,
                    region_type = region_type,
                    group_on_tx_tpm = other_tx,
@@ -213,7 +223,9 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    frame = frame,
                    display_annot = display_annot,
                    summary_track = summary_track,
-                   enrichment_term = enrichment_term)
+                   enrichment_term = enrichment_term,
+                   table_hash = table_hash,
+                   table_plot = table_plot)
   }
 }
 

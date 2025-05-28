@@ -25,41 +25,50 @@ compute_collection_table_shiny <- function(mainPlotControls,
 }
 
 get_meta_browser_plot <- function(table, color_theme, clusters = 1,
-                                  color_mult = 3) {
+                                  color_mult = 3, plotType = "plotly") {
   colors <- if (color_theme == "default (White-Blue)") {
     c("white", "lightblue", rep("blue", 4 + color_mult), "navy", "black")
   } else if (color_theme == "Matrix (black,green,red)") {
     c("#000000", "#2CFA1F", "yellow2", rep("#FF2400", color_mult))
   } else stop("Invalid color theme!")
   cat("Creating metabrowser heatmap\n")
-  mat <- t(table)
 
-  km <- kmeans(mat, centers = clusters)
-  row_clusters <- seq_along(km$cluster)
-  row_clusters <- split(row_clusters, km$cluster)
+  if (plotType == "plotly") {
+    mat <- t(table)
 
-  if (clusters == 1) {
-    row_clusters <- unlist(row_clusters, use.names = FALSE)
+    km <- kmeans(mat, centers = clusters)
+    row_clusters <- seq_along(km$cluster)
+    row_clusters <- split(row_clusters, km$cluster)
+
+    if (clusters == 1) {
+      row_clusters <- unlist(row_clusters, use.names = FALSE)
+    }
+
+    plot <- plotly::plot_ly(
+      z = mat[unlist(row_clusters, use.names = FALSE),],
+      colors = colors,
+      type = "heatmapgl"
+    )
+    attr(plot, "row_order") <- row_clusters
+  } else {
+    plot <- ComplexHeatmap::Heatmap(t(table), show_row_dend = FALSE,
+                            cluster_columns = FALSE,
+                            cluster_rows = FALSE,
+                            use_raster = TRUE,  raster_quality = 5,
+                            km = clusters,
+                            col =  colors, show_row_names = FALSE,
+                            show_heatmap_legend = FALSE)
   }
 
-
-  plot <- plotly::plot_ly(
-    z = mat[unlist(row_clusters, use.names = FALSE),],
-    colors = colors,
-    type = "heatmapgl"
-  )
-  attr(plot, "row_order") <- row_clusters
   return(plot)
-  # ComplexHeatmap::Heatmap(t(table), show_row_dend = FALSE,
-  #                         cluster_columns = FALSE,
-  #                         cluster_rows = FALSE,
-  #                         use_raster = TRUE,  raster_quality = 5,
-  #                         km = clusters,
-  #                         col =  colors, show_row_names = FALSE,
-  #                         show_heatmap_legend = FALSE)
+
 }
 
-row_order <- function(x) {attr(x, "row_order")}
+row_order <- function(x) {
+  if (is(x, "Heatmap")) {
+    ComplexHeatmap::row_order(x)
+  } else attr(x, "row_order")
+}
 
 #' Full plot for allsamples browser
 #'
@@ -78,6 +87,10 @@ row_order <- function(x) {attr(x, "row_order")}
 get_meta_browser_plot_full <- function(m, heatmap, id, df,
                                        summary = TRUE, annotation = TRUE,
                                        region_type,
+                                       plotType = "plotly",
+                                       tx_annotation, display_region,
+                                       cds_annotation, viewMode,
+                                       collapse_intron_flank,
                                        rel_heights = c(0.2, 0.75, 0.05)) {
   stopifnot(is.numeric(rel_heights) && length(rel_heights) == 3)
   gene_model_panel <- summary_plot <- NULL
@@ -93,14 +106,18 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
   }
 
   if (annotation) {
-    gene_model_panel <- annotation_track_allsamples(df, id, region_type,
-                                                    tx_width = ncol(heatmap))
+    gene_model_panel <- annotation_track_allsamples(df, id, display_region, cds_annotation,
+                                                    tx_annotation, viewMode, collapse_intron_flank)
   }
-
-  # grob <- grid::grid.grabExpr(draw(heatmap))
-  # final_plot <- cowplot::plot_grid(plotlist = list(summary_plot, grob, gene_model_panel)[to_use_logicals],
-  #                                  ncol = 1, rel_heights = rel_heights[to_use_logicals])
-  return(heatmap)
+  if (plotType == "plotly") {
+    gene_model_panel <- ggplotly(gene_model_panel, tooltip = "")
+    final_plot <- heatmap
+  } else {
+    grob <- grid::grid.grabExpr(draw(heatmap))
+    final_plot <- cowplot::plot_grid(plotlist = list(summary_plot, grob, gene_model_panel)[to_use_logicals],
+                                     ncol = 1, rel_heights = rel_heights[to_use_logicals])
+  }
+  return(final_plot)
 }
 
 summary_track_allsamples <- function(m, summary_track_type = "area", as_plotly = FALSE) {
@@ -119,30 +136,11 @@ summary_track_allsamples <- function(m, summary_track_type = "area", as_plotly =
   return(summary_plot)
 }
 
-annotation_track_allsamples <- function(df, id, region_type, tx_width) {
-  lines <- NULL
-  withFrames <- TRUE
-  colors <- TRUE
-
-  lengths <- ORFik::optimizedTranscriptLengths(df)
-  length <- lengths[tx_name == id]
-  # Custom UTR lengths for Sac cer (yeast)
-  if (organism(df) == "Saccharomyces cerevisiae")
-    length$utr5_len <- 650
-
-  start <- 1
-  end <- tx_width
-
-  if (length$cds_len > 0 & region_type %in% c("mrna", "leader+cds")) {
-    start <- start + length$utr5_len
-    end <- start + length$cds_len
-  }
-  grl <- GRangesList(GRanges("1", IRanges(start, end), type = "cds"))
-  names(grl) <- id
-
-  ranges <- unlistGrl(grl)
-  ranges <- c(GRanges("1", IRanges(1, tx_width), type = "utr"), ranges)
-  dt <- geneBoxFromRanges(ranges, tx_width,
-                          cols = c("#FFFFFF", c("#F8766D","#00BA38","#619CFF")[start(ranges[-1]) %% 3 + 1]))[[1]]
-  return(geneModelPanelPlot(dt))
+annotation_track_allsamples <- function(df, id, display_range, annotation,
+                                        tx_annotation, viewMode, collapse_intron_flank) {
+  gene_model_panel <- createGeneModelPanel(display_range, annotation, frame = 1,
+                                           tx_annotation = tx_annotation,
+                                           custom_regions = NULL,
+                                           viewMode = viewMode, collapse_intron_flank)
+  return(geneModelPanelPlot(gene_model_panel[[1]]))
 }

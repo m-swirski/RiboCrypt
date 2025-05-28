@@ -1,17 +1,21 @@
 observed_cds_annotation <- function(gene, cds, all = TRUE) {
+  observed_cds_annotation_internal(gene, cds(), all)
+}
+
+observed_cds_annotation_internal <- function(gene, cds, all = TRUE) {
   if (gene %in% c("", "NULL")) {
-    cds()[0]
+    cds[0]
   } else {
     if (all) {
-      cds()
+      cds
     } else {
-      if (gene %in% names(cds())) {
-        cds()[gene]
-      } else cds()[0]
+      if (gene %in% names(cds)) {
+        cds[gene]
+      } else cds[0]
     }
-
   }
 }
+
 
 observed_cds_heatmap <- function(gene, cds, length_table = NULL,
                                  longestPerGene = TRUE,

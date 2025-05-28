@@ -54,7 +54,7 @@ rc_parameter_setup <- function() {
     stopifnot(is.character(browser_options["default_view_mode"]) &
               browser_options["default_view_mode"] %in% c("tx", "genomic"))
     if (!isTruthy(browser_options["collapsed_introns_width"])) {
-      browser_options["collapsed_introns_width"] <- "0"
+      browser_options["collapsed_introns_width"] <- "30"
     }
     stopifnot(!is.na(as.numeric(browser_options["collapsed_introns_width"])))
     if (!isTruthy(browser_options["full_annotation"])) {

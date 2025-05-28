@@ -44,6 +44,10 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                                                             id = "enrichment_term",
                                                                             selected = enrichment_test_types[1],
                                                                             add = enrichment_test_types))),
+                                   fluidRow(column(6, region_view_select(ns, "region_type", "Select region to view")),
+                                            column(6, radioButtons(ns("plotType"), "Choose Plot Type:",
+                                                choices = c("Plotly" = "plotly", "ComplexHeatmap" = "ggplot2"),
+                                                selected = "ggplot2", inline = TRUE))),
                                    helper_button_redirect_call()
                           ),
                           tabPanel("Settings",
@@ -64,7 +68,6 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                                    checkboxInput(ns("frame"), label = "Split by frame", value = FALSE),
                                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
-                                   region_view_select(ns, "region_type", "Select region to view"),
                                    fluidRow(column(6, numericInput(ns("min_count"), "Minimum counts", min = 0, value = 100)),
                                             column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
                                                                   value = as.numeric(browser_options["default_kmer"]))))
@@ -74,7 +77,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
       column(2, gene_input_select(ns, FALSE, browser_options)),
       column(2, tx_input_select(ns, FALSE, all_isoforms, browser_options["default_isoform_meta"])),
       column(1, NULL, plot_button(ns("go"))),
-      column(1, prettySwitch(ns("viewMode"), "Genomic View", value = viewMode,
+      column(2, prettySwitch(ns("viewMode"), "Genomic View", value = viewMode,
                              status = "success", fill = TRUE, bigger = TRUE),
              prettySwitch(ns("other_tx"), "Full annotation", value = full_annotation,
                           status = "success", fill = TRUE, bigger = TRUE),
@@ -92,7 +95,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                     jqui_resizable(
                       splitLayout(cellWidths = c("10%", "90%"),
                                   plotlyOutput(outputId = ns("d"), height = "618px", width = "130px"),
-                                  plotlyOutput(outputId = ns("c"), height = "700px", width = "100%") %>%
+                                  uiOutput(outputId = ns("c")) %>%
                                     shinycssloaders::withSpinner(color="#0dc5c1"),
                                   width=9, cellArgs = list(style = "padding: 0px")))
                   ),
@@ -110,8 +113,9 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
+      ns <- NS(id)
       allsamples_observer_controller(input, output, session)
-
+      plot_type <- "plotly"
       # Main plot controller, this code is only run if 'plot' is pressed
       controller <- eventReactive(input$go,
                                   click_plot_browser_allsamp_controller(input, df, gene_name_list),
@@ -126,15 +130,55 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
       plot_object <- reactive(get_meta_browser_plot(table()$table,
                                                    isolate(input$heatmap_color),
                                                    isolate(input$clusters),
-                                                   isolate(input$color_mult))) %>%
+                                                   isolate(input$color_mult),
+                                                   isolate(input$plotType))) %>%
         bindEvent(table(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      output$c <- renderPlotly(get_meta_browser_plot_full(table()$table,
-                        plot_object(), controller()$id,
-                        controller()$dff, controller()$summary_track,
-                        controller()$display_annot,
-                        region_type = controller()$region_type
-                             )) %>%
+      output$myPlotlyPlot <- renderPlotly({
+        req(input$plotType == "plotly")
+        get_meta_browser_plot_full(table()$table,
+                                   plot_object(), controller()$id,
+                                   controller()$dff, controller()$summary_track,
+                                   controller()$display_annot,
+                                   region_type = controller()$region_type,
+                                   isolate(input$plotType), controller()$tx_annotation,
+                                   controller()$display_region,
+                                   controller()$annotation,
+                                   controller()$viewMode,
+                                   controller()$collapsed_introns_width
+                                   )}) %>%
+        bindCache(controller()$table_plot) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+      output$myGgplot <- renderPlot({
+        req(input$plotType == "ggplot2")
+        get_meta_browser_plot_full(table()$table,
+                                   plot_object(), controller()$id,
+                                   controller()$dff, controller()$summary_track,
+                                   controller()$display_annot,
+                                   region_type = controller()$region_type,
+                                   isolate(input$plotType), controller()$tx_annotation,
+                                   controller()$display_region,
+                                   controller()$annotation,
+                                   controller()$viewMode,
+                                   controller()$collapsed_introns_width
+                                   )}) %>%
+        bindCache(controller()$table_plot) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      output$c <- renderUI(
+        if (input$plotType == "plotly") {
+          plotlyOutput(
+            outputId = ns("myPlotlyPlot"), # Specific ID for Plotly output
+            height = "700px",
+            width = "100%"
+          ) %>% shinycssloaders::withSpinner(color="#0dc5c1")
+      } else if (input$plotType == "ggplot2") {
+          plotOutput(
+            outputId = ns("myGgplot"), # Specific ID for ggplot2 output
+            height = "700px",
+            width = "100%"
+          ) %>% shinycssloaders::withSpinner(color="#0dc5c1")
+      }) %>%
         bindCache(controller()$table_hash, input$heatmap_color,
                   isolate(input$color_mult)) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)

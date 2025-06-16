@@ -28,9 +28,14 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
         plot_button(ns("go")),
       ),
       mainPanel(
-        jqui_resizable(plotlyOutput(outputId = ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
-        uiOutput(ns("selected_info"))
-        )
+        tabsetPanel(type = "tabs",
+                    tabPanel("DEG plot", tagList(uiOutput(outputId = ns("c"), height = "500px") %>% shinycssloaders::withSpinner(color="#0dc5c1"),
+                                                 uiOutput(ns("selected_info")))),
+                    tabPanel("DEG table", DTOutput(outputId = ns("deg_table")) %>% shinycssloaders::withSpinner(color="#0dc5c1")),
+                    tabPanel("GO analysis",
+                             fluidRow(
+                               column(3, actionButton(ns("run_gorilla"), "Run GORilla", class = "btn btn-primary")),
+                               column(9, DTOutput(ns("gorilla_dt")))))))
     )
   )
 }
@@ -84,12 +89,13 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
       #
       analysis_dt <- reactive(DE_model_results(model(), controls, gene_name_list())) %>%
         bindCache(controls()$hash_string_full)
-      output$c <- renderPlotly({
-        p <- DEG_plot(analysis_dt(), draw_non_regulated = controls()$draw_unregulated,
+      output$c <- renderUI({
+        p <- DEG_plot(analysis_dt(), add_search_bar = FALSE,
+                      draw_non_regulated = controls()$draw_unregulated,
                       format = controls()$plot_export_format)
         p$x$source <- NS(id)("c")
         event_register(p, "plotly_click")
-        p
+        DEG_add_search_bar(p)
         }) %>%
         bindCache(controls()$hash_string_plot)
 
@@ -136,6 +142,12 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
         }
       }) %>% bindEvent(c(input$go, event_data("plotly_click", source = NS(id)("c"))), ignoreInit = TRUE)
 
+      output$deg_table <- DT::renderDT(analysis_dt(),
+                                       extensions = 'Buttons',
+                                       filter = "top",
+                                       options = list(dom = 'Bfrtip',
+                                                      buttons = NULL,
+                                                      pageLength = 130))
 
       output$gene_description <- renderUI({
         selected_id <- suppressMessages(event_data("plotly_click", source = NS(id)("c")))
@@ -155,8 +167,20 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
         }
       }) %>% bindEvent(c(input$show_description, event_data("plotly_click", source = NS(id)("c"))), ignoreInit = TRUE)
 
+      observeEvent(input$run_gorilla, {
+        print("Running gorilla!")
+        req(analysis_dt())
 
+        dt <- analysis_dt()
+        dt[, external_gene_name := sub("-.*", "", label)]
+        gorilla_output_dir <- tempdir()
+        gorilla_result <- ORFik:::DEG_gorilla(dt = dt, output_dir = gorilla_output_dir, organism(df()))
+        gorilla_result[, url := sprintf('<a href="%s" target="_blank" style="color: blue;">Link</a>', url)]
 
+        output$gorilla_dt <- renderDT({
+          datatable(gorilla_result, escape = FALSE, options = list(pageLength = 25))
+        })
+      })
       return(rv)
     }
   )

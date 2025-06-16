@@ -26,6 +26,7 @@ Imports:
   Biostrings,
   ComplexHeatmap,
   cowplot,
+  crosstalk,
   data.table,
   dplyr,
   DT,

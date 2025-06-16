@@ -41,33 +41,10 @@ DE_model_results <- function(dt, controls, symbols_dt = symbols(controls()$dff))
     regulation <- rep("No change", nrow(dt))
     regulation[abs(dt$LFC) * (dt$meanCounts + 1) > 100 & dt$meanCounts > 10 & abs(dt$LFC) > 0.5] <- "Significant"
     dt[, Regulation := regulation]
+    dt[, LFC := round(LFC, 2)]
+    dt[, meanCounts := round(meanCounts, 1)]
   } else stop("Invalid Differential method selected")
   return(append_gene_symbols(dt, symbols_dt))
-}
-
-append_gene_symbols <- function(dt, symbols_dt) {
-  stopifnot(is(dt, "data.table"))
-  stopifnot(!is.null(dt$id))
-
-  dt_with_symbols <- copy(dt)
-  if (length(symbols_dt) > 0 & nrow(symbols_dt) > 0) {
-    tx_column <- grep("tx|transcript|value", colnames(symbols_dt), ignore.case = TRUE, value = TRUE)
-    if (length(tx_column) != 1) {
-      if (length(tx_column) == 0) {
-        warning("Could not find any column of symbols table with tx, transcript or value in column name, please rename/add")
-      } else{
-        warning("Found multiple columns of symbols table with tx, transcript or value in column name, please rename/remove")
-      }
-    }
-
-    dt_with_symbols <- data.table::merge.data.table(dt, symbols_dt, by.x = "id", by.y = tx_column, sort = FALSE)
-    if (!is.null(dt_with_symbols$external_gene_name)) {
-      dt_with_symbols[, id := paste0(id, "(", external_gene_name, ")")]
-    } else if (!is.null(dt_with_symbols$label)) {
-      dt_with_symbols[, id := paste0(id, "(", sub("-.*", "", label), ")")]
-    } else warning("Could not find any column of symbols table with external_gene_name or label in column name, please rename/add")
-  }
-  return(dt_with_symbols)
 }
 
 #' Differential expression plots (1D or 2D)
@@ -75,9 +52,11 @@ append_gene_symbols <- function(dt, symbols_dt) {
 #' Gives you interactive 1D or 2D DE plots
 #' @param dt a data.table with results from a differential
 #' expression run. Normally from: \code{ORFik::DTEG.analysis(df1, df2)}
-#' @param draw_non_regulated logical, default FALSE.
+#' @param draw_non_regulated logical, default TRUE
 #' Should non-regulated rows be included in the plot?
 #' Will make the plot faster to render if skipped (FALSE)
+#' @param add_search_bar logical, default TRUE. Add a crosstalk search bar
+#' to search for genes in the plot
 #' @param two_dimensions logical, default:
 #' \code{ifelse("LFC" \%in\% colnames(dt), FALSE, TRUE)}
 #' Is this two dimensional, like: Ribo-seq vs RNA-seq. Alternative, FALSE: Then
@@ -101,7 +80,8 @@ append_gene_symbols <- function(dt, symbols_dt) {
 #'  "Buffering" = "purple", "mRNA abundance" = "darkgreen",
 #'  "Expression" = "blue", "Forwarded" = "yellow",
 #'  "Inverse" = "aquamarine", "Translation" = "orange4")}
-#' @return plotly object
+#' @return plotly object or crosstalk bscols if add_search_bar is TRUE.
+#' @importFrom crosstalk bscols SharedData filter_select
 #' @export
 #' @examples
 #' # Load experiment
@@ -119,7 +99,8 @@ append_gene_symbols <- function(dt, symbols_dt) {
 #' dt_2d$Regulation[5] <- "Buffering" # Fake sig level
 #' dt_2d$rna.lfc[5] <- -0.3 # Fake sig level
 #' DEG_plot(dt_2d, draw_non_regulated = TRUE)
-DEG_plot <- function(dt, draw_non_regulated = FALSE,
+DEG_plot <- function(dt, draw_non_regulated = TRUE,
+                     add_search_bar = TRUE,
                      xlim = ifelse(two_dimensions, "bidir.max", "auto"),
                      ylim = "bidir.max",
                      xlab = ifelse(two_dimensions, "RNA fold change (log2)", "Mean counts (log2)"),
@@ -133,68 +114,86 @@ DEG_plot <- function(dt, draw_non_regulated = FALSE,
   DEG_plot_input_validation()
   if (nrow(dt) == 0) return(invisible(NULL))
 
-  xlim <-
-    if (!all(xlim == "auto")) {
-      if (all(xlim == "bidir.max")) {
-          if (two_dimensions) {c(-max(abs(dt$rna)) - 0.5, max(abs(dt$rna)) + 0.5)
-          } else c(-max(abs(log2(dt$meanCounts))) - 0.5, max(log2(abs(dt$meanCounts))) + 0.5)
-      } else xlim
-  }
-  ylim <-
-    if (!all(ylim == "auto")) {
-      if (all(ylim == "bidir.max")) {
-          if (two_dimensions) {c(-max(abs(dt$rfp)) - 0.5, max(abs(dt$rfp)) + 0.5)
-          } else c(-max(abs(dt$LFC)) - 0.5, max(abs(dt$LFC)) + 0.5)
-      } else ylim
-    }
+  dt[, y_axis := if("rfp.lfc" %in% colnames(dt)) {rfp.lfc} else LFC]
+  dt[, x_axis := if("rna.lfc" %in% colnames(dt)) {rna.lfc} else log2(meanCounts)]
+  # dt[, size := c(1, 0.8)[1 + (Regulation == "No change")]]
+  dt[, trace := paste0("id: ", id, "\nReg: ", Regulation)]
 
-  color.values <- color.values[as.character(unique(dt$Regulation))]
   contrasts <- unique(dt$contrast)
-  id <- NULL
-  dt <- highlight_key(dt, ~id, "Select a transcript")
+  x_titles <- xlab
+  y_titles <- ylab
+  zerolines <- two_dimensions
 
+  shared_df <- SharedData$new(dt, key = ~id, group = "A")
+  filter_box <- filter_select("id_search", "Search by ID:", shared_df, ~id)
+
+  showlegends <- c(TRUE, rep(FALSE, length(contrasts) - 1))
+  names(showlegends) <- contrasts
   if (two_dimensions) {
-    gg <- ggplot(dt, aes(x = rna, y = rfp, color = Regulation,
-                         frame = contrast, id = id)) +
-      geom_vline(aes(xintercept = 0), color = "red") +
-      geom_abline(slope = 1, intercept = 0, color = "grey", linetype = 2)
-  } else { # One dimensional
-    gg <- ggplot(dt, aes(x = log2(meanCounts), y = LFC, color = Regulation,
-                         frame = contrast, id = id))
-    if (length(contrasts) == 1) gg <- gg + ggtitle(contrasts)
+    values <- abs(c(dt$y_axis, dt$x_axis))
+    max <- max(values[is.finite(values)], na.rm = TRUE) + 0.5
+    max <- c(-max, max)
+  } else {
+    values <- dt$x_axis
+    values <- values[is.finite(values)]
+    max <- c(min(c(-0.5, values), na.rm = TRUE), max(values + 0.5, na.rm = TRUE))
   }
-   gg <- gg +
-    geom_hline(aes(yintercept = 0), color = "red") +
-    geom_point() + xlab(xlab) + ylab(ylab) +
-    scale_color_manual(values = color.values)
-   if (!is.null(xlim)) gg <- gg + xlim(xlim)
-   if (!is.null(ylim)) gg <- gg + ylim(ylim)
+  print(max)
 
-   hovertip <- "id"
+  gg2 <- lapply(contrasts, function(cont) {
+    message(cont)
+    shared_df_sub <- SharedData$new(dt[contrast == cont,], key = ~id, group = "A")
 
-   #vis <- ifelse(unique(dt$Regulation) == "", TRUE, "legendonly") #add_trace(visible = vis)
-  #removed partial_bundle() - it's incompatible with shiny
-   select <- highlight(
-     ggplotly(gg, tooltip = hovertip) %>%
-       layout(autosize = TRUE) %>% plotly::config(
-         toImageButtonOptions = list(
-           format = format),
-         displaylogo = FALSE),
-     on = c('plotly_selected'), off = c('plotly_deselect'),
-     selectize = TRUE, persistent = FALSE
-   )
-   if (length(contrasts) == 1) {
-     select <- select %>% toWebGL()
-   }
+    plot_ly(shared_df_sub, x = ~x_axis, y = ~y_axis, color = ~ Regulation, colors = color.values,
+            text = ~trace, hoverinfo = "text", legendgroup = ~Regulation,
+            type = "scattergl", showlegend = showlegends[cont],
+            mode = "markers", marker = list(opacity = 0.5), name = ~ Regulation) %>%
+      layout(xaxis = list(zerolinecolor = "red", zeroline = zerolines),
+             yaxis = list(title = list(text = y_titles,
+                                       font = list(color = "black", weight = "bold", size = 16)),
+                          zerolinecolor = "red"),
+             shapes = if (two_dimensions) {
+               list(
+                 list(type = "line", xref = "x", yref = "y",
+                      x0 = max[1], x1 = max[2],
+                      y0 = max[1], y1 = max[2],
+                      line = list(color = "rgba(128, 128, 128, 0.5)", dash = "dash", width = 1)
+                 )
+               )}
+      )
+  })
+  combined <- subplot(gg2, nrows = 1, shareX = TRUE, shareY = TRUE, titleX = FALSE, titleY = TRUE,
+                      which_layout = "merge") %>%
+    layout(
+      annotations = list(
+        list(x = 0.5, y = -0.15, text = x_titles[1], showarrow = FALSE, xref = "paper", yref = "paper",
+             font = list(color = "black", weight = "bold", size = 16))),
+      margin = list(b = 55),
+      xaxis = list(range = c(max[1], max[2]))
+    ) %>% plotly::config(toImageButtonOptions = list(format = format), displaylogo = FALSE)
 
-   return(select)
+  widths <- cumsum(rep(1 / length(gg2), length(gg2)))
+  center <- widths[1] / 2
+  combined <- layout(combined, annotations = lapply(seq_along(contrasts), function(i) {
+    list(x = widths[i] - center, y = 1.05, text = sub("Comparison: ", "", contrasts[i]), showarrow = FALSE, xref = 'paper', yref = 'paper', xanchor = 'center')
+  }))
+  attr(combined, "filter_box") <- filter_box
+  if (add_search_bar) {
+    combined <- DEG_add_search_bar(combined)
+  }
+  return(combined)
 }
+
+DEG_add_search_bar <- function(combined) {
+  bscols(list(attr(combined, "filter_box"), tags$br(), combined), widths = 12)
+}
+
 
 DEG_plot_input_validation <- function() {
   with(rlang::caller_env(), {
-    colnames(dt)[colnames(dt) == "rna.lfc"] <- "rna"
-    colnames(dt)[colnames(dt) == "rfp.lfc"] <- "rfp"
-    colnames(dt)[colnames(dt) == "te.lfc"] <- "te"
+    # colnames(dt)[colnames(dt) == "rna.lfc"] <- "rna"
+    # colnames(dt)[colnames(dt) == "rfp.lfc"] <- "rfp"
+    # colnames(dt)[colnames(dt) == "te.lfc"] <- "te"
 
     stopifnot(is(dt, "data.table"))
     if (is.character(xlim)) stopifnot(xlim %in% c("bidir.max", "auto"))
@@ -203,8 +202,10 @@ DEG_plot_input_validation <- function() {
     if("variable" %in% colnames(dt))
       colnames(dt) <- gsub("variable", "contrast", colnames(dt))
     columns_must_exists <- if (two_dimensions) {
-      c("contrast", "Regulation", "id", "rna", "rfp", "te")
+      c("contrast", "Regulation", "id", "rna.lfc", "rfp.lfc", "te.lfc")
     } else c("contrast", "Regulation", "id", "LFC", "meanCounts")
+
+    dt[, Regulation := factor(Regulation, levels = names(color.values))]
 
     if (!(all(columns_must_exists %in% colnames(dt))))
       stop("dt must minimally contain the columns: ",

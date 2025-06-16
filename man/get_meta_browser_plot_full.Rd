@@ -12,6 +12,12 @@ get_meta_browser_plot_full(
   summary = TRUE,
   annotation = TRUE,
   region_type,
+  plotType = "plotly",
+  tx_annotation,
+  display_region,
+  cds_annotation,
+  viewMode,
+  collapse_intron_flank,
   rel_heights = c(0.2, 0.75, 0.05)
 )
 }

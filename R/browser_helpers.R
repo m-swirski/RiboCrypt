@@ -84,6 +84,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                          aa_letter_code, input_id, plot_name,
                                          plot_title,  width, height, export.format,
                                          zoom_range = NULL) {
+  print("Merging bottom and coverage tracks")
   nplots <- track_panel$nplots
   plots <- browser_plots_highlighted(track_panel$plots, zoom_range)
 

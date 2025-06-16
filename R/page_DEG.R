@@ -35,7 +35,7 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
                     tabPanel("GO analysis",
                              fluidRow(
                                column(3, actionButton(ns("run_gorilla"), "Run GORilla", class = "btn btn-primary")),
-                               column(9, DTOutput(ns("gorilla_dt")))))))
+                               column(9, DTOutput(ns("gorilla_dt")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))))))
     )
   )
 }
@@ -167,17 +167,18 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
         }
       }) %>% bindEvent(c(input$show_description, event_data("plotly_click", source = NS(id)("c"))), ignoreInit = TRUE)
 
+      output$gorilla_dt <- renderDT(NULL)
+
       observeEvent(input$run_gorilla, {
         print("Running gorilla!")
         req(analysis_dt())
 
-        dt <- analysis_dt()
-        dt[, external_gene_name := sub("-.*", "", label)]
-        gorilla_output_dir <- tempdir()
-        gorilla_result <- ORFik:::DEG_gorilla(dt = dt, output_dir = gorilla_output_dir, organism(df()))
-        gorilla_result[, url := sprintf('<a href="%s" target="_blank" style="color: blue;">Link</a>', url)]
-
         output$gorilla_dt <- renderDT({
+          dt <- analysis_dt()
+          dt[, external_gene_name := sub("-.*", "", label)]
+          gorilla_output_dir <- tempdir()
+          gorilla_result <- ORFik:::DEG_gorilla(dt = dt, output_dir = gorilla_output_dir, organism(df()))
+          gorilla_result[, url := sprintf('<a href="%s" target="_blank" style="color: blue;">Link</a>', url)]
           datatable(gorilla_result, escape = FALSE, options = list(pageLength = 25))
         })
       })

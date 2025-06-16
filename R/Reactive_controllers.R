@@ -3,6 +3,7 @@
 #' @noRd
 click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
   {
+    print("- Browser controller")
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
     # Annotation

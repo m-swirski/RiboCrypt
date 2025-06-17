@@ -52,6 +52,8 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
         paste("zoom_range", sub("\\+$", "p", input$zoom_range), sep = "="),
         paste("customSequence", input$customSequence, sep = "="),
         paste("phyloP", input$phyloP, sep = "="),
+        paste("summary_track", input$summary_track, sep = "="),
+        paste("summary_track_type", input$summary_track_type, sep = "="),
         paste("collapsed_introns_width", input$collapsed_introns_width, sep = "="),
         paste("collapsed_introns", input$collapsed_introns, sep = "="),
         paste("go", go, sep = "="),
@@ -207,11 +209,13 @@ check_url_for_basic_parameters <- function() {
         print(isolate(input$library))
       }
 
-      tag <- "frames_type"
-      value <- query[tag][[1]]
-      if (!is.null(value)) {
-        frame_type_update_select(value)
+      for (tag in c("frames_type", "summary_track_type")) {
+        value <- query[tag][[1]]
+        if (!is.null(value)) {
+          frame_type_update_select(value, tag)
+        }
       }
+
       tag <- "kmer"
       value <- query[tag][[1]]
       if (!is.null(value)) {
@@ -236,7 +240,8 @@ check_url_for_basic_parameters <- function() {
 
       # Checkbox updates
       for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon","summary_track",
-                    "log_scale", "log_scale_protein","phyloP", "collapsed_introns")) {
+                    "log_scale", "log_scale_protein","phyloP", "collapsed_introns",
+                    "summary_track")) {
         value <- query[tag][[1]]
         if (!is.null(value)) {
           updateCheckboxInput(inputId = tag, value = as.logical(value))

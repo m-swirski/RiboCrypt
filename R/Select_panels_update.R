@@ -97,10 +97,9 @@ tx_from_gene_list <- function(gene_name_list, gene = NULL, selected = NULL,
   return(isoforms)
 }
 
-frame_type_update_select <- function(selected) {
+frame_type_update_select <- function(selected, id = "frames_type") {
   updateSelectizeInput(
-    inputId = "frames_type",
-    label = "Select frames display type",
+    inputId = id,
     choices = c("lines", "columns", "stacks", "area", "heatmap"),
     selected = selected
   )

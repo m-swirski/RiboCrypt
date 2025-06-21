@@ -80,6 +80,7 @@ DE_model_results <- function(dt, controls, symbols_dt = symbols(controls()$dff))
 #'  "Buffering" = "purple", "mRNA abundance" = "darkgreen",
 #'  "Expression" = "blue", "Forwarded" = "yellow",
 #'  "Inverse" = "aquamarine", "Translation" = "orange4")}
+#'  @param format character, default "png". Format for plotly bar.
 #' @return plotly object or crosstalk bscols if add_search_bar is TRUE.
 #' @importFrom crosstalk bscols SharedData filter_select
 #' @export

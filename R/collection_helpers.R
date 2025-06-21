@@ -345,6 +345,7 @@ subset_fst_by_interval <- function(table, subset) {
 #' Get collection directory
 #' @param df ORFik experiment
 #' @param must_exists logical, stop if dir does not exists
+#' @param new_format logical, TRUE is new or old fst format (FALSE)
 #' @return file.path(resFolder(df), "collection_tables")
 #' @export
 #' @examples

@@ -37,6 +37,19 @@ get_meta_browser_plot_full(
 \item{region_type}{character, "what is the coverage region?" Usually full mrna:
 "mrna" or "leader+cds".}
 
+\item{plotType}{= "plotly",}
+
+\item{tx_annotation}{a GRangesList of tx annotation}
+
+\item{display_region}{a GRangesList of display region}
+
+\item{cds_annotation}{a GRangesList of cds annotation}
+
+\item{viewMode}{character, "tx" or "genomic"}
+
+\item{collapse_intron_flank}{integer, if TRUE and viewMode genomic, collapse
+introns to this max size.}
+
 \item{rel_heights}{numeric < 1, default: c(0.2, 0.75, 0.05).
 Relative heights, sum to 1 and must be length 3.}
 }

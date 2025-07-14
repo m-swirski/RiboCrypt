@@ -76,11 +76,12 @@ DE_model_results <- function(dt, controls, symbols_dt = symbols(controls()$dff))
 #' \code{ifelse(two_dimensions, "RNA fold change (log2)", "Mean counts (log2)")}
 #' @param ylab character, default:
 #' \code{ifelse(two_dimensions, "RFP fold change (log2)",  "Fold change (log2)")}
-#' @param color.values named character vector, default: \code{c("No change" = "black", "Significant" = "red",
+#' @param color.values named character vector, default: \code{c(
+#'  "No change" = "black", "Significant" = "red",
 #'  "Buffering" = "purple", "mRNA abundance" = "darkgreen",
 #'  "Expression" = "blue", "Forwarded" = "yellow",
 #'  "Inverse" = "aquamarine", "Translation" = "orange4")}
-#'  @param format character, default "png". Format for plotly bar.
+#' @param format character, default "png". Format for plotly bar.
 #' @return plotly object or crosstalk bscols if add_search_bar is TRUE.
 #' @importFrom crosstalk bscols SharedData filter_select
 #' @export

@@ -17,6 +17,8 @@ browseRC(
   plot_on_start = TRUE,
   frames_type = "columns",
   kmer = 1,
+  add_translons = FALSE,
+  zoom_range = NULL,
   host = "https://ribocrypt.org",
   browser = getOption("browser")
 )
@@ -46,6 +48,10 @@ browseRC(
 
 \item{kmer}{integer, default 1 (no binning), binning size of windows, to smear out the signal.}
 
+\item{add_translons}{logical, default FALSE. If TRUE, add translons predicted sequences in annotation.}
+
+\item{zoom_range}{character, zoom values.}
+
 \item{host}{url, default "https://ribocrypt.org". Set to localhost for local version.}
 
 \item{browser}{getOption("browser")}
@@ -54,7 +60,7 @@ browseRC(
 browseURL, opens browse with page
 }
 \description{
-Can also disply local RiboCrypt app
+Can also disply local RiboCrypt app if specified in the 'host' argument.
 }
 \examples{
 browseRC("ATF4", "ENSG00000128272")

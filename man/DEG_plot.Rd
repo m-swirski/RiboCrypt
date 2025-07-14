@@ -54,11 +54,13 @@ specify min and max x limit: like c(-5, 5)}
 Is this two dimensional, like: Ribo-seq vs RNA-seq. Alternative, FALSE: Then
 Log fold change vs mean counts}
 
-\item{color.values}{named character vector, default: \code{c("No change" = "black", "Significant" = "red",
+\item{color.values}{named character vector, default: \code{c(
+"No change" = "black", "Significant" = "red",
 "Buffering" = "purple", "mRNA abundance" = "darkgreen",
 "Expression" = "blue", "Forwarded" = "yellow",
-"Inverse" = "aquamarine", "Translation" = "orange4")}
-@param format character, default "png". Format for plotly bar.}
+"Inverse" = "aquamarine", "Translation" = "orange4")}}
+
+\item{format}{character, default "png". Format for plotly bar.}
 }
 \value{
 plotly object or crosstalk bscols if add_search_bar is TRUE.

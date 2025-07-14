@@ -317,7 +317,7 @@ check_go_flag <- function() {
 
 #' Browse a gene on Ribocrypt webpage
 #'
-#' Can also disply local RiboCrypt app
+#' Can also disply local RiboCrypt app if specified in the 'host' argument.
 #' @inheritParams make_rc_url
 #' @param browser getOption("browser")
 #' @return browseURL, opens browse with page
@@ -330,13 +330,14 @@ browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                      libraries = NULL, leader_extension = 0, trailer_extension = 0,
                      viewMode = FALSE, other_tx = FALSE,
                      plot_on_start = TRUE, frames_type = "columns", kmer=1,
+                     add_translons = FALSE, zoom_range = NULL,
                      host = "https://ribocrypt.org",
                      browser = getOption("browser")) {
 
   full_url <- make_rc_url(symbol, gene_id, tx_id, exp, libraries,
                           leader_extension, trailer_extension,
                           viewMode, other_tx, plot_on_start, frames_type,
-                          kmer, host)
+                          kmer, add_translons, zoom_range, host)
   browseURL(full_url, browser = browser)
 }
 

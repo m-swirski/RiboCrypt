@@ -32,14 +32,24 @@ umap_server <- function(id) {
       })
 
       # Render DT Table ONLY if "Plot" was clicked
-      output$c <- renderPlotly({
-        req(plot_triggered())
-        if (isolate(input$umap_plot_type) == "UMAP") {
-          umap_plot(isolate(md()$dt_umap))
-        } else umap_centroids_plot(isolate(md()$dt_umap))
+      output$c <- {
+        renderPlotly({
+          generated_plot <- {
+            req(plot_triggered())
+            if (isolate(input$umap_plot_type) == "UMAP") {
+              umap_plot(isolate(md()$dt_umap))
+            } else umap_centroids_plot(isolate(md()$dt_umap))
+          }
+          
+          onRender(generated_plot, fetchJS("handle_lasso_selection.js"), NS(id, "selectedPoints"))
         }) %>%
         bindCache(input$dff, input$umap_col, input$umap_plot_type) %>%
         bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
+      }
+      
+      observeEvent(input$selectedPoints, {
+        print(input$selectedPoints)
+      })
 
       check_url_for_basic_parameters()
     }

@@ -13,12 +13,13 @@ metadata_ui <- function(id, all_exp, all_exp_meta, label = "metadata") {
   )
 }
 
-metadata_server <- function(id, all_experiments, metadata) {
+metadata_server <- function(id, all_experiments, metadata, all_exp_meta,
+                            browser_options) {
   if (!is.null(metadata)) {
     sample_info_server("sample_info", metadata)
   } else print("No metadata given, ignoring Sample_info server.")
   study_info_server("study_info", all_experiments)
   sra_search_server("sra_search")
-  predicted_translons_server("predicted_translons")
-  umap_server("umap")
+  predicted_translons_server("predicted_translons", all_experiments, browser_options)
+  umap_server("umap", all_exp_meta, browser_options)
 }

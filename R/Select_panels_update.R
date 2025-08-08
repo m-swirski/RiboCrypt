@@ -1,8 +1,11 @@
 experiment_update_select <- function(org, all_exp, experiments,
                                      selected = "AUTO") {
-  orgs_safe <- if (isolate(org()) == "ALL") {
-    unique(all_exp$organism)
-  } else isolate(org())
+  if (isTruthy(org)) {
+    orgs_safe <- if (isolate(org()) == "ALL") {
+      unique(all_exp$organism)
+    } else isolate(org())
+  } else orgs_safe <- unique(all_exp$organism)
+
   picks <- experiments[all_exp$organism %in% orgs_safe]
   selected <-
   if (selected == "AUTO") {

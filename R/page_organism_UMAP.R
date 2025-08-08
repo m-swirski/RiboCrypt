@@ -18,12 +18,19 @@ umap_ui <- function(id, all_exp_translons, label = "umap") {
 }
 
 
-umap_server <- function(id) {
+umap_server <- function(id, all_exp_meta, browser_options) {
   moduleServer(
     id,
     function(input, output, session) {
       plot_triggered <- reactiveVal(FALSE)
       md <- reactiveVal(NULL)
+      default <- "all_samples-Homo_sapiens"
+      selected_exp <- ifelse(default %in% all_exp_meta$name, default, "AUTO")
+      experiment_update_select(NULL, all_exp_meta, all_exp_meta$name, selected_exp)
+      # observeEvent(TRUE, {
+      #   experiment_update_select(org, all_exp, experiments, rv$exp)
+      # }, once = TRUE)
+
       # Trigger data loading when "Plot" is clicked.
       # Also reset the downloaded files vector.
       observeEvent(input$go, {

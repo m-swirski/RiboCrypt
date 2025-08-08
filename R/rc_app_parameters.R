@@ -6,10 +6,15 @@ rc_parameter_setup <- function() {
     stopifnot(!is.null(all_exp$name))
     stopifnot(nrow(all_exp) > 0)
 
+    if (!isTruthy(browser_options["allow_collections_in_browser"])) {
+      browser_options["allow_collections_in_browser"] <- TRUE
+    }
+
     if (is.null(all_exp_meta)) {
       all_exp_meta <- data.table(name = character(), organism = character())
     } else stopifnot(is(all_exp_meta, "data.table"))
-    if (nrow(all_exp_meta) > 0) {
+    allow_collections_in_browser <- browser_options["allow_collections_in_browser"]
+    if (nrow(all_exp_meta) > 0 & !as.logical(allow_collections_in_browser)) {
       all_exp <- all_exp[!(name %in% all_exp_meta$name),]
     }
     print(paste("Running with", nrow(all_exp), "experiments"))

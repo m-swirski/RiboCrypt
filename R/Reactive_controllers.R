@@ -44,6 +44,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     }
 
     dff <- observed_exp_subset(isolate(input$library), libs, df)
+    if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
     if (isolate(input$withFrames)) {
       withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
     } else withFrames <- rep(FALSE, nrow(dff))

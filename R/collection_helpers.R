@@ -6,7 +6,8 @@
 #' @return a data.table in long format
 #' @importFrom fst read_fst
 load_collection <- function(path, grl = attr(path, "range")) {
-  if (length(names(path)) > 0 && names(path) == "index") {
+  new_format <- length(names(path)) > 0 && names(path) == "index"
+  if (new_format) {
     stopifnot(!is.null(grl))
     table <- setnames(suppressWarnings(data.table::melt.data.table(coverageByTranscriptFST(grl, path)[[1]])),
                       c("library", "count"))
@@ -381,7 +382,8 @@ collection_path_from_exp <- function(df, id, gene_name_list = NULL,
                                      collection_dir = collection_dir_from_exp(df, must_exists),
                                      grl_all = loadRegion(df)) {
   index <- file.path(collection_dir, "coverage_index.fst")
-  if (file.exists(index)) {
+  new_format_exists <- file.exists(index)
+  if (new_format_exists) {
     table_path <- index
     names(table_path) <- "index"
     attr(table_path, "range") <- grl_all[id]

@@ -21,7 +21,7 @@ experiment_input_select <- function(names, ns, browser_options = NULL,
   selectizeInput(
     inputId = ns("dff"),
     label = "Select an experiment",
-    choices = names,
+    choices = as.character(browser_options[option_name]),
     selected = browser_options[option_name],
     multiple = FALSE
   )

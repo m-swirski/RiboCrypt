@@ -12,7 +12,7 @@ experiment_update_select <- function(org, all_exp, experiments,
     inputId = "dff",
     choices = picks,
     selected = selected,
-    server = FALSE
+    server = TRUE
   )
 }
 

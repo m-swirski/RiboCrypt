@@ -220,6 +220,10 @@ study_and_gene_observers <- function(input, output, session) {
       )}, priority = 1) %>%
       bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
 
+    observeEvent(TRUE, {
+      experiment_update_select(org, all_exp, experiments, rv$exp)
+    }, once = TRUE)
+
     observeEvent(rv$exp, if (rv$exp != input$dff) {
       experiment_update_select(org, all_exp, experiments, rv$exp)},
       ignoreInit = TRUE, ignoreNULL = TRUE)

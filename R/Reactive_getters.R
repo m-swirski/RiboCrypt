@@ -56,50 +56,59 @@ bottom_panel_shiny <- function(mainPlotControls) {
 }
 
 custom_seq_track_panels <- function(mainPlotControls, display_range) {
-  if (!mainPlotControls()$phyloP) return(NULL)
   df <- mainPlotControls()$dff
-
-  return(phylo_custom_seq_track_panel(df, display_range))
+  p <- list()
+  if (mainPlotControls()$phyloP) {
+    p <- c(p, phylo = list(phylo_custom_seq_track_panel(df, display_range)))
+  }
+  if (mainPlotControls()$mapability) {
+    p2 <- mapability_custom_seq_track_panel(df, display_range)
+    p <- c(p, mapability = list(p2))
+  }
+  return(list(custom_bigwig_panels = p))
 }
 
 phylo_custom_seq_track_panel <- function(df, display_range) {
-  phylo_dir <- file.path(dirname(df@fafile), "phyloP100way")
-  if (dir.exists(phylo_dir)) {
-    phylo_track <- list.files(phylo_dir, pattern = "\\.phyloP100way\\.bw$", full.names = TRUE)[1]
-    if (length(phylo_track) == 1) {
+  bw_dir <- file.path(dirname(df@fafile), "phyloP100way")
+  if (dir.exists(bw_dir)) {
+    bw_track <- list.files(bw_dir, pattern = "\\.phyloP100way\\.bw$", full.names = TRUE)[1]
+    if (length(bw_track) == 1) {
       print("- Loading PhyloP track")
-      grl <- display_range
-
-      seqlevelsStyle(grl) <- seqlevelsStyle(rtracklayer::BigWigFile(phylo_track))[1]
-      # TODO: Use ORFik:::coverage_random_access_file here!
-      is_minus_strand <- !strandBool(grl)
-
-      rl <- ranges(grl)
-      names(rl) <- seqnamesPerGroup(grl, FALSE)
-      res <- rtracklayer::import.bw(phylo_track, as = "NumericList",
-                                    which = rl)
-      if (is_minus_strand) {
-        temp_cov2 <- rev(res)
-        res <- relist(rev(unlist(temp_cov2)), skeleton = res)
-      }
-
-
-      dt <- data.table(phyloP = unlist(res, use.names = FALSE))
-      dt[, position := seq.int(.N)]
-      p <- ggplot(data = dt) + geom_bar(aes(y = phyloP, x = position), stat="identity") +
-        theme_classic() + theme(axis.title.x = element_blank(),
-                                axis.ticks.x = element_blank(),
-                                axis.text.x = element_blank(),
-                                axis.title.y = element_blank(),
-                                axis.ticks.y = element_blank(),
-                                axis.text.y = element_blank(),
-                                plot.margin = unit(c(0,0,0,0), "pt")) +
-        scale_x_continuous(expand = c(0,0))
-      return(list(custom_bigwig_panels = p))
+      p <- custom_seq_track_panel_bigwig(display_range, bw_track, "P")
+      return(p) # If no valid file found
     }
   }
-  return(NULL) # If no valid file found
+  return(NULL)
 }
+
+mapability_custom_seq_track_panel <- function(df, display_range) {
+  bw_dir <- file.path(dirname(df@fafile), "mapability")
+  if (dir.exists(bw_dir)) {
+    bw_track <- list.files(bw_dir, pattern = "28mers_mappability\\.bw$", full.names = TRUE)[1]
+    if (length(bw_track) == 1) {
+      print("- Loading mapability track")
+      p <- custom_seq_track_panel_bigwig(display_range, bw_track, "M")
+      return(p) # If no valid file found
+    }
+  }
+  return(NULL)
+}
+
+custom_seq_track_panel_bigwig <- function(grl, bigwig_path, ylab) {
+  seqlevelsStyle(grl) <- seqlevelsStyle(rtracklayer::BigWigFile(bigwig_path))[1]
+  dt <- coveragePerTiling(grl, bigwig_path)
+  p <- ggplot(data = dt) + geom_bar(aes(y = count, x = position), stat="identity") +
+    theme_classic() + theme(axis.title.x = element_blank(),
+                            axis.ticks.x = element_blank(),
+                            axis.text.x = element_blank(),
+                            axis.title.y = element_text(size = rel(0.5)),
+                            axis.ticks.y = element_blank(),
+                            axis.text.y = element_blank(),
+                            plot.margin = unit(c(0,0,0,0), "pt")) +
+    scale_x_continuous(expand = c(0,0)) + ylab(ylab)
+  return(p)
+}
+
 
 browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       reads = mainPlotControls()$reads,

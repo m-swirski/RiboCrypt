@@ -87,6 +87,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    withFrames = withFrames,
                    zoom_range = zoom_range,
                    frames_subset = frames_subset,
+                   mapability = input$mapability,
                    hash_bottom = hash_strings[["hash_bottom"]],
                    hash_browser = hash_strings[["hash_browser"]],
                    hash_expression = hash_strings[["hash_expression"]])

@@ -67,8 +67,9 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                                 fluidRow(
                                   column(4, checkboxInput(ns("expression_plot"), "Gene expression plot", FALSE)),
                                   column(4, checkboxInput(ns("useCustomRegions"), "Protein structures", TRUE)),
-                                  column(4, checkboxInput(ns("phyloP"), "Conservation (phyloP)", FALSE))
                                 ),
+                                fluidRow(column(4, checkboxInput(ns("phyloP"), "Conservation (phyloP)", FALSE)),
+                                         column(4, checkboxInput(ns("mapability"), "Mapability (28mers)", FALSE))),
                                 fluidRow(
                                   column(6, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),
                                   column(6, frame_subsetter_select(ns))

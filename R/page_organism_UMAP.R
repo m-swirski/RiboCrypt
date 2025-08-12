@@ -13,7 +13,8 @@ umap_ui <- function(id, all_exp_translons, label = "umap") {
     tags$hr(),
     fluidRow(
       plotlyOutput(ns("c"), height = "700px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
-    )
+    ),
+    uiOutput(ns("goToBtns"))
   )
 }
 
@@ -54,9 +55,31 @@ umap_server <- function(id, all_exp_meta, browser_options) {
         bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
       }
       
-      observeEvent(input$selectedPoints, {
+      observe({
         print(input$selectedPoints)
       })
+      
+      output$goToBtns <- 
+        renderUI(
+          fluidRow(
+            actionButton(NS(id)("goToDEG"), "Go to Differential Expression"),
+            actionButton(NS(id)("goToSamples"), "Go to Samples list")
+          )
+        ) %>% bindEvent(input$selectedPoints)
+      
+      observe({
+        fstLibraryGroup <- paste(input$selectedPoints, sep = "", collapse = ",")
+        page <- "Differential expression"
+        query <- paste("?library1=", fstLibraryGroup, "#", page, sep = "")
+        updateQueryString(query, mode = "push")
+      }) %>% bindEvent(input$goToDEG)
+      
+      observe({
+        samples <- paste(input$selectedPoints, sep = "", collapse = ",")
+        page <- "Samples"
+        query <- paste("?sample=", samples, "#", page, sep = "")
+        updateQueryString(query, mode = "push")
+      }) %>% bindEvent(input$goToSamples)
 
       check_url_for_basic_parameters()
     }

@@ -17,7 +17,14 @@
 #' - default_kmer : K-mer windowing size, default: 1\cr
 #' - default_frame_type : Ribo-seq line type, default: "lines"\cr
 #' - default_view_mode : "tx", alternative "genomic"
+#' - default_experiment_meta : Which experiment to select for meta analysis,
+#'    default: first one\cr
+#' - default_gene_meta : Which genes to select for meta analysis,
+#'   default: first one\cr
+#' - default_isoform_meta : Which isoform to select for meta analysis,
+#'    default: first one\cr
 #' - plot_on_start : Plot when starting, default: "FALSE"\cr
+#' - hide_settings : Hide settings bar in browser on start, default "TRUE"\cr
 #' @param init_tab_focus character, default "browser". Which tab to open on
 #' init.
 #' @param metadata a path to csv or a data.table of metadata columns,
@@ -114,7 +121,7 @@ RiboCrypt_app <- function(
     rv <- analysis_server("Analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
             gene_name_list, rv, metadata, names_init, browser_options)
-    metadata_server("metadata", all_exp, metadata)
+    metadata_server("metadata", all_exp, metadata, all_exp_meta, browser_options)
     cat("Server this: "); print(round(Sys.time() - this_time_before, 2))
     cat("Server total: "); print(round(Sys.time() - time_before, 2))
   }

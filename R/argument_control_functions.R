@@ -55,7 +55,7 @@ multiOmicsControllerView <- function() {
 
     custom_seq_panel <- bottom_panel$custom_bigwig_panels
     if (!is.null(custom_seq_panel)) {
-      proportions <- c(proportions, 0.07)
+      proportions <- c(proportions, rep(0.07, length(custom_seq_panel)))
     }
     proportions <- proportions/sum(proportions)
   }

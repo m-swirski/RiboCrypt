@@ -28,7 +28,7 @@ load_data_umap <- function(species, color.by = NULL) {
     setattr(dt_umap, "exp", species)
     setattr(dt_umap, "color.by", color.by)
   } else {
-    NULL
+    stop("Species has no computed UMAP, pick another!")
   }
 
   reactiveValues(dt_umap = dt_umap, df = df)

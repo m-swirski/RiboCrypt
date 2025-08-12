@@ -31,7 +31,7 @@ predicted_translons_ui <- function(id, all_exp_translons, label = "predicted_tra
 }
 
 
-predicted_translons_server <- function(id) {
+predicted_translons_server <- function(id, all_exp, browser_options) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -43,6 +43,14 @@ predicted_translons_server <- function(id) {
       # Reactive to store data (loads when needed)
       md <- reactiveVal(NULL)
 
+      # Set human to auto, clean this code later
+      default <- "all_merged-Homo_sapiens"
+      selected_exp <- ifelse(default %in% all_exp$name, default, "AUTO")
+      if (selected_exp == "AUTO") {
+        default <- "human_all_merged_l50"
+        selected_exp <- ifelse(default %in% all_exp$name, default, "AUTO")
+      }
+      experiment_update_select(NULL, all_exp, all_exp$name, selected_exp)
       # Trigger data loading when "Plot" is clicked.
       # Also reset the downloaded files vector.
       observeEvent(input$go, {

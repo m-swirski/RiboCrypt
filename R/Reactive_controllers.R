@@ -44,6 +44,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     }
 
     dff <- observed_exp_subset(isolate(input$library), libs, df)
+    if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
     if (isolate(input$withFrames)) {
       withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
     } else withFrames <- rep(FALSE, nrow(dff))
@@ -86,6 +87,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    withFrames = withFrames,
                    zoom_range = zoom_range,
                    frames_subset = frames_subset,
+                   mapability = input$mapability,
                    hash_bottom = hash_strings[["hash_bottom"]],
                    hash_browser = hash_strings[["hash_browser"]],
                    hash_expression = hash_strings[["hash_expression"]])

@@ -67,8 +67,7 @@ match_collection_to_exp <- function(metadata, df) {
 
 filter_collection_on_count <- function(table, min_count) {
   if (min_count > 0) {
-    lib_names <- unique(table$library)
-    libs_counts_total <- table[,.(count = sum(count)),library][, valid := count >= min_count]
+    libs_counts_total <- table[,.(count = sum(count)), library][, valid := count >= min_count]
     valid_libs <- libs_counts_total$valid
     if (sum(valid_libs) == 0)
       stop("Count filter too strict, no libraries with that much reads for this transcript!")
@@ -77,7 +76,8 @@ filter_collection_on_count <- function(table, min_count) {
     table <- table[library %in% filt_libs]
     table[, library := factor(library, levels = unique(library), ordered = TRUE)]
     setattr(table, "valid_libs", valid_libs)
-  }
+  } else setattr(table, "valid_libs", rep(TRUE, length(unique(table$library))))
+
   return(table)
 }
 

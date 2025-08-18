@@ -14,12 +14,12 @@ umap_ui <- function(id, all_exp_translons, label = "umap") {
     fluidRow(
       plotlyOutput(ns("c"), height = "700px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
     ),
-    uiOutput(ns("goToBtns"))
+    uiOutput(ns("sampleSelection"))
   )
 }
 
 
-umap_server <- function(id, all_exp_meta, browser_options) {
+umap_server <- function(id, metadata, all_exp_meta, browser_options) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -55,31 +55,35 @@ umap_server <- function(id, all_exp_meta, browser_options) {
         bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
       }
       
-      observe({
-        print(input$selectedPoints)
-      })
+      sampleGroup1 <- reactiveVal()
       
-      output$goToBtns <- 
+      sampleGroup1Ui <- renderUI({
+        if (is.null(sampleGroup1())) {
+          actionButton(NS(id)("saveAsGroup1"), "Save selection as Group 1")
+        } else {
+          metadataQuery <- sampleGroup1()
+          tableData <- metadata[Sample %in% metadataQuery]
+          DT::renderDT(tableData,
+                       extensions = 'Buttons',
+                       filter = "top",
+                       options = list(dom = 'Bfrtip',
+                                      buttons = NULL),
+                       server = TRUE)
+        }
+      })
+
+      observe({
+        req(input$selectedPoints)
+        sampleGroup1(input$selectedPoints)
+      }) %>% bindEvent(input$saveAsGroup1)
+
+      output$sampleSelection <-
         renderUI(
           fluidRow(
-            actionButton(NS(id)("goToDEG"), "Go to Differential Expression"),
-            actionButton(NS(id)("goToSamples"), "Go to Samples list")
+            column(6, sampleGroup1Ui)
           )
         ) %>% bindEvent(input$selectedPoints)
-      
-      observe({
-        fstLibraryGroup <- paste(input$selectedPoints, sep = "", collapse = ",")
-        page <- "Differential expression"
-        query <- paste("?library1=", fstLibraryGroup, "#", page, sep = "")
-        updateQueryString(query, mode = "push")
-      }) %>% bindEvent(input$goToDEG)
-      
-      observe({
-        samples <- paste(input$selectedPoints, sep = "", collapse = ",")
-        page <- "Samples"
-        query <- paste("?sample=", samples, "#", page, sep = "")
-        updateQueryString(query, mode = "push")
-      }) %>% bindEvent(input$goToSamples)
+
 
       check_url_for_basic_parameters()
     }

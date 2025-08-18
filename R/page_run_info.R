@@ -9,8 +9,6 @@ sample_info_ui <- function(id, label = "sample_info") {
 }
 
 sample_info_server <- function(id, metadata) {
-  colnames(metadata)[colnames(metadata) == "Run"] <- "Sample"
-  colnames(metadata)[colnames(metadata) == "ScientificName"] <- "Organism"
   moduleServer(
     id,
     function(input, output, session) {
@@ -23,12 +21,6 @@ sample_info_server <- function(id, metadata) {
                                          server = TRUE)
       
       proxyTable <- DT::dataTableProxy("sample_info")
-      
-      observe({
-        req(getQueryString()$sample)
-        query <- unlist(strsplit(getQueryString()$sample, ","))
-        tableData(metadata[Sample %in% query])
-      }) %>% bindEvent(getQueryString())
       
     }
   )

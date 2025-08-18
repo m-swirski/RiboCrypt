@@ -17,6 +17,31 @@ pdb_exists <- function(pdb_file) {
   file.exists(pdb_file())
 }
 
+coordinates_to_pep_id_path <- function(grl_coordinates, linker_dt, pep_dir) {
+  stopifnot(is(linker_dt, "data.table"))
+  stopifnot(colnames(linker_dt) == c("ID", "coordinates"))
+  selected_linker <- linker_dt[coordinates == as.character(grl_coordinates),]
+  if (nrow(selected_linker) == 0) {
+    print("Translon does not have a peptide linker ID, is there a longer one?")
+    return("")
+  }
+  paths <- pep_id_to_path(selected_linker[1,]$ID, pep_dir)
+  return(paths)
+}
+
+pep_id_to_path <- function(id, pep_dir) {
+  regex_str <- paste0("^", id, "_unrelaxed_rank_001_alphafold2_ptm_.*\\.pdb$")
+  pep_dirs <- file.path(pep_dir, c(seq(0:17), paste0("nRNA_", seq(9))), "predictions")
+  pep_dirs <- pep_dirs[dir.exists(pep_dirs)]
+  paths <- unlist(lapply(pep_dirs, function(x)
+    list.files(x, regex_str, full.names = TRUE)), use.names = FALSE)
+  if (length(paths) == 0) {
+    print("Linker peptide id found, but file does not exist!")
+    return("")
+  }
+  return(paths)
+}
+
 protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVisible,
                                 session, structureChoices = list()) {
   req(dynamicVisible(), selectedRegionProfile())
@@ -49,6 +74,4 @@ protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVi
     ),
     fluidRow(NGLVieweROutput(ns("dynamic")))
   )
-
-
 }

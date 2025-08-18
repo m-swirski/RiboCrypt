@@ -10,13 +10,18 @@ module_protein <- function(input, output, gene_name_list, session) {
 
     # Get the Ribo-seq prfile (we select first library for now)
     selectedRegionProfile <- reactive({
-      # browser()
       req(selectedRegion(), input$useCustomRegions)
       req(selectedRegion() != "...")
       coverage_region <- NULL
       uorf_clicked <- length(grep("U[0-9]+$", input$selectedRegion)) == 1
+      translon_clicked <- length(grep("T[0-9]+$", input$selectedRegion)) == 1
       if (uorf_clicked) {
         print("- Searching for local uorf protein structure:")
+        print(input$selectedRegion)
+        print(paste("In tx:", input$tx))
+      }
+      if (translon_clicked) {
+        print("- Searching for local translon protein structure:")
         print(input$selectedRegion)
         print(paste("In tx:", input$tx))
       }
@@ -67,20 +72,33 @@ module_protein <- function(input, output, gene_name_list, session) {
 
     # NGL viewer widget
     protein_structure_dir <- reactive({
-      file.path(dirname(df()@fafile), "protein_structure_predictions")
+      file.path(refFolder(df()), "protein_structure_predictions")
     })
     region_dir <- reactive({
       file.path(protein_structure_dir(), selectedTX())
     })
     on_disk_structures <- reactive({
       paths <- file.path(region_dir(), list.files(region_dir()))
-
-      uorf_clicked <- length(grep("U[0-9]+$", selectedRegion())) == 1
+      uorf_clicked <- length(grep("U[0-9]+$", input$selectedRegion)) == 1
+      translon_clicked <- length(grep("T[0-9]+$", input$selectedRegion)) == 1
       if (uorf_clicked) {
         paths <- paths[grep(paste0("^uorf_",selectedRegion(), ".pdb$"), basename(paths))]
         if (length(paths) == 0) warning("No local protein structure for this uORF!")
       } else {
         paths <- paths[-grep("uorf", paths)] # Remove uorf structures
+      }
+      if (translon_clicked) {
+        linker_file <- file.path(refFolder(df()), "predicted_translons",
+                                 "predicted_translons_with_sequence_pep_linker.fst")
+        if (!file.exists(linker_file)) {
+          print("No translon peptide linker file for organism!")
+          return("")
+        }
+        selected_grl <- mainPlotControls()$customRegions[]
+        selected_as_coord <- as.character(selected_grl[names(selected_grl) == selectedRegion()])
+        linker_dt <- fst::read_fst(linker_file, as.data.table = TRUE)
+
+        paths <- coordinates_to_pep_id_path(selected_as_coord, linker_dt, protein_structure_dir())
       }
 
       path_labels <- mapply(
@@ -130,8 +148,13 @@ module_protein <- function(input, output, gene_name_list, session) {
     })
     structure_variants <- reactive({
       print("Structures fetched")
-      print(beacons_structures())
-      append(on_disk_structures(), beacons_structures())
+      if (isTruthy(beacons_results())) {
+        print(beacons_structures())
+        res <- beacons_structures()
+      } else {
+        res <- on_disk_structures()
+      }
+      return(res)
     })
     selected_variant <- reactive({
       req(structure_variants())

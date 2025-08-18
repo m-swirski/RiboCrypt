@@ -168,6 +168,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     normalization <- isolate(input$normalization)
     kmer <- isolate(input$kmer)
     min_count <- isolate(input$min_count)
+    if (!isTruthy(min_count)) min_count <- 0
     frame <- isolate(input$frame)
     summary_track <- isolate(input$summary_track)
 

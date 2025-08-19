@@ -88,6 +88,7 @@ generate_filename <- function(df, format, show_message = TRUE) {
 
 # Generalized function to render the DT table.
 render_translon_datatable <- function(data, session, add_links = TRUE) {
+  ns <- session$ns
   # Add URL
   if (add_links) {
     host <- getHostFromURL(session) #"https://ribocrypt.org"
@@ -106,32 +107,59 @@ render_translon_datatable <- function(data, session, add_links = TRUE) {
     data <- cbind(link = paste0('<a href=', urls, ' target=\"_blank\">',
                                 "Translon_", seq(length(urls)), '</a>'),
                   data)
+    if ("ID" %in% colnames(data)) {
+      data <- cbind(data[, .(link, ID)], data[, !(colnames(data) %in% c("link", "ID")), with = FALSE])
+    }
   }
 
-  datatable(data,
-            extensions = 'Buttons',
-            escape = FALSE,
-            filter = "top",
-            options = list(
-              dom = 'Bfrtip',
-              buttons = list(
-                list(
-                  extend = "csv",
-                  text = "Download current page (CSV)",
-                  filename = "current",
-                  exportOptions = list(
-                    modifier = list(page = "current")
-                  )
-                ),
-                list(
-                  extend = "excel",
-                  text = "Download current page (Excel)",
-                  filename = "current",
-                  exportOptions = list(
-                    modifier = list(page = "current")
-                  )
-                )
-              )
-            )
+  # Which column is ID?
+  id_target <- which(names(data) == "ID")
+  if (length(id_target) != 1) stop("ID column not found or ambiguous")
+
+  datatable(
+    data,
+    escape = FALSE,
+    filter = "top",
+    rownames = FALSE,
+    selection = "none",
+    extensions = "Buttons",
+    options = list(
+      dom = "Bfrtip",
+      buttons = list(
+        list(
+          extend = "csv",
+          text = "Download current page (CSV)",
+          filename = "current",
+          exportOptions = list(modifier = list(page = "current"))
+        ),
+        list(
+          extend = "excel",
+          text = "Download current page (Excel)",
+          filename = "current",
+          exportOptions = list(modifier = list(page = "current"))
+        )
+      ),
+      # Tag the ID column's cells so we can bind a click handler only there
+      columnDefs = list(list(
+        targets = id_target - 1,     # DataTables is 0-based
+        className = "dt-id"
+      ))
+    ),
+    # JS callback: fire event when clicking on ID cells
+    callback = DT::JS(sprintf("
+      var tbl = table.table().node();
+      $(tbl).on('click.dt', 'td.dt-id', function() {
+        var info    = table.cell(this).index();         // {row, column}
+        var rowData = table.row(info.row).data();       // array of cell values
+        var theID   = rowData[info.column];             // value in ID cell
+
+        // send to Shiny (module-safe)
+        Shiny.setInputValue('%s', {
+          id:  theID,
+          row: info.row + 1,
+          col: info.column + 1
+        }, {priority: 'event'});
+      });
+    ", ns("translon_id_click")))
   )
 }

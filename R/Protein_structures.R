@@ -45,8 +45,13 @@ pep_id_to_path <- function(id, pep_dir) {
 protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVisible,
                                 session, structureChoices = list()) {
   req(dynamicVisible(), selectedRegionProfile())
-  ns <- session$ns
+  protein_struct_plot_internal(selectedRegion(), session, structureChoices())
 
+}
+
+protein_struct_plot_internal <- function(selectedRegion, session, structureChoices = list()) {
+  ns <- session$ns
+  print("Rendering protein now")
   widgetCloseBtn <- actionButton(
     ns("dynamicClose"),
     label = icon("times", class = "text-white"),
@@ -56,11 +61,17 @@ protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVi
   )
 
   widgetHeader <- tags$div(
-    h4(paste("Protein isoform:", selectedRegion())),
+    h4(paste("Protein isoform:", sub("_.*", "", basename(selectedRegion)))),
     style = "display: flex; align-items: flex-end; height: 100%;"
   )
-
-  widgetSelector <- selectInput(ns("structureViewerSelector"), NULL, structureChoices(), width = "100%")
+  tags$head(tags$style(HTML("
+    .selectize-input {
+      white-space: normal !important;
+      word-wrap: break-word;
+    }
+  ")))
+  names(structureChoices)
+  widgetSelector <- selectizeInput(ns("structureViewerSelector"), NULL, structureChoices, width = "100%")
 
   tagList(
     tags$div(
@@ -68,9 +79,10 @@ protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVi
       fluidRow(
         column(5),  # Blank space for padding left
         column(4, widgetHeader),
-        column(2, widgetSelector),
+        column(2),
         column(1, widgetCloseBtn)
-      )
+      ),
+      widgetSelector
     ),
     fluidRow(NGLVieweROutput(ns("dynamic")))
   )

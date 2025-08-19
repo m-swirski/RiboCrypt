@@ -66,6 +66,10 @@ rc_parameter_setup <- function() {
       browser_options["full_annotation"] <- FALSE
     }
 
+    if (!isTruthy(browser_options["translons"])) {
+      browser_options["translons"] <- FALSE
+    }
+
     if (!isTruthy(browser_options["allow_non_bw"])) {
       browser_options["allow_non_bw"] <- FALSE
     }

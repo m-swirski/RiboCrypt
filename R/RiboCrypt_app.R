@@ -23,6 +23,7 @@
 #'   default: first one\cr
 #' - default_isoform_meta : Which isoform to select for meta analysis,
 #'    default: first one\cr
+#' - translons : Use translon annotation, default "FALSE"\cr
 #' - plot_on_start : Plot when starting, default: "FALSE"\cr
 #' - hide_settings : Hide settings bar in browser on start, default "TRUE"\cr
 #' @param init_tab_focus character, default "browser". Which tab to open on

@@ -9,6 +9,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
   viewMode <- browser_options["default_view_mode"] == "genomic"
   introns_width <- as.numeric(browser_options["collapsed_introns_width"])
   full_annotation <- as.logical(browser_options["full_annotation"])
+  translons <- as.logical(browser_options["translons"])
   panel_hidden_or_not_class <- ifelse(browser_options["hide_settings"] == "TRUE",
                                       "floating_settings_panel hidden",
                                       "floating_settings_panel")
@@ -59,7 +60,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                                 ),
                                 fluidRow(
                                   checkboxInput(ns("add_uorfs"), "uORF annotation", FALSE),
-                                  checkboxInput(ns("add_translon"), "Predicted translons", FALSE),
+                                  checkboxInput(ns("add_translon"), "Predicted translons", translons),
                                   ),
                                 fluidRow(checkboxInput(ns("log_scale"), "Log scale", FALSE),
                                          checkboxInput(ns("log_scale_protein"), "Log scale Protein", FALSE)
@@ -102,7 +103,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
       column(12,
              jqui_resizable(plotlyOutput(ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
              plotlyOutput(ns("e"), height = "50px"),
-             uiOutput(ns("variableUi")),
+             uiOutput(ns("proteinStruct")),
              plotlyOutput(ns("d")) %>% shinycssloaders::withSpinner(color="#0dc5c1")
       )
     )

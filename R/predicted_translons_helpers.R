@@ -109,6 +109,8 @@ render_translon_datatable <- function(data, session, add_links = TRUE) {
                   data)
     if ("ID" %in% colnames(data)) {
       data <- cbind(data[, .(link, ID)], data[, !(colnames(data) %in% c("link", "ID")), with = FALSE])
+    } else {
+      data <- cbind(data[, .(link)], ID = "", data[, !(colnames(data) %in% c("link", "ID")), with = FALSE])
     }
   }
 

@@ -172,7 +172,7 @@ DEG_plot <- function(dt, draw_non_regulated = TRUE,
              font = list(color = "black", weight = "bold", size = 16))),
       margin = list(b = 55),
       xaxis = list(range = c(max[1], max[2]))
-    ) %>% plotly::config(toImageButtonOptions = list(format = format), displaylogo = FALSE)
+    ) %>% plotly::config(toImageButtonOptions = list(format = format, filename = "RC_DEG_analysis"), displaylogo = FALSE)
 
   widths <- cumsum(rep(1 / length(gg2), length(gg2)))
   center <- widths[1] / 2

@@ -18,7 +18,8 @@ codon_ui <- function(id, all_exp, browser_options, libs, label = "Codon") {
                                                   value =1.7, step = 0.2))),
                    codon_score_input_select(ns),
                    checkboxInput(ns("differential"), label = "Differential", value = FALSE),
-                   checkboxInput(ns("exclude_start_stop"), label = "Exclude start stop", value = TRUE)
+                   checkboxInput(ns("exclude_start_stop"), label = "Exclude start stop", value = TRUE),
+                   export_format_of_plot(ns)
                    )),
         plot_button(ns("go"))
       ),

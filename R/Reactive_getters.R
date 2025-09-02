@@ -112,6 +112,8 @@ custom_seq_track_panel_bigwig <- function(grl, bigwig_path, ylab) {
 
 browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       reads = mainPlotControls()$reads,
+                                      runs = mainPlotControls()$runs,
+                                      collection_path = mainPlotControls()$collection_path,
                                       withFrames = mainPlotControls()$withFrames,
                                       viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
                                       frames_type = mainPlotControls()$frames_type,
@@ -130,15 +132,16 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       summary_track_type = mainPlotControls()$summary_track_type,
                                       export.format = mainPlotControls()$export_format,
                                       zoom_range = mainPlotControls()$zoom_range,
-                                      frames_subset = mainPlotControls()$frames_subset) {
+                                      frames_subset = mainPlotControls()$frames_subset,
+                                      normalization = mainPlotControls()$normalization) {
   time_before <- Sys.time()
   print("Creating full browser panel..")
   # Input controller
   multiOmicsControllerView()
   # Get NGS data track panels
-  profiles <- multiOmicsPlot_all_profiles(bottom_panel$display_range, reads, kmers,
+  profiles <- multiOmicsPlot_all_profiles(bottom_panel$display_range, reads, runs, collection_path, kmers,
                                           kmers_type, frames_type, frames_subset,
-                                          withFrames, log_scale, BPPARAM)
+                                          withFrames, log_scale, BPPARAM, normalization)
   track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, colors, ylabels,
                                                 ylabels_full_name, bottom_panel$lines,
                                                 frames_type, total_libs,

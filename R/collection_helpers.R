@@ -5,16 +5,20 @@
 #' for new fst format, which range to get.
 #' @return a data.table in long format
 #' @importFrom fst read_fst
-load_collection <- function(path, grl = attr(path, "range")) {
+load_collection <- function(path, grl = attr(path, "range"), format = c("long", "wide")[1]) {
   new_format <- length(names(path)) > 0 && names(path) == "index"
   if (new_format) {
     stopifnot(!is.null(grl))
-    table <- setnames(suppressWarnings(data.table::melt.data.table(coverageByTranscriptFST(grl, path)[[1]])),
-                      c("library", "count"))
+    if (format == "long") {
+      table <- setnames(suppressWarnings(data.table::melt.data.table(coverageByTranscriptFST(grl, path)[[1]])),
+                        c("library", "count"))
+      table[, position := 1:.N, by = library]
+      table[, `:=`(library, factor(library, levels = unique(library), ordered = TRUE))]
+    } else if (format == "wide") {
+      table <- coverageByTranscriptFST(grl, path)[[1]]
+    }
   } else table <- fst::read_fst(path, as.data.table = TRUE)
-
-  table[, position := 1:.N, by = library]
-  table[, `:=`(library, factor(library, levels = unique(library), ordered = TRUE))]
+  
   return(table)
 }
 

@@ -9,6 +9,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
   viewMode <- browser_options["default_view_mode"] == "genomic"
   introns_width <- as.numeric(browser_options["collapsed_introns_width"])
   full_annotation <- as.logical(browser_options["full_annotation"])
+  normalizations <- normalizations("metabrowser")
   panel_hidden_or_not_class <- ifelse(browser_options["hide_settings"] == "TRUE",
                                       "floating_settings_panel hidden",
                                       "floating_settings_panel")
@@ -44,6 +45,10 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                          column(6, frame_type_select(ns, selected = browser_options["default_frame_type"])),
                          column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
                                                value = as.numeric(browser_options["default_kmer"])))
+                       ),
+                       fluidRow(
+                         column(6, normalization_input_select(ns, choices = normalizations,
+                                                              help_link = "mbrowser"))
                        )
               ),
               tabPanel("Settings",

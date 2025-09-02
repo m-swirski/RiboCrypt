@@ -60,9 +60,18 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
       reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""),
                         base_folders = libFolder(dff, "all"))
     }
+    
     frames_subset <- input$frames_subset
     use_all_frames <- length(frames_subset) == 0 || any(c("","all") %in% frames_subset)
     if (use_all_frames) frames_subset <- "all"
+    
+    try_collection_path <- try(collection_path_from_exp(df(), input$tx))
+    if(is(try_collection_path, "try-error")) {
+      collection_path <- NULL
+    } else {
+      collection_path <- try_collection_path
+      names(collection_path) <- "index"
+    }
 
     shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
 
@@ -81,6 +90,9 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    annotation = cds_annotation,
                    tx_annotation = tx_annotation,
                    reads = reads,
+                   runs = dff[["Run"]],
+                   normalization = input$normalization,
+                   collection_path = collection_path,
                    custom_sequence = input$customSequence,
                    log_scale = input$log_scale,
                    phyloP = input$phyloP,

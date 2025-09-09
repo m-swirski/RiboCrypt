@@ -4,24 +4,31 @@ umap_ui <- function(id, all_exp_translons, label = "umap") {
     title = "UMAP", icon = icon("rectangle-list"),
     h2("UMAP from count tables of all samples of all genes in organism"),
     # Include shinyjs so we can trigger hidden buttons
-    fluidRow(
-      column(2, umap_plot_type(ns)),
-      column(2, experiment_input_select(all_exp_translons$name, ns)),
-      column(2, umap_color_by_input_select(ns)),
-      column(1, plot_button(ns("go")))
-    ),
     tags$hr(),
-    fluidRow(
-      plotlyOutput(ns("c"), height = "700px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
+    tabsetPanel(
+      tabPanel("UMAP plot",
+               fluidRow(
+                 column(2, umap_plot_type(ns)),
+                 column(2, experiment_input_select(all_exp_translons$name, ns)),
+                 column(2, umap_color_by_input_select(ns)),
+                 column(1, plot_button(ns("go")))
+               ),
+               fluidRow(
+                 plotlyOutput(ns("c"), height = "700px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
+               )),
+      tabPanel("Selection 1 - browser",
+               fluidRow()),
+      tabPanel("Selection 2 - browser",
+               fluidRow())
     ),
     tabsetPanel(
-      tabPanel("Sample group 1",
+      tabPanel("Sample selection 1",
                fluidRow(
-                 uiOutput(ns("sampleGroup1Ui"))
+                 sampleTableUi(paste0(c(id, "samples1"), collapse = "-"))
                )),
-      tabPanel("Sample group 2",
+      tabPanel("Sample selection 2",
                fluidRow(
-                 uiOutput(ns("sampleGroup2Ui"))
+                 sampleTableUi(paste0(c(id, "samples2"), collapse = "-"))
                )),
     )
   )
@@ -65,9 +72,9 @@ umap_server <- function(id, metadata, all_exp_meta, browser_options) {
         bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
       }
       
-      output$sampleGroup1Ui <- setupSampleGroup("1", metadata, input, output)
-      output$sampleGroup2Ui <- setupSampleGroup("2", metadata, input, output)
-
+      
+      selectedSamples1 <- sampleTableServer("samples1", metadata, input$selectedPoints)
+      selectedSamples2 <- sampleTableServer("samples2", metadata, input$selectedPoints)
 
       check_url_for_basic_parameters()
     }
@@ -116,55 +123,4 @@ umap_centroids_plot <- function(dt_umap) {
       xaxis = list(title = "Group 2", tickangle = 45),
       yaxis = list(title = "Group 1", autorange = "reversed")
     )
-}
-
-setupSampleGroup <- function(selectionId, metadata, input, output, session = getDefaultReactiveDomain(
-)) {
-  withNamespace <- session$ns
-  withId <- function(s) { paste0(s, selectionId) }
-  withIdAndNamespace <- function(s) { withId(s) %>% withNamespace }
-  selectedSamples <- reactiveVal()
-  
-  observe({
-    req(input$selectedPoints)
-    req(is.null(selectedSamples()))
-    selectedSamples(input$selectedPoints)
-  }) %>% bindEvent(input[[withId("saveAsGroup")]])
-  
-  observe({
-    req(!is.null(selectedSamples()))
-    selectedSamples(NULL)
-  }) %>% bindEvent(input[[withId("clearSelection")]])
-  
-  observe({
-    req(!is.null(selectedSamples()))
-    indexesToRemove <- input[[paste0(withId("samplesTable"), "_rows_selected")]]
-    samplesToRemove <- tableData()[indexesToRemove][["Sample"]]
-    currentSelection <- selectedSamples()
-    selectedSamples(currentSelection[!currentSelection %in% samplesToRemove])
-  }) %>% bindEvent(input[[withId("removeSelected")]])
-  
-  tableData <- reactive({
-    req(!is.null(selectedSamples()))
-    metadata[Sample %in% selectedSamples()]
-  })
-  
-  output[[withId("samplesTable")]] <-
-    DT::renderDT(tableData(), filter = "top", options = list(dom = 'Bfrtip'))
-  
-  renderUI({
-    if (is.null(selectedSamples())) {
-      actionButton(withIdAndNamespace("saveAsGroup"), "Save selection")
-    } else {
-      fluidRow(
-        column(10, DT::DTOutput(withIdAndNamespace("samplesTable")))
-        ,
-        column(2, 
-               actionButton(withIdAndNamespace("clearSelection"), "Clear"),
-               actionButton(withIdAndNamespace("removeSelected"), "Remove")
-               )
-      )
-    }
-  })
-  
 }

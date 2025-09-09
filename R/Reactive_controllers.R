@@ -1,40 +1,71 @@
 #' Main controller for browser settings
 #' Takes shiny input and converts to a proper list of settings
 #' @noRd
-click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
+click_plot_browser_main_controller <- function(
+    tx, 
+    cds, 
+    libs, 
+    df, 
+    selectedGene, 
+    selectedTx, 
+    otherTx, 
+    addUorfs,
+    addTranslons,
+    collapsedIntrons,
+    collapsedIntronsWidth,
+    genomicRegion,
+    extendLeaders,
+    extendTrailers,
+    zoomRange,
+    viewMode,
+    selectedLibraries,
+    withFrames,
+    exportFormat,
+    summaryTrack,
+    summaryTrackType,
+    kmer,
+    framesType,
+    framesSubset,
+    normalization,
+    customSequence,
+    logScale,
+    phyloP,
+    mapability,
+    expressionPlot
+    ) {
   {
     print("- Browser controller")
-    print(paste("here is gene!", isolate(input$gene)))
-    print(paste("here is tx!", isolate(input$tx)))
+    print(paste("here is gene!", isolate(selectedGene)))
+    print(paste("here is tx!", isolate(selectedTx)))
     # Annotation
-    display_region <- observed_tx_annotation(isolate(input$tx), tx)
-    tx_annotation <- observed_cds_annotation(isolate(input$tx), tx,
-                                             isolate(input$other_tx))
-    cds_annotation <- observed_cds_annotation(isolate(input$tx), cds,
-                                              isolate(input$other_tx))
-    uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
-                                                isolate(input$other_tx), isolate(input$add_uorfs))
-    translon_annotation <- observed_translon_annotation(isolate(input$tx), df(),
-                                                        isolate(input$other_tx), isolate(input$add_translon))
+    display_region <- observed_tx_annotation(isolate(selectedTx), tx)
+    tx_annotation <- observed_cds_annotation(isolate(selectedTx), tx,
+                                             isolate(otherTx))
+    cds_annotation <- observed_cds_annotation(isolate(selectedTx), cds,
+                                              isolate(otherTx))
+    uorf_annotation <- observed_uorf_annotation(isolate(selectedTx), df,
+                                                isolate(otherTx), isolate(addUorfs))
+    translon_annotation <- observed_translon_annotation(isolate(selectedTx), df(),
+                                                        isolate(otherTx), isolate(addTranslons))
     customRegions <- c(uorf_annotation, translon_annotation)
 
     # View controller
-    collapsed_introns_width <- input$collapsed_introns_width
-    if (!input$collapsed_introns) collapsed_introns_width <- 0
+    collapsed_introns_width <- collapsedIntronsWidth
+    if (!collapsedIntrons) collapsed_introns_width <- 0
     if (collapsed_introns_width > 0) {
       tx_annotation <- tx_annotation[tx_annotation %over% flankPerGroup(display_region)]
       display_region_gr <- reduce(unlistGrl(tx_annotation))
       display_region <- groupGRangesBy(display_region_gr, rep(names(display_region), length(display_region_gr)))
     }
-    display_region <- genomic_string_to_grl(isolate(input$genomic_region), display_region,
-                                            max_size = 1e6, isolate(input$viewMode),
-                                            isolate(input$extendLeaders),
-                                            isolate(input$extendTrailers),
+    display_region <- genomic_string_to_grl(isolate(genomicRegion), display_region,
+                                            max_size = 1e6, isolate(viewMode),
+                                            isolate(extendLeaders),
+                                            isolate(extendTrailers),
                                             collapsed_introns_width)
-    zoom_range <- get_zoom_range(isolate(input$zoom_range), display_region,
-                                 max_size = 1e6, isolate(input$viewMode),
-                                 isolate(input$extendLeaders),
-                                 isolate(input$extendTrailers))
+    zoom_range <- get_zoom_range(isolate(zoomRange), display_region,
+                                 max_size = 1e6, isolate(viewMode),
+                                 isolate(extendLeaders),
+                                 isolate(extendTrailers))
 
     if (!is.null(attr(zoom_range, "message"))) {
       showModal(modalDialog(
@@ -43,14 +74,38 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
       ))
     }
 
-    dff <- observed_exp_subset(isolate(input$library), libs, df)
+    dff <- observed_exp_subset(isolate(selectedLibraries), libs, df)
     if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
-    if (isolate(input$withFrames)) {
+    if (isolate(withFrames)) {
       withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
     } else withFrames <- rep(FALSE, nrow(dff))
 
     # Hash strings for cache
-    hash_strings <- hash_strings_browser(input, dff, collapsed_introns_width)
+    hash_strings <- hash_strings_browser(
+      dff, 
+      selectedTx, 
+      otherTx, 
+      addUorfs,
+      addTranslons,
+      collapsedIntronsWidth,
+      genomicRegion,
+      extendLeaders,
+      extendTrailers,
+      zoomRange,
+      viewMode,
+      withFrames,
+      exportFormat,
+      summaryTrack,
+      summaryTrackType,
+      kmer,
+      framesType,
+      framesSubset,
+      customSequence,
+      logScale,
+      phyloP,
+      mapability,
+      expressionPlot
+      )
 
     reads <- try(filepath(dff, "bigwig", suffix_stem = c("_pshifted", "")))
     invalid_reads <- is(reads, "try-error") ||
@@ -61,11 +116,11 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                         base_folders = libFolder(dff, "all"))
     }
     
-    frames_subset <- input$frames_subset
+    frames_subset <- framesSubset
     use_all_frames <- length(frames_subset) == 0 || any(c("","all") %in% frames_subset)
     if (use_all_frames) frames_subset <- "all"
     
-    try_collection_path <- try(collection_path_from_exp(df(), input$tx))
+    try_collection_path <- try(collection_path_from_exp(df(), selectedTx))
     if(is(try_collection_path, "try-error")) {
       collection_path <- NULL
     } else {
@@ -78,28 +133,28 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     reactiveValues(dff = dff,
                    display_region = display_region,
                    customRegions = customRegions,
-                   extendTrailers = input$extendTrailers,
-                   extendLeaders = input$extendLeaders,
-                   export_format = input$plot_export_format,
-                   summary_track = input$summary_track,
-                   summary_track_type = input$summary_track_type,
-                   viewMode = input$viewMode,
+                   extendTrailers = extendTrailers,
+                   extendLeaders = extendLeaders,
+                   export_format = exportFormat,
+                   summary_track = summaryTrack,
+                   summary_track_type = summaryTrackType,
+                   viewMode = viewMode,
                    collapsed_introns_width = collapsed_introns_width,
-                   kmerLength = input$kmer,
-                   frames_type = input$frames_type,
+                   kmerLength = kmer,
+                   frames_type = framesType,
                    annotation = cds_annotation,
                    tx_annotation = tx_annotation,
                    reads = reads,
                    runs = dff[["Run"]],
-                   normalization = input$normalization,
+                   normalization = normalization,
                    collection_path = collection_path,
-                   custom_sequence = input$customSequence,
-                   log_scale = input$log_scale,
-                   phyloP = input$phyloP,
+                   custom_sequence = customSequence,
+                   log_scale = logScale,
+                   phyloP = phyloP,
                    withFrames = withFrames,
                    zoom_range = zoom_range,
                    frames_subset = frames_subset,
-                   mapability = input$mapability,
+                   mapability = mapability,
                    hash_bottom = hash_strings[["hash_bottom"]],
                    hash_browser = hash_strings[["hash_browser"]],
                    hash_expression = hash_strings[["hash_expression"]])

@@ -287,26 +287,50 @@ browser_plots_highlighted <- function(plots, zoom_range, color = "rgba(255, 255,
   return(plots)
 }
 
-hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width) {
+hash_strings_browser <- function(
+    dff,
+    selectedTx, 
+    otherTx, 
+    addUorfs,
+    addTranslons,
+    collapsedIntronsWidth,
+    genomicRegion,
+    extendLeaders,
+    extendTrailers,
+    zoomRange,
+    viewMode,
+    withFrames,
+    exportFormat,
+    summaryTrack,
+    summaryTrackType,
+    kmer,
+    framesType,
+    framesSubset,
+    customSequence,
+    logScale,
+    phyloP,
+    mapability,
+    expressionPlot
+    ) {
   full_names <- ORFik:::name_decider(dff, naming = "full")
-  hash_bottom <- paste(input$tx, input$other_tx,
-                       input$add_uorfs,  input$add_translon,
-                       input$extendTrailers, input$extendLeaders,
-                       input$genomic_region, input$viewMode,
-                       ciw,
-                       input$customSequence, input$phyloP, input$mapability,
+  hash_bottom <- paste(selectedTx, otherTx,
+                       addUorfs,  addTranslons,
+                       extendTrailers, extendLeaders,
+                       genomicRegion, viewMode,
+                       collapsedIntronsWidth,
+                       customSequence, phyloP, mapability,
                        collapse = "|_|")
   # Until plot and coverage is split (bottom must be part of browser hash)
   hash_browser <- paste(hash_bottom,
                         full_names,
-                        input$plot_export_format,
-                        input$summary_track, input$summary_track_type,
-                        input$kmer, input$frames_type, input$withFrames,
-                        input$log_scale, input$zoom_range, input$frames_subset,
+                        exportFormat,
+                        summaryTrack, summaryTrackType,
+                        kmer, framesType, withFrames,
+                        logScale, zoomRange, framesSubset,
                         collapse = "|_|")
-  hash_expression <- paste(full_names, input$tx,
-                           input$expression_plot, input$extendTrailers,
-                           input$extendLeaders, collapse = "|_|")
+  hash_expression <- paste(full_names, selectedTx,
+                           expressionPlot, extendTrailers,
+                           extendLeaders, collapse = "|_|")
   hash_strings <- list(hash_bottom = hash_bottom, hash_browser = hash_browser,
                        hash_expression = hash_expression)
   stopifnot(all(lengths(hash_strings) == 1))

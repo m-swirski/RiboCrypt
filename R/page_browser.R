@@ -126,10 +126,40 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       output$clip <- renderUI({clipboard_url_button(input, session)})
 
       # Main plot controller, this code is only run if 'plot' is pressed
-      mainPlotControls <- eventReactive(input$go,
-        click_plot_browser_main_controller(input, tx, cds, libs, df),
-        ignoreInit = check_plot_on_start(browser_options),
-        ignoreNULL = FALSE)
+      mainPlotControls <- reactive({
+        click_plot_browser_main_controller(
+          tx, 
+          cds, 
+          libs, 
+          df,
+          selectedGene = input$gene, 
+          selectedTx = input$tx, 
+          otherTx = input$other_tx, 
+          addUorfs = input$add_uorfs,
+          addTranslons = input$add_translon,
+          collapsedIntrons = input$collapsed_introns,
+          collapsedIntronsWidth = input$collapsed_introns_width,
+          genomicRegion = input$genomic_region,
+          extendLeaders = input$extendLeaders,
+          extendTrailers = input$extendTrailers,
+          zoomRange = input$zoom_range,
+          viewMode = input$viewMode,
+          selectedLibraries = input$library,
+          withFrames = input$withFrames,
+          exportFormat = input$plot_export_format,
+          summaryTrack = input$summary_track,
+          summaryTrackType = input$summary_track_type,
+          kmer = input$kmer,
+          framesType = input$frames_type,
+          framesSubset = input$frames_subset,
+          normalization = input$normalization,
+          customSequence = input$customSequence,
+          logScale = input$log_scale,
+          phyloP = input$phyloP,
+          mapability = input$mapability,
+          expressionPlot = input$expression_plot
+          )
+        }) %>% bindEvent(input$go, ignoreInit = check_plot_on_start(browser_options), ignoreNULL = FALSE)
 
       bottom_panel <- reactive(bottom_panel_shiny(mainPlotControls))  %>%
         bindCache(mainPlotControls()$hash_bottom) %>%

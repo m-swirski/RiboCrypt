@@ -116,9 +116,12 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                                               annotation_list$cds_annotation,
                                               isolate(input$other_tx))
     # browser()
+
+
     if (!is.null(motif) && motif != "") {
       table_path <- meta_motif_files(dff)[motif]
       display_annot <- FALSE
+      collapsed_introns_width <- 0
       message("Using motif: ", table_path)
     } else {
       collapsed_introns_width <- input$collapsed_introns_width

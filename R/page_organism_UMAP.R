@@ -39,6 +39,7 @@ umap_server <- function(id, metadata, all_exp_meta, browser_options) {
   moduleServer(
     id,
     function(input, output, session) {
+      ns <- session$ns
       plot_triggered <- reactiveVal(FALSE)
       md <- reactiveVal(NULL)
       default <- "all_samples-Homo_sapiens"
@@ -64,9 +65,7 @@ umap_server <- function(id, metadata, all_exp_meta, browser_options) {
               umap_plot(isolate(md()$dt_umap))
             } else umap_centroids_plot(isolate(md()$dt_umap))
           }
-          
-          
-          onRender(generated_plot, fetchJS("handle_lasso_selection.js"), NS(id, "selectedPoints"))
+          onRender(generated_plot, fetchJS("umap_plot_extension.js"), ns("selectedPoints"))
         }) %>%
         bindCache(input$dff, input$umap_col, input$umap_plot_type) %>%
         bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)

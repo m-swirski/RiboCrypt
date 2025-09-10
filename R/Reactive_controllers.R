@@ -31,7 +31,8 @@ click_plot_browser_main_controller <- function(
     logScale,
     phyloP,
     mapability,
-    expressionPlot
+    expressionPlot,
+    selectedRuns = NULL
     ) {
   {
     print("- Browser controller")
@@ -57,11 +58,11 @@ click_plot_browser_main_controller <- function(
       display_region_gr <- reduce(unlistGrl(tx_annotation))
       display_region <- groupGRangesBy(display_region_gr, rep(names(display_region), length(display_region_gr)))
     }
-    display_region <- genomic_string_to_grl(isolate(genomicRegion), display_region,
-                                            max_size = 1e6, isolate(viewMode),
-                                            isolate(extendLeaders),
-                                            isolate(extendTrailers),
-                                            collapsed_introns_width)
+    # display_region <- genomic_string_to_grl(isolate(genomicRegion), display_region,
+    #                                         max_size = 1e6, isolate(viewMode),
+    #                                         isolate(extendLeaders),
+    #                                         isolate(extendTrailers),
+    #                                         collapsed_introns_width)
     zoom_range <- get_zoom_range(isolate(zoomRange), display_region,
                                  max_size = 1e6, isolate(viewMode),
                                  isolate(extendLeaders),
@@ -73,12 +74,29 @@ click_plot_browser_main_controller <- function(
         attr(zoom_range, "message")
       ))
     }
-
-    dff <- observed_exp_subset(isolate(selectedLibraries), libs, df)
-    if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
-    if (isolate(withFrames)) {
-      withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
-    } else withFrames <- rep(FALSE, nrow(dff))
+    
+    if(is.null(selectedRuns)) {
+      dff <- observed_exp_subset(isolate(selectedLibraries), libs, df)
+      if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
+      if (isolate(withFrames)) {
+        withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
+      } else withFrames <- rep(FALSE, nrow(dff))
+      
+    } else {
+      dff <- df()[df()$Run %in% selectedRuns, ]
+      if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
+    }
+    
+    reads <- try(filepath(dff, "bigwig", suffix_stem = c("_pshifted", "")))
+    invalid_reads <- is(reads, "try-error") ||
+      (!all(file.exists(unlist(reads, use.names = FALSE))) |
+         any(duplicated(unlist(reads, use.names = FALSE))))
+    if (invalid_reads) {
+      reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""),
+                        base_folders = libFolder(dff, "all"))
+    }
+    
+    runs <- dff[["Run"]]
 
     # Hash strings for cache
     hash_strings <- hash_strings_browser(
@@ -106,15 +124,6 @@ click_plot_browser_main_controller <- function(
       mapability,
       expressionPlot
       )
-
-    reads <- try(filepath(dff, "bigwig", suffix_stem = c("_pshifted", "")))
-    invalid_reads <- is(reads, "try-error") ||
-      (!all(file.exists(unlist(reads, use.names = FALSE))) |
-         any(duplicated(unlist(reads, use.names = FALSE))))
-    if (invalid_reads) {
-      reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""),
-                        base_folders = libFolder(dff, "all"))
-    }
     
     frames_subset <- framesSubset
     use_all_frames <- length(frames_subset) == 0 || any(c("","all") %in% frames_subset)
@@ -127,9 +136,9 @@ click_plot_browser_main_controller <- function(
       collection_path <- try_collection_path
       names(collection_path) <- "index"
     }
-
+    
     shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
-
+    
     reactiveValues(dff = dff,
                    display_region = display_region,
                    customRegions = customRegions,
@@ -145,7 +154,7 @@ click_plot_browser_main_controller <- function(
                    annotation = cds_annotation,
                    tx_annotation = tx_annotation,
                    reads = reads,
-                   runs = dff[["Run"]],
+                   runs = runs,
                    normalization = normalization,
                    collection_path = collection_path,
                    custom_sequence = customSequence,

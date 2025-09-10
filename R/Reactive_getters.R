@@ -33,6 +33,7 @@ bottom_panel_shiny <- function(mainPlotControls) {
   time_before <- Sys.time()
   print("Creating bottom panel..")
   viewMode <- ifelse(mainPlotControls()$viewMode, "genomic", "tx")
+  mainPlotControls()$viewMode
   df <- mainPlotControls()$dff
   annotation_list <- annotation_controller(df = df,
                                            display_range = mainPlotControls()$display_region,

@@ -1,4 +1,4 @@
-metadata_ui <- function(id, all_exp, all_exp_meta, label = "metadata") {
+metadata_ui <- function(id, all_exp, all_exp_meta, gene_names_init, browser_options, label = "metadata") {
   ns <- NS(id)
   genomes <- unique(all_exp$organism)
   experiments <- all_exp$name
@@ -9,12 +9,12 @@ metadata_ui <- function(id, all_exp, all_exp_meta, label = "metadata") {
     study_info_ui("study_info"),
     sra_search_ui("sra_search"),
     predicted_translons_ui("predicted_translons", all_merged),
-    umap_ui("umap", all_exp_meta)
+    umap_ui("umap", all_exp_meta, gene_names_init, browser_options)
   )
 }
 
 metadata_server <- function(id, all_experiments, metadata, all_exp_meta,
-                            browser_options) {
+                            tx, cds, libs, df, browser_options) {
   
   colnames(metadata)[colnames(metadata) == "Run"] <- "Sample"
   colnames(metadata)[colnames(metadata) == "ScientificName"] <- "Organism"
@@ -25,5 +25,5 @@ metadata_server <- function(id, all_experiments, metadata, all_exp_meta,
   study_info_server("study_info", all_experiments)
   sra_search_server("sra_search")
   predicted_translons_server("predicted_translons", all_experiments, browser_options)
-  umap_server("umap", metadata, all_exp_meta, browser_options)
+  umap_server("umap", metadata, all_exp_meta, tx, cds, libs, df, browser_options)
 }

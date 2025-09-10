@@ -5,7 +5,7 @@
 #' for new fst format, which range to get.
 #' @return a data.table in long format
 #' @importFrom fst read_fst
-load_collection <- function(path, grl = attr(path, "range"), format = c("long", "wide")[1]) {
+load_collection <- function(path, grl = attr(path, "range"), format = c("long", "wide")[1], columns = NULL) {
   new_format <- length(names(path)) > 0 && names(path) == "index"
   if (new_format) {
     stopifnot(!is.null(grl))

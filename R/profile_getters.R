@@ -34,8 +34,6 @@ smoothenSingleSampCoverage <- function(dt, kmer, kmers_type = "mean") {
 }
 
 smoothenMultiSampCoverage <- function(dt, kmer, kmers_type = "mean", split_by_frame = FALSE) {
-  print(dt$count)
-  print(typeof(dt$count))
   dt[, count := as.numeric(count)]
   if (split_by_frame) {
     if (!("frame" %in% colnames(dt))) {
@@ -98,16 +96,19 @@ getProfileWrapper <- function(display_range, reads, run, collection_path, withFr
   }
   else {
     names(collection_path) <- "index"
-    collection <- load_collection(collection_path, display_range, format = "wide") # %>%
-      # filter_collection_on_count(0) %>%
-      # normalize_collection(normalization, kmer = kmers)
-      
-    profile <- data.frame(
+    collection <- load_collection(collection_path, display_range, format = "wide")
+    profile <- data.table(
       count = collection[[run]],
       genes = rep(1, length(collection[[run]])),
       position = c(1:length(collection[[run]])),
-      frame = rep_len(1:3, length(collection[[run]]))
-      )
+      frame = rep_len(1:3, length(collection[[run]])),
+      library = rep_len(run, length(collection[[run]]))
+    ) %>%
+      smoothenMultiSampCoverage(kmers, kmers_type = kmers_type, split_by_frame = withFrames)
+    
+    # %>%
+    # TODO filter_collection_on_count(0) %>% for now
+    # TODO normalize_collection(normalization, kmer = kmers)
   }
 
   if (log_scale) profile[, count := log2(count + 1)]

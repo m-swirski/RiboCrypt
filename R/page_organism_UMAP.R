@@ -1,4 +1,4 @@
-umap_ui <- function(id, all_exp_translons, label = "umap") {
+umap_ui <- function(id, all_exp_translons, gene_names_init, browser_options, label = "umap") {
   ns <- NS(id)
   tabPanel(
     title = "UMAP", icon = icon("rectangle-list"),
@@ -17,25 +17,25 @@ umap_ui <- function(id, all_exp_translons, label = "umap") {
                  plotlyOutput(ns("c"), height = "700px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
                )),
       tabPanel("Selection 1 - browser",
-               fluidRow()),
+               browserPlotUi(paste0(c(id, "samplesBrowser1"), collapse = "-"), gene_names_init, browser_options)
+               ),
       tabPanel("Selection 2 - browser",
-               fluidRow())
+               browserPlotUi(paste0(c(id, "samplesBrowser2"), collapse = "-"), gene_names_init, browser_options)
+               )
     ),
     tabsetPanel(
       tabPanel("Sample selection 1",
-               fluidRow(
                  sampleTableUi(paste0(c(id, "samples1"), collapse = "-"))
-               )),
+               ),
       tabPanel("Sample selection 2",
-               fluidRow(
                  sampleTableUi(paste0(c(id, "samples2"), collapse = "-"))
-               )),
+               ),
     )
   )
 }
 
 
-umap_server <- function(id, metadata, all_exp_meta, browser_options) {
+umap_server <- function(id, metadata, all_exp_meta, tx, cds, libs, df, browser_options) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -74,6 +74,9 @@ umap_server <- function(id, metadata, all_exp_meta, browser_options) {
       
       selectedSamples1 <- sampleTableServer("samples1", metadata, input$selectedPoints)
       selectedSamples2 <- sampleTableServer("samples2", metadata, input$selectedPoints)
+      
+      browserPlotServer("samplesBrowser1", tx, cds, libs, df, browser_options, selectedSamples1)
+      browserPlotServer("samplesBrowser2", tx, cds, libs, df, browser_options, selectedSamples2)
 
       check_url_for_basic_parameters()
     }

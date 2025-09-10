@@ -1,6 +1,6 @@
 sampleTableUi <- function(id) {
   ns <- NS(id)
-  uiOutput(ns("sampleTableUi"))
+  fluidRow(uiOutput(ns("sampleTableUi")))
 }
 
 

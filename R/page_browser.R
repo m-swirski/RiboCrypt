@@ -135,7 +135,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
         if (!identical(input$tx,   browser_options[["default_isoform"]])) return()
         fired(TRUE)
         kickoff(TRUE)
-      }, ignoreInit = FALSE, ignoreNULL = TRUE)
+      }, ignoreInit = TRUE, ignoreNULL = TRUE)
 
       mainPlotControls <- eventReactive(list(input$go, kickoff()),
         click_plot_browser_main_controller(input, tx, cds, libs, df),

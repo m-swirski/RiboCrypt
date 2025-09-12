@@ -32,7 +32,8 @@ path.}
 - default_gene : Which genes to select, default: first one\cr
 - default_isoform : Which isoform to select, default: first one\cr
 - default_libs : Which libraries to select: first one, else a single string,
-where libs are seperated by "|", like "RFP_WT_r1|RFP_WT_r2".\cr
+where libs are seperated by ",", like "RFP_WT_r1|RFP_WT_r2". Also support
+ run ids (SRR... etc)\cr
 - default_kmer : K-mer windowing size, default: 1\cr
 - default_frame_type : Ribo-seq line type, default: "lines"\cr
 - default_view_mode : "tx", alternative "genomic"

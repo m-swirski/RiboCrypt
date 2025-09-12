@@ -13,7 +13,8 @@
 #' - default_gene : Which genes to select, default: first one\cr
 #' - default_isoform : Which isoform to select, default: first one\cr
 #' - default_libs : Which libraries to select: first one, else a single string,
-#' where libs are seperated by "|", like "RFP_WT_r1|RFP_WT_r2".\cr
+#' where libs are seperated by ",", like "RFP_WT_r1|RFP_WT_r2". Also support
+#'  run ids (SRR... etc)\cr
 #' - default_kmer : K-mer windowing size, default: 1\cr
 #' - default_frame_type : Ribo-seq line type, default: "lines"\cr
 #' - default_view_mode : "tx", alternative "genomic"
@@ -109,7 +110,7 @@ RiboCrypt_app <- function(
   server <- function(input, output, session) {
     this_time_before <- Sys.time()
     reactive_url()
-    cds <- NULL
+
     org_and_study_changed_checker(input, output, session)
     tutorial_server("tutorial")
     rv <- browser_server("browser", all_exp, without_readlengths_env, df,
@@ -117,12 +118,13 @@ RiboCrypt_app <- function(
                          browser_options)
     if (nrow(all_exp_meta) > 0) {
       browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata,
-                             names_init_meta, browser_options)
+                             names_init_meta, browser_options, exp_init_meta)
     } else print("No MegaBrowser exps given, ignoring MegaBrowser server.")
     rv <- analysis_server("Analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
             gene_name_list, rv, metadata, names_init, browser_options)
     metadata_server("metadata", all_exp, metadata, all_exp_meta, browser_options)
+
     cat("Server this: "); print(round(Sys.time() - this_time_before, 2))
     cat("Server total: "); print(round(Sys.time() - time_before, 2))
   }

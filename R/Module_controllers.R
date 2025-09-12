@@ -243,11 +243,16 @@ study_and_gene_observers <- function(input, output, session) {
     if (!exists("env")) env <- new.env()
 
     observe(if (rv$genome != input$genome & input$genome != "") {
+      message("Chaning org from org switch in other page")
       rv$genome <- input$genome},
       priority = 2) %>%
       bindEvent(input$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
-    observe(if (rv$exp != input$dff & input$dff != "") rv$exp <- input$dff) %>%
+    observe(if (rv$exp != input$dff && input$dff != "") {
+      message("Setting rv from page: ", id)
+      rv$exp <- input$dff
+      experiment_update_select(org, all_exp, experiments, rv$exp)}) %>%
       bindEvent(input$dff, ignoreInit = TRUE, ignoreNULL = TRUE)
+
     observe(if (rv$genome != input$genome) {
       updateSelectizeInput(
         inputId = "genome",
@@ -256,18 +261,14 @@ study_and_gene_observers <- function(input, output, session) {
         server = TRUE
       )}, priority = 1) %>%
       bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
-
-    observeEvent(TRUE, {
-      experiment_update_select(org, all_exp, experiments, rv$exp)
-    }, once = TRUE)
-
-    observeEvent(rv$exp, if (rv$exp != input$dff) {
-      experiment_update_select(org, all_exp, experiments, rv$exp)},
-      ignoreInit = TRUE, ignoreNULL = TRUE)
+    experiment_update_select_isolated(isolate(org()), all_exp, experiments,
+                                      isolate(rv$exp))
 
     observeEvent(org(), if (org() != input$genome & input$genome != "") {
+      message("Chaning exp from org switch")
       experiment_update_select(org, all_exp, experiments)},
       ignoreInit = TRUE, ignoreNULL = TRUE)
+    # Gene & tx updaters
     if (all_is_gene) {
       updateSelectizeInput(
         inputId = "gene",
@@ -276,31 +277,43 @@ study_and_gene_observers <- function(input, output, session) {
         server = TRUE
       )
       observeEvent(gene_name_list(), gene_update_select_heatmap(gene_name_list),
-                   ignoreInit = TRUE)
+                   ignoreInit = FALSE)
       observeEvent(input$gene, {
         req(input$gene != "")
         tx_update_select(isolate(input$gene), gene_name_list, "all", page = id)
-      }, ignoreNULL = TRUE, ignoreInit = TRUE)
+      }, ignoreNULL = TRUE, ignoreInit = FALSE)
 
     } else if (uses_gene) {
       print(id)
       choices <- unique(isolate(gene_name_list())[,2][[1]])
+      # Init round gene
       if (id == "browser_allsamp") {
         print("Updating metabrowser gene set")
-
-        gene_update_select_internal(NULL, choices = choices,
-                                    id = "gene")
+        gene_update_select_internal(isolate(gene_name_list()), selected = browser_options["default_gene_meta"])
         gene_update_select_internal(NULL, choices = c("", choices),
                                     id = "other_gene")
+        observeEvent(gene_name_list(), gene_update_select(gene_name_list, "",
+                                                          id = "other_gene"),
+                     ignoreNULL = TRUE, ignoreInit = FALSE, priority = 6)
+      } else {
+        gene_update_select_internal(isolate(gene_name_list()), selected = browser_options["default_gene"])
       }
-      # TODO: decide if updateSelectizeInput should be on top here or not
-      observeEvent(gene_name_list(), gene_update_select(gene_name_list),
-                   ignoreNULL = TRUE, ignoreInit = TRUE, priority = 5)
-      observeEvent(gene_name_list(), gene_update_select(gene_name_list, "",
-                                                        id = "other_gene"),
-                   ignoreNULL = TRUE, ignoreInit = TRUE, priority = 6)
+      # Non init round gene
+      observeEvent(gene_name_list(), {
+        selected <- unique(isolate(gene_name_list())[,2][[1]])[1]
+        gene_update_select(gene_name_list, selected = selected)
+      }, ignoreNULL = TRUE, ignoreInit = TRUE, priority = 5)
 
-      check_url_for_basic_parameters()
+      # Tx id update
+      # Init round
+      if (id == "browser_allsamp") {
+        tx_update_select_isolated(browser_options["default_gene_meta"], isolate(gene_name_list()),
+                                  selected = browser_options["default_isoform_meta"], page = id)
+      } else {
+        tx_update_select_isolated(browser_options["default_gene"], isolate(gene_name_list()),
+                                  selected = browser_options["default_isoform"], page = id)
+      }
+      # Non int rounds
       observeEvent(input$gene, {
         req(input$gene != "")
         if (id != "browser_allsamp") {
@@ -308,30 +321,25 @@ study_and_gene_observers <- function(input, output, session) {
                 isolate(gene_name_list())[label == input$gene,]$value)))
         }
         print(paste("Page:", id, "(General observer)"))
-        tx_update_select(isolate(input$gene), gene_name_list, page = id)},
+        tx_update_select_isolated(isolate(input$gene), isolate(gene_name_list()), page = id)
+        },
         ignoreNULL = TRUE, ignoreInit = TRUE, priority = -15)
-      browser_option_id <-ifelse(id == "browser_allsamp",
-                                 "default_gene_meta", "default_gene")
-
-      selected_gene <- ifelse(exists("browser_options"),
-                              browser_options[browser_option_id],
-                              choices[1])
-      gene_update_select_internal(isolate(gene_name_list()), selected_gene,
-                                  choices = choices)
     }
-
     if (uses_libs) {
+      if (!exists("init_round") && exists("browser_options")) {
+        selected_libs <- libraries_string_split(browser_options["default_libs"], isolate(libs()))
+        library_update_select_safe(isolate(libs()), selected_libs)
+      }
       observeEvent(libs(), library_update_select(libs),
-                   ignoreNULL = TRUE, ignoreInit = FALSE)
+                   ignoreNULL = TRUE, ignoreInit = TRUE)
       if (id == "browser") {
         observeEvent(input$select_all_btn, {
           print("Pressed select all libs")
-          # Ensure that the updateSelectizeInput works properly
           library_update_select(libs, selected = libs())
         }, ignoreNULL = TRUE, ignoreInit = TRUE)  # Ensure the event is triggered on every click, including after initialization
       }
     }
-    check_url_for_go_on_init()
+    browser_specific_url_checker()
     init_round <- FALSE
   }
   )
@@ -362,7 +370,7 @@ org_and_study_changed_checker <- function(input, output, session) {
                          curval=isolate(df())@txdb,
                          genome = "ALL",
                          exp = browser_options["default_experiment"],
-                         changed=FALSE)
+                         changed=isolate(df())@txdb != exp_init@txdb)
     # Annotation change reactives
     tx <- reactive(loadRegion(isolate(df()))) %>%
       bindCache(rv$curval) %>%
@@ -402,20 +410,7 @@ allsamples_observer_controller <- function(input, output, session) {
                        curval=isolate(df())@txdb,
                        genome = "ALL",
                        exp = name(isolate(df())),
-                       changed=FALSE)
-  observe(if (rv$exp != input$dff & input$dff != "") {
-    rv$exp <- input$dff
-    message("allsamples browser: dff changed, update rv")
-  }) %>%
-    bindEvent(input$dff, ignoreInit = TRUE, ignoreNULL = TRUE)
-
-  observe(update_rv_changed(rv), priority = 1) %>%
-    bindEvent(rv$curval, ignoreInit = TRUE)
-  observe({update_rv(rv, df)}) %>%
-    bindEvent(df(), ignoreInit = TRUE)
-
-  observe({df(get_exp(rv$exp, experiments, .GlobalEnv, page = "(allsamples)"))}) %>%
-    bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
+                       changed=isolate(df())@txdb != exp_init@txdb)
 
   uses_libs <- FALSE
   org <- reactive("ALL")

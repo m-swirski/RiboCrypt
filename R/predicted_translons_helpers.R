@@ -41,7 +41,9 @@ load_data_umap <- function(species, color.by = NULL) {
 handle_download_trigger <- function(input, output, current_format, trigger_input, download_button, md, session) {
   with(rlang::caller_env(), {
     observeEvent(input[[trigger_input]], {
-      if (is.null(md()) || isolate(input$dff) != name(md()$df)) md(load_data(isolate(input$dff)))
+      exp_to_use <- isolate(input$dff)
+      if (!isTruthy(exp_to_use)) exp_to_use <- browser_options["default_experiment_translon"]
+      if (is.null(md()) || exp_to_use != name(md()$df)) md(load_data(exp_to_use))
       req(md()$df)
       # For Excel, check that a table is available (otherwise abort)
       if (is.null(md()$translon_table)) {

@@ -122,9 +122,24 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       output$clip <- renderUI({clipboard_url_button(input, session)})
 
       # Main plot controller, this code is only run if 'plot' is pressed
-      mainPlotControls <- eventReactive(input$go,
+      kickoff <- reactiveVal(FALSE)
+      fired <- reactiveVal(FALSE)
+      observeEvent(list(input$gene, input$tx), {
+        if (fired()) return()
+        if (!isTRUE(as.logical(browser_options[["plot_on_start"]]))) {
+          fired(TRUE)
+          return()
+        }
+        if (!nzchar(input$gene) || !nzchar(input$tx)) return()
+        if (!identical(input$gene, browser_options[["default_gene"]])) return()
+        if (!identical(input$tx,   browser_options[["default_isoform"]])) return()
+        fired(TRUE)
+        kickoff(TRUE)
+      }, ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      mainPlotControls <- eventReactive(list(input$go, kickoff()),
         click_plot_browser_main_controller(input, tx, cds, libs, df),
-        ignoreInit = check_plot_on_start(browser_options),
+        ignoreInit = TRUE,
         ignoreNULL = FALSE)
 
       bottom_panel <- reactive(bottom_panel_shiny(mainPlotControls))  %>%

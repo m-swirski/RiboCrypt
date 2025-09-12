@@ -1,16 +1,23 @@
 experiment_update_select <- function(org, all_exp, experiments,
                                      selected = "AUTO") {
+  if (!is.null(org)) {
+    org <- isolate(org())
+  }
+  experiment_update_select_isolated(org, all_exp, experiments, selected)
+}
+experiment_update_select_isolated <- function(org, all_exp, experiments,
+                                     selected = "AUTO") {
   if (isTruthy(org)) {
-    orgs_safe <- if (isolate(org()) == "ALL") {
+    orgs_safe <- if (isolate(org) == "ALL") {
       unique(all_exp$organism)
-    } else isolate(org())
+    } else isolate(org)
   } else orgs_safe <- unique(all_exp$organism)
 
   picks <- experiments[all_exp$organism %in% orgs_safe]
   selected <-
-  if (selected == "AUTO") {
-    picks[1]
-  } else selected
+    if (selected == "AUTO") {
+      picks[1]
+    } else selected
   updateSelectizeInput(
     inputId = "dff",
     choices = picks,
@@ -58,14 +65,18 @@ gene_update_select_heatmap <- function(gene_name_list, selected = "all") {
 
 tx_update_select <- function(gene = NULL, gene_name_list, additionals = NULL,
                              selected = NULL, page = "") {
+  tx_update_select_isolated(gene, gene_name_list, additionals, selected, page)
+}
+tx_update_select_isolated <- function(gene = NULL, gene_name_list, additionals = NULL,
+                             selected = NULL, page = "") {
   page <- paste0("(", page, ")")
   print(paste("Updating isoform", page, ":"))
-  isoforms <- tx_from_gene_list(isolate(gene_name_list()), gene, selected,
-                                additionals)
+  isoforms <- tx_from_gene_list(gene_name_list, gene, selected,
+                                additionals, page)
 
   if (is.null(selected)) selected <- isoforms[1]
   if (length(selected) > 1) {
-    print(isolate(gene_name_list())[value == selected,][1])
+    print(isolate(gene_name_list)[value == selected,][1])
   } else if (selected != "all") print(selected)
   updateSelectizeInput(
     inputId = "tx",
@@ -74,6 +85,7 @@ tx_update_select <- function(gene = NULL, gene_name_list, additionals = NULL,
     server = TRUE
   )
 }
+
 
 motif_update_select <- function(motif_name_list, selected = "") {
   updateSelectizeInput(
@@ -85,18 +97,20 @@ motif_update_select <- function(motif_name_list, selected = "") {
 }
 
 tx_from_gene_list <- function(gene_name_list, gene = NULL, selected = NULL,
-                              additionals = NULL) {
+                              additionals = NULL, page = "") {
 
   if (is.null(gene)) {
     gene <- gene_name_list[value == selected,][1]$label
-    if (length(gene) == 0 | is.na(gene)) stop("Isoform does not exist in species!")
+    if (length(gene) == 0 | is.na(gene))
+      stop("Isoform does not exist in species!", page)
   } else if (gene == "all") {
     return(c(gene, additionals))
   }
   print(paste("Gene set:", gene))
   isoforms <- gene_name_list[label == gene, 1][[1]]
   isoforms <- c(additionals, isoforms)
-  if (length(isoforms) == 0) stop("Gene does not exist in this species")
+  if (length(isoforms) == 0)
+    stop("Gene does not exist in this species", page)
   return(isoforms)
 }
 
@@ -110,12 +124,7 @@ frame_type_update_select <- function(selected, id = "frames_type") {
 
 library_update_select <- function(libs, selected = isolate(libs()[1]),
                                   id = "library") {
-  updateSelectizeInput(
-    inputId = id,
-    choices = libs(),
-    selected = selected,
-    server = TRUE
-  )
+  library_update_select_safe(libs(), selected, id)
 }
 
 library_update_select_safe <- function(libs, selected = libs[1],

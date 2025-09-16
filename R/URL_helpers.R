@@ -258,7 +258,7 @@ libraries_string_split <- function(value, libs) {
         } else value <- l[matches]
       }
     }
-  } else libs[1]
+  } else value <- libs[1]
   if (!all(value %in% libs))
     stop("You defined libraries to use, but some of those are not valid names,",
          " in the selected experiment!")

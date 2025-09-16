@@ -128,6 +128,6 @@ RiboCrypt_app <- function(
     cat("Server this: "); print(round(Sys.time() - this_time_before, 2))
     cat("Server total: "); print(round(Sys.time() - time_before, 2))
   }
-  cat("Init: "); print(round(Sys.time() - time_before, 2))
+  cat("Init total: "); print(round(Sys.time() - time_before, 2))
   shinyApp(ui, server, options = options)
 }

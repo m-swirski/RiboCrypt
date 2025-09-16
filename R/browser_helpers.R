@@ -298,6 +298,7 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
                         input$summary_track, input$summary_track_type,
                         input$kmer, input$frames_type, input$withFrames,
                         input$log_scale, input$zoom_range, input$frames_subset,
+                        input$unique_align,
                         collapse = "|_|")
   hash_expression <- paste(full_names, input$tx,
                            input$expression_plot, input$extendTrailers,

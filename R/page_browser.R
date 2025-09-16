@@ -41,6 +41,8 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                          column(1, actionButton(ns("select_all_btn"), "", icon = icon("check"),
                                                 class = "btn btn-sm btn-primary", title = "Select all"))
                        ),
+                       fluidRow(prettySwitch(ns("unique_align"), "Unique alignments", value = FALSE,
+                                    status = "success", fill = TRUE, bigger = TRUE)),
                        fluidRow(
                          column(6, frame_type_select(ns, selected = browser_options["default_frame_type"])),
                          column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,

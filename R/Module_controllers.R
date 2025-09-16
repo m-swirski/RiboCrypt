@@ -249,9 +249,12 @@ study_and_gene_observers <- function(input, output, session) {
       bindEvent(input$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
     observe(if (rv$exp != input$dff && input$dff != "") {
       message("Setting rv from page: ", id)
-      rv$exp <- input$dff
-      experiment_update_select(org, all_exp, experiments, rv$exp)}) %>%
+      rv$exp <- input$dff}) %>%
       bindEvent(input$dff, ignoreInit = TRUE, ignoreNULL = TRUE)
+
+    observeEvent(rv$exp, if (rv$exp != input$dff) {
+      experiment_update_select(org, all_exp, experiments, rv$exp)},
+      ignoreInit = TRUE, ignoreNULL = TRUE)
 
     observe(if (rv$genome != input$genome) {
       updateSelectizeInput(
@@ -365,26 +368,12 @@ org_and_study_changed_checker <- function(input, output, session) {
 
     libs <- reactive(bamVarName(df()))
     # The shared reactive values (rv)
-    # This must be passed to all submodules
+    # This must be passed to all submodules that share experiment
     rv <- reactiveValues(lstval=isolate(df())@txdb,
                          curval=isolate(df())@txdb,
                          genome = "ALL",
                          exp = browser_options["default_experiment"],
                          changed=isolate(df())@txdb != exp_init@txdb)
-    # Annotation change reactives
-    tx <- reactive(loadRegion(isolate(df()))) %>%
-      bindCache(rv$curval) %>%
-      bindEvent(rv$changed, ignoreNULL = TRUE)
-    cds <- reactive(loadRegion(isolate(df()), "cds")) %>%
-      bindCache(rv$curval) %>%
-      bindEvent(rv$changed, ignoreNULL = TRUE)
-    # gene_name_list <- reactiveVal(names_init)
-    gene_name_list <- reactive({
-      if(rv$changed == FALSE) {names_init}
-      else {get_gene_name_categories(df())}}) %>%
-      bindCache(rv$curval) %>%
-      bindEvent(rv$changed)
-    # Observers
     observe(update_rv_changed(rv), priority = 1) %>%
       bindEvent(rv$curval, ignoreInit = TRUE)
     observe({update_rv(rv, df)}) %>%
@@ -394,10 +383,24 @@ org_and_study_changed_checker <- function(input, output, session) {
 
     observe(if (org() != rv$genome) org(rv$genome)) %>%
       bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
-    observe({df(get_exp(rv$exp, experiments, without_readlengths_env))}) %>%
+    observe({df(get_exp(rv$exp, experiments, without_readlengths_env, exps_dir))}) %>%
       bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
-    observe({df_with(get_exp(rv$exp, experiments, with_readlengths_env))}) %>%
+    observe({df_with(get_exp(rv$exp, experiments, with_readlengths_env, exps_dir))}) %>%
       bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
+
+    # Annotation change reactives
+    tx <- reactive(loadRegion(isolate(df()))) %>%
+      bindCache(rv$curval) %>%
+      bindEvent(rv$changed, ignoreNULL = TRUE)
+    cds <- reactive(loadRegion(isolate(df()), "cds")) %>%
+      bindCache(rv$curval) %>%
+      bindEvent(rv$changed, ignoreNULL = TRUE)
+    # gene_name_list <- reactiveVal(names_init)
+    gene_name_list <- reactive({
+      if(rv$changed == FALSE) {message("Settings gene_list to default:"); names_init}
+      else {get_gene_name_categories(df())}}) %>%
+      bindCache(rv$curval) %>%
+      bindEvent(rv$changed)
 
     cat("Pre modules: "); print(round(Sys.time() - time_before, 2))
   }
@@ -406,14 +409,24 @@ org_and_study_changed_checker <- function(input, output, session) {
 
 allsamples_observer_controller <- function(input, output, session) {
   with(rlang::caller_env(), {
+  org <- reactive("ALL")
+  exps_dir <- ORFik::config()["exp"]
+
   rv <- reactiveValues(lstval=isolate(df())@txdb,
                        curval=isolate(df())@txdb,
                        genome = "ALL",
                        exp = name(isolate(df())),
                        changed=isolate(df())@txdb != exp_init@txdb)
+  observe(update_rv_changed(rv), priority = 1) %>%
+    bindEvent(rv$curval, ignoreInit = TRUE)
+  observe({update_rv(rv, df)}) %>%
+    bindEvent(df(), ignoreInit = TRUE)
 
-  uses_libs <- FALSE
-  org <- reactive("ALL")
+  observe(if (org() != rv$genome) org(rv$genome)) %>%
+    bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
+  observe({df(get_exp(rv$exp, experiments, envExp(df()), exps_dir))}) %>%
+    bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
+
   gene_name_list <- reactive({
     if(rv$changed == FALSE) {names_init}
     else {get_gene_name_categories(df())}}) %>%
@@ -428,6 +441,7 @@ allsamples_observer_controller <- function(input, output, session) {
   motif_update_select(init_motfis)
   observeEvent(motif_name_list(), motif_update_select(motif_name_list()),
                ignoreInit = TRUE)
+  uses_libs <- FALSE # Assign for line below
   study_and_gene_observers(input, output, session)
   })
 }

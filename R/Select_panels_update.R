@@ -44,7 +44,7 @@ gene_update_select_internal <- function(gene_name_list,
                                         id = "gene",
                                         choices = unique(gene_name_list[,2][[1]]),
                                         server = TRUE) {
-  print(paste("Updating", paste0(id, ":"), selected))
+  cat(paste0("Updating ", id, ": '", selected, "'"), sep = "\n")
   updateSelectizeInput(
     inputId = id,
     choices = choices,
@@ -70,7 +70,6 @@ tx_update_select <- function(gene = NULL, gene_name_list, additionals = NULL,
 tx_update_select_isolated <- function(gene = NULL, gene_name_list, additionals = NULL,
                              selected = NULL, page = "") {
   page <- paste0("(", page, ")")
-  print(paste("Updating isoform", page, ":"))
   isoforms <- tx_from_gene_list(gene_name_list, gene, selected,
                                 additionals, page)
 
@@ -78,6 +77,7 @@ tx_update_select_isolated <- function(gene = NULL, gene_name_list, additionals =
   if (length(selected) > 1) {
     print(isolate(gene_name_list)[value == selected,][1])
   } else if (selected != "all") print(selected)
+  cat(paste0("Updating isoform ", page, ": '", selected, "'"), sep = "\n")
   updateSelectizeInput(
     inputId = "tx",
     choices = isoforms,

@@ -7,7 +7,7 @@ make_url_from_inputs <- function(input, session) {
 
   # Now combine
   url <- paste0(host, parameters, page)
-  print(paste("URL:", url))
+  cat(paste("URL:", url), sep = "\n")
   return(url)
 }
 
@@ -38,6 +38,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
         paste("gene", input$gene, sep = "="),
         paste("tx", input$tx, sep = "="),
         paste("library", paste(input$library, collapse = ","), sep = "="),
+        paste("unique_align", paste(input$unique_align, collapse = ","), sep = "="),
         paste("frames_type", input$frames_type, sep = "="),
         paste("kmer", input$kmer, sep = "="),
         paste("log_scale", input$log_scale, sep = "="),
@@ -190,7 +191,7 @@ browser_specific_url_checker <- function() {
         # Checkbox updates
         for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon","summary_track",
                       "log_scale", "log_scale_protein","phyloP", "collapsed_introns",
-                      "summary_track")) {
+                      "summary_track", "unique_align")) {
           value <- query[tag][[1]]
           if (!is.null(value)) {
             updateCheckboxInput(inputId = tag, value = as.logical(value))

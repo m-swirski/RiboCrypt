@@ -235,7 +235,7 @@ translon_specific_url_checker <- function() {
 
 libraries_string_split <- function(value, libs) {
   value <- strsplit(x = value, ",")[[1]]
-  if (length(value) > 0) {
+  if (length(value) > 0 && is.na(value)) {
     is_run_ids <- grep("SRR|ERR|DRR", value)
     l <- libs
     matches_run <- matches_run_other <- TRUE

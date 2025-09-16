@@ -47,7 +47,8 @@ footprints automatic shift detection and shifting"</a>.
 The browser is the basic coverage display page. It contains a selection
 panel on the left side and a display window (browser) on the right. It
 displays coverage of sequencing data in either transcript coordinates
-(default, collapsed introns), or genomic coordinates. The following
+(default, collapsed introns to width 0), collapsed introns to user defined size
+or genomic coordinates. The following
 (Fig. 1), SRD5A1 gene,
 <a href="https://doi.org/10.21203/rs.3.rs-5390104/v1" target="_blank">has
 recently been shown to be decoded in three frames</a>.
@@ -78,9 +79,10 @@ The browser window consists of the specific parts:
 2.  Sequence track (top middle), displayes DNA sequence when zoomed in
     (\< 100nt)
 3.  Annotation track (middle), the annotation track displays the
-    transcript annotation, together with black bars that is displayed on
+    transcript annotation, together with black line-dotted bars that are displayed on
     top of the data track. CDS and other annotations are color-coded
-    according to relative reading frame
+    according to relative reading frame. Introns are thin gray lines and
+    UTRs are gray and medium sized.
 4.  Frame track (bottom), the 3 frames displayed with given color bars:
 
 -   white (start codon, ATG)
@@ -108,13 +110,14 @@ etc):
 ### Experiment {#exp}
 
 -   Select an organism: Either select "ALL" to keep all experiments, or
-    select a specific organism to select display only that subset of
+    subset to a specific organism to display only that subset of
     experiments in experiment select tab.
 -   Select an experiment: The experiments contain study names combined
     with organism (some studies are multi species, so sometimes one
     study have multiple experiments). Select which one you want. There
     also exist merged experiments (all samples merged for the organism,
-    etc). RNA-seq experiments have an addition "_RNA" as suffix.
+    etc). RNA-seq experiments have an addition "_RNA" as suffix. Modalities
+    means all library types (e.g. Ribo-seq, RNA-seq in one experiment)
 
 ### Gene {#gene}
 
@@ -149,7 +152,9 @@ The resuting name could for example be:
 It's normal to see that if condition is KO (knockout), the fraction
 column contains a gene name (the name of the gene that was knocked out).
 Currently the best way to find SRR run number for respective sample is
-to go to metadata tab and search for the study.
+to go to metadata tab and search for the study. The reverse is also true,
+if you want to select the library from only known SRR, you can either insert
+URL with library=SRR... or find the library name from the 
 
 ### Display type {#linetype}
 
@@ -218,6 +223,10 @@ Settings tab contains additional parameters:
     introns, see Figure 3)
 -   Full annotation (display all transcript isoforms annotation or just
     the selected isoform)
+-   Collapsed introns (Collapse introns of the annotation which are not overlapping any exons 
+    the in shown annotation.
+    Subset to size defined in collapsed intron width box, setting to 0 should produce the
+    same plot in genomic coordinates as turning genomic coordinates off.)
 -   uORF annotation (display candidate uORFs in the annotation track) this is not the
     predicted set, but all possible uORFs by seqnece. For predicted set, check 
     the predicted translons checkbox.
@@ -227,11 +236,11 @@ Settings tab contains additional parameters:
     in Figures 1 and 2 - notice that the red (second) translon was
     missed
 -   Log scale (Log scale the coverage, reduces effect of extreme peaks)
-
 -   Protein structures (If you click the annotation name of a transcript
     in the plot panel it will display the alpha-fold protein colored by
     the ribo-seq data displayed in the plot panel)
 -   PhyloP (PhyloP conservation track will be added on the bottom)
+-   Mappability (mappability track of 28-mers, showing strong / weak mappability regions.)
 -   Split color frame (Split riboseq signal into colors by frame) 
     i.e. red, green and blue. If this is on, then Ribo-seq and 
     Ti-seq will be displayed with colors split by frame.
@@ -703,13 +712,13 @@ A more complicated call would be:
 This app is created as a collaboration with:
 
 -   University of Warsaw, Poland
--   University of Bergen, Norway
+-   University of Oslo & University of Bergen, Norway
 
 Main authors and contact:
 
 -   Michal Swirski (Warsaw), email:
     [michal.swirski\@uw.edu.pl](mailto:michal.swirski@uw.edu.pl){.email}
--   Håkon Tjeldnes (Bergen), email:
+-   Håkon Tjeldnes (Oslo & Bergen), email:
     [hauken_heyken\@hotmail.com](mailto:hauken_heyken@hotmail.com){.email}
 
 

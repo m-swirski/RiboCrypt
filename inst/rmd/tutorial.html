@@ -199,8 +199,9 @@ footprints automatic shift detection and shifting”</a>.</p>
 <p>The browser is the basic coverage display page. It contains a
 selection panel on the left side and a display window (browser) on the
 right. It displays coverage of sequencing data in either transcript
-coordinates (default, collapsed introns), or genomic coordinates. The
-following (Fig. 1), SRD5A1 gene,
+coordinates (default, collapsed introns to width 0), collapsed introns
+to user defined size or genomic coordinates. The following (Fig. 1),
+SRD5A1 gene,
 <a href="https://doi.org/10.21203/rs.3.rs-5390104/v1" target="_blank">has
 recently been shown to be decoded in three frames</a>.</p>
 <p><img src="../images/tutorial_fig1.png" width="1000px" height="600px" style="display: block; margin: auto auto auto 0;" /></p>
@@ -226,9 +227,10 @@ Ribo-seq is rendered in 3 colors, where</li>
 <li>Sequence track (top middle), displayes DNA sequence when zoomed in
 (&lt; 100nt)</li>
 <li>Annotation track (middle), the annotation track displays the
-transcript annotation, together with black bars that is displayed on top
-of the data track. CDS and other annotations are color-coded according
-to relative reading frame</li>
+transcript annotation, together with black line-dotted bars that are
+displayed on top of the data track. CDS and other annotations are
+color-coded according to relative reading frame. Introns are thin gray
+lines and UTRs are gray and medium sized.</li>
 <li>Frame track (bottom), the 3 frames displayed with given color
 bars:</li>
 </ol>
@@ -256,13 +258,14 @@ etc):</p>
 <h3>Experiment</h3>
 <ul>
 <li>Select an organism: Either select “ALL” to keep all experiments, or
-select a specific organism to select display only that subset of
-experiments in experiment select tab.</li>
+subset to a specific organism to display only that subset of experiments
+in experiment select tab.</li>
 <li>Select an experiment: The experiments contain study names combined
 with organism (some studies are multi species, so sometimes one study
 have multiple experiments). Select which one you want. There also exist
 merged experiments (all samples merged for the organism, etc). RNA-seq
-experiments have an addition “_RNA” as suffix.</li>
+experiments have an addition “_RNA” as suffix. Modalities means all
+library types (e.g. Ribo-seq, RNA-seq in one experiment)</li>
 </ul>
 </div>
 <div id="gene" class="section level3">
@@ -301,7 +304,10 @@ gene) etc)</li>
 <p>It’s normal to see that if condition is KO (knockout), the fraction
 column contains a gene name (the name of the gene that was knocked out).
 Currently the best way to find SRR run number for respective sample is
-to go to metadata tab and search for the study.</p>
+to go to metadata tab and search for the study. The reverse is also
+true, if you want to select the library from only known SRR, you can
+either insert URL with library=SRR… or find the library name from
+the</p>
 </div>
 <div id="linetype" class="section level3">
 <h3>Display type</h3>
@@ -353,53 +359,58 @@ widths.</p>
 <h2>Selection panel (Settings)</h2>
 <p>Settings tab contains additional parameters:</p>
 <ul>
-<li><p>5’ extension (extend viewed window upstream)</p></li>
-<li><p>3’ extension (extend viewed window downstream)</p></li>
-<li><p>Custom sequences highlight (Motif search, given in brown color,
-support IUPAC, examples: CTG or NTG)</p></li>
-<li><p>Genomic region (Browse genomic window instead of gene, syntax:
+<li>5’ extension (extend viewed window upstream)</li>
+<li>3’ extension (extend viewed window downstream)</li>
+<li>Custom sequences highlight (Motif search, given in brown color,
+support IUPAC, examples: CTG or NTG)</li>
+<li>Genomic region (Browse genomic window instead of gene, syntax:
 chromosome:start-stop:strand, human/mouse/zebrafish: 1:10000-20000:+ ,
 yeast: I:10000-20000:+. Both 1 and chr1 works, conversion will be done
-automatically)</p></li>
-<li><p>Zoom interval (start with a zoom and highlight on a subsection):
+automatically)</li>
+<li>Zoom interval (start with a zoom and highlight on a subsection):
 Either specified in tx/view coordinates, i.e. 20:50 will give zoom on
 region (20-10):(50+10) = 10:60, and a highlight color (light yellow) at
 coordinates 20:50. You can also specify in genomic coordinates as above
 for genomic region (remember the genomic coordinates must then be within
-the gene / region you are displaying).</p></li>
-<li><p>Genomic View (Activate/deactivate genomic view, displaying full
-introns, see Figure 3)</p></li>
-<li><p>Full annotation (display all transcript isoforms annotation or
-just the selected isoform)</p></li>
-<li><p>uORF annotation (display candidate uORFs in the annotation track)
+the gene / region you are displaying).</li>
+<li>Genomic View (Activate/deactivate genomic view, displaying full
+introns, see Figure 3)</li>
+<li>Full annotation (display all transcript isoforms annotation or just
+the selected isoform)</li>
+<li>Collapsed introns (Collapse introns of the annotation which are not
+overlapping any exons the in shown annotation. Subset to size defined in
+collapsed intron width box, setting to 0 should produce the same plot in
+genomic coordinates as turning genomic coordinates off.)</li>
+<li>uORF annotation (display candidate uORFs in the annotation track)
 this is not the predicted set, but all possible uORFs by seqnece. For
-predicted set, check the predicted translons checkbox.</p></li>
-<li><p>Predicted translons - display <a href="#translons">predicted
+predicted set, check the predicted translons checkbox.</li>
+<li>Predicted translons - display <a href="#translons">predicted
 translons</a> in the annotation track. Try turning it on for the <a
 href="https://ribocrypt.org/?&amp;dff=all_merged-Homo_sapiens_modalities&amp;gene=SRD5A1-ENSG00000145545&amp;tx=ENST00000274192&amp;library=RFP&amp;frames_type=area&amp;kmer=9&amp;log_scale=FALSE&amp;extendLeaders=0&amp;extendTrailers=0&amp;viewMode=FALSE&amp;other_tx=FALSE&amp;add_uorfs=FALSE&amp;genomic_region=&amp;customSequence=&amp;phyloP=FALSE&amp;summary_track=FALSE&amp;go=TRUE">example</a>
 in Figures 1 and 2 - notice that the red (second) translon was
-missed</p></li>
-<li><p>Log scale (Log scale the coverage, reduces effect of extreme
-peaks)</p></li>
-<li><p>Protein structures (If you click the annotation name of a
-transcript in the plot panel it will display the alpha-fold protein
-colored by the ribo-seq data displayed in the plot panel)</p></li>
-<li><p>PhyloP (PhyloP conservation track will be added on the
-bottom)</p></li>
-<li><p>Split color frame (Split riboseq signal into colors by frame)
+missed</li>
+<li>Log scale (Log scale the coverage, reduces effect of extreme
+peaks)</li>
+<li>Protein structures (If you click the annotation name of a transcript
+in the plot panel it will display the alpha-fold protein colored by the
+ribo-seq data displayed in the plot panel)</li>
+<li>PhyloP (PhyloP conservation track will be added on the bottom)</li>
+<li>Mappability (mappability track of 28-mers, showing strong / weak
+mappability regions.)</li>
+<li>Split color frame (Split riboseq signal into colors by frame)
 i.e. red, green and blue. If this is on, then Ribo-seq and Ti-seq will
-be displayed with colors split by frame.</p></li>
-<li><p>Frames subset (If split color frame is TRUE, you can display only
-wanted color)</p></li>
-<li><p>Summary top track (Add an additional plot track on top,
-summarizing all selected libraries)</p></li>
-<li><p>Select Summary display type (same as frames display type above,
-but for the summary track)</p></li>
-<li><p>Export format (Choose plot export format from plotly controls.
-The default is svg vector graphics that allows for high
-customizability)</p></li>
-<li><p>Plot (red button, render selected gene/region as plotly html,
-with specified settings)</p></li>
+be displayed with colors split by frame.</li>
+<li>Frames subset (If split color frame is TRUE, you can display only
+wanted color)</li>
+<li>Summary top track (Add an additional plot track on top, summarizing
+all selected libraries)</li>
+<li>Select Summary display type (same as frames display type above, but
+for the summary track)</li>
+<li>Export format (Choose plot export format from plotly controls. The
+default is svg vector graphics that allows for high
+customizability)</li>
+<li>Plot (red button, render selected gene/region as plotly html, with
+specified settings)</li>
 </ul>
 <p>Uniquely, RiboCrypt allows for toggling between transcriptomic and
 genomic views, while displaying coding exons in colors according to the
@@ -896,14 +907,14 @@ support +)</li>
 <p>This app is created as a collaboration with:</p>
 <ul>
 <li>University of Warsaw, Poland</li>
-<li>University of Bergen, Norway</li>
+<li>University of Oslo &amp; University of Bergen, Norway</li>
 </ul>
 <p>Main authors and contact:</p>
 <ul>
 <li>Michal Swirski (Warsaw), email: <a
 href="mailto:michal.swirski@uw.edu.pl"
 class="email">michal.swirski@uw.edu.pl</a></li>
-<li>Håkon Tjeldnes (Bergen), email: <a
+<li>Håkon Tjeldnes (Oslo &amp; Bergen), email: <a
 href="mailto:hauken_heyken@hotmail.com"
 class="email">hauken_heyken@hotmail.com</a></li>
 </ul>

@@ -156,6 +156,10 @@ to go to metadata tab and search for the study. The reverse is also true,
 if you want to select the library from only known SRR, you can either insert
 URL with library=SRR... or find the library name from the 
 
+- Unique Alignments checkbox: Specifies to use unique Alignments (SAM NH flag = 1),
+or all alignments (both track files must be pre-computed), 
+see below on STAR alignment details for more info. 
+
 ### Display type {#linetype}
 
 -   Select reading frames display type:
@@ -593,12 +597,31 @@ Translon annotation scheme:
     translon
 -   All other arguments default.
 
+## Sample clustering by organism {#UMAP}
+UMAP analysis from count tables of all samples of all genes in the organism:
+
+Plot types:
+
+-   UMAP: The default plot is a dotplot of UMAP component 1 and 2 giving clustering 
+of samples from gene counts. The user can inspect metadata terms related to clusters, shown
+as colors on the dots (e.g. tissue, cell-type, author, study,...)
+It usually shows a clear correlation within cell lines and of course the study, 
+also there should be correlation with who the author is, even between
+different studies from the same author.
+This can be used to detect outliers or believed false metadata, e.g. a 
+HEK293 sample marked as HeLa but clearly clustering with HEK293.
+-   UMAP centroids: If you rather want to find distances between the centroids of each cluster
+this heatmap shows the distances colored. 
+
+
 # Additional information
+
+## Structure of experiments
 
 All files are packed into ORFik experiments for easy access through the
 ORFik backend package:
 
-File formats used internally in experiments are:
+Per experiment processing (set of samples of a study per organism):
 
 -   Annotation (gtf + TxDb for random access)
 -   Fasta genome (.fasta, + index for random access)
@@ -606,19 +629,33 @@ File formats used internally in experiments are:
     -   random access (only for collapsed read lengths): bigwig
     -   Full genome coverage (only for collapsed read lengths): covRLE
     -   Full genome coverage (split by read lengths): covRLElist
--   count Tables (Summarized experiments, r data serialized .rds)
+-   count Tables (Summarized experiments, serialized and compressed as .qs)
 -   Library size list (Integer vector, .rds)
--   Precomputed gene coverages per organism: fst (used for metabrowser)
 
+Collection processing (the set of samples per organism):
+
+-   Collection experiment (set of all samples per organism)
+-   Collection merged experiment (the organism collection merged into single file)
+-   Precomputed gene coverages per organism: fst (used for metabrowser)
+-   Translon predictions per organism
+-   UMAP clustering per organism
+
+Modalities processing (The set of library types per experiment / collection)
+-   If we have RNA-seq, Disome-seq etc from the same experiment / organism, we create a "_modalities"
+experiment which is the experiment / collection with all library types. 
+
+We therefor have an experiment per study + organism pair, and
 ## massiveNGSpipe
 
 For our webpage the processing pipeline used is
 <a href="https://github.com/rc-biotech/massiveNGSpipe" target="_blank">massiveNGSpipe</a>
 which wraps multiple tools:
 
-1.  Fastq files are download with ORFik download.sra
+1.  Fastq files are download with massiveNGSpipe download
 2.  Adapter is detected with either fastqc (sequence detection) and
-    falls back to fastp auto detection.
+    falls back to fastp auto detection. Barcodes are detected with a
+    custom made sliding window function in massiveNGSpipe 
+    using quality and base content of fastq files.
 3.  Reads are then trimmed with fastp (using the wrapper in ORFik)
 
 -   Adapter removal specified
@@ -633,7 +670,19 @@ which wraps multiple tools:
     coordinates)
 -   local alignment (to remove unknown flank effects)
 -   minimum read size (20nt)
-
+-   Max mismatches 3 (Not sofclip nucleotides!)
+-   Max multimappers (10), a note here on definition of unique alignments:
+since --outFilterMultimapScoreRange 1 (default of STAR) 
+a multimapper is any read with SAM flag 'AS' (Alignment score) 
+as maximum - 1, i.e. all reads with 1 less mismatches will be included
+as "multimapper" etc. Another interesting case is that a read can be defined as
+primary alignment, even though it has more mismatches: Read A (28nt) has 2 mismatches,
+and read B (28nt) has 0 mismatches, but a novel junction. STAR gives novel junctions 
+a score of -3, and mismatch a score of -1, so 28 - (2*-1) > 28 - 3. A final thing
+to mention is that since default index seed for STAR is 14, a 27nt read with a
+mismatch on position 14, will never map to it's correct site 
+(as the 14nt seed must be a perfect match for STARs lookup table)
+All other settings are default.
 6.  When all samples of study are aligned, an ORFik experiment is
     created that connects each sample to metadata (condition, inhibitor,
     fraction, replicate etc)
@@ -644,8 +693,8 @@ which wraps multiple tools:
 
 ## API for URL access and sharing
 
-RiboCrypt uses the shiny router API system for creating runable links
-and backspacing etc. The API specificiation is the following:
+RiboCrypt uses the shiny router API system for creating runnable links
+and backspacing etc. The API specification is the following:
 
 ### Primary url:
 
@@ -658,14 +707,16 @@ list is the following:
 
 -   broser page (/ or /#browser)
 -   MegaBrowser (/#MegaBrowser)
--   heatmap (/#heatmap)
--   codon (/#codon)
--   Differential expression (/#Differential expression)
--   Periodicity plot (/#periodicity)
--   fastq QC report (/#fastq)
--   SRA search (/#SRA search)
--   Studies supported (/#Studies)
+-   Motif metaplot (/#Motif%20metaplot)
+-   Codon dwell time (/#Codon%20dwell%20time)
+-   Differential expression (/#Differential%20expression)
+-   Frame bias (/Frame%20bias)
+-   fastq QC report (/#FastQ%20report)
+-   Samples information (/#Samples)
+-   Studies information (/#Studies)
+-   SRA search (/SRA%20search)
 -   Predicted Translons (/#Predicted Translons)
+-   Studies supported (/#UMAP)
 -   This tutorial (/#tutorial)
 
 Example: <https://ribocrypt.org/#tutorial> sends you to this tutorial
@@ -709,6 +760,22 @@ A more complicated call would be:
 
 ## About
 
+Where to send your queries:
+
+-   Request new data: send an email to Michal
+-   RiboCrypt web page questions: send an email to Michal
+-   Details on backend processing: send an email to Håkon
+-   Bugs (Please report in respective github page)
+  -   Bugs in (front-end) RiboCrypt: <https://github.com/m-swirski/RiboCrypt>
+  -   Bugs in (back-end processing) ORFik: <https://github.com/Roleren/ORFik>
+  -   Bugs in (back-end pipeline) massiveNGSpipe: <https://github.com/rc-biotech/massiveNGSpipe>
+
+If you would like to contribute, improve or add features to our work, you have 2 options:
+
+-   Fork one of our github repositories, add code, make pull request
+-   Contact us to be included on the official discord server (not public)
+for more close contact collaboration. 
+
 This app is created as a collaboration with:
 
 -   University of Warsaw, Poland
@@ -720,7 +787,6 @@ Main authors and contact:
     [michal.swirski\@uw.edu.pl](mailto:michal.swirski@uw.edu.pl){.email}
 -   Håkon Tjeldnes (Oslo & Bergen), email:
     [hauken_heyken\@hotmail.com](mailto:hauken_heyken@hotmail.com){.email}
-
 
 ```{=html}
 <script>

@@ -308,6 +308,11 @@ to go to metadata tab and search for the study. The reverse is also
 true, if you want to select the library from only known SRR, you can
 either insert URL with library=SRR… or find the library name from
 the</p>
+<ul>
+<li>Unique Alignments checkbox: Specifies to use unique Alignments (SAM
+NH flag = 1), or all alignments (both track files must be pre-computed),
+see below on STAR alignment details for more info.</li>
+</ul>
 </div>
 <div id="linetype" class="section level3">
 <h3>Display type</h3>
@@ -770,12 +775,34 @@ translon</li>
 </ul>
 </div>
 </div>
+<div id="UMAP" class="section level2">
+<h2>Sample clustering by organism</h2>
+<p>UMAP analysis from count tables of all samples of all genes in the
+organism:</p>
+<p>Plot types:</p>
+<ul>
+<li>UMAP: The default plot is a dotplot of UMAP component 1 and 2 giving
+clustering of samples from gene counts. The user can inspect metadata
+terms related to clusters, shown as colors on the dots (e.g. tissue,
+cell-type, author, study,…) It usually shows a clear correlation within
+cell lines and of course the study, also there should be correlation
+with who the author is, even between different studies from the same
+author. This can be used to detect outliers or believed false metadata,
+e.g. a HEK293 sample marked as HeLa but clearly clustering with
+HEK293.</li>
+<li>UMAP centroids: If you rather want to find distances between the
+centroids of each cluster this heatmap shows the distances colored.</li>
+</ul>
+</div>
 </div>
 <div id="additional-information" class="section level1">
 <h1>Additional information</h1>
+<div id="structure-of-experiments" class="section level2">
+<h2>Structure of experiments</h2>
 <p>All files are packed into ORFik experiments for easy access through
 the ORFik backend package:</p>
-<p>File formats used internally in experiments are:</p>
+<p>Per experiment processing (set of samples of a study per
+organism):</p>
 <ul>
 <li>Annotation (gtf + TxDb for random access)</li>
 <li>Fasta genome (.fasta, + index for random access)</li>
@@ -785,20 +812,35 @@ the ORFik backend package:</p>
 <li>Full genome coverage (only for collapsed read lengths): covRLE</li>
 <li>Full genome coverage (split by read lengths): covRLElist</li>
 </ul></li>
-<li>count Tables (Summarized experiments, r data serialized .rds)</li>
+<li>count Tables (Summarized experiments, serialized and compressed as
+.qs)</li>
 <li>Library size list (Integer vector, .rds)</li>
+</ul>
+<p>Collection processing (the set of samples per organism):</p>
+<ul>
+<li>Collection experiment (set of all samples per organism)</li>
+<li>Collection merged experiment (the organism collection merged into
+single file)</li>
 <li>Precomputed gene coverages per organism: fst (used for
 metabrowser)</li>
+<li>Translon predictions per organism</li>
+<li>UMAP clustering per organism</li>
 </ul>
-<div id="massivengspipe" class="section level2">
-<h2>massiveNGSpipe</h2>
+<p>Modalities processing (The set of library types per experiment /
+collection) - If we have RNA-seq, Disome-seq etc from the same
+experiment / organism, we create a “_modalities” experiment which is the
+experiment / collection with all library types.</p>
+<p>We therefor have an experiment per study + organism pair, and ##
+massiveNGSpipe</p>
 <p>For our webpage the processing pipeline used is
 <a href="https://github.com/rc-biotech/massiveNGSpipe" target="_blank">massiveNGSpipe</a>
 which wraps multiple tools:</p>
 <ol style="list-style-type: decimal">
-<li>Fastq files are download with ORFik download.sra</li>
+<li>Fastq files are download with massiveNGSpipe download</li>
 <li>Adapter is detected with either fastqc (sequence detection) and
-falls back to fastp auto detection.</li>
+falls back to fastp auto detection. Barcodes are detected with a custom
+made sliding window function in massiveNGSpipe using quality and base
+content of fastq files.</li>
 <li>Reads are then trimmed with fastp (using the wrapper in ORFik)</li>
 </ol>
 <ul>
@@ -816,6 +858,20 @@ ORFik), that supports contamination removal. Settings:</li>
 coordinates)</li>
 <li>local alignment (to remove unknown flank effects)</li>
 <li>minimum read size (20nt)</li>
+<li>Max mismatches 3 (Not sofclip nucleotides!)</li>
+<li>Max multimappers (10), a note here on definition of unique
+alignments: since –outFilterMultimapScoreRange 1 (default of STAR) a
+multimapper is any read with SAM flag ‘AS’ (Alignment score) as maximum
+- 1, i.e. all reads with 1 less mismatches will be included as
+“multimapper” etc. Another interesting case is that a read can be
+defined as primary alignment, even though it has more mismatches: Read A
+(28nt) has 2 mismatches, and read B (28nt) has 0 mismatches, but a novel
+junction. STAR gives novel junctions a score of -3, and mismatch a score
+of -1, so 28 - (2*-1) &gt; 28 - 3. A final thing to mention is that
+since default index seed for STAR is 14, a 27nt read with a mismatch on
+position 14, will never map to it’s correct site (as the 14nt seed must
+be a perfect match for STARs lookup table) All other settings are
+default.</li>
 </ul>
 <ol start="6" style="list-style-type: decimal">
 <li>When all samples of study are aligned, an ORFik experiment is
@@ -829,8 +885,8 @@ visualization</li>
 </div>
 <div id="api-for-url-access-and-sharing" class="section level2">
 <h2>API for URL access and sharing</h2>
-<p>RiboCrypt uses the shiny router API system for creating runable links
-and backspacing etc. The API specificiation is the following:</p>
+<p>RiboCrypt uses the shiny router API system for creating runnable
+links and backspacing etc. The API specification is the following:</p>
 <div id="primary-url" class="section level3">
 <h3>Primary url:</h3>
 <p><a href="https://ribocrypt.org/"
@@ -843,14 +899,16 @@ list is the following:</p>
 <ul>
 <li>broser page (/ or /#browser)</li>
 <li>MegaBrowser (/#MegaBrowser)</li>
-<li>heatmap (/#heatmap)</li>
-<li>codon (/#codon)</li>
-<li>Differential expression (/#Differential expression)</li>
-<li>Periodicity plot (/#periodicity)</li>
-<li>fastq QC report (/#fastq)</li>
-<li>SRA search (/#SRA search)</li>
-<li>Studies supported (/#Studies)</li>
+<li>Motif metaplot (/#Motif%20metaplot)</li>
+<li>Codon dwell time (/#Codon%20dwell%20time)</li>
+<li>Differential expression (/#Differential%20expression)</li>
+<li>Frame bias (/Frame%20bias)</li>
+<li>fastq QC report (/#FastQ%20report)</li>
+<li>Samples information (/#Samples)</li>
+<li>Studies information (/#Studies)</li>
+<li>SRA search (/SRA%20search)</li>
 <li>Predicted Translons (/#Predicted Translons)</li>
+<li>Studies supported (/#UMAP)</li>
 <li>This tutorial (/#tutorial)</li>
 </ul>
 <p>Example: <a href="https://ribocrypt.org/#tutorial"
@@ -904,6 +962,30 @@ support +)</li>
 </div>
 <div id="about" class="section level2">
 <h2>About</h2>
+<p>Where to send your queries:</p>
+<ul>
+<li>Request new data: send an email to Michal</li>
+<li>RiboCrypt web page questions: send an email to Michal</li>
+<li>Details on backend processing: send an email to Håkon</li>
+<li>Bugs (Please report in respective github page)</li>
+<li>Bugs in (front-end) RiboCrypt: <a
+href="https://github.com/m-swirski/RiboCrypt"
+class="uri">https://github.com/m-swirski/RiboCrypt</a></li>
+<li>Bugs in (back-end processing) ORFik: <a
+href="https://github.com/Roleren/ORFik"
+class="uri">https://github.com/Roleren/ORFik</a></li>
+<li>Bugs in (back-end pipeline) massiveNGSpipe: <a
+href="https://github.com/rc-biotech/massiveNGSpipe"
+class="uri">https://github.com/rc-biotech/massiveNGSpipe</a></li>
+</ul>
+<p>If you would like to contribute, improve or add features to our work,
+you have 2 options:</p>
+<ul>
+<li>Fork one of our github repositories, add code, make pull
+request</li>
+<li>Contact us to be included on the official discord server (not
+public) for more close contact collaboration.</li>
+</ul>
 <p>This app is created as a collaboration with:</p>
 <ul>
 <li>University of Warsaw, Poland</li>

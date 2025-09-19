@@ -84,4 +84,7 @@ dt_2d$rfp.lfc[4] <- -0.3 # Fake sig level
 dt_2d$Regulation[5] <- "Buffering" # Fake sig level
 dt_2d$rna.lfc[5] <- -0.3 # Fake sig level
 DEG_plot(dt_2d, draw_non_regulated = TRUE)
+# Add Gene symbols in ids for easier analysis
+dt_2d_with_gene_ids <- ORFik::append_gene_symbols(dt_2d, symbols(df))
+DEG_plot(dt_2d_with_gene_ids, draw_non_regulated = TRUE)
 }

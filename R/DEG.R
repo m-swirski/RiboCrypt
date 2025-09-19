@@ -101,6 +101,9 @@ DE_model_results <- function(dt, controls, symbols_dt = symbols(controls()$dff))
 #' dt_2d$Regulation[5] <- "Buffering" # Fake sig level
 #' dt_2d$rna.lfc[5] <- -0.3 # Fake sig level
 #' DEG_plot(dt_2d, draw_non_regulated = TRUE)
+#' # Add Gene symbols in ids for easier analysis
+#' dt_2d_with_gene_ids <- ORFik::append_gene_symbols(dt_2d, symbols(df))
+#' DEG_plot(dt_2d_with_gene_ids, draw_non_regulated = TRUE)
 DEG_plot <- function(dt, draw_non_regulated = TRUE,
                      add_search_bar = TRUE,
                      xlim = ifelse(two_dimensions, "bidir.max", "auto"),
@@ -118,19 +121,9 @@ DEG_plot <- function(dt, draw_non_regulated = TRUE,
 
   dt[, y_axis := if("rfp.lfc" %in% colnames(dt)) {rfp.lfc} else LFC]
   dt[, x_axis := if("rna.lfc" %in% colnames(dt)) {rna.lfc} else log2(meanCounts)]
-  # dt[, size := c(1, 0.8)[1 + (Regulation == "No change")]]
   dt[, trace := paste0("id: ", id, "\nReg: ", Regulation)]
 
-  contrasts <- unique(dt$contrast)
-  x_titles <- xlab
-  y_titles <- ylab
-  zerolines <- two_dimensions
 
-  shared_df <- SharedData$new(dt, key = ~id, group = "A")
-  filter_box <- filter_select("id_search", "Search by ID:", shared_df, ~id)
-
-  showlegends <- c(TRUE, rep(FALSE, length(contrasts) - 1))
-  names(showlegends) <- contrasts
   if (two_dimensions) {
     values <- abs(c(dt$y_axis, dt$x_axis))
     max <- max(values[is.finite(values)], na.rm = TRUE) + 0.5
@@ -140,8 +133,18 @@ DEG_plot <- function(dt, draw_non_regulated = TRUE,
     values <- values[is.finite(values)]
     max <- c(min(c(-0.5, values), na.rm = TRUE), max(values + 0.5, na.rm = TRUE))
   }
-  print(max)
+  return(DEG_plotly(dt, color.values, format, two_dimensions, max, xlab, ylab,
+                    add_search_bar))
+}
 
+DEG_plotly <- function(dt, color.values, format, two_dimensions, max,
+                       x_titles, y_titles, add_search_bar, contrasts = unique(dt$contrast)) {
+
+  shared_df <- SharedData$new(dt, key = ~id, group = "A")
+  filter_box <- filter_select("id_search", "Search by ID:", shared_df, ~id)
+  showlegends <- c(TRUE, rep(FALSE, length(contrasts) - 1))
+  names(showlegends) <- contrasts
+  zerolines <- two_dimensions
   gg2 <- lapply(contrasts, function(cont) {
     message(cont)
     shared_df_sub <- SharedData$new(dt[contrast == cont,], key = ~id, group = "A")
@@ -172,12 +175,14 @@ DEG_plot <- function(dt, draw_non_regulated = TRUE,
              font = list(color = "black", weight = "bold", size = 16))),
       margin = list(b = 55),
       xaxis = list(range = c(max[1], max[2]))
-    ) %>% plotly::config(toImageButtonOptions = list(format = format, filename = "RC_DEG_analysis"), displaylogo = FALSE)
+    ) %>% plotly::config(toImageButtonOptions = list(format = format, filename = "RC_DEG_analysis"),
+                         displaylogo = FALSE)
 
   widths <- cumsum(rep(1 / length(gg2), length(gg2)))
   center <- widths[1] / 2
   combined <- layout(combined, annotations = lapply(seq_along(contrasts), function(i) {
-    list(x = widths[i] - center, y = 1.05, text = sub("Comparison: ", "", contrasts[i]), showarrow = FALSE, xref = 'paper', yref = 'paper', xanchor = 'center')
+    list(x = widths[i] - center, y = 1.05, text = sub("Comparison: ", "", contrasts[i]),
+         showarrow = FALSE, xref = 'paper', yref = 'paper', xanchor = 'center')
   }))
   attr(combined, "filter_box") <- filter_box
   if (add_search_bar) {

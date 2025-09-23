@@ -1,30 +1,21 @@
 sampleTableUi <- function(id) {
   ns <- NS(id)
-  fluidRow(uiOutput(ns("sampleTableUi")))
+  DT::DTOutput(ns("sampleTable"))
 }
 
 
-sampleTableServer <- function(id, metadata, rInitialSelectedSamples) {
+sampleTableServer <- function(id, metadata, initialSelectedSamples) {
   moduleServer(id, function(input, output, session){
     ns <- session$ns
-    selectedSamples <- reactiveVal()
+    selectedSamples <- reactiveVal(initialSelectedSamples)
+    
     tableData <- reactive({
       req(!is.null(selectedSamples()))
       metadata[Sample %in% selectedSamples()]
     })
     
-    observe({
-      req(rInitialSelectedSamples)
-      req(is.null(selectedSamples()))
-      selectedSamples(rInitialSelectedSamples)
-    }) %>% bindEvent(input$saveAsGroup)
     
-    observe({
-      req(!is.null(selectedSamples()))
-      selectedSamples(NULL)
-    }) %>% bindEvent(input$clearSelection)
-    
-    observe({
+    removeObserver <- observe({
       req(!is.null(selectedSamples()))
       indexesToRemove <- input$sampleTable_rows_selected
       samplesToRemove <- tableData()[indexesToRemove][["Sample"]]
@@ -35,19 +26,6 @@ sampleTableServer <- function(id, metadata, rInitialSelectedSamples) {
     output$sampleTable <-
       DT::renderDT(tableData(), filter = "top", options = list(dom = 'Bfrtip'))
     
-    output$sampleTableUi <- renderUI({
-      if (is.null(selectedSamples())) {
-        actionButton(ns("saveAsGroup"), "Save selection")
-      } else {
-        fluidRow(
-          column(10, DT::DTOutput(ns("sampleTable"))),
-          column(2, 
-                 actionButton(ns("clearSelection"), "Clear"),
-                 actionButton(ns("removeSelected"), "Remove"))
-          )
-      }
-    })
-    
-    return(selectedSamples)
+    return(list(id = id, observers = c(removeObserver), selectedSamples = selectedSamples))
   })
 }

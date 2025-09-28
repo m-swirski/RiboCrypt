@@ -1,60 +1,78 @@
+dynamicTabsetPanel <- function(id, selected) {
+  function (...) {
+    tabsetPanel(..., id = id, selected = selected)
+  }
+}
+
 sampleSelectionsUi <- function(id) {
   ns <- NS(id)
   uiOutput(ns("sampleSelectionsUi"))
 }
 
+nonEmptySelectionUi <- function(id, label) {
+  tabPanel(
+    label,
+    sampleTableUi(id),
+    value = id
+  )
+}
 
 sampleSelectionsServer <- function(id, metadata, rInitialSelectedSamples) {
   moduleServer(id, function(input, output, session){
     ns <- session$ns
-    counter <- reactiveVal(1)
-    selectedModule <- ""
+    
     # list(id = ns("1"), observers = c(), selectedSamples = reactiveVal())
-    activeModules <- reactiveVal(c())
+    activeModules <- reactiveVal(list())
+    
+    counter <- reactiveVal(1)
+    
+    emptySelectionId <- ns("0")
+    emptySelectionUi <- tabPanel(
+        "New selection",
+        fluidRow(
+          column(3, actionButton(ns("saveAsSelection"), "Save selection"))
+        ),
+        value = emptySelectionId
+      )
     
     observe({
-      currentSelection <- rInitialSelectedSamples()
-      currentActiveModules <- activeModules()
+      selection <- rInitialSelectedSamples()
+      modules <- activeModules()
       
       count <- counter()
       counter(count + 1)
       
-      newModule <- sampleTableServer(as.character(count), metadata, currentSelection)
+      newModule <- sampleTableServer(as.character(count), metadata, selection)
       
-      activeModules(base::append(currentActiveModules, newModule))
+      activeModules(
+        c(modules, list(newModule))
+        )
     }) %>% bindEvent(input$saveAsSelection)
     
     output$sampleSelectionsUi <- renderUI({
-      nonEmptySelections <- lapply(activeModules()$id, function(id) {
-        nonEmptySelectionUi(ns(id), paste0("Samples ", id))
-      })
-      emptySelection <- list(emptySelectionUi(ns))
+      emptySelection <- list(emptySelectionUi)
       
-      if (length(nonEmptySelections) == 0) {
+      if (length(activeModules()) == 0) {
         tabsetArgs <- emptySelection
+        selectedTabId <- emptySelectionId
       } else {
+        nonEmptySelections <- lapply(activeModules(), function(x) {
+          nonEmptySelectionUi(x$id, paste0("Samples selection ", x$label))
+        })
         tabsetArgs <- c(nonEmptySelections, emptySelection)
+        selectedTabId <- tail(activeModules(), 1)[[1]]$id
       }
       
-      base::do.call(tabsetPanel, tabsetArgs)
+      base::do.call(dynamicTabsetPanel(id = "sampleSelectionsTabset", selected = selectedTabId), tabsetArgs)
     })
     
-    return(c())
-  })
-}
-
-emptySelectionUi <- function(ns) {
-  tabPanel(
-    "New selection",
-      fluidRow(
-        column(3, actionButton(ns("saveAsSelection"), "Save selection"))
+    return(
+      list(
+        selections = activeModules,
+        activeSelectionId = reactive(
+          input$sampleSelectionsTabset
+        )
       )
     )
-}
-
-nonEmptySelectionUi <- function(id, label) {
-  tabPanel(
-    label,
-    sampleTableUi(id)
-  )
+  })
 }

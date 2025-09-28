@@ -26,6 +26,6 @@ sampleTableServer <- function(id, metadata, initialSelectedSamples) {
     output$sampleTable <-
       DT::renderDT(tableData(), filter = "top", options = list(dom = 'Bfrtip'))
     
-    return(list(id = id, observers = c(removeObserver), selectedSamples = selectedSamples))
+    return(list(id = substr(ns(""), 1, nchar(ns("")) - 1), label = id, observers = c(removeObserver), rSelectedSamples = selectedSamples))
   })
 }

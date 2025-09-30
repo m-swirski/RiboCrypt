@@ -51,15 +51,9 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
 
     # Hash strings for cache
     hash_strings <- hash_strings_browser(input, dff, collapsed_introns_width)
+
     if (input$unique_align) uniqueMappers(dff) <- TRUE
-    reads <- try(filepath(dff, "bigwig", suffix_stem = c("_pshifted", "")))
-    invalid_reads <- is(reads, "try-error") ||
-      (!all(file.exists(unlist(reads, use.names = FALSE))) |
-         any(duplicated(unlist(reads, use.names = FALSE))))
-    if (invalid_reads) {
-      reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""),
-                        base_folders = libFolder(dff, "all"))
-    }
+    reads <- get_track_paths(dff)
     frames_subset <- input$frames_subset
     use_all_frames <- length(frames_subset) == 0 || any(c("","all") %in% frames_subset)
     if (use_all_frames) frames_subset <- "all"

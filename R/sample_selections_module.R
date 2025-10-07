@@ -17,7 +17,7 @@ nonEmptySelectionUi <- function(id, label) {
   )
 }
 
-sampleSelectionsServer <- function(id, metadata, rInitialSelectedSamples) {
+sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
   moduleServer(id, function(input, output, session){
     ns <- session$ns
     
@@ -36,7 +36,7 @@ sampleSelectionsServer <- function(id, metadata, rInitialSelectedSamples) {
       )
     
     observe({
-      selection <- rInitialSelectedSamples()
+      selection <- rInitialSelection()
       modules <- activeModules()
       
       count <- counter()

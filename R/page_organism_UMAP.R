@@ -61,13 +61,15 @@ umap_server <- function(id, metadata, all_exp_meta, tx, cds, libs, df, browser_o
       
       selectedSamples <- sampleSelectionsServer("sampleSelection", metadata, reactive(input$selectedPoints))
       
-      # observe({
-      #   print(selectedSamples$activeSelectionId())
-      #   session$sendCustomMessage(
-      #     "samplesSelectionChanged",
-      #     input$selectedPointsIds
-      #   )
-      # }) %>% bindEvent(selectedSamples$activeSelectionId())
+      observe({
+        print("selectedSamplesUmap")
+        print(selectedSamples$activeSelection())
+        print(selectedSamples$selections())
+        # session$sendCustomMessage(
+        #   "samplesSelectionChanged",
+        #   input$selectedPointsIds
+        # )
+      }) %>% bindEvent(selectedSamples$activeSelection())
 
       check_url_for_basic_parameters()
     }

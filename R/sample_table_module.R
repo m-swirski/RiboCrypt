@@ -4,37 +4,28 @@ sampleTableUi <- function(id) {
 }
 
 
-sampleTableServer <- function(id, metadata, initialSelection) {
+sampleTableServer <- function(id, metadata, rSelection) {
   moduleServer(id, function(input, output, session){
     ns <- session$ns
-    selection <- reactiveVal(initialSelection)
-    selectedSamples <- reactive(selection()$sample)
+    selectedSamples <- reactive({
+      req(!is.null(rSelection()))
+      rSelection()()$sample
+    })
     
     tableData <- reactive({
       req(!is.null(selectedSamples()))
       metadata[Sample %in% selectedSamples()]
     })
     
-    
-    removeObserver <- observe({
+    observe({
       req(!is.null(selectedSamples()))
       indexesToRemove <- input$sampleTable_rows_selected
       samplesToRemove <- tableData()[indexesToRemove][["Sample"]]
-      currentSelection <- selectedSamples()
-      selectedSamples(currentSelection[!currentSelection %in% samplesToRemove])
+      currentSelection <- rSelection()()
+      rSelection()(currentSelection[!currentSelection$sample %in% samplesToRemove])
     }) %>% bindEvent(input$removeSelected)
     
     output$sampleTable <-
       DT::renderDT(tableData(), filter = "top", options = list(dom = 'Bfrtip'))
-    
-    return(
-      list(
-        id = substr(ns(""), 1, nchar(ns("")) - 1),
-        label = id,
-        observers = c(removeObserver),
-        rSelectedSamples = selectedSamples,
-        rSelection = selection
-        )
-      )
   })
 }

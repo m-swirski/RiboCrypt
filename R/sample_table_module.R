@@ -17,14 +17,6 @@ sampleTableServer <- function(id, metadata, rSelection) {
       metadata[Sample %in% selectedSamples()]
     })
     
-    observe({
-      req(!is.null(selectedSamples()))
-      indexesToRemove <- input$sampleTable_rows_selected
-      samplesToRemove <- tableData()[indexesToRemove][["Sample"]]
-      currentSelection <- rSelection()()
-      rSelection()(currentSelection[!currentSelection$sample %in% samplesToRemove])
-    }) %>% bindEvent(input$removeSelected)
-    
     output$sampleTable <-
       DT::renderDT(tableData(), filter = "top", options = list(dom = 'Bfrtip'))
   })

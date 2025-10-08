@@ -58,27 +58,7 @@ umap_server <- function(id, metadata, all_exp_meta, tx, cds, libs, df, browser_o
         bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
       }
       
-      
       selectedSamples <- sampleSelectionsServer("sampleSelection", metadata, reactive(input$selectedPoints))
-      
-      observe({
-        message <- {
-          curveIndex <- selectedSamples$activeSelection()()$curveIndex
-          pointIndex <- selectedSamples$activeSelection()()$pointIndex
-          
-          list(
-            curveIndex = unique(curveIndex),
-            pointIndex = lapply(unique(curveIndex), function(idx) {
-              pointIndex[curveIndex == idx]
-            })
-          )
-        }
-        
-        session$sendCustomMessage(
-          "samplesSelectionChanged",
-          message
-        )
-      }) %>% bindEvent(selectedSamples$activeSelection())
 
       check_url_for_basic_parameters()
     }

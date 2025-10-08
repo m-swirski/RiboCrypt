@@ -1,13 +1,17 @@
 sampleSelectionsUi <- function(id) {
   ns <- NS(id)
   fluidRow(
-    column(
-      10,
-      uiOutput(ns("sampleSelectionsUi"))
+    fluidRow(
+      column(
+        2,
+        selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list("New"))
+      )
     ),
-    column(
-      2,
-      selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list("New"))
+    fluidRow(
+      column(
+        12,
+        uiOutput(ns("sampleSelectionsUi"))
+      )
     )
   )
 }
@@ -28,6 +32,7 @@ sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
   moduleServer(id, function(input, output, session){
     ns <- session$ns
     
+    # reactive values
     counter <- reactiveVal(1)
     rSelections <- reactiveVal(list())
     rActiveSelectionId <- reactiveVal()
@@ -37,6 +42,7 @@ sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
     }) %>% bindEvent(rActiveSelectionId())
     selectionServer <- sampleTableServer("activeSelectionTable", metadata, rActiveSelection)
     
+    # Observer for handling adding a new selection
     observe({
       count <- counter()
       counter(count + 1)
@@ -55,6 +61,7 @@ sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
       rActiveSelectionId(newSelection$id)
     }) %>% bindEvent(input$saveAsSelection)
     
+    # Observers for handling interaction with the select input
     observe({
       updateSelectizeInput(
         session,
@@ -68,6 +75,33 @@ sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
       rActiveSelectionId(input$activeSelectionSelect)
     }) %>% bindEvent(input$activeSelectionSelect)
     
+    # Observers for handling interactions with the rInitialSelection reactiveVal
+    observe({
+      req(!is.null(rActiveSelection()))
+      rActiveSelection()(rInitialSelection())
+    }) %>% bindEvent(rInitialSelection())
+    
+    observe({
+      req(!is.null(rActiveSelection()))
+      message <- {
+        curveIndex <- rActiveSelection()()$curveIndex
+        pointIndex <- rActiveSelection()()$pointIndex
+        
+        list(
+          curveIndex = unique(curveIndex),
+          pointIndex = lapply(unique(curveIndex), function(idx) {
+            pointIndex[curveIndex == idx]
+          })
+        )
+      }
+      
+      session$sendCustomMessage(
+        "samplesSelectionChanged",
+        message
+      )
+    }) %>% bindEvent(rActiveSelection())
+    
+    # Dynamic Ui
     output$sampleSelectionsUi <- renderUI({
       if(is.null(rActiveSelection())) {
         newSelectionUi(ns)

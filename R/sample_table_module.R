@@ -3,7 +3,6 @@ sampleTableUi <- function(id) {
   DT::DTOutput(ns("sampleTable"))
 }
 
-
 sampleTableServer <- function(id, metadata, rSelection) {
   moduleServer(id, function(input, output, session){
     ns <- session$ns

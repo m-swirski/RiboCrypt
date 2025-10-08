@@ -6,16 +6,22 @@ umap_ui <- function(id, all_exp_translons, gene_names_init, browser_options, lab
     # Include shinyjs so we can trigger hidden buttons
     tags$hr(),
     tabsetPanel(
-      tabPanel("UMAP plot",
-               fluidRow(
-                 column(2, umap_plot_type(ns)),
-                 column(2, experiment_input_select(all_exp_translons$name, ns)),
-                 column(2, umap_color_by_input_select(ns)),
-                 column(1, plot_button(ns("go")))
-               ),
-               fluidRow(
-                 plotlyOutput(ns("c"), height = "700px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
-               ))
+      tabPanel(
+        "UMAP plot",
+        fluidRow(
+          column(2, umap_plot_type(ns)),
+          column(2, experiment_input_select(all_exp_translons$name, ns)),
+          column(2, umap_color_by_input_select(ns)),
+          column(1, plot_button(ns("go")))
+        ),
+        fluidRow(
+          plotlyOutput(ns("c"), height = "700px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
+        )
+      ),
+      tabPanel(
+        "Browser",
+        fluidRow()
+      )
     ),
     sampleSelectionsUi(ns("sampleSelection"))
   )

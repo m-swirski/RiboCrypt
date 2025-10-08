@@ -75,7 +75,7 @@ sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
       rActiveSelectionId(input$activeSelectionSelect)
     }) %>% bindEvent(input$activeSelectionSelect)
     
-    # Observers for handling interactions with the rInitialSelection reactiveVal
+    # Observers for handling interactions with the outside world
     observe({
       req(!is.null(rActiveSelection()))
       rActiveSelection()(rInitialSelection())

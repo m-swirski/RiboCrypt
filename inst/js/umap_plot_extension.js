@@ -18,7 +18,18 @@
   elem.on("plotly_selected", onSelected);
   
   onChangedSelection = (message) => {
-    console.log(message);
+    const currentData = elem.data;
+    
+    currentData.forEach((trace, index) => {
+      const foundIndex = message.curveIndex.findIndex((i) => i === index)
+      if(foundIndex > -1) {
+        trace.selectedpoints = message.pointIndex[foundIndex];
+      } else {
+        trace.selectedpoints = [];
+      }
+    });
+    
+    Plotly.react(elem, currentData, elem.layout)
   };
   Shiny.addCustomMessageHandler("samplesSelectionChanged", onChangedSelection);
 };

@@ -15,7 +15,8 @@ umap_ui <- function(id, all_exp_translons, gene_names_init, browser_options, lab
           column(1, plot_button(ns("go")))
         ),
         fluidRow(
-          plotlyOutput(ns("c"), height = "700px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
+          plotlyOutput(ns("c"), height = "700px")
+          %>% shinycssloaders::withSpinner(color = "#0dc5c1")
         )
       ),
       tabPanel(
@@ -56,15 +57,21 @@ umap_server <- function(id, metadata, all_exp_meta, tx, cds, libs, df, browser_o
             req(plot_triggered())
             if (isolate(input$umap_plot_type) == "UMAP") {
               umap_plot(isolate(md()$dt_umap))
-            } else umap_centroids_plot(isolate(md()$dt_umap))
+            } else {
+              umap_centroids_plot(isolate(md()$dt_umap))
+            }
           }
           onRender(generated_plot, fetchJS("umap_plot_extension.js"), ns("selectedPoints"))
         }) %>%
-        bindCache(input$dff, input$umap_col, input$umap_plot_type) %>%
-        bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
+          bindCache(input$dff, input$umap_col, input$umap_plot_type) %>%
+          bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
       }
-      
-      selectedSamples <- sampleSelectionsServer("sampleSelection", metadata, reactive(input$selectedPoints))
+
+      selectedSamples <- sampleSelectionsServer(
+        "sampleSelection",
+        metadata,
+        reactive(input$selectedPoints)
+      )
 
       check_url_for_basic_parameters()
     }
@@ -77,11 +84,13 @@ umap_plot <- function(dt_umap, color.by = attr(dt_umap, "color.by")) {
   color.by <- color.by.temp
 
   gg <- ggplot(dt_umap, aes(x = `UMAP 1`, y = `UMAP 2`, color = color_column)) +
-    geom_point() + cowplot::theme_cowplot() + scale_fill_viridis_b() +
+    geom_point() +
+    cowplot::theme_cowplot() +
+    scale_fill_viridis_b() +
     labs(color = names(color.by))
   text_aes <- aes(text = paste0(
     "Bioproject ", dt_umap$BioProject, "\n",
-    "Run ID: ",dt_umap$sample, "\n",
+    "Run ID: ", dt_umap$sample, "\n",
     "Author: ", dt_umap$author, "\n",
     "Inhibitor: ", dt_umap$inhibitors, "\n",
     "Tissue | CellLine: ", dt_umap$tissues_cell_lines

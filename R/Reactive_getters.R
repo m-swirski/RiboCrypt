@@ -226,13 +226,14 @@ get_fastq_page <- function(input, libs, df, relative_dir) {
 click_plot_codon_shiny <- function(mainPlotControls, coverage) {
   click_plot_codon(coverage, min_ratio_change = mainPlotControls$ratio_thresh, min_total_N_codons = 100,
                    exclude_start_stop = mainPlotControls$exclude_start_stop,
-                   codon_score = mainPlotControls$codon_score, differential = mainPlotControls$differential)
+                   codon_score = mainPlotControls$codon_score, differential = mainPlotControls$differential,
+                   format = mainPlotControls$plot_export_format)
 }
 
 
 click_plot_codon <- function(dt, min_ratio_change = 1.7, min_total_N_codons = 100,
                              exclude_start_stop = FALSE, codon_score = "percentage",
-                             differential = FALSE) {
+                             differential = FALSE, format = "png") {
   message("-- Plotting codon usage")
   if (exclude_start_stop) {
     dt <- dt[grep("(\\*)|(\\#)", seqs, invert = TRUE)]
@@ -325,6 +326,7 @@ click_plot_codon <- function(dt, min_ratio_change = 1.7, min_total_N_codons = 10
           plot.margin = margin(t = 20, b = 20, l = 10, r = 10)) +
      ylab("AA:Codon") + xlab("Score (by Ribosome site & library)")
 
-  plotly_plot <- plotly::ggplotly(plot, tooltip = "text")
+  plotly_plot <- plotly::ggplotly(plot, tooltip = "text") %>%
+    plotly::config(toImageButtonOptions = list(format = format, filename = "RC_codon_analysis"), displaylogo = FALSE)
   return(plotly_plot)
 }

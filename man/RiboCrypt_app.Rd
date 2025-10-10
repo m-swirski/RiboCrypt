@@ -42,6 +42,7 @@ where libs are seperated by "|", like "RFP_WT_r1|RFP_WT_r2".\cr
   default: first one\cr
 - default_isoform_meta : Which isoform to select for meta analysis,
    default: first one\cr
+- translons : Use translon annotation, default "FALSE"\cr
 - plot_on_start : Plot when starting, default: "FALSE"\cr
 - hide_settings : Hide settings bar in browser on start, default "TRUE"\cr}
 

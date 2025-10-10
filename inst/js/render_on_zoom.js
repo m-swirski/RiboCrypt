@@ -81,6 +81,13 @@
         Plotly.addTraces(elem, tracesToAdd(data.traces, start - 300, end + 300));
         tracesVisible = 1;
       }
+      Plotly.relayout(elem, {
+        "xaxis.showticklabels": true,
+        "xaxis.ticks": "outside",
+        "xaxis.showline": false,
+        "xaxis.showgrid": false,
+        "xaxis.zeroline": false
+      });
     } else {
       // Show placeholder trace
       const centerX = (start + end) / 2;
@@ -103,8 +110,8 @@
 
       // Clean up axes visuals
       Plotly.relayout(elem, {
-        "xaxis.showticklabels": false,
-        "xaxis.ticks": "",
+        "xaxis.showticklabels": true,
+        "xaxis.ticks": "outside",
         "xaxis.showline": false,
         "xaxis.showgrid": false,
         "xaxis.zeroline": false

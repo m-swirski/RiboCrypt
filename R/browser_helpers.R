@@ -55,7 +55,7 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels
   return(list(plots = plots, nplots = nplots))
 }
 
-multiOmicsPlot_all_profiles <- function(display_range, reads, runs, collection_path, kmers,
+multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
                                         kmers_type, frames_type, frames_subset,
                                         withFrames, log_scale, BPPARAM, normalization) {
   force(display_range)
@@ -71,11 +71,11 @@ multiOmicsPlot_all_profiles <- function(display_range, reads, runs, collection_p
   if (is(BPPARAM, "SerialParam")) {
     profiles <- mapply(function(x,y,z,b,c,l) getProfileWrapper(display_range, x, y, z, b, c, l, kmers_type,
                                                            type = frames_type, frames_subset = frames_subset, normalization = normalization),
-                       reads, runs, collection_path, withFrames, kmers, log_scale, SIMPLIFY = FALSE)
+                       reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE)
   } else {
     profiles <- bpmapply(function(x,y,z,b,c,l) getProfileWrapper(display_range, x,y,z,b,c,l, kmers_type,
                                                              type = frames_type, frames_subset = frames_subset, normalization = normalization),
-                         reads, runs, collection_path, withFrames, kmers, log_scale, SIMPLIFY = FALSE,
+                         reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE,
                          BPPARAM = BPPARAM)
   }
   return(profiles)
@@ -145,8 +145,6 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
 multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", reference_sequence = findFa(df),
                                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
                                                        naming = "full", BPPARAM = BiocParallel::SerialParam()),
-                                    runs = df[["Run"]],
-                                    collection_path = "",
                                     viewMode = c("tx", "genomic")[1],
                                     custom_regions = NULL,
                                     leader_extension = 0, trailer_extension = 0,
@@ -170,7 +168,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
   multiOmicsControllerView()
 
   # Get NGS data track panels
-  profiles <- multiOmicsPlot_all_profiles(display_range, reads, runs, collection_path, kmers,
+  profiles <- multiOmicsPlot_all_profiles(display_range, reads, kmers,
                                           kmers_type, frames_type, frames_subset,
                                           withFrames, log_scale, BPPARAM, normalization)
 

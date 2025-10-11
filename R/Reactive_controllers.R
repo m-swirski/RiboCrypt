@@ -31,8 +31,7 @@ click_plot_browser_main_controller <- function(
     logScale,
     phyloP,
     mapability,
-    expressionPlot,
-    selectedRuns = NULL
+    expressionPlot
     ) {
   {
     print("- Browser controller")
@@ -75,17 +74,11 @@ click_plot_browser_main_controller <- function(
       ))
     }
     
-    if(is.null(selectedRuns)) {
-      dff <- observed_exp_subset(isolate(selectedLibraries), libs, df)
-      if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
-      if (isolate(withFrames)) {
-        withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
-      } else withFrames <- rep(FALSE, nrow(dff))
-      
-    } else {
-      dff <- df()[df()$Run %in% selectedRuns, ]
-      if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
-    }
+    dff <- observed_exp_subset(isolate(selectedLibraries), libs, df)
+    if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
+    if (isolate(withFrames)) {
+      withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
+    } else withFrames <- rep(FALSE, nrow(dff))
     
     reads <- try(filepath(dff, "bigwig", suffix_stem = c("_pshifted", "")))
     invalid_reads <- is(reads, "try-error") ||
@@ -96,8 +89,6 @@ click_plot_browser_main_controller <- function(
                         base_folders = libFolder(dff, "all"))
     }
     
-    runs <- dff[["Run"]]
-
     # Hash strings for cache
     hash_strings <- hash_strings_browser(
       dff, 
@@ -129,14 +120,6 @@ click_plot_browser_main_controller <- function(
     use_all_frames <- length(frames_subset) == 0 || any(c("","all") %in% frames_subset)
     if (use_all_frames) frames_subset <- "all"
     
-    try_collection_path <- try(collection_path_from_exp(df(), selectedTx))
-    if(is(try_collection_path, "try-error")) {
-      collection_path <- NULL
-    } else {
-      collection_path <- try_collection_path
-      names(collection_path) <- "index"
-    }
-    
     shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
     
     reactiveValues(dff = dff,
@@ -154,9 +137,7 @@ click_plot_browser_main_controller <- function(
                    annotation = cds_annotation,
                    tx_annotation = tx_annotation,
                    reads = reads,
-                   runs = runs,
                    normalization = normalization,
-                   collection_path = collection_path,
                    custom_sequence = customSequence,
                    log_scale = logScale,
                    phyloP = phyloP,
@@ -191,7 +172,6 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     cds_annotation <- observed_cds_annotation_internal(id,
                                               annotation_list$cds_annotation,
                                               isolate(input$other_tx))
-    # browser()
     if (!is.null(motif) && motif != "") {
       table_path <- meta_motif_files(dff)[motif]
       display_annot <- FALSE

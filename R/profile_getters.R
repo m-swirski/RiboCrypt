@@ -79,36 +79,18 @@ getCoverageProfile <- function(grl, reads, kmers = 1, kmers_type = "mean") {
   return(coverage)
 }
 
-getProfileWrapper <- function(display_range, reads, run, collection_path, withFrames, kmers = 1, log_scale = FALSE,
+getProfileWrapper <- function(display_range, reads, withFrames, kmers = 1, log_scale = FALSE,
                               kmers_type = "mean", type = "lines", frames_subset = "all", normalization = normalizations("metabrowser")[1]) {
   
-  if(is.null(collection_path) || collection_path == "") {
-    if (withFrames) {
-      profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
-      if (all(frames_subset != "all")) {
-        color_options <- c("red", "green", "blue")
-        frame_to_use <- which(color_options %in% frames_subset) - 1
-        profile <- profile[!(frame %in% frame_to_use), count := 0]
-      }
-    } else {
-      profile <- getCoverageProfile(display_range, reads, kmers, kmers_type = kmers_type)
+  if (withFrames) {
+    profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
+    if (all(frames_subset != "all")) {
+      color_options <- c("red", "green", "blue")
+      frame_to_use <- which(color_options %in% frames_subset) - 1
+      profile <- profile[!(frame %in% frame_to_use), count := 0]
     }
-  }
-  else {
-    names(collection_path) <- "index"
-    collection <- load_collection(collection_path, display_range, format = "wide")
-    profile <- data.table(
-      count = collection[[run]],
-      genes = rep(1, length(collection[[run]])),
-      position = c(1:length(collection[[run]])),
-      frame = rep_len(1:3, length(collection[[run]])),
-      library = rep_len(run, length(collection[[run]]))
-    ) %>%
-      smoothenMultiSampCoverage(kmers, kmers_type = kmers_type, split_by_frame = withFrames)
-    
-    # %>%
-    # TODO filter_collection_on_count(0) %>% for now
-    # TODO normalize_collection(normalization, kmer = kmers)
+  } else {
+    profile <- getCoverageProfile(display_range, reads, kmers, kmers_type = kmers_type)
   }
 
   if (log_scale) profile[, count := log2(count + 1)]

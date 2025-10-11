@@ -62,8 +62,7 @@ browserPlotServer <- function(id, tx, cds, libs, df, browser_options, rSelectedS
         logScale = FALSE,
         phyloP = FALSE,
         mapability = FALSE,
-        expressionPlot = FALSE,
-        selectedRuns = rSelectedSamples()
+        expressionPlot = FALSE
       )
     }) %>% bindEvent(input$go, ignoreInit = TRUE, ignoreNULL = FALSE)
     

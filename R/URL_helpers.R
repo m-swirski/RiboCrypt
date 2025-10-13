@@ -342,11 +342,11 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                     paste("add_translon", add_translons, sep = "="),
                     sep = "&"))
   if (!is.null(zoom_range)){
-    zoom_range <- sub("\\+;", "p;", sub("\\+$", "p", zoom_range))
+    zoom_range <- gsub("\\+;", "p;", sub("\\+$", "p", zoom_range))
     settings <- paste(settings, paste("zoom_range", zoom_range, sep = "="), sep = "&")
   }
   if (!is.null(genomic_region)){
-    genomic_region <- sub("\\+;", "p;", sub("\\+$", "p", genomic_region))
+    genomic_region <- gsub("\\+;", "p;", sub("\\+$", "p", genomic_region))
     settings <- paste(settings, paste("genomic_region", genomic_region, sep = "="), sep = "&")
   }
 

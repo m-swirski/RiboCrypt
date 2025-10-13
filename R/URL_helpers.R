@@ -184,7 +184,7 @@ browser_specific_url_checker <- function() {
         for (tag in c("customSequence", "genomic_region", "zoom_range")) {
           value <- query[tag][[1]]
           if (!is.null(value)) {
-            if (tag %in% c("genomic_region", "zoom_range")) value <-  sub("p;", "+;", sub("p$", "+", value))
+            if (tag %in% c("genomic_region", "zoom_range")) value <-  gsub("p;", "+;", sub("p$", "+", value))
             updateTextInput(inputId = tag, value = as.character(value))
           }
         }

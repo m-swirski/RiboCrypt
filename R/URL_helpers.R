@@ -283,13 +283,14 @@ browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                      viewMode = FALSE, other_tx = FALSE,
                      plot_on_start = TRUE, frames_type = "columns", kmer=1,
                      add_translons = FALSE, zoom_range = NULL,
+                     genomic_region = NULL,
                      host = "https://ribocrypt.org",
                      browser = getOption("browser")) {
 
   full_url <- make_rc_url(symbol, gene_id, tx_id, exp, libraries,
                           leader_extension, trailer_extension,
                           viewMode, other_tx, plot_on_start, frames_type,
-                          kmer, add_translons, zoom_range, host)
+                          kmer, add_translons, zoom_range, genomic_region, host)
   browseURL(full_url, browser = browser)
 }
 
@@ -312,6 +313,7 @@ browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
 #' @param kmer integer, default 1 (no binning), binning size of windows, to smear out the signal.
 #' @param add_translons logical, default FALSE. If TRUE, add translons predicted sequences in annotation.
 #' @param zoom_range character, zoom values.
+#' @param genomic_region character, region to display
 #' @param host url, default "https://ribocrypt.org". Set to localhost for local version.
 #' @return character, URL.
 #' @export
@@ -323,10 +325,11 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                         viewMode = FALSE, other_tx = FALSE,
                         plot_on_start = TRUE, frames_type = "columns", kmer=1,
                         add_translons = FALSE, zoom_range = NULL,
+                        genomic_region = NULL,
                         host = "https://ribocrypt.org") {
   # TODO: Update to use input function above, to avoid writing twice
-  if (any(is.null(symbol) & is.null(gene_id)))
-    stop("At least on of symbol and gene_id must be defined!")
+  if (any(is.null(symbol) & is.null(gene_id) & is.null(genomic_region)))
+    stop("At least on of symbol, gene_id and genomic_region must be defined!")
   settings <- "/?"
   settings <- paste0(settings,
                     paste(paste("dff", exp, sep = "="),
@@ -342,6 +345,10 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
     zoom_range <- sub("\\+;", "p;", sub("\\+$", "p", zoom_range))
     settings <- paste(settings, paste("zoom_range", zoom_range, sep = "="), sep = "&")
   }
+  if (!is.null(genomic_region)){
+    genomic_region <- sub("\\+;", "p;", sub("\\+$", "p", genomic_region))
+    settings <- paste(settings, paste("genomic_region", genomic_region, sep = "="), sep = "&")
+  }
 
   prefix_url <- paste0(host, settings)
   if (!is.null(symbol)) {
@@ -356,8 +363,8 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
 
   if (all(!is.null(tx_id))) tx_id <- paste0("&tx=", tx_id)
   if (all(!is.null(libraries))) libraries <- paste0("&library=", paste(libraries, collapse = ","))
-
-  select <- paste0("&gene=", gene, tx_id, libraries)
+  if (all(!is.null(gene))) gene_id <- paste0("&gene=", gene)
+  select <- paste0(gene_id, tx_id, libraries)
   plot_on_start <- paste0("&go=", as.logical(plot_on_start))
   full_url <- paste0(prefix_url, select, plot_on_start)
   return(full_url)

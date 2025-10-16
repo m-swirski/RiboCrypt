@@ -17,7 +17,6 @@ DE_model <- function(df, method, other_tx, target.contrast = design[1],
   df <- df[all_libs %in% c(group_1, group_2),]
   if (nrow(df) < 2) stop("You selected < 2 samples, even though study has more!")
   counts <- countTable(df, "mrna", type = "summarized")
-  counts <- counts[colnames(counts) %in% c(group_1, group_2)]
   if (!other_tx) {
     counts <- counts[filterTranscripts(df, 0, 1, 0)]
   }

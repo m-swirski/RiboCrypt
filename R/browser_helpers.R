@@ -129,6 +129,9 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>%
     plotly::layout(title = plot_title)
   if (!is.null(zoom_range) && length(zoom_range) == 2) {
+    # Lock proportions on zoom out
+    multiomics_plot <- lock_yaxis_domains_by_proportions(multiomics_plot, proportions, gap = 0)
+    # Zoom in on init
     multiomics_plot <- multiomics_plot %>%
       plotly::layout(xaxis = list(range = zoom_range))
   }
@@ -215,7 +218,8 @@ genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6
 }
 
 get_zoom_range <- function(zoom_range, display_region, max_size,
-                           viewMode, leader_extension, trailer_extension) {
+                           viewMode, leader_extension, trailer_extension,
+                           zoom_range_flank = 10) {
   if (!is.null(zoom_range)) {
     valid_zoom <- is.character(zoom_range) && nchar(zoom_range) > 0
     if (valid_zoom) {
@@ -241,8 +245,9 @@ get_zoom_range <- function(zoom_range, display_region, max_size,
           display_range_zoom <- extendTrailers(display_range_zoom, trailer_extension)
         ir <- suppressWarnings(pmapToTranscriptF(gr, display_range_zoom))
         if (as.numeric(width(ir)) > 0) {
-          zoom_range <- c(max(as.numeric(start(ir))[1] - 10, 1),
-                          min(as.numeric(end(ir))[1] + 10, widthPerGroup(display_range_zoom, FALSE)))
+          zoom_range <- c(max(as.numeric(start(ir))[1] - zoom_range_flank, 1),
+                          min(as.numeric(end(ir))[1] + zoom_range_flank,
+                              widthPerGroup(display_range_zoom, FALSE)))
         } else {
           zoom_range <- numeric(0)
           if (!viewMode) {
@@ -307,5 +312,47 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
                        hash_expression = hash_expression)
   stopifnot(all(lengths(hash_strings) == 1))
   return(hash_strings)
+}
+
+# Lock yaxis domains from a proportions vector (top -> bottom)
+lock_yaxis_domains_by_proportions <- function(p, proportions, gap = 0, fixed = TRUE, layer_below = TRUE,
+                                              uirevision = TRUE, margins = list(t = 30, b = 60, l = 60, r = 10)) {
+  stopifnot(length(proportions) >= 1)
+  n <- length(proportions)
+
+  # normalize proportions and compute absolute heights after gaps
+  prop <- proportions / sum(proportions)
+  total_gap <- (n - 1) * gap
+  avail <- 1 - total_gap
+  heights <- prop * avail
+
+  # build yaxisN domains (Plotly expects y=0 bottom, y=1 top; yaxis is the TOP row)
+  layout_updates <- list()
+  current_top <- 1.0
+  for (i in seq_len(n)) {
+    h  <- heights[i]
+    y1 <- current_top
+    y0 <- y1 - h
+    ax <- if (i == 1) "yaxis" else paste0("yaxis", i)
+
+    ya <- list(domain = c(y0, y1))
+    if (fixed)        ya$fixedrange <- TRUE
+    if (layer_below)  ya$layer <- "below traces"
+
+    layout_updates[[ax]] <- ya
+
+    # move down for next row (add gap below this row)
+    current_top <- y0 - gap
+  }
+
+  # apply with do.call (no tidy-eval)
+  p <- do.call(
+    plotly::layout,
+    c(
+      list(p, uirevision = uirevision, margin = margins),
+      layout_updates
+    )
+  )
+  p
 }
 

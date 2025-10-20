@@ -135,6 +135,13 @@ browser_server <- function(id, all_experiments, env, df, experiments,
         if (!nzchar(input$gene) || !nzchar(input$tx)) return()
         if (!identical(input$gene, browser_options[["default_gene"]])) return()
         if (!identical(input$tx,   browser_options[["default_isoform"]])) return()
+        libs_wanted <- libraries_string_split(browser_options["default_libs"], isolate(libs()))
+        if (!identical(input$library, libs_wanted)) {
+          message("Libraries wanted not matching yet!")
+          print(libs_wanted)
+          print(isolate(input$library))
+          return()
+        }
         fired(TRUE)
         kickoff(TRUE)
       }, ignoreInit = TRUE, ignoreNULL = TRUE)

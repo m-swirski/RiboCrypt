@@ -126,7 +126,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       # Main plot controller, this code is only run if 'plot' is pressed
       kickoff <- reactiveVal(FALSE)
       fired <- reactiveVal(FALSE)
-      observeEvent(list(input$gene, input$tx), {
+      observeEvent(list(input$gene, input$tx, input$library), {
         if (fired()) return()
         if (!isTRUE(as.logical(browser_options[["plot_on_start"]]))) {
           fired(TRUE)

@@ -69,11 +69,11 @@ multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
 
   
   if (is(BPPARAM, "SerialParam")) {
-    profiles <- mapply(function(x,y,z,b,c,l) getProfileWrapper(display_range, x, y, z, b, c, l, kmers_type,
+    profiles <- mapply(function(x,y,c,l) getProfileWrapper(display_range, x, y, c, l, kmers_type,
                                                            type = frames_type, frames_subset = frames_subset, normalization = normalization),
                        reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE)
   } else {
-    profiles <- bpmapply(function(x,y,z,b,c,l) getProfileWrapper(display_range, x,y,z,b,c,l, kmers_type,
+    profiles <- bpmapply(function(x,y,c,l) getProfileWrapper(display_range, x,y,c,l, kmers_type,
                                                              type = frames_type, frames_subset = frames_subset, normalization = normalization),
                          reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE,
                          BPPARAM = BPPARAM)

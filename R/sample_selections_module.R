@@ -1,34 +1,14 @@
 sampleSelectionsUi <- function(id) {
   ns <- NS(id)
   fluidRow(
-    fluidRow(
-      column(
-        2,
-        selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list("New"))
-      )
-    ),
-    fluidRow(
-      column(
-        12,
-        uiOutput(ns("sampleSelectionsUi"))
-      )
+    column(
+      2,
+      selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list("New"))
     )
   )
 }
 
-newSelectionUi <- function(ns) {
-  fluidRow(
-    column(2, actionButton(ns("saveAsSelection"), "Save selection"))
-  )
-}
-
-selectionUi <- function(ns) {
-  fluidRow(
-    sampleTableUi(ns("activeSelectionTable"))
-  )
-}
-
-sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
+sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySelection) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -42,7 +22,6 @@ sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
       }, rSelections())
       x$rSelection
     }) %>% bindEvent(rActiveSelectionId())
-    selectionServer <- sampleTableServer("activeSelectionTable", metadata, rActiveSelection)
 
     # Observer for handling adding a new selection
     observe({
@@ -50,7 +29,7 @@ sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
       counter(count + 1)
 
       selections <- rSelections()
-      rSelection <- reactiveVal(rInitialSelection())
+      rSelection <- reactiveVal(rPrimarySelection())
       newSelection <- list(
         id = as.character(count),
         label = as.character(count),
@@ -82,8 +61,13 @@ sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
     # Observers for handling interactions with the outside world
     observe({
       req(!is.null(rActiveSelection()))
-      rActiveSelection()(rInitialSelection())
-    }) %>% bindEvent(rInitialSelection())
+      rActiveSelection()(rPrimarySelection())
+    }) %>% bindEvent(rPrimarySelection())
+
+    # observer({
+    #   req(!is.null(rActiveSelection()))
+    #   rActiveSelection()(rSecondarySelection())
+    # }) %>% bindEvent(rSecondarySelection())
 
     observe({
       req(!is.null(rActiveSelection()))
@@ -104,15 +88,6 @@ sampleSelectionsServer <- function(id, metadata, rInitialSelection) {
         message
       )
     }) %>% bindEvent(rActiveSelection())
-
-    # Dynamic Ui
-    output$sampleSelectionsUi <- renderUI({
-      if (is.null(rActiveSelection())) {
-        newSelectionUi(ns)
-      } else {
-        selectionUi(ns)
-      }
-    })
 
     list(
       selections = rSelections,

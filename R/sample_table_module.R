@@ -4,19 +4,21 @@ sampleTableUi <- function(id) {
 }
 
 sampleTableServer <- function(id, metadata, rSelection) {
-  moduleServer(id, function(input, output, session){
+  moduleServer(id, function(input, output, session) {
     ns <- session$ns
     selectedSamples <- reactive({
       req(!is.null(rSelection()))
       rSelection()()$sample
     })
-    
+
     tableData <- reactive({
       req(!is.null(selectedSamples()))
       metadata[Sample %in% selectedSamples()]
     })
-    
+
+    # DT::dataTableProxy("sampleTable")
+
     output$sampleTable <-
-      DT::renderDT(tableData(), filter = "top", options = list(dom = 'Bfrtip'))
+      DT::renderDT(tableData(), filter = "top", options = list(dom = "Bfrtip"))
   })
 }

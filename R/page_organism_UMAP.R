@@ -17,14 +17,15 @@ umap_ui <- function(id, all_exp_translons, gene_names_init, browser_options, lab
         fluidRow(
           plotlyOutput(ns("c"), height = "700px")
           %>% shinycssloaders::withSpinner(color = "#0dc5c1")
-        )
+        ),
+        sampleSelectionsUi(ns("sampleSelection")),
+        sampleTableUi(ns("sampleTable"))
       ),
       tabPanel(
         "Browser",
         fluidRow()
       )
     ),
-    sampleSelectionsUi(ns("sampleSelection"))
   )
 }
 
@@ -70,7 +71,14 @@ umap_server <- function(id, metadata, all_exp_meta, tx, cds, libs, df, browser_o
       selectedSamples <- sampleSelectionsServer(
         "sampleSelection",
         metadata,
-        reactive(input$selectedPoints)
+        reactive(input$selectedPoints),
+        reactive()
+      )
+
+      tableSelection <- sampleTableServer(
+        "sampleTable",
+        metadata,
+        selectedSamples$activeSelection
       )
 
       check_url_for_basic_parameters()

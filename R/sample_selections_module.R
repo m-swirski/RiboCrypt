@@ -15,11 +15,10 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
     ns <- session$ns
 
     # reactive values
-    counter <- reactiveVal(2)
     rSelections <- reactiveVal(
       list(
         list(
-          id = as.character(1),
+          id = 1,
           label = as.character(1),
           rSelection = reactiveVal(NULL)
         )
@@ -32,6 +31,7 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
       }, rSelections())
       x$rSelection()
     }) %>% bindEvent(rActiveSelectionId())
+    counter <- reactiveVal(2)
 
     # Observers for handling interaction with the select input
     observe({
@@ -58,7 +58,7 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
       selections <- rSelections()
       rSelection <- reactiveVal(rPrimarySelection())
       newSelection <- list(
-        id = as.character(count),
+        id = count,
         label = as.character(count),
         rSelection = rSelection
       )
@@ -77,7 +77,7 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
 
     observe({
       req(!is.null(rActiveSelection()))
-      rSelections()[rActiveSelectionId()]$rSelection(rPrimarySelection())
+      rSelections()[[rActiveSelectionId()]]$rSelection(rPrimarySelection())
     }) %>% bindEvent(rPrimarySelection())
 
     # observer({

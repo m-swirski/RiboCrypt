@@ -1,11 +1,11 @@
-createNewSelectionChoice <- "+"
+createNewSelectionChoice <- "New selection..."
 
 sampleSelectionsUi <- function(id) {
   ns <- NS(id)
   fluidRow(
     column(
       2,
-      selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list("New"))
+      selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list(createNewSelectionChoice))
     )
   )
 }
@@ -77,7 +77,7 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
 
     observe({
       req(!is.null(rActiveSelection()))
-      rActiveSelection()(rPrimarySelection())
+      rActiveSelection(rPrimarySelection())
     }) %>% bindEvent(rPrimarySelection())
 
     # observer({

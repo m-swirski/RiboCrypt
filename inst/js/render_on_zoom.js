@@ -28,8 +28,9 @@
         xaxis: traceDef.xaxis,
         yaxis: traceDef.yaxis,
         mode: "text",
-        type: "scatter",
-        name: "sequence"
+        type: "scattergl",
+        name: "sequence",
+        hovertemplate: "Pos %{x:.0f}"
       };
     });
   };

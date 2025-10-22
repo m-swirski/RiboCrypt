@@ -51,7 +51,7 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels
     plots <- make_summary_track(profiles, plots, withFrames, colors,
                                 lines, summary_track_type, nplots)
   }
-  return(list(plots = plots, nplots = nplots))
+  return(list(plots = plots, nplots = nplots, track_type = frames_type))
 }
 
 multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
@@ -93,20 +93,20 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   custom_seq_panel <- bottom_panel$custom_bigwig_panels
   without_sequence_track <- display_sequence %in% c("none", FALSE)
 
-  if (without_sequence_track) { # plotly subplot without sequence track
-    nplots <- nplots + 2
-    plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
-  } else { # plotly subplot with sequence track
-    nplots <- nplots + 3
-    plots <- c(plots, list(automateTicks(nt_area_template()),
-                           automateTicksGMP(gene_model_panel),
-                           automateTicksX(seq_panel)))
+  bottom_plots <- list(gene_model = automateTicksGMP(gene_model_panel),
+                       AA_model = automateTicksAA(seq_panel))
+  nplots <- nplots + ifelse(without_sequence_track, 2, 3)
+  if (!without_sequence_track) { # plotly subplot without sequence track
+    bottom_plots <- c(list(DNA_model = automateTicksLetters(nt_area_template())),
+                      bottom_plots)
   }
+  plots <- c(plots, bottom_plots)
 
+  nplots_all <- nplots
   if (length(custom_seq_panel) > 0) {
     plots <- c(plots, lapply(custom_seq_panel, automateTicksX))
-    nplots_all <- nplots + length(custom_seq_panel)
-  } else nplots_all <- nplots
+    nplots_all <- nplots_all + length(custom_seq_panel)
+  }
 
   plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),
                                                    yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16),
@@ -118,6 +118,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                              heights = proportions,
                              shareX = TRUE,
                              titleY = TRUE, titleX = TRUE)
+
   if (!without_sequence_track) {
     multiomics_plot <- addJSrender(multiomics_plot, bottom_panel$target_seq,
                                    nplots - 3, seq_render_dist,
@@ -129,14 +130,13 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>%
     plotly::layout(title = plot_title)
   # Lock proportions on zoom out
-  multiomics_plot <- lock_yaxis_domains_by_proportions(multiomics_plot, proportions, gap = 0)
+  # multiomics_plot <- lock_yaxis_domains_by_proportions(multiomics_plot, proportions, gap = 0)
   if (!is.null(zoom_range) && length(zoom_range) == 2) {
     # Zoom in on init
     multiomics_plot <- multiomics_plot %>%
       plotly::layout(xaxis = list(range = zoom_range))
   }
   multiomics_plot <- lineDeSimplify(multiomics_plot)
-
   return(multiomics_plot)
 }
 
@@ -336,7 +336,7 @@ lock_yaxis_domains_by_proportions <- function(p, proportions, gap = 0, fixed = T
     ax <- if (i == 1) "yaxis" else paste0("yaxis", i)
 
     ya <- list(domain = c(y0, y1))
-    if (fixed)        ya$fixedrange <- TRUE
+    if (fixed)        ya$fixedrange <- FALSE
     if (layer_below)  ya$layer <- "below traces"
 
     layout_updates[[ax]] <- ya
@@ -353,6 +353,24 @@ lock_yaxis_domains_by_proportions <- function(p, proportions, gap = 0, fixed = T
       layout_updates
     )
   )
+#   onRender(p, "
+# function(el, x){
+#   const gd = document.getElementById(el.id);
+#   let guarding = false;
+#   gd.on('plotly_relayout', ev => {
+#     if (guarding) return;
+#     // if the y range changed, clamp the lower bound to 0
+#     const y0 = ev['yaxis.range[0]'];
+#     const y1 = ev['yaxis.range[1]'];
+#     const y = ev['yaxis.range'];
+#     if (y0 !== undefined || y1 !== undefined || Array.isArray(y)) {
+#       const newMax = Array.isArray(y) ? y[1] : (y1 !== undefined ? y1 : gd.layout.yaxis.range[1]);
+#       guarding = true;
+#       Plotly.relayout(gd, {'yaxis.range': [0, newMax]}).then(() => guarding = false);
+#     }
+#   });
+# }
+# ")
   p
 }
 

@@ -32,15 +32,18 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
 plotSeqPanel <- function(hits, sequence, frame = 1) {
   pos <- NULL # avoid dt warning
   # New red: #FFA8A3 ?
+  hits[, Type := fifelse(col == "white", "Start codon", fifelse(col == "black", "Stop codon", "User Motif"))]
   fig <- ggplot() +
     geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3)),
               fill = c("#F8766D","#00BA38","#619CFF")) +
-    geom_segment(data=hits, mapping = aes(y = 2 - (frames + 1), yend =  2 - frames, x = pos, xend = pos), col=hits$col) +
+    geom_segment(data=hits, mapping = aes(y = 2 - (frames + 1), yend =  2 - frames, x = pos, xend = pos,
+                                          text = paste0("Pos: ", pos, "\n", "Type: ", Type)), col=hits$col) +
     ylab("frame") +
     xlab("position [nt]") +
     theme_bw() +
     theme(plot.margin = unit(c(0,0,0,0), "pt"), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
-    scale_y_continuous(breaks = c(-0.5,0.5, 1.5), labels = c("2","1", "0"), expand = c(0,0)) + scale_x_continuous(expand = c(0,0))
+    scale_y_continuous(breaks = c(-0.5,0.5, 1.5), labels = c("2","1", "0"), expand = c(0,0)) +
+    scale_x_continuous(expand = c(0,0))
 
   return(fig)
 }

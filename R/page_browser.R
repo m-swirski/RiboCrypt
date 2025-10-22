@@ -103,7 +103,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
     # ---- Full Width Main Panel ----
     fluidRow(
       column(12,
-             jqui_resizable(plotlyOutput(ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
+             jqui_resizable(plotlyOutput(ns("c"), height = "550px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
              plotlyOutput(ns("e"), height = "50px"),
              uiOutput(ns("proteinStruct")),
              plotlyOutput(ns("d")) %>% shinycssloaders::withSpinner(color="#0dc5c1")
@@ -123,29 +123,13 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       study_and_gene_observers(input, output, session)
       output$clip <- renderUI({clipboard_url_button(input, session)})
 
-      # Main plot controller, this code is only run if 'plot' is pressed
+
       kickoff <- reactiveVal(FALSE)
       fired <- reactiveVal(FALSE)
-      observeEvent(list(input$gene, input$tx, input$library), {
-        if (fired()) return()
-        if (!isTRUE(as.logical(browser_options[["plot_on_start"]]))) {
-          fired(TRUE)
-          return()
-        }
-        if (!nzchar(input$gene) || !nzchar(input$tx)) return()
-        if (!identical(input$gene, browser_options[["default_gene"]])) return()
-        if (!identical(input$tx,   browser_options[["default_isoform"]])) return()
-        libs_wanted <- libraries_string_split(browser_options[["default_libs"]], isolate(libs()))
-        if (!identical(input$library, libs_wanted)) {
-          message("Libraries wanted not matching yet!")
-          print(libs_wanted)
-          print(isolate(input$library))
-          return()
-        }
-        fired(TRUE)
-        kickoff(TRUE)
-      }, ignoreInit = TRUE, ignoreNULL = TRUE)
-
+      observeEvent(list(input$gene, input$tx, input$library),
+                   go_when_input_is_ready(input, browser_options, fired, kickoff, libs),
+                   ignoreInit = TRUE, ignoreNULL = TRUE)
+      # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- eventReactive(list(input$go, kickoff()),
         click_plot_browser_main_controller(input, tx, cds, libs, df),
         ignoreInit = TRUE,
@@ -169,6 +153,28 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       return(rv)
     }
   )
+}
+
+#' When input is ready, start ploting if specified.
+#' @noRd
+go_when_input_is_ready <- function(input, browser_options, fired, kickoff, libs) {
+  if (fired()) return()
+  if (!isTRUE(as.logical(browser_options[["plot_on_start"]]))) {
+    fired(TRUE)
+    return()
+  }
+  if (!nzchar(input$gene) || !nzchar(input$tx)) return()
+  if (!identical(input$gene, browser_options[["default_gene"]])) return()
+  if (!identical(input$tx,   browser_options[["default_isoform"]])) return()
+  libs_wanted <- libraries_string_split(browser_options[["default_libs"]], isolate(libs()))
+  if (!identical(input$library, libs_wanted)) {
+    message("Libraries wanted not matching yet!")
+    print(libs_wanted)
+    print(isolate(input$library))
+    return()
+  }
+  fired(TRUE)
+  kickoff(TRUE)
 }
 
 

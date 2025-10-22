@@ -1,3 +1,5 @@
+createNewSelectionChoice <- "+"
+
 sampleSelectionsUi <- function(id) {
   ns <- NS(id)
   fluidRow(
@@ -13,9 +15,17 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
     ns <- session$ns
 
     # reactive values
-    counter <- reactiveVal(1)
-    rSelections <- reactiveVal(list())
-    rActiveSelectionId <- reactiveVal()
+    counter <- reactiveVal(2)
+    rSelections <- reactiveVal(
+      list(
+        list(
+          id = as.character(1),
+          label = as.character(1),
+          rSelection = reactiveVal(NULL)
+        )
+      )
+    )
+    rActiveSelectionId <- reactiveVal(as.character(1))
     rActiveSelection <- reactive({
       x <- base::Find(function(elem) {
         elem$id == rActiveSelectionId()
@@ -23,8 +33,25 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
       x$rSelection
     }) %>% bindEvent(rActiveSelectionId())
 
-    # Observer for handling adding a new selection
+    # Observers for handling interaction with the select input
     observe({
+      updateSelectizeInput(
+        session,
+        "activeSelectionSelect",
+        choices = c(lapply(rSelections(), function(elem) {
+          elem$id
+        }), list(createNewSelectionChoice)),
+        selected = rActiveSelectionId()
+      )
+    }) %>% bindEvent(rSelections())
+
+    observe({
+      rActiveSelectionId(input$activeSelectionSelect)
+    }) %>% bindEvent(input$activeSelectionSelect)
+
+    # Observer for handling creating a new selection
+    observe({
+      req(input$activeSelectionSelect == createNewSelectionChoice)
       count <- counter()
       counter(count + 1)
 
@@ -40,22 +67,6 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
         c(selections, list(newSelection))
       )
       rActiveSelectionId(newSelection$id)
-    }) %>% bindEvent(input$saveAsSelection)
-
-    # Observers for handling interaction with the select input
-    observe({
-      updateSelectizeInput(
-        session,
-        "activeSelectionSelect",
-        choices = c(lapply(rSelections(), function(elem) {
-          elem$id
-        }), list("New")),
-        selected = rActiveSelectionId()
-      )
-    }) %>% bindEvent(rSelections())
-
-    observe({
-      rActiveSelectionId(input$activeSelectionSelect)
     }) %>% bindEvent(input$activeSelectionSelect)
 
     # Observers for handling interactions with the outside world

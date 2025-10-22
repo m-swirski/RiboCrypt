@@ -5,7 +5,7 @@ sampleSelectionsUi <- function(id) {
   fluidRow(
     column(
       2,
-      selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list(createNewSelectionChoice))
+      selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list())
     )
   )
 }
@@ -77,7 +77,7 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
 
     observe({
       req(!is.null(rActiveSelection()))
-      rActiveSelection(rPrimarySelection())
+      rSelections()[rActiveSelectionId()]$rSelection(rPrimarySelection())
     }) %>% bindEvent(rPrimarySelection())
 
     # observer({

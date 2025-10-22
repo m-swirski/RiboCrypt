@@ -8,15 +8,13 @@ sampleTableServer <- function(id, metadata, rSelection) {
     ns <- session$ns
     selectedSamples <- reactive({
       req(!is.null(rSelection()))
-      rSelection()()$sample
+      rSelection()$sample
     })
 
     tableData <- reactive({
       req(!is.null(selectedSamples()))
       metadata[Sample %in% selectedSamples()]
     })
-
-    # DT::dataTableProxy("sampleTable")
 
     output$sampleTable <-
       DT::renderDT(tableData(), filter = "top", options = list(dom = "Bfrtip"))

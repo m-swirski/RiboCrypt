@@ -30,7 +30,7 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
       x <- base::Find(function(elem) {
         elem$id == rActiveSelectionId()
       }, rSelections())
-      x$rSelection
+      x$rSelection()
     }) %>% bindEvent(rActiveSelectionId())
 
     # Observers for handling interaction with the select input
@@ -72,6 +72,11 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
     # Observers for handling interactions with the outside world
     observe({
       req(!is.null(rActiveSelection()))
+      rSecondarySelection(rActiveSelection())
+    }) %>% bindEvent(rActiveSelection())
+
+    observe({
+      req(!is.null(rActiveSelection()))
       rActiveSelection()(rPrimarySelection())
     }) %>% bindEvent(rPrimarySelection())
 
@@ -83,8 +88,8 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
     observe({
       req(!is.null(rActiveSelection()))
       message <- {
-        curveIndex <- rActiveSelection()()$curveIndex
-        pointIndex <- rActiveSelection()()$pointIndex
+        curveIndex <- rActiveSelection()$curveIndex
+        pointIndex <- rActiveSelection()$pointIndex
 
         list(
           curveIndex = unique(curveIndex),

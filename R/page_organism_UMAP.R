@@ -68,17 +68,19 @@ umap_server <- function(id, metadata, all_exp_meta, tx, cds, libs, df, browser_o
           bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
       }
 
+      rTableSelection <- reactiveVal(NULL)
+
+      sampleTableServer(
+        "sampleTable",
+        metadata,
+        rTableSelection
+      )
+
       selectedSamples <- sampleSelectionsServer(
         "sampleSelection",
         metadata,
         reactive(input$selectedPoints),
-        reactive()
-      )
-
-      tableSelection <- sampleTableServer(
-        "sampleTable",
-        metadata,
-        selectedSamples$activeSelection
+        rTableSelection
       )
 
       check_url_for_basic_parameters()

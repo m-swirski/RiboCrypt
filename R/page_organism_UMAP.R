@@ -1,4 +1,4 @@
-umap_ui <- function(id, all_exp_translons, gene_names_init, browser_options, label = "umap") {
+umap_ui <- function(id, all_exp_translons, label = "umap") {
   ns <- NS(id)
   tabPanel(
     title = "UMAP", icon = icon("rectangle-list"),
@@ -30,7 +30,7 @@ umap_ui <- function(id, all_exp_translons, gene_names_init, browser_options, lab
 }
 
 
-umap_server <- function(id, metadata, all_exp_meta, tx, cds, libs, df, browser_options) {
+umap_server <- function(id, metadata, all_exp_meta) {
   moduleServer(
     id,
     function(input, output, session) {

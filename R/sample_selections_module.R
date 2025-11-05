@@ -1,93 +1,89 @@
 createNewSelectionChoice <- "New selection..."
 
 sampleSelectionsUi <- function(id) {
-  ns <- NS(id)
-  fluidRow(
-    column(
+  ns <- shiny::NS(id)
+  shiny::fluidRow(
+    shiny::column(
       2,
-      selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list())
+      shiny::selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list())
     )
   )
 }
 
 sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySelection) {
-  moduleServer(id, function(input, output, session) {
-    ns <- session$ns
-
+  shiny::moduleServer(id, function(input, output, session) {
     # reactive values
-    rSelections <- reactiveVal(
-      list(
-        list(
-          id = 1,
-          label = as.character(1),
-          rSelection = reactiveVal(NULL)
-        )
-      )
-    )
-    rActiveSelectionId <- reactiveVal(as.character(1))
-    rActiveSelection <- reactive({
-      x <- base::Find(function(elem) {
-        elem$id == rActiveSelectionId()
-      }, rSelections())
-      x$rSelection()
-    }) %>% bindEvent(rActiveSelectionId())
-    counter <- reactiveVal(2)
+    rSelections <- {
+      selections <- list()
+      selections[[as.character(1)]] <- NULL
+      shiny::reactiveVal(list(
+        index = c(as.character(1)),
+        selections = selections
+      ))
+    }
+
+    rActiveSelectionId <- shiny::reactiveVal(as.character(1))
+    rActiveSelection <- shiny::reactive({
+      shiny::req(!is.null(rActiveSelectionId()) && rActiveSelectionId() != "")
+      rSelections()$selections[[rActiveSelectionId()]]
+    }) %>% shiny::bindEvent(rSelections(), rActiveSelectionId())
+    counter <- shiny::reactiveVal(2)
 
     # Observers for handling interaction with the select input
-    observe({
-      updateSelectizeInput(
+    shiny::observe({
+      shiny::updateSelectizeInput(
         session,
         "activeSelectionSelect",
-        choices = c(lapply(rSelections(), function(elem) {
-          elem$id
-        }), list(createNewSelectionChoice)),
+        choices = c(rSelections()$index, createNewSelectionChoice),
         selected = rActiveSelectionId()
       )
-    }) %>% bindEvent(rSelections())
+    }) %>% shiny::bindEvent(rSelections())
 
-    observe({
+    shiny::observe({
+      shiny::req(!is.null(input$activeSelectionSelect) && input$activeSelectionSelect != "")
       rActiveSelectionId(input$activeSelectionSelect)
-    }) %>% bindEvent(input$activeSelectionSelect)
+    }) %>% shiny::bindEvent(input$activeSelectionSelect)
 
     # Observer for handling creating a new selection
-    observe({
-      req(input$activeSelectionSelect == createNewSelectionChoice)
-      count <- counter()
-      counter(count + 1)
+    shiny::observe({
+      shiny::req(input$activeSelectionSelect == createNewSelectionChoice)
+      newSelectionId <- counter()
+      counter(newSelectionId + 1)
 
       selections <- rSelections()
-      rSelection <- reactiveVal(rPrimarySelection())
-      newSelection <- list(
-        id = count,
-        label = as.character(count),
-        rSelection = rSelection
-      )
 
-      rSelections(
-        c(selections, list(newSelection))
-      )
-      rActiveSelectionId(newSelection$id)
-    }) %>% bindEvent(input$activeSelectionSelect)
+      selections$index <- c(selections$index, as.character(newSelectionId))
+      selections$selections[[as.character(newSelectionId)]] <- NULL
+
+      rSelections(selections)
+      rActiveSelectionId(as.character(newSelectionId))
+    }) %>% shiny::bindEvent(input$activeSelectionSelect)
 
     # Observers for handling interactions with the outside world
-    observe({
-      req(!is.null(rActiveSelection()))
-      rSecondarySelection(rActiveSelection())
-    }) %>% bindEvent(rActiveSelection())
+    shiny::observe({
+      selections <- rSelections()
+      selections$selections[[rActiveSelectionId()]] <- rPrimarySelection()
 
-    observe({
-      req(!is.null(rActiveSelection()))
-      rSelections()[[rActiveSelectionId()]]$rSelection(rPrimarySelection())
-    }) %>% bindEvent(rPrimarySelection())
+      rSelections(selections)
+    }) %>% shiny::bindEvent(rPrimarySelection())
+
+    shiny::observe({
+      shiny::req(!is.null(rActiveSelectionId()) && rActiveSelectionId() != "")
+      rSecondarySelection(rActiveSelection())
+    }) %>% shiny::bindEvent(rActiveSelection(), ignoreNULL = FALSE)
 
     # observer({
     #   req(!is.null(rActiveSelection()))
     #   rActiveSelection()(rSecondarySelection())
     # }) %>% bindEvent(rSecondarySelection())
 
-    observe({
-      req(!is.null(rActiveSelection()))
-      message <- {
+    shiny::observe({
+      message <- if (is.null(rActiveSelection())) {
+        list(
+          curveIndex = list(),
+          pointIndex = list()
+        )
+      } else {
         curveIndex <- rActiveSelection()$curveIndex
         pointIndex <- rActiveSelection()$pointIndex
 
@@ -103,12 +99,8 @@ sampleSelectionsServer <- function(id, metadata, rPrimarySelection, rSecondarySe
         "samplesSelectionChanged",
         message
       )
-    }) %>% bindEvent(rActiveSelection())
+    }) %>% shiny::bindEvent(rActiveSelection(), ignoreNULL = FALSE)
 
-    list(
-      selections = rSelections,
-      activeSelectionId = rActiveSelectionId,
-      activeSelection = rActiveSelection
-    )
+    rSelections
   })
 }

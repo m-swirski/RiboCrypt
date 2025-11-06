@@ -71,6 +71,10 @@ umap_server <- function(id, metadata, all_exp_meta) {
       rSelection <- shiny::reactiveVal(NULL)
       rFilteredSelection <- shiny::reactiveVal(NULL)
 
+      shiny::observe({
+        rSelection(input$selectedPoints)
+      }) %>% shiny::bindEvent(input$selectedPoints)
+
       sampleTableServer(
         "sampleTable",
         metadata,
@@ -78,10 +82,9 @@ umap_server <- function(id, metadata, all_exp_meta) {
         rFilteredSelection
       )
 
-      selectedSamples <- sampleSelectionsServer(
+      sampleSelectionsServer(
         "sampleSelection",
         metadata,
-        reactive(input$selectedPoints),
         rSelection,
         rFilteredSelection
       )

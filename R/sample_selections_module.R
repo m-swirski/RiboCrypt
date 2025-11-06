@@ -10,9 +10,7 @@ sampleSelectionsUi <- function(id) {
   )
 }
 
-sampleSelectionsServer <- function(
-  id, metadata, rPrimarySelection, rSecondarySelection, rFilteredSelection
-) {
+sampleSelectionsServer <- function(id, metadata, rSelection, rFilteredSelection) {
   shiny::moduleServer(id, function(input, output, session) {
     # reactive values
     counter <- shiny::reactiveVal(2)
@@ -56,7 +54,7 @@ sampleSelectionsServer <- function(
       rActiveSelectionId(as.character(newSelectionId))
     }) %>% shiny::bindEvent(input$activeSelectionSelect)
 
-    # Observers for selecting the active selection id
+    # Observers for selecting the active selection
     shiny::observe({
       shiny::updateSelectizeInput(
         session,
@@ -75,13 +73,17 @@ sampleSelectionsServer <- function(
       rActiveSelectionId(input$activeSelectionSelect)
     }) %>% shiny::bindEvent(input$activeSelectionSelect)
 
-    # Observers for handling interactions with primary selection
+    # Observers for handling interactions with selection
     shiny::observe({
       selections <- rSelections()
-      selections$selections[[rActiveSelectionId()]] <- rPrimarySelection()
+      selections$selections[[rActiveSelectionId()]] <- rSelection()
 
       rSelections(selections)
-    }) %>% shiny::bindEvent(rPrimarySelection())
+    }) %>% shiny::bindEvent(rSelection())
+
+    shiny::observe({
+      rSelection(rActiveSelection())
+    }) %>% shiny::bindEvent(rActiveSelection(), ignoreNULL = FALSE)
 
     shiny::observe({
       message <- if (is.null(rActiveSelection())) {
@@ -107,23 +109,19 @@ sampleSelectionsServer <- function(
       )
     }) %>% shiny::bindEvent(rActiveSelection(), ignoreNULL = FALSE)
 
-    # Observers for handling interactions with secondary selection
-    shiny::observe({
-      shiny::req(!is.null(rActiveSelectionId()) && rActiveSelectionId() != "")
-      rSecondarySelection(rActiveSelection())
-    }) %>% shiny::bindEvent(rActiveSelection(), ignoreNULL = FALSE)
+    # Observers for handling interactions with filtered selection
 
     shiny::observe({
       selections <- rSelections()
 
       if (is.null(rFilteredSelection())) {
-        selections$filteredSelections[[rActiveSelectionId()]] <- rSecondarySelection()
+        selections$filteredSelections[[rActiveSelectionId()]] <- rSelection()
       } else {
         selections$filteredSelections[[rActiveSelectionId()]] <- rFilteredSelection()
       }
 
       rSelections(selections)
-    }) %>% shiny::bindEvent(rSecondarySelection(), rFilteredSelection(), ignoreNULL = FALSE)
+    }) %>% shiny::bindEvent(rSelection(), rFilteredSelection(), ignoreNULL = FALSE)
 
     shiny::observe({
       shiny::req(!is.null(rActiveFilteredSelection()))

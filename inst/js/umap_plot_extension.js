@@ -1,5 +1,6 @@
 (elem, _, data) => {
   const onSelected = (e) => {
+    console.log("selected trigerred");
     const selectedPoints = e.points;
     const valuesInputId = data;
     const pointValuesToSet = {
@@ -31,5 +32,6 @@
     
     Plotly.react(elem, currentData, elem.layout)
   };
-  Shiny.addCustomMessageHandler("samplesSelectionChanged", onChangedSelection);
+  Shiny.addCustomMessageHandler("samplesActiveSelectionChanged", onChangedSelection);
+  Shiny.addCustomMessageHandler("samplesActiveFilteredSelectionChanged", onChangedSelection);
 };

@@ -68,19 +68,22 @@ umap_server <- function(id, metadata, all_exp_meta) {
           bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
       }
 
-      rTableSelection <- reactiveVal(NULL)
+      rSelection <- shiny::reactiveVal(NULL)
+      rFilteredSelection <- shiny::reactiveVal(NULL)
 
       sampleTableServer(
         "sampleTable",
         metadata,
-        rTableSelection
+        rSelection,
+        rFilteredSelection
       )
 
       selectedSamples <- sampleSelectionsServer(
         "sampleSelection",
         metadata,
         reactive(input$selectedPoints),
-        rTableSelection
+        rSelection,
+        rFilteredSelection
       )
 
       check_url_for_basic_parameters()

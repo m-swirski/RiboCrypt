@@ -146,14 +146,14 @@ factor_update_select <- function(factor) {
 }
 
 condition_update_select <- function(cond) {
-  selected <- if (length(unique(cond())) > 1) {
-    2
-  } else 1
-  selected <- unique(cond())[seq(selected)]
+  factor_has_2_levels <- length(unique(cond())) > 1
+  selected <- ifelse(factor_has_2_levels, 2, 1)
+
+  contrast_levels <- unique(cond())[seq(selected)]
   updateSelectizeInput(
     inputId = "condition",
     choices = cond(),
-    selected = selected
+    selected = contrast_levels
   )
 }
 

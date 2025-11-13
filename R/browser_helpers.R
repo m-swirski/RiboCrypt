@@ -112,12 +112,12 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                                    yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16),
                                                                 rangemode = "tozero", tick0 = 0, dtick = 1,
                                                                 zeroline = TRUE)))
-  multiomics_plot <- subplot(plots,
-                             margin = 0,
-                             nrows = nplots_all,
-                             heights = proportions,
-                             shareX = TRUE,
-                             titleY = TRUE, titleX = TRUE)
+  multiomics_plot <- suppressWarnings(subplot(plots,
+                                              margin = 0,
+                                              nrows = nplots_all,
+                                              heights = proportions,
+                                              shareX = TRUE,
+                                              titleY = TRUE, titleX = TRUE))
 
   if (!without_sequence_track) {
     multiomics_plot <- addJSrender(multiomics_plot, bottom_panel$target_seq,

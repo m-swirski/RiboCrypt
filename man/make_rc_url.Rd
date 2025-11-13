@@ -19,6 +19,7 @@ make_rc_url(
   kmer = 1,
   add_translons = FALSE,
   zoom_range = NULL,
+  genomic_region = NULL,
   host = "https://ribocrypt.org"
 )
 }
@@ -50,6 +51,8 @@ make_rc_url(
 \item{add_translons}{logical, default FALSE. If TRUE, add translons predicted sequences in annotation.}
 
 \item{zoom_range}{character, zoom values.}
+
+\item{genomic_region}{character, region to display}
 
 \item{host}{url, default "https://ribocrypt.org". Set to localhost for local version.}
 }

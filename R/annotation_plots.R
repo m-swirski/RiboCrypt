@@ -36,8 +36,11 @@ plotSeqPanel <- function(hits, sequence, frame = 1) {
   fig <- ggplot() +
     geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3)),
               fill = c("#F8766D","#00BA38","#619CFF")) +
-    geom_segment(data=hits, mapping = aes(y = 2 - (frames + 1), yend =  2 - frames, x = pos, xend = pos,
-                                          text = paste0("Pos: ", pos, "\n", "Type: ", Type)), col=hits$col) +
+    suppressWarnings(
+      geom_segment(data=hits,
+                   mapping = aes(y = 2 - (frames + 1), yend =  2 - frames, x = pos, xend = pos,
+                                 text = paste0("Pos: ", pos, "\n", "Type: ", Type)), col=hits$col)
+      ) +
     ylab("frame") +
     xlab("position [nt]") +
     theme_bw() +
@@ -267,7 +270,8 @@ geneModelPanelPlot <- function(dt, frame = 1) {
   seg_dt <- dt[type %in% c("intron", "intron_collapsed")]
   dt <- dt[!(type %in% c("intron", "intron_collapsed"))]
 
-  result_plot <- ggplot(frame = frame) + ylab("") + xlab("") +
+  result_plot <- suppressWarnings(ggplot(frame = frame)) +
+    ylab("") + xlab("") +
     theme(axis.title.x = element_blank(),
           axis.ticks.x = element_blank(),
           axis.text.x = element_blank(),

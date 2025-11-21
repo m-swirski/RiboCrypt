@@ -47,7 +47,8 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                          column(6, frame_type_select(ns, selected = browser_options["default_frame_type"])),
                          column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
                                                value = as.numeric(browser_options["default_kmer"])))
-                       )
+                       ),
+                       tags$hr(style = "padding-top: 50px; padding-bottom: 50px;")
               ),
               tabPanel("Settings",
                                 fluidRow(
@@ -74,12 +75,18 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                                 fluidRow(column(4, checkboxInput(ns("phyloP"), "Conservation (phyloP)", FALSE)),
                                          column(4, checkboxInput(ns("mapability"), "Mapability (28mers)", FALSE))),
                                 fluidRow(
-                                  column(6, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),
-                                  column(6, frame_subsetter_select(ns))
+                                  column(4, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),
+                                  column(4, selectizeInput(
+                                    inputId = ns("colors"),
+                                    label = "Frame Color theme",
+                                    choices = c("R", "Color_blind")
+                                  )),
+                                  column(4, frame_subsetter_select(ns))
                                 ),
                                 fluidRow(
-                                  column(6, checkboxInput(ns("summary_track"), "Summary top track", FALSE)),
-                                  column(6, frame_type_select(ns, "summary_track_type", "Summary display type"))
+                                  column(4, checkboxInput(ns("summary_track"), "Summary top track", FALSE)),
+                                  column(4, NULL),
+                                  column(4, frame_type_select(ns, "summary_track_type", "Summary display type"))
                                 ),
                                 fluidRow(
                                   column(4, downloadButton(ns("download_plot_html"), "Download HTML",

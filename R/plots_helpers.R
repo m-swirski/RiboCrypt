@@ -2,6 +2,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
                                         lines, type, line_size = 0.2) {
   count <- NULL # Avoid data.table warning
   profile_plot <- ggplot(profile)
+  if (withFrames) colors <- frame_color_themes(colors)
   if (length(lines) > 0) profile_plot <- profile_plot +
     geom_vline(xintercept = lines, col = names(lines), linetype = 4,
                alpha = 0.2, size = line_size)
@@ -13,6 +14,11 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
   } else if (type == "lines") {
     profile_plot <- profile_plot +
       geom_line(aes(y = count, x = position, color = frame), size = 0.5)
+
+    if (!is.null(colors)) {
+      profile_plot <- profile_plot +
+        scale_color_manual(values = colors)
+    }
   } else if (type == "stacks") {
     profile_plot <- profile_plot +
       geom_area(aes(y = count, x = position, fill = frame), size = 0.1,
@@ -20,6 +26,10 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
   } else if (type == "columns") {
     profile_plot <- profile_plot +
       geom_col(aes(y = count, x = position, fill = frame))
+    if (!is.null(colors)) {
+      profile_plot <- profile_plot +
+        scale_fill_manual(values = colors)
+    }
   } else if (type == "area") {
     profile_plot <- profile_plot +
       geom_area(aes(y = count, x = position, fill = frame), size = 0.1,

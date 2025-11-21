@@ -54,6 +54,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
         paste("customSequence", input$customSequence, sep = "="),
         paste("phyloP", input$phyloP, sep = "="),
         paste("mapability", input$mapability, sep = "="),
+        paste("colors", input$colors, sep = "="),
         paste("summary_track", input$summary_track, sep = "="),
         paste("summary_track_type", input$summary_track_type, sep = "="),
         paste("collapsed_introns_width", input$collapsed_introns_width, sep = "="),
@@ -164,6 +165,12 @@ browser_specific_url_checker <- function() {
           value <- query[tag][[1]]
           if (!is.null(value)) {
             frame_type_update_select(value, tag)
+          }
+        }
+        for (tag in c("colors")) {
+          value <- query[tag][[1]]
+          if (!is.null(value)) {
+            updateSelectizeInput(inputId = tag, selected = value)
           }
         }
 

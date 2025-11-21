@@ -1,18 +1,20 @@
 multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, annotation,
                                          start_codons, stop_codons, custom_motif,
                                          custom_regions, viewMode,
-                                         tx_annotation = NULL, collapse_intron_flank = 100) {
+                                         tx_annotation = NULL, collapse_intron_flank = 100,
+                                         frame_colors = "R") {
   force(display_range)
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
                                           stop_codons = stop_codons, custom_motif = custom_motif)
-  seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]])
+  seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]], frame_colors = frame_colors)
   # Get the panel for the annotation track
   gene_model_panel <- createGeneModelPanel(display_range, annotation, frame = 1,
                                            tx_annotation = tx_annotation,
                                            custom_regions = custom_regions,
-                                           viewMode = viewMode, collapse_intron_flank)
+                                           viewMode = viewMode, collapse_intron_flank,
+                                           frame_colors = frame_colors)
   lines <- gene_model_panel[[2]]
   layers <- max(gene_model_panel[[1]]$layers)
   gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]])
@@ -35,11 +37,11 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels
                                 colors = colors[1], ylabels = ylabels[1], lines = lines))
   } else {
     if (is(BPPARAM, "SerialParam")) {
-      plots <- mapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
+      plots <- mapply(function(p,w,c,yl,ylf) createSinglePlot(p,w,c,yl,ylf, lines, type = frames_type, total_libs),
                       profiles, withFrames, colors, ylabels, ylabels_full_name,
                       SIMPLIFY = FALSE)
     } else {
-      plots <- bpmapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
+      plots <- bpmapply(function(p,w,c,yl,ylf) createSinglePlot(p,w,c,yl,ylf, lines, type = frames_type, total_libs),
                         profiles, withFrames, colors, ylabels, ylabels_full_name,
                         SIMPLIFY = FALSE, BPPARAM = BPPARAM)
     }
@@ -83,7 +85,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                          display_sequence, display_dist,
                                          aa_letter_code, input_id, plot_name,
                                          plot_title,  width, height, export.format,
-                                         zoom_range = NULL) {
+                                         zoom_range = NULL, frame_colors = "R") {
   print("Merging bottom and coverage tracks")
   nplots <- track_panel$nplots
   plots <- browser_plots_highlighted(track_panel$plots, zoom_range)
@@ -121,8 +123,8 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
 
   if (!without_sequence_track) {
     multiomics_plot <- addJSrender(multiomics_plot, bottom_panel$target_seq,
-                                   nplots - 3, seq_render_dist,
-                                   display_dist, aa_letter_code, input_id)
+                                   nplots - 3, seq_render_dist, display_dist,
+                                   aa_letter_code, input_id, frame_colors)
   }
   filename <- ifelse(plot_name == "default", names(display_range), plot_name)
   multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
@@ -293,7 +295,7 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
                        input$add_uorfs,  input$add_translon,
                        input$extendTrailers, input$extendLeaders,
                        input$genomic_region, input$viewMode,
-                       ciw,
+                       ciw, input$colors,
                        input$customSequence, input$phyloP, input$mapability,
                        collapse = "|_|")
   # Until plot and coverage is split (bottom must be part of browser hash)

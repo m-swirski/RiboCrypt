@@ -48,7 +48,8 @@ bottom_panel_shiny <- function(mainPlotControls) {
                                                custom_regions = mainPlotControls()$customRegions,
                                                viewMode,
                                                tx_annotation = mainPlotControls()$tx_annotation,
-                                               mainPlotControls()$collapsed_introns_width)
+                                               mainPlotControls()$collapsed_introns_width,
+                                               mainPlotControls()$colors)
   custom_bigwig_panels <- custom_seq_track_panels(mainPlotControls,
                                                   annotation_list$display_range)
   cat("Done (bottom):"); print(round(Sys.time() - time_before, 2))
@@ -115,7 +116,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       withFrames = mainPlotControls()$withFrames,
                                       viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
                                       frames_type = mainPlotControls()$frames_type,
-                                      colors = NULL,
+                                      colors = mainPlotControls()$colors,
                                       kmers = mainPlotControls()$kmerLength,
                                       kmers_type = c("mean", "sum")[1],
                                       ylabels = bamVarName(mainPlotControls()$dff),
@@ -151,7 +152,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                        aa_letter_code,
                                        input_id = session$ns("selectedRegion"),
                                        plot_name, plot_title, width, height,
-                                       export.format, zoom_range)
+                                       export.format, zoom_range, colors)
   cat("Done (Full):"); print(round(Sys.time() - time_before, 2))
   return(plot)
 }

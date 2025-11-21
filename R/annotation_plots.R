@@ -29,13 +29,14 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
 
 }
 
-plotSeqPanel <- function(hits, sequence, frame = 1) {
+plotSeqPanel <- function(hits, sequence, frame = 1, frame_colors = "R") {
+  frame_colors <- frame_color_themes(frame_colors, FALSE)
   pos <- NULL # avoid dt warning
   # New red: #FFA8A3 ?
   hits[, Type := fifelse(col == "white", "Start codon", fifelse(col == "black", "Stop codon", "User Motif"))]
   fig <- ggplot() +
     geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3)),
-              fill = c("#F8766D","#00BA38","#619CFF")) +
+              fill = frame_colors) +
     suppressWarnings(
       geom_segment(data=hits,
                    mapping = aes(y = 2 - (frames + 1), yend =  2 - frames, x = pos, xend = pos,
@@ -103,7 +104,8 @@ geneTrackLayer <- function(grl) {
 #' @keywords internal
 #' @noRd
 createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL,
-                                 frame=1, custom_regions, viewMode, collapse_intron_flank = 100) {
+                                 frame=1, custom_regions, viewMode, collapse_intron_flank = 100,
+                                 frame_colors = "R") {
   # TODO: Explain sections of this function, or split in sub functions
   # It is too complicated right now.
   use_custom_region <- !is.null(custom_regions) & length(custom_regions) > 0
@@ -133,11 +135,11 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
   if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <- "utr"
 
   return(gene_box_fix_overlaps(display_range, c(overlaps, overlaps_tx), custom_regions,
-                               collapse_intron_flank))
+                               collapse_intron_flank, frame_colors))
 }
 
 gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
-                                  collapse_intron_flank) {
+                                  collapse_intron_flank, frame_colors) {
   if (length(overlaps) == 0) {
     result_dt <- data.table()
     lines_locations <- NULL
@@ -162,7 +164,7 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
   locations$rel_frame_orf <- getRelativeFrames(locations)
   locations <- unlistGrl(groupGRangesBy(locations))
 
-  cols <- colour_bars(locations, overlaps, display_range)
+  cols <- colour_bars(locations, overlaps, display_range, frame_colors)
   layers <- geneTrackLayer(groupGRangesBy(locations))
   plot_width <- widthPerGroup(display_range)
   geneBox <- geneBoxFromRanges(locations, plot_width, layers, cols,
@@ -259,8 +261,21 @@ move_utrs_touching_cds <- function(locations, type, plot_width) {
   return(locations)
 }
 
-rc_rgb <- function() {
-  return(c("#fbbab5","#7fdc9b","#afcdff"))
+frame_color_themes <- function(theme, with_alpha = FALSE) {
+  if (theme == "R") {
+    colors <- rc_rgb(with_alpha)
+  } else if (theme == "Color_blind") {
+    colors <- if (with_alpha) {
+      c("#8B90BA", "#FBCF79", "#C6E0EE")
+    } else c("#5056A0", "#F9AA2A", "#AED5EB")
+  } else stop("theme must be either R or Color blind")
+}
+
+rc_rgb <- function(with_alpha = TRUE) {
+  rgb_colors <- if (with_alpha) {
+    c("#fbbab5","#7fdc9b","#afcdff")
+  } else c("#F8766D","#00BA38","#619CFF")
+  return(rgb_colors)
 }
 
 geneModelPanelPlot <- function(dt, frame = 1) {

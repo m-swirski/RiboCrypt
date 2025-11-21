@@ -57,9 +57,12 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     frames_subset <- input$frames_subset
     use_all_frames <- length(frames_subset) == 0 || any(c("","all") %in% frames_subset)
     if (use_all_frames) frames_subset <- "all"
+    colors <- isolate(input$colors)
+
+
 
     shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
-
+    print("-- Browser controller done")
     reactiveValues(dff = dff,
                    display_region = display_region,
                    customRegions = customRegions,
@@ -82,6 +85,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    zoom_range = zoom_range,
                    frames_subset = frames_subset,
                    mapability = input$mapability,
+                   colors = colors,
                    hash_bottom = hash_strings[["hash_bottom"]],
                    hash_browser = hash_strings[["hash_browser"]],
                    hash_expression = hash_strings[["hash_expression"]])

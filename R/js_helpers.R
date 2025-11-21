@@ -21,8 +21,8 @@ fetchJS <- function(script_name) {
 #'  and AA list (per frame, total 3)
 #' @importFrom Biostrings AMINO_ACID_CODE
 fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
-                         aa_letter_code = "one_letter", input_id) {
-  fr_colors <- c("#F8766D","#00BA38", "#619CFF")
+                         aa_letter_code = "one_letter", input_id, frame_colors = "R") {
+  fr_colors <- frame_color_themes(frame_colors)
   nt_yaxis <- paste0("y", nplots + 1)
   aa_yaxis <- paste0("y", nplots + 3)
   nts <- lapply(1:3, function(x) seq(x, display_dist, 3))
@@ -56,12 +56,12 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
 }
 
 addJSrender <- function(multiomics_plot, target_seq, nplots, seq_render_dist,
-                        display_dist, aa_letter_code, input_id) {
+                        display_dist, aa_letter_code, input_id, frame_colors) {
   #browser()
   display_dist <- nchar(target_seq)
   render_on_zoom_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
                                       distance = seq_render_dist, display_dist = display_dist,
-                                      aa_letter_code = aa_letter_code, input_id)
+                                      aa_letter_code = aa_letter_code, input_id, frame_colors)
   select_region_on_click_data <- list(nplots = nplots, input_id = input_id)
   multiomics_plot <- multiomics_plot %>%
     onRender(fetchJS("render_on_zoom.js"), render_on_zoom_data) %>%

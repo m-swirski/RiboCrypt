@@ -23,6 +23,10 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
     profile_plot <- profile_plot +
       geom_area(aes(y = count, x = position, fill = frame), size = 0.1,
                 alpha = 0.8, col = "black")
+    if (!is.null(colors)) {
+      profile_plot <- profile_plot +
+        scale_fill_manual(values = colors)
+    }
   } else if (type == "columns") {
     profile_plot <- profile_plot +
       geom_col(aes(y = count, x = position, fill = frame))
@@ -38,6 +42,10 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
                  fill = NA,  # Make points invisible (no fill)
                  color = NA, size = 0.1, position = 'identity',
                  inherit.aes = FALSE)
+    if (!is.null(colors)) {
+      profile_plot <- profile_plot +
+        scale_fill_manual(values = colors)
+    }
   } else if (type == "heatmap") {
     hm_colors <- c("white", "yellow1","yellow2", "yellow3",
                    "lightblue", "blue", "navy")

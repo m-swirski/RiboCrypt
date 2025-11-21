@@ -19,6 +19,7 @@ multiOmicsControllerView <- function() {
     if (!(length(withFrames)  %in% c(1, length(reads)))) stop("length of withFrames must be 0, 1 or the same as reads list")
     if (length(withFrames) == 1) withFrames <- rep(withFrames, length(reads))
 
+    frame_colors <- colors
     if (length(colors) == 0) colors <- 1:length(reads)
     if (!(length(colors)  %in% c(1, length(reads)))) stop("length of colors must be 0, 1 or the same as reads list")
     if (length(colors) == 1) colors <- rep(colors, length(reads))

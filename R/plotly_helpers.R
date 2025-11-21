@@ -34,14 +34,43 @@ automateTicksAA <- function(plot) {
       toWebGL())
 }
 
+nice_ticks <- function(y_max, n_ticks = 3) {
+  if (y_max <= 0) return(numeric(0))
+
+  # Ask pretty() for one extra tick so we have room to drop 0
+  raw <- pretty(c(0, y_max), n = n_ticks + 1)
+
+  # Drop 0 and negatives
+  raw_pos <- raw[raw > 0]
+
+  # Keep at most n_ticks, biased toward the top
+  if (length(raw_pos) > n_ticks) {
+    raw_pos_even <- raw_pos[seq_along(raw_pos) %% 2 == 0]
+    raw_pos <- c(head(raw_pos_even, length(raw_pos_even) - 1), tail(raw_pos, 1))
+  }
+
+  raw_pos
+}
+
+
 #'
 #' @rawNamespace import(plotly, except = c(config, last_plot))
 #' @keywords internal
-automateTicksRNA <- function(plot, as_plotly = TRUE, y_autorange = FALSE, y_nticks = 3) {
+automateTicksRNA <- function(plot, as_plotly = TRUE, scale_ticks = TRUE) {
   if (!as_plotly) return(plot)
-  plot %>% ggplotly(dynamicTicks = TRUE) %>%
-    plotly::layout(yaxis=list(autorange = y_autorange, nticks = y_nticks),
-                   xaxis=list(autorange=FALSE))
+  if (scale_ticks) {
+    y_max <- max(plot$data$count)
+    y_nticks <- ifelse(y_max > 3,
+                       ifelse(y_max > 10, 3, 2), 1)
+    tick_vals <- nice_ticks(y_max, n_ticks = y_nticks)
+    plot %>% ggplotly() %>%
+      plotly::layout(yaxis=list(range = c(0, max(tick_vals)),
+                                tickvals = tick_vals,
+                                ticktext = tick_vals),
+                     xaxis=list(autorange=FALSE))
+  } else {
+    plot %>% ggplotly() %>%  plotly::layout(xaxis=list(autorange=FALSE))
+  }
 }
 
 automateTicksX <- function(plot) {

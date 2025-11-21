@@ -1,8 +1,8 @@
 singlePlot_select_plot_type <- function(profile, withFrames, colors,
-                                        lines, type, line_size = 0.2) {
+                                        lines, type, lib_index, line_size = 0.2) {
   count <- NULL # Avoid data.table warning
   profile_plot <- ggplot(profile)
-  if (withFrames) colors <- frame_color_themes(colors)
+  if (withFrames && type != "heatmap") colors <- frame_color_themes(colors)
   if (length(lines) > 0) profile_plot <- profile_plot +
     geom_vline(xintercept = lines, col = names(lines), linetype = 4,
                alpha = 0.2, size = line_size)
@@ -51,7 +51,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
                    "lightblue", "blue", "navy")
     pro <- copy(profile)
     pro[, count := log2(count + 1)]
-    profile_plot <- ggplot(pro, aes(y = colors, x = position, fill = count)) +
+    profile_plot <- ggplot(pro, aes(y = lib_index, x = position, fill = count)) +
       geom_tile() +
       scale_fill_gradientn(colours = hm_colors,
                            limits = c(min(pro$count), max(pro$count)))
@@ -61,8 +61,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, colors,
 
 singlePlot_add_theme <- function(profile_plot, ylabels, type,
                                  flip_ylabel = type == "heatmap", total_libs,
-                                 ylabels_full_name = ylabels, as_plotly = TRUE,
-                                 y_autorange = FALSE, y_nticks = 3) {
+                                 ylabels_full_name = ylabels, as_plotly = TRUE) {
   y_text_size <- ifelse(total_libs == 1, 8, ifelse(total_libs < 30, 7, 6))
   profile_plot <- profile_plot +
     ylab(ylabels) +
@@ -85,9 +84,7 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
     }
 
     # browser()
-    profile_plot <- if (type == "heatmap") {
-      automateTicksRNA(profile_plot, as_plotly)
-    } else automateTicksRNA(profile_plot, as_plotly, y_autorange, y_nticks)
+    profile_plot <- automateTicksRNA(profile_plot, as_plotly, FALSE)
     if (flip_ylabel | total_libs > 5) {
       y_text_size <- ifelse(total_libs < 30, 15, ifelse(total_libs < 50, 10,
                                                         ifelse(total_libs < 60, 7, 5)))
@@ -100,5 +97,5 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
     }
     return(profile_plot)
   }
-  return(automateTicksRNA(profile_plot, as_plotly, y_autorange, y_nticks))
+  return(automateTicksRNA(profile_plot, as_plotly))
 }

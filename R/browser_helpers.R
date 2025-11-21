@@ -37,13 +37,15 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels
                                 colors = colors[1], ylabels = ylabels[1], lines = lines))
   } else {
     if (is(BPPARAM, "SerialParam")) {
-      plots <- mapply(function(p,w,c,yl,ylf) createSinglePlot(p,w,c,yl,ylf, lines, type = frames_type, total_libs),
-                      profiles, withFrames, colors, ylabels, ylabels_full_name,
-                      SIMPLIFY = FALSE)
+      plots <- mapply(function(p,w,c,yl,ylf, lib_index) {
+          createSinglePlot(p,w,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
+        profiles, withFrames, colors, ylabels, ylabels_full_name, seq_along(total_libs),
+        SIMPLIFY = FALSE)
     } else {
-      plots <- bpmapply(function(p,w,c,yl,ylf) createSinglePlot(p,w,c,yl,ylf, lines, type = frames_type, total_libs),
-                        profiles, withFrames, colors, ylabels, ylabels_full_name,
-                        SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+      plots <- bpmapply(function(p,w,c,yl,ylf, lib_index) {
+          createSinglePlot(p,w,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
+        profiles, withFrames, colors, ylabels, ylabels_full_name, seq_along(total_libs),
+        SIMPLIFY = FALSE, BPPARAM = BPPARAM)
     }
   }
 
@@ -122,6 +124,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                               titleY = TRUE, titleX = TRUE))
 
   if (!without_sequence_track) {
+    print(frame_colors)
     multiomics_plot <- addJSrender(multiomics_plot, bottom_panel$target_seq,
                                    nplots - 3, seq_render_dist, display_dist,
                                    aa_letter_code, input_id, frame_colors)

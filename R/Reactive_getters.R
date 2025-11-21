@@ -152,7 +152,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                        aa_letter_code,
                                        input_id = session$ns("selectedRegion"),
                                        plot_name, plot_title, width, height,
-                                       export.format, zoom_range, colors)
+                                       export.format, zoom_range, frame_colors)
   cat("Done (Full):"); print(round(Sys.time() - time_before, 2))
   return(plot)
 }

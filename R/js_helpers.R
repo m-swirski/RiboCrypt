@@ -27,7 +27,10 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
   aa_yaxis <- paste0("y", nplots + 3)
   nts <- lapply(1:3, function(x) seq(x, display_dist, 3))
   rendered_seq <- strsplit(as.character(target_seq),"")[[1]]
-  aas <- lapply(1:3, function(x) suppressWarnings(strsplit(as.character(translate(target_seq[[1]][x:display_dist], if.fuzzy.codon = "X")), "")[[1]]))
+  translate_fuzzy_logic <- ifelse(all(rendered_seq %in% DNA_BASES), "error", "X")
+  aas <- lapply(1:3, function(x) suppressWarnings(
+    strsplit(as.character(translate(target_seq[[1]][x:display_dist],
+                                    if.fuzzy.codon = translate_fuzzy_logic)), "")[[1]]))
   if (aa_letter_code == "three_letters") {
     aa_code <- AMINO_ACID_CODE
     aa_code["*"] <- "*"

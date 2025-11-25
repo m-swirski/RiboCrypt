@@ -371,6 +371,7 @@ org_and_study_changed_checker <- function(input, output, session) {
     # This must be passed to all submodules that share experiment
     rv <- reactiveValues(lstval=isolate(df())@txdb,
                          curval=isolate(df())@txdb,
+                         initval=isolate(df())@txdb,
                          genome = "ALL",
                          exp = browser_options["default_experiment"],
                          changed=isolate(df())@txdb != exp_init@txdb)
@@ -389,18 +390,24 @@ org_and_study_changed_checker <- function(input, output, session) {
       bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
 
     # Annotation change reactives
-    tx <- reactive(loadRegion(isolate(df()))) %>%
+    tx <- reactive({
+      if(rv$curval == rv$initval) {message("Settings tx to init:"); tx_init}
+      else {loadRegion(isolate(df()))}}) %>%
       bindCache(rv$curval) %>%
       bindEvent(rv$changed, ignoreNULL = TRUE)
-    cds <- reactive(loadRegion(isolate(df()), "cds")) %>%
+    cds <- reactive({
+      if(rv$curval == rv$initval) {
+        message("Settings cds to init:"); cds_init}
+      else {loadRegion(isolate(df()), "cds")}}) %>%
       bindCache(rv$curval) %>%
       bindEvent(rv$changed, ignoreNULL = TRUE)
     # gene_name_list <- reactiveVal(names_init)
     gene_name_list <- reactive({
-      if(rv$changed == FALSE) {message("Settings gene_list to default:"); names_init}
+      if(rv$curval == rv$initval) {
+        message("Settings gene_list to init:"); names_init}
       else {get_gene_name_categories(df())}}) %>%
       bindCache(rv$curval) %>%
-      bindEvent(rv$changed)
+      bindEvent(rv$changed, ignoreNULL = TRUE)
 
     cat("Pre modules: "); print(round(Sys.time() - time_before, 2))
   }

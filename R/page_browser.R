@@ -137,8 +137,9 @@ browser_server <- function(id, all_experiments, env, df, experiments,
                    go_when_input_is_ready(input, browser_options, fired, kickoff, libs),
                    ignoreInit = TRUE, ignoreNULL = TRUE)
       # Main plot controller, this code is only run if 'plot' is pressed
+      i <- 1
       mainPlotControls <- eventReactive(list(input$go, kickoff()),
-        click_plot_browser_main_controller(input, tx, cds, libs, df),
+        {print(paste("Browser fire:", i));i<<-i+1;click_plot_browser_main_controller(input, tx, cds, libs, df)},
         ignoreInit = TRUE,
         ignoreNULL = FALSE)
 

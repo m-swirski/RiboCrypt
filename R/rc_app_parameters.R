@@ -96,6 +96,10 @@ rc_parameter_setup <- function() {
     }
     stopifnot(browser_options["default_gene"] %in% names_init$label)
 
+
+    tx_init <- loadRegion(exp_init)
+    cds_init <- loadRegion(exp_init, "cds")
+
     exp_init_meta <- names_init_meta <- NULL
 
     if (nrow(all_exp_meta) > 0) {

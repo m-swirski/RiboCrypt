@@ -9,42 +9,6 @@ module_protein <- function(input, output, gene_name_list, session) {
     selectedTX <- reactiveVal(NULL)
     if (FALSE) cds <- NULL # Avoid biocCheck error
 
-    # Get the Ribo-seq prfile (we select first library for now)
-    selectedRegionProfile <- reactive({
-      req(selectedRegion(), input$useCustomRegions)
-      req(selectedRegion() != "...")
-      if (id != "browser") {
-        return(rep(1, 1e6))
-      }
-      coverage_region <- NULL
-      uorf_clicked <- length(grep("U[0-9]+$", input$selectedRegion)) == 1
-      translon_clicked <- length(grep("T[0-9]+$", input$selectedRegion)) == 1
-      if (uorf_clicked) {
-        print("- Searching for local uorf protein structure:")
-        print(input$selectedRegion)
-        print(paste("In tx:", input$tx))
-      }
-      if (translon_clicked) {
-        print("- Searching for local translon protein structure:")
-        print(input$selectedRegion)
-        print(paste("In tx:", input$tx))
-      }
-      coverage_region <- c(cds(), mainPlotControls()$customRegions)
-      coverage_region <- coverage_region[names(coverage_region) == selectedRegion()]
-      stopifnot(length(coverage_region) == 1)
-
-      result <- coverage_region %>%
-        getRiboProfile(mainPlotControls()$reads[[1]]) %>%
-        (function (x) {
-          x$count[seq.int(1, length(x$count), 3)]
-        })()
-      if (input$log_scale_protein) {
-        result <- floor(log2(result))
-        result[!is.finite(result)] <- 0
-      }
-      result
-    })
-
     # When user clicks on region
     # start displaying structure viewer
     # and set selected structure to one which was clicked
@@ -53,25 +17,14 @@ module_protein <- function(input, output, gene_name_list, session) {
       selectedRegion(input$selectedRegion)
       selectedTX(input$tx)
       dynamicVisible(TRUE)
-    })
+    }, priority = 1)
+
     # When user clicks close button
     # stop displaying structure viewer
     # and set selected structure to NULL
     observeEvent(input$dynamicClose, {
       selectedRegion(NULL)
       dynamicVisible(FALSE)
-    })
-    # Setup 3dbeacons model download
-    observeEvent(beacons_structures(), {
-      print("Fetching structures..")
-      tmp_paths <- unname(beacons_structures())
-      names(tmp_paths) <- beacons_results()
-      mapply(
-        function(x) {
-          httr::GET(x, httr::write_disk(tmp_paths[x], overwrite = TRUE))
-        },
-        beacons_results()
-      )
     })
 
     # NGL viewer widget
@@ -81,103 +34,28 @@ module_protein <- function(input, output, gene_name_list, session) {
     region_dir <- reactive({
       file.path(protein_structure_dir(), selectedTX())
     })
-    on_disk_structures <- reactive({
-      paths <- character()
-      if (!isTruthy(selectedRegion())) return(paths)
-      pdb_input <- grepl("\\.pdb$", selectedRegion())
-      uorf_clicked <- length(grep("^U[0-9]+$", input$selectedRegion)) == 1
-      translon_clicked <- length(grep("^T[0-9]+$", input$selectedRegion)) == 1
-      if (pdb_input) {
-        paths <- selectedRegion()
-      } else if (uorf_clicked) {
-        paths <- file.path(region_dir(), list.files(region_dir()))
-        paths <- paths[grep(paste0("^uorf_",selectedRegion(), ".pdb$"), basename(paths))]
-        if (length(paths) == 0) warning("No local protein structure for this uORF!")
-      } else if (translon_clicked) {
-        linker_file <- file.path(refFolder(df()), "predicted_translons",
-                                 "predicted_translons_with_sequence_pep_linker.fst")
-        if (!file.exists(linker_file)) {
-          print("No translon peptide linker file for organism!")
-          return("")
-        }
-        selected_grl <- mainPlotControls()$customRegions[]
-        selected_as_coord <- as.character(selected_grl[names(selected_grl) == selectedRegion()])
-        linker_dt <- fst::read_fst(linker_file, as.data.table = TRUE)
-
-        paths <- coordinates_to_pep_id_path(selected_as_coord, linker_dt, protein_structure_dir())
-      } else {
-        paths <- paths[-grep("uorf", paths)] # Remove uorf structures
-      }
 
 
-      path_labels <- mapply(
-        function(x) {
-          str_sub(x, start = gregexpr("/", x) %>% unlist() %>% last() + 1)
-        },
-        basename(paths)
-      )
-      result <- paths
-      names(result) <- path_labels
-      result
-    })
-    uniprot_id <- reactive({
-      gene_name_list()[gene_name_list()$value == selectedRegion()]$uniprot_id
-    }
-
-    )
-
-    beacons_results <- reactive({
-      print("Fetching structures URLs..")
-      model_urls <-
-        fetch_summary(uniprot_id()) %>%
-        model_urls_from_summary()
-      # Convert alphafold cif to pdb (NGLviewR does not work with cif there)
-      alphafold_id <- grep("https://alphafold.ebi.ac.uk/files/", model_urls)
-      if (length(alphafold_id) > 0) {
-        model_urls[alphafold_id] <- gsub("cif$", "pdb", model_urls[alphafold_id])
-      }
-      model_urls
-    }) %>%
-      bindCache(uniprot_id()) %>%
-      bindEvent(uniprot_id(), ignoreNULL = TRUE, ignoreInit = TRUE)
-
-    beacons_structures <- reactive({
-      req(beacons_results())
-      results <- beacons_results()
-
-      model_labels <- mapply(
-        function(x) {
-          str_sub(x, start = gregexpr("/", x) %>% unlist() %>% last() + 1)
-        },
-        results
-      )
-      model_paths <- rep(tempfile(pattern = "structure"), length(model_labels))
-      model_paths <- paste0(model_paths, ".", file_ext(results))
-      result <- model_paths
-      names(result) <- model_labels
-      result
-    })
     structure_variants <- reactive({
-      print("Selecting local or online pdb")
-      online <- !is(try(beacons_results(), silent = TRUE), "try-error")
-      if (online && isTruthy(beacons_results())) {
-        print(beacons_structures())
-        res <- beacons_structures()
-        print("Structures fetched online")
-      } else {
-        res <- on_disk_structures()
-        print("Structures fetched local")
-      }
-      return(res)
-    })
-    selected_variant <- reactive({
-      req(structure_variants())
-      if (is.null(input$structureViewerSelector)) {
-        head(structure_variants())
-      } else input$structureViewerSelector
-    })
+      req(selectedRegion(), selectedRegion() != "...")
+      get_protein_structure(gene_name_list(), selectedRegion(), selectedTX(), region_dir(),
+                            protein_structure_dir(), df(), mainPlotControls()$customRegions)
+    }) %>% bindCache(selectedRegion(), selectedTX) %>%
+      bindEvent(selectedRegion(), ignoreNULL = TRUE, ignoreInit = FALSE)
+
+    # Get the Ribo-seq profile (we select first library for now)
+    selectedRegionProfile <- reactive({
+      req(selectedRegion(), selectedRegion() != "...", input$useCustomRegions,
+          structure_variants())
+      getCoverageProtein(mainPlotControls()$reads[[1]], cds(), mainPlotControls()$customRegions,
+                         selectedRegion(), input$log_scale_protein, id)
+
+    }) %>% bindCache(selectedRegion(), selectedTX())%>%
+      bindEvent(structure_variants(), ignoreNULL = TRUE, ignoreInit = FALSE)
+
     # Variable UI logic
-    output$dynamic <- renderNGLVieweR(protein_struct_render(selectedRegionProfile, selected_variant))
+    output$dynamic <- renderNGLVieweR(protein_struct_render(selectedRegionProfile(),
+                                                            attr(structure_variants(), "selected")))
     # output$dynamic <- renderR3dmol(protein_struct_render(selectedRegionProfile, selected_variant))
     output$proteinStruct <- renderUI(
       protein_struct_plot(

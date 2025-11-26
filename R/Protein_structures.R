@@ -5,11 +5,11 @@ valuesToColors <- function(vals) {
 }
 
 protein_struct_render <- function(selectedRegionProfile, structure_file) {
-  req(structure_file(), selectedRegionProfile())
-  structure_file() %>% NGLVieweR() %>%
+  req(structure_file, selectedRegionProfile)
+  suppressWarnings(structure_file %>% NGLVieweR()) %>%
     stageParameters(backgroundColor = "white") %>%
     onRender(fetchJS("sequence_viewer_coloring.js"),
-             valuesToColors(selectedRegionProfile()))
+             valuesToColors(selectedRegionProfile))
 }
 
 pdb_exists <- function(pdb_file) {
@@ -44,7 +44,7 @@ pep_id_to_path <- function(id, pep_dir) {
 
 protein_struct_plot <- function(selectedRegion, selectedRegionProfile, dynamicVisible,
                                 session, structureChoices = list()) {
-  req(dynamicVisible(), selectedRegionProfile())
+  req(dynamicVisible(), selectedRegion(), selectedRegionProfile())
   protein_struct_plot_internal(selectedRegion(), session, structureChoices())
 
 }
@@ -86,4 +86,40 @@ protein_struct_plot_internal <- function(selectedRegion, session, structureChoic
     ),
     fluidRow(NGLVieweROutput(ns("dynamic")))
   )
+}
+
+protein_clicked_info <- function(selectedRegion, tx, uniprot_id) {
+  uorf_clicked <- length(grep("^U[0-9]+$", selectedRegion)) == 1
+  translon_clicked <- length(grep("^T[0-9]+$", selectedRegion)) == 1
+  if (uorf_clicked) {
+    print("- Searching for local uorf protein structure:")
+  }
+  if (translon_clicked) {
+    print("- Searching for local translon protein structure:")
+  }
+  print(selectedRegion)
+  print(paste("In tx:", tx))
+  print(paste("Uniprot id:", uniprot_id))
+}
+
+getCoverageProtein <- function(reads, cds, customRegions, selectedRegion,
+                               log_scale_protein, id) {
+  if (id != "browser") { # For translon table viewer
+    return(rep(1, 1e6))
+  }
+  coverage_region <- NULL
+  coverage_region <- c(cds, customRegions)
+  coverage_region <- coverage_region[names(coverage_region) == selectedRegion]
+  stopifnot(length(coverage_region) == 1)
+
+  result <- coverage_region %>%
+    getRiboProfile(reads) %>%
+    (function (x) {
+      x$count[seq.int(1, length(x$count), 3)]
+    })()
+  if (log_scale_protein) {
+    result <- floor(log2(result))
+    result[!is.finite(result)] <- 0
+  }
+  return(result)
 }

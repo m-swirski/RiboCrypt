@@ -146,8 +146,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                           withFrames, log_scale, BPPARAM)
   track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, frame_colors,
                                                 colors, ylabels, ylabels_full_name,
-                                                bottom_panel$lines,
-                                                frames_type, total_libs,
+                                                bottom_panel$lines, frames_type,
                                                 summary_track, summary_track_type,
                                                 BPPARAM)
   plot <- multiOmicsPlot_complete_plot(track_panel, bottom_panel,

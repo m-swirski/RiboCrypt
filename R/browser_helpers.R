@@ -24,10 +24,8 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
 
 multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, colors,
                                            ylabels, ylabels_full_name, lines,
-                                           frames_type, total_libs,
-                                           summary_track, summary_track_type,
+                                           frames_type, summary_track, summary_track_type,
                                            BPPARAM) {
-  total_libs <- length(profiles)
   force(colors)
   force(lines)
   force(ylabels)
@@ -36,6 +34,7 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, c
     plots <- list(getPlotAnimate(rbindlist(profiles, idcol = "file"), withFrames = withFrames[1],
                                 colors = colors[1], ylabels = ylabels[1], lines = lines))
   } else {
+    total_libs <- length(profiles)
     if (is(BPPARAM, "SerialParam")) {
       plots <- mapply(function(p,w,fc,c,yl,ylf, lib_index) {
           createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
@@ -166,13 +165,18 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                     custom_motif = NULL, log_scale = FALSE, BPPARAM = BiocParallel::SerialParam(),
                                     input_id = "", summary_track = FALSE,
-                                    summary_track_type = frames_type, export.format = "svg", frames_subset = "all") {
+                                    summary_track_type = frames_type, export.format = "svg", frames_subset = "all",
+                                    zoom_range = NULL, tx_annotation = NULL, collapse_intron_flank = 100,
+                                    frame_colors = "R") {
 
   multiOmicsController()
   # Get Bottom annotation and sequence panels
   bottom_panel <- multiOmicsPlot_bottom_panels(reference_sequence, display_range, annotation,
                                                start_codons, stop_codons, custom_motif,
-                                               custom_regions, viewMode)
+                                               custom_regions, viewMode,
+                                               tx_annotation,
+                                               collapse_intron_flank,
+                                               frame_colors)
   multiOmicsControllerView()
 
   # Get NGS data track panels
@@ -180,16 +184,18 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
                                           kmers_type, frames_type, frames_subset,
                                           withFrames, log_scale, BPPARAM)
 
-  track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, colors, ylabels,
+  track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames,
+                                          frame_colors, colors, ylabels,
                                           ylabels_full_name, bottom_panel$lines,
-                                          frames_type, total_libs,
+                                          frames_type,
                                           summary_track, summary_track_type,
                                           BPPARAM)
   return(multiOmicsPlot_complete_plot(track_panel, bottom_panel, display_range,
                                       proportions, seq_render_dist,
-                                      display_sequence, display_dist,
+                                      display_sequence,
                                       aa_letter_code, input_id, plot_name,
-                                      plot_title,  width, height, export.format))
+                                      plot_title,  width, height, export.format,
+                                      zoom_range, frame_colors))
 }
 
 genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6,

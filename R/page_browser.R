@@ -135,11 +135,6 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       study_and_gene_observers(input, output, session)
       output$clip <- renderUI({clipboard_url_button(input, session)})
 
-      kickoff <- reactiveVal(FALSE)
-      fired <- reactiveVal(FALSE)
-      observeEvent(list(input$gene, input$tx, input$library),
-                   go_when_input_is_ready(input, browser_options, fired, kickoff, libs),
-                   ignoreInit = TRUE, ignoreNULL = TRUE)
       # Main plot controller, this code is only run if 'plot' is pressed
       i <- 1
       mainPlotControls <- eventReactive(list(input$go, kickoff()),

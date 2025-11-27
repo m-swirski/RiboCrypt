@@ -222,6 +222,12 @@ study_and_gene_observers <- function(input, output, session) {
     }
     browser_specific_url_checker()
     if (id == "browser") {
+      kickoff <- reactiveVal(FALSE)
+      fired <- reactiveVal(FALSE)
+      observeEvent(list(input$gene, input$tx, input$library),
+                   go_when_input_is_ready(input, browser_options, fired, kickoff, libs),
+                   ignoreInit = TRUE, ignoreNULL = TRUE)
+
       user_info <- reactive({
         is_cellphone <- grepl("Android|iPhone|iPad|iPod",
                               input$js_user_agent,
@@ -237,7 +243,7 @@ study_and_gene_observers <- function(input, output, session) {
       # Optional: print when something changes
       observe({
         cat("User info updated:\n")
-        print(user_info())
+        str(user_info())
       })
     }
     init_round <- FALSE

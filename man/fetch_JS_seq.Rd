@@ -7,10 +7,10 @@
 fetch_JS_seq(
   target_seq,
   nplots,
-  distance = 50,
-  display_dist,
+  distance = 250,
   aa_letter_code = "one_letter",
-  input_id
+  input_id,
+  frame_colors = "R"
 )
 }
 \arguments{
@@ -18,9 +18,8 @@ fetch_JS_seq(
 
 \item{nplots}{number of plots}
 
-\item{distance}{numeric, default 50.}
-
-\item{display_dist}{display distance}
+\item{distance}{numeric, default 250 When to show sequence, when x-range is
+<= to this number.}
 
 \item{aa_letter_code}{"one_letter"}
 

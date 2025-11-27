@@ -56,6 +56,11 @@
 #' @param export.format character, default: "svg". alternative: "png".
 #' when you click the top right image button export, what should it export as?
 #' @param frames_subset character, default "all". Alternatives: "red", "green", "blue".
+#' @param zoom_range numeric or NULL. Default NULL, else an interval of xrange of the plot to
+#'  initate plot on and highlight.
+#' @param tx_annotation NULL
+#' @param collapse_intron_flank integer, default 100
+#' @param frame_colors character, color theme of the 3 coding frames, default "R", else "Color_blind".
 #' @inheritParams createSeqPanelPattern
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
@@ -88,7 +93,9 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                 custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
                                 log_scale = FALSE, BPPARAM = BiocParallel::SerialParam(), summary_track = FALSE,
                                 summary_track_type = frames_type,
-                                export.format = "svg", frames_subset = "all") {
+                                export.format = "svg", frames_subset = "all",
+                                zoom_range = NULL, tx_annotation = NULL, collapse_intron_flank = 100,
+                                frame_colors = "R") {
 
   multiOmicsPlot_internal(display_range, df = NULL, annotation,reference_sequence,
     reads,
@@ -104,7 +111,8 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
     aa_letter_code,
     annotation_names, start_codons, stop_codons,
     custom_motif, log_scale, BPPARAM, "",
-    summary_track, summary_track_type, export.format, frames_subset)
+    summary_track, summary_track_type, export.format, frames_subset,
+    zoom_range, tx_annotation, collapse_intron_flank, frame_colors)
 
 }
 

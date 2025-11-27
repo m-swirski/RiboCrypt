@@ -18,6 +18,11 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
     shinyjs::useShinyjs(),
     rclipboardSetup(),
     tags$head(includeHTML(system.file("google_analytics_html", "google_analytics.html", package = "RiboCrypt"))),
+    tags$script(HTML(sprintf("
+      $(document).on('shiny:connected', function() {
+        Shiny.setInputValue('%s', navigator.userAgent, {priority: 'event'});
+      });
+    ", ns('js_user_agent')))),
     # ---- HEAD with floating settings style ----
     browser_ui_settings_style(),
     # ---- Floating Settings Panel ----
@@ -130,7 +135,6 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       study_and_gene_observers(input, output, session)
       output$clip <- renderUI({clipboard_url_button(input, session)})
 
-
       kickoff <- reactiveVal(FALSE)
       fired <- reactiveVal(FALSE)
       observeEvent(list(input$gene, input$tx, input$library),
@@ -139,7 +143,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       # Main plot controller, this code is only run if 'plot' is pressed
       i <- 1
       mainPlotControls <- eventReactive(list(input$go, kickoff()),
-        {print(paste("Browser fire:", i));i<<-i+1;click_plot_browser_main_controller(input, tx, cds, libs, df)},
+        {print(paste("Browser fire:", i));i<<-i+1;click_plot_browser_main_controller(input, tx, cds, libs, df, user_info)},
         ignoreInit = TRUE,
         ignoreNULL = FALSE)
 

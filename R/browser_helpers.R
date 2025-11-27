@@ -87,7 +87,8 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                          display_sequence, display_dist,
                                          aa_letter_code, input_id, plot_name,
                                          plot_title,  width, height, export.format,
-                                         zoom_range = NULL, frame_colors = "R") {
+                                         zoom_range = NULL, frame_colors = "R",
+                                         is_cellphone = FALSE) {
   print("Merging bottom and coverage tracks")
   nplots <- track_panel$nplots
   plots <- browser_plots_highlighted(track_panel$plots, zoom_range)
@@ -98,7 +99,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   without_sequence_track <- display_sequence %in% c("none", FALSE)
 
   bottom_plots <- list(gene_model = automateTicksGMP(gene_model_panel),
-                       AA_model = automateTicksAA(seq_panel))
+                       AA_model = automateTicksAA(seq_panel, is_cellphone))
   nplots <- nplots + ifelse(without_sequence_track, 2, 3)
   if (!without_sequence_track) { # plotly subplot without sequence track
     bottom_plots <- c(list(DNA_model = automateTicksLetters(nt_area_template())),

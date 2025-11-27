@@ -26,13 +26,13 @@ automateTicksGMP <- function(plot) {
       style(hoverinfo = "text"))
 }
 
-automateTicksAA <- function(plot) {
-  suppressWarnings(
-    plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
-      plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
-                                title = list(font = list(size = 22))),
-                     xaxis=list(autorange=FALSE)) %>%
-      toWebGL())
+automateTicksAA <- function(plot, is_cellphone = FALSE) {
+  p <- plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
+    plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
+                              title = list(font = list(size = 22))),
+                   xaxis=list(autorange=FALSE))
+  if (!is_cellphone) p <- suppressWarnings(p %>% toWebGL())
+  return(p)
 }
 
 nice_ticks <- function(y_max, n_ticks = 3) {

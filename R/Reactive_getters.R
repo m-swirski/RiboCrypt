@@ -133,7 +133,8 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       summary_track_type = mainPlotControls()$summary_track_type,
                                       export.format = mainPlotControls()$export_format,
                                       zoom_range = mainPlotControls()$zoom_range,
-                                      frames_subset = mainPlotControls()$frames_subset) {
+                                      frames_subset = mainPlotControls()$frames_subset,
+                                      is_cellphone = mainPlotControls()$is_cellphone) {
   time_before <- Sys.time()
   print("Creating full browser panel..")
   # Input controller
@@ -155,7 +156,8 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                        aa_letter_code,
                                        input_id = session$ns("selectedRegion"),
                                        plot_name, plot_title, width, height,
-                                       export.format, zoom_range, frame_colors)
+                                       export.format, zoom_range, frame_colors,
+                                       is_cellphone)
   cat("Done (Full):"); print(round(Sys.time() - time_before, 2))
   return(plot)
 }

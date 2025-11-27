@@ -1,7 +1,7 @@
 #' Main controller for browser settings
 #' Takes shiny input and converts to a proper list of settings
 #' @noRd
-click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
+click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_info) {
   {
     print("- Browser controller")
     print(paste("here is gene!", isolate(input$gene)))
@@ -87,6 +87,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    mapability = input$mapability,
                    frame_colors = frame_colors,
                    colors = colors,
+                   is_cellphone = user_info()$is_cellphone,
+                   user_browser_width = user_info()$width,
                    hash_bottom = hash_strings[["hash_bottom"]],
                    hash_browser = hash_strings[["hash_browser"]],
                    hash_expression = hash_strings[["hash_expression"]])

@@ -50,7 +50,7 @@ bottom_panel_shiny <- function(mainPlotControls) {
                                                viewMode,
                                                tx_annotation = mainPlotControls()$tx_annotation,
                                                mainPlotControls()$collapsed_introns_width,
-                                               mainPlotControls()$colors)
+                                               mainPlotControls()$frame_colors)
   custom_bigwig_panels <- custom_seq_track_panels(mainPlotControls,
                                                   annotation_list$display_range)
   cat("Done (bottom):"); print(round(Sys.time() - time_before, 2))
@@ -117,6 +117,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       withFrames = mainPlotControls()$withFrames,
                                       viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
                                       frames_type = mainPlotControls()$frames_type,
+                                      frame_colors = mainPlotControls()$frame_colors,
                                       colors = mainPlotControls()$colors,
                                       kmers = mainPlotControls()$kmerLength,
                                       kmers_type = c("mean", "sum")[1],
@@ -141,8 +142,9 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
   profiles <- multiOmicsPlot_all_profiles(bottom_panel$display_range, reads, kmers,
                                           kmers_type, frames_type, frames_subset,
                                           withFrames, log_scale, BPPARAM)
-  track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, colors, ylabels,
-                                                ylabels_full_name, bottom_panel$lines,
+  track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, frame_colors,
+                                                colors, ylabels, ylabels_full_name,
+                                                bottom_panel$lines,
                                                 frames_type, total_libs,
                                                 summary_track, summary_track_type,
                                                 BPPARAM)

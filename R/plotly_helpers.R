@@ -29,7 +29,8 @@ automateTicksGMP <- function(plot) {
 automateTicksAA <- function(plot) {
   suppressWarnings(
     plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
-      plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE),
+      plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
+                                title = list(font = list(size = 22))),
                      xaxis=list(autorange=FALSE)) %>%
       toWebGL())
 }
@@ -58,19 +59,20 @@ nice_ticks <- function(y_max, n_ticks = 3) {
 #' @keywords internal
 automateTicksRNA <- function(plot, as_plotly = TRUE, scale_ticks = TRUE) {
   if (!as_plotly) return(plot)
+  p <- plot %>% ggplotly() %>%  plotly::layout(xaxis=list(autorange=FALSE))
   if (scale_ticks) {
     y_max <- max(plot$data$count)
     y_nticks <- ifelse(y_max > 3,
                        ifelse(y_max > 10, 3, 2), 1)
     tick_vals <- nice_ticks(y_max, n_ticks = y_nticks)
-    plot %>% ggplotly() %>%
+    p <- p %>%
       plotly::layout(yaxis=list(range = c(0, max(tick_vals)),
                                 tickvals = tick_vals,
-                                ticktext = tick_vals),
-                     xaxis=list(autorange=FALSE))
-  } else {
-    plot %>% ggplotly() %>%  plotly::layout(xaxis=list(autorange=FALSE))
+                                ticktext = tick_vals,
+                                title = list(standoff = 15),
+                                tickfont = list(size = 16)))
   }
+  return(p)
 }
 
 automateTicksX <- function(plot) {

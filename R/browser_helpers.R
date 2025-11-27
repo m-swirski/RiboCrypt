@@ -22,8 +22,8 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
               lines = lines, target_seq = target_seq, annotation_layers = layers))
 }
 
-multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels,
-                                           ylabels_full_name, lines,
+multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, colors,
+                                           ylabels, ylabels_full_name, lines,
                                            frames_type, total_libs,
                                            summary_track, summary_track_type,
                                            BPPARAM) {
@@ -37,14 +37,14 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels
                                 colors = colors[1], ylabels = ylabels[1], lines = lines))
   } else {
     if (is(BPPARAM, "SerialParam")) {
-      plots <- mapply(function(p,w,c,yl,ylf, lib_index) {
-          createSinglePlot(p,w,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
-        profiles, withFrames, colors, ylabels, ylabels_full_name, seq_along(total_libs),
+      plots <- mapply(function(p,w,fc,c,yl,ylf, lib_index) {
+          createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
+        profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_along(total_libs),
         SIMPLIFY = FALSE)
     } else {
-      plots <- bpmapply(function(p,w,c,yl,ylf, lib_index) {
-          createSinglePlot(p,w,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
-        profiles, withFrames, colors, ylabels, ylabels_full_name, seq_along(total_libs),
+      plots <- bpmapply(function(p,w,fc,c,yl,ylf, lib_index) {
+          createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
+        profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_along(total_libs),
         SIMPLIFY = FALSE, BPPARAM = BPPARAM)
     }
   }
@@ -52,7 +52,7 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels
   nplots <- ifelse(frames_type == "animate", 1, length(plots))
   if (summary_track) {
     nplots <- nplots + 1
-    plots <- make_summary_track(profiles, plots, withFrames, colors,
+    plots <- make_summary_track(profiles, plots, withFrames, frame_colors, colors,
                                 lines, summary_track_type, nplots)
   }
   return(list(plots = plots, nplots = nplots, track_type = frames_type))
@@ -112,10 +112,12 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
     nplots_all <- nplots_all + length(custom_seq_panel)
   }
 
-  plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),
-                                                   yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16),
-                                                                rangemode = "tozero", tick0 = 0, dtick = 1,
-                                                                zeroline = TRUE)))
+  # TODO: Move all layout updates to earlier functions
+  plots <- lapply(plots, function(x) x  %>%
+                    layout(xaxis = list(title = list(font = list(size = 22)),
+                                        tickfont = list(size = 16)),
+                           yaxis = list(rangemode = "tozero", tick0 = 0,
+                                        dtick = 1, zeroline = TRUE)))
   multiomics_plot <- suppressWarnings(subplot(plots,
                                               margin = 0,
                                               nrows = nplots_all,

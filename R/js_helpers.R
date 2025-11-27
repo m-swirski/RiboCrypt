@@ -13,15 +13,16 @@ fetchJS <- function(script_name) {
 #'
 #' @param target_seq the target sequence
 #' @param nplots number of plots
-#' @param distance numeric, default 50.
-#' @param display_dist display distance
+#' @param distance numeric, default 250 When to show sequence, when x-range is
+#' <= to this number.
 #' @param aa_letter_code "one_letter"
 #' @param input_id shiny id of the object
 #' @return a list of 2 lists, the nt list (per frame, total 3)
 #'  and AA list (per frame, total 3)
 #' @importFrom Biostrings AMINO_ACID_CODE
-fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
+fetch_JS_seq <- function(target_seq, nplots, distance = 250,
                          aa_letter_code = "one_letter", input_id, frame_colors = "R") {
+  display_dist <- nchar(target_seq)
   fr_colors <- frame_color_themes(frame_colors)
   nt_yaxis <- paste0("y", nplots + 1)
   aa_yaxis <- paste0("y", nplots + 3)
@@ -48,7 +49,7 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
                                               y = rep(2.4 - fr, length(aas[[fr]])),
                                               xaxis = "x",
                                               yaxis = aa_yaxis,
-                                              distance = distance*2,
+                                              distance = distance,
                                               color = "grey45"))
 
   render_on_zoom_data <- c(nts_js_data, aa_js_data)
@@ -59,11 +60,9 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
 }
 
 addJSrender <- function(multiomics_plot, target_seq, nplots, seq_render_dist,
-                        display_dist, aa_letter_code, input_id, frame_colors) {
-  #browser()
-  display_dist <- nchar(target_seq)
+                        aa_letter_code, input_id, frame_colors) {
   render_on_zoom_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
-                                      distance = seq_render_dist, display_dist = display_dist,
+                                      distance = seq_render_dist,
                                       aa_letter_code = aa_letter_code, input_id, frame_colors)
   select_region_on_click_data <- list(nplots = nplots, input_id = input_id)
   multiomics_plot <- multiomics_plot %>%

@@ -1,6 +1,6 @@
 (elem, _, data) => {
   let tracesVisible = 0;
-  const switchDistance = 250;
+  const switchDistance = data.traces[0]["distance"];
   const targetAxis = data.traces[0]["yaxis"];
   let currentVisibleSequence = "";
   let lastRange = [null, null];

@@ -84,7 +84,7 @@ multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
 
 multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_range,
                                          proportions, seq_render_dist,
-                                         display_sequence, display_dist,
+                                         display_sequence,
                                          aa_letter_code, input_id, plot_name,
                                          plot_title,  width, height, export.format,
                                          zoom_range = NULL, frame_colors = "R",
@@ -129,7 +129,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   if (!without_sequence_track) {
     print(frame_colors)
     multiomics_plot <- addJSrender(multiomics_plot, bottom_panel$target_seq,
-                                   nplots - 3, seq_render_dist, display_dist,
+                                   nplots - 3, seq_render_dist,
                                    aa_letter_code, input_id, frame_colors)
   }
   filename <- ifelse(plot_name == "default", names(display_range), plot_name)

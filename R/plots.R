@@ -14,7 +14,8 @@ createSinglePlot <- function(profile, withFrames, frame_colors, colors, ylabels,
 
 #profiles <- mapply(function(x,y,z) getProfileAnimate(display_range, x, y, z), reads, withFrames, kmers,  SIMPLIFY = FALSE)
 
-getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines, lines_size = 0.1){
+getPlotAnimate <- function(profile, withFrames, colors, frame_colors,
+                           ylabels, lines, lines_size = 0.1){
   count <- NULL # Avoid data.table warning
   profile_plot <- ggplot(profile) +
     ylab(ylabels) +
@@ -23,7 +24,7 @@ getPlotAnimate <- function(profile, withFrames, colors, ylabels, lines, lines_si
           axis.text.x = element_blank(),
           plot.margin = unit(c(0,0,0,0), "pt")) +
     scale_x_continuous(expand = c(0,0))
-  if (withFrames) colors <- frame_color_themes(colors)
+  if (withFrames) colors <- frame_color_themes(frame_colors)
 
   if (length(lines) > 0) profile_plot <- profile_plot +
     geom_vline(xintercept = lines, col = names(lines), linetype = 4, alpha = 0.5, size = lines_size)

@@ -18,11 +18,13 @@ This vignette will walk you through usage with examples.
 
 `RibCrypt` currently supports creating interactive browser views for NGS tracks:
 
-1. Coverage plots for RNA-seq or any other type of experiment
+1. Coverage plots for RNA-seq, Ribo-seq or any other type of experiment
 2. Sub-codon resolution display of ribo-seq p-shifted footprints. 3 reading frames can be displayed as:
   -lines
   -columns
-  -stacked area
+  -stackes
+  -area
+  -heatmap
 3. Coverage profiles smoothing via the use of sliding-window (k-mers)
 4. Genome-transcriptome toggling, that is data display in genomic or transcriptomic context.
 5. Animating between conditions, replicates, readlengths, sliding window width or any other parameter.

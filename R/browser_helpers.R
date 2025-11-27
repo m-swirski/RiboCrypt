@@ -32,7 +32,8 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, c
 
   if (frames_type == "animate") {
     plots <- list(getPlotAnimate(rbindlist(profiles, idcol = "file"), withFrames = withFrames[1],
-                                colors = colors[1], ylabels = ylabels[1], lines = lines))
+                                colors = colors[1], frame_colors = frame_colors,
+                                ylabels = ylabels[1], lines = lines))
   } else {
     total_libs <- length(profiles)
     if (is(BPPARAM, "SerialParam")) {

@@ -164,4 +164,10 @@ multiOmicsPlot_list(mrna[1], annotation = cds[1], reference_sequence = findFa(df
                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
+# With Coding frame coloring
+multiOmicsPlot_list(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
+                    frames_type = "columns", leader_extension = 30, trailer_extension = 30,
+                    withFrames = TRUE,
+                    reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+                                  naming = "full", BPPARAM = BiocParallel::SerialParam()))
 }

@@ -30,6 +30,10 @@
 #' cds <- loadRegion(df, "cds")
 #' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df,
 #'                         frames_type = "columns")
+#' # Show 2 ribo-seq libs as animation
+#' df <- ORFik.template.experiment()[9:10,]
+#' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df,
+#'                         frames_type = "animate")
 multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
                                 reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
                                                    naming = "full", BPPARAM = BiocParallel::SerialParam()),

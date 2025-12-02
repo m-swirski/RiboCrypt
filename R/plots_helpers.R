@@ -66,14 +66,12 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
               axis.text.y = element_blank())
     }
 
-    # browser()
     profile_plot <- if (type == "heatmap") {
       automateTicksRNA(profile_plot, as_plotly)
     } else automateTicksRNA(profile_plot, as_plotly, y_autorange, y_nticks)
     if (flip_ylabel | total_libs > 5) {
       y_text_size <- ifelse(total_libs < 30, 15, ifelse(total_libs < 50, 10,
                                                         ifelse(total_libs < 60, 7, 5)))
-      # browser()
       profile_plot <- profile_plot %>%
         add_annotations(text = ylabels, x = "", y = 0.5,
                         yref = "paper", xref = "paper", showarrow = FALSE,

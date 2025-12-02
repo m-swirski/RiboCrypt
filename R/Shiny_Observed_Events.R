@@ -146,7 +146,6 @@ observed_translon_annotation <- function(gene, df, all = TRUE, add_translons = F
 
 update_rv <- function(rv, df) {
   print("updating rv txdb")
-  # browser()
   if ((rv$lstval == rv$curval) & rv$lstval == "") {
     print("startup updating both")
     rv$lstval <- rv$curval <- df()@txdb

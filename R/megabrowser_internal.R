@@ -1,3 +1,5 @@
+# TODO
+# Add argument to be able to select a subset of samples/columns
 compute_collection_table_shiny <- function(mainPlotControls,
                                            path = mainPlotControls()$table_path,
                                            lib_sizes = mainPlotControls()$lib_sizes,

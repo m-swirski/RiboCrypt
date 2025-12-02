@@ -82,7 +82,7 @@ umap_server <- function(id, metadata, all_exp_meta) {
         rFilteredSelection
       )
 
-      sampleSelectionsServer(
+      rSelectedSamples <- sampleSelectionsServer(
         "sampleSelection",
         metadata,
         rSelection,

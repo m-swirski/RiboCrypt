@@ -50,6 +50,10 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
       uses_gene <- FALSE
       study_and_gene_observers(input, output, session)
 
+
+      # TODO
+      # Use browser/debug to go through factor and cond
+      # so I can understand how to feed selected samples into DEG 
       factor <- reactive(
         if (nrow(df()) > 1) {
           design <- design(df(), batch.correction.design = TRUE, multi.factor = TRUE)

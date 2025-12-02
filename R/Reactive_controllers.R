@@ -95,6 +95,8 @@ click_plot_browser_main_controller <- function(
     withFrames <- rep(FALSE, nrow(dff))
   }
 
+  selectedSamples <- dff@listData$Run
+
   if (useFST) {
     reads <- collection_path_from_exp(dff, shiny::isolate(selectedTx), must_exists = TRUE)
   } else {
@@ -170,7 +172,8 @@ click_plot_browser_main_controller <- function(
     hash_bottom = hash_strings[["hash_bottom"]],
     hash_browser = hash_strings[["hash_browser"]],
     hash_expression = hash_strings[["hash_expression"]],
-    useFST = useFST
+    useFST = useFST,
+    selectedSamples = selectedSamples
   ) }}
 
 click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {{ shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)

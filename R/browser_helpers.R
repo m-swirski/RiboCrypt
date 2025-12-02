@@ -69,7 +69,7 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels
 
 multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
                                         kmers_type, frames_type, frames_subset,
-                                        withFrames, log_scale, BPPARAM, normalization, useFST = FALSE) {
+                                        withFrames, log_scale, BPPARAM, normalization, selectedSamples = NULL, useFST = FALSE) {
   force(display_range)
   force(reads)
   force(kmers)
@@ -80,12 +80,11 @@ multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
   force(frames_subset)
 
   if (useFST) {
-    # TODO subset columns
     count <- load_collection(
       reads[[1]],
       grl = display_range,
       format = "wide",
-      columns = NULL # TODO
+      columns = selectedSamples
     ) %>% rowMeans(na.rm = TRUE)
     profiles <-
       data.table(

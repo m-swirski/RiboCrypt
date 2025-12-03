@@ -29,11 +29,13 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
 
 }
 
-plotSeqPanel <- function(hits, sequence, frame = 1, frame_colors = "R") {
+plotSeqPanel <- function(hits, sequence, frame = 1, frame_colors = "R", gg_theme = theme_bw()) {
+  stopifnot(is(gg_theme, "theme"))
   frame_colors <- frame_color_themes(frame_colors, FALSE)
   pos <- NULL # avoid dt warning
   # New red: #FFA8A3 ?
   hits[, Type := fifelse(col == "white", "Start codon", fifelse(col == "black", "Stop codon", "User Motif"))]
+  # theme_bw propogates to all subplots
   fig <- ggplot() +
     geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3)),
               fill = frame_colors) +
@@ -44,7 +46,7 @@ plotSeqPanel <- function(hits, sequence, frame = 1, frame_colors = "R") {
       ) +
     ylab("frame") +
     xlab("position [nt]") +
-    theme_bw() +
+    gg_theme +
     theme(plot.margin = unit(c(0,0,0,0), "pt"), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
     scale_y_continuous(breaks = c(-0.5,0.5, 1.5), labels = c("2","1", "0"), expand = c(0,0)) +
     scale_x_continuous(expand = c(0,0))
@@ -104,23 +106,24 @@ geneTrackLayer <- function(grl) {
 #' @keywords internal
 #' @noRd
 createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL,
-                                 frame=1, custom_regions, viewMode, collapse_intron_flank = 100,
+                                 custom_regions, viewMode, collapse_intron_flank = 100,
                                  frame_colors = "R") {
   # TODO: Explain sections of this function, or split in sub functions
   # It is too complicated right now.
   use_custom_region <- !is.null(custom_regions) & length(custom_regions) > 0
+  overlap_type <- ifelse(viewMode == "tx", "within", "any")
   if (use_custom_region) {
     same_names <- names(custom_regions) %in% names(annotation)
     names(custom_regions)[same_names] <- paste(names(custom_regions)[same_names], "_1", sep="")
     overlaps_custom <- subsetByOverlaps(custom_regions, display_range,
-                                        type = ifelse(viewMode == "tx", "within", "any"))
+                                        type = overlap_type)
   }
   overlaps <- subsetByOverlaps(annotation, display_range,
-                               type = ifelse(viewMode == "tx", "within", "any"))
+                               type = overlap_type)
   overlaps_tx <- NULL
   if (viewMode != "tx") {
     overlaps_tx <- subsetByOverlaps(tx_annotation, display_range,
-                                    type = ifelse(viewMode == "tx", "within", "any"))
+                                    type = overlap_type)
     if (length(overlaps) > 0) {
       if (!all(names(overlaps_tx) %in% names(overlaps))) {
         overlaps_tx <- overlaps_tx[names(overlaps_tx) %in% names(overlaps)]
@@ -278,24 +281,14 @@ rc_rgb <- function(with_alpha = TRUE) {
   return(rgb_colors)
 }
 
-geneModelPanelPlot <- function(dt, frame = 1) {
+geneModelPanelPlot <- function(dt, frame = 1, gg_template = geneModelPanelPlotTemplate()) {
   # If no annotation given, dt is empty, return blank
   if (nrow(dt) == 0) return(ggplot())
   # Else render exon boxes
   seg_dt <- dt[type %in% c("intron", "intron_collapsed")]
   dt <- dt[!(type %in% c("intron", "intron_collapsed"))]
 
-  result_plot <- suppressWarnings(ggplot(frame = frame)) +
-    ylab("") + xlab("") +
-    theme(axis.title.x = element_blank(),
-          axis.ticks.x = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          plot.margin = unit(c(0,0,0,0), "pt")) +
-    scale_x_continuous(expand = c(0,0)) +
-    scale_y_continuous(expand = c(0,0)) +
-    theme(panel.background = element_rect(fill= "white"))
+  result_plot <- gg_template
 
   draw_introns <- nrow(seg_dt) > 0
   if (draw_introns)  {
@@ -320,6 +313,20 @@ geneModelPanelPlot <- function(dt, frame = 1) {
     })
 
   return(result_plot)
+}
+
+geneModelPanelPlotTemplate <- function(frame = 1) {
+  suppressWarnings(ggplot(frame = frame)) +
+    ylab("") + xlab("") +
+    theme(axis.title.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          plot.margin = unit(c(0,0,0,0), "pt")) +
+    scale_x_continuous(expand = c(0,0)) +
+    scale_y_continuous(expand = c(0,0)) +
+    theme(panel.background = element_rect(fill= "white"))
 }
 
 nt_area_template <- function() {

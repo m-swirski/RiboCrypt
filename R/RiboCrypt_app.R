@@ -112,7 +112,7 @@ RiboCrypt_app <- function(
     tutorial_server("tutorial")
     rv <- browser_server("browser", all_exp, without_readlengths_env, df,
                          experiments, tx, cds, libs, org, gene_name_list,
-                         rv, browser_options)
+                         gg_theme, rv, browser_options)
     if (nrow(all_exp_meta) > 0) {
       browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata,
                              names_init_meta, browser_options, exp_init_meta,

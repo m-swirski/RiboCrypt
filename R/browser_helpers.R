@@ -2,22 +2,26 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
                                          start_codons, stop_codons, custom_motif,
                                          custom_regions, viewMode,
                                          tx_annotation = NULL, collapse_intron_flank = 100,
-                                         frame_colors = "R") {
+                                         frame_colors = "R", gg_theme = theme_bw()) {
   force(display_range)
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
                                           stop_codons = stop_codons, custom_motif = custom_motif)
-  seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]], frame_colors = frame_colors)
+  seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]], 1, frame_colors, gg_theme)
   # Get the panel for the annotation track
-  gene_model_panel <- createGeneModelPanel(display_range, annotation, frame = 1,
+  gene_model_panel <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
                                            custom_regions = custom_regions,
                                            viewMode = viewMode, collapse_intron_flank,
                                            frame_colors = frame_colors)
   lines <- gene_model_panel[[2]]
   layers <- max(gene_model_panel[[1]]$layers)
-  gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]])
+
+  template <- if (!is.null(attr(gg_theme, "gg_template"))) {
+    attr(gg_theme, "gg_template")
+  } else geneModelPanelPlotTemplate()
+  gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]], gg_template = template)
   return(list(seq_panel = seq_panel, gene_model_panel = gene_model_panel,
               lines = lines, target_seq = target_seq, annotation_layers = layers))
 }

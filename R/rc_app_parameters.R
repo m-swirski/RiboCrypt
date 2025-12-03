@@ -156,6 +156,9 @@ rc_parameter_setup <- function() {
     } else {
       default_libs <- libraries_string_split(browser_options["default_libs"], libs)
     }
+    gg_theme <- theme_bw()
+    attr(gg_theme, "gg_template") <- geneModelPanelPlotTemplate()
+
     cat("Done (Parameter setup):"); print(round(Sys.time() - time_before, 2))
   }
   )

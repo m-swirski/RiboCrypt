@@ -41,6 +41,7 @@ bottom_panel_shiny <- function(mainPlotControls) {
                                            leader_extension = mainPlotControls()$extendLeaders,
                                            trailer_extension = mainPlotControls()$extendTrailers,
                                            viewMode = viewMode)
+
   bottom_panel <- multiOmicsPlot_bottom_panels(reference_sequence = findFa(df),
                                                annotation_list$display_range,
                                                annotation_list$annotation,
@@ -50,7 +51,8 @@ bottom_panel_shiny <- function(mainPlotControls) {
                                                viewMode,
                                                tx_annotation = mainPlotControls()$tx_annotation,
                                                mainPlotControls()$collapsed_introns_width,
-                                               mainPlotControls()$frame_colors)
+                                               mainPlotControls()$frame_colors,
+                                               mainPlotControls()$gg_theme)
   custom_bigwig_panels <- custom_seq_track_panels(mainPlotControls,
                                                   annotation_list$display_range)
   cat("Done (bottom):"); print(round(Sys.time() - time_before, 2))

@@ -88,8 +88,9 @@ rc_parameter_setup <- function() {
     if (!isTruthy(browser_options["allow_non_bw"])) {
       browser_options["allow_non_bw"] <- FALSE
     }
+    exps_dir <- ORFik::config()["exp"]
     exp_init <- read.experiment(browser_options["default_experiment"],
-                                validate = FALSE)
+                                validate = FALSE, in.dir = exps_dir)
     names_init <- get_gene_name_categories(exp_init)
     if (!isTruthy(browser_options["default_gene"])) {
       browser_options["default_gene"] <- names_init$label[1]
@@ -106,7 +107,7 @@ rc_parameter_setup <- function() {
       meta_org <- all_exp_meta[name == browser_options["default_experiment_meta"]]$organism[1]
       browser_org <- all_exp[name == browser_options["default_experiment"]]$organism[1]
       exp_init_meta <- read.experiment(browser_options["default_experiment_meta"],
-                                       validate = FALSE)
+                                       validate = FALSE, in.dir = exps_dir)
       names_init_meta <- if (meta_org == browser_org) {
         copy(names_init)
         } else {

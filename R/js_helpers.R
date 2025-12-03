@@ -90,4 +90,31 @@ helper_button_redirect_call <- function() {
         '))))
 }
 
+remove_y_axis_zero_tick_js <- function(multiomics_plot) {
+  multiomics_plot %>% htmlwidgets::onRender("
+function(el) {
+
+  function hideZeroTicks() {
+    // Select ALL y-axis tick labels for ALL subplots
+    var allYTicks = el.querySelectorAll('.yaxislayer-above .ytick text, .yaxislayer-above .y2tick text, .yaxislayer-above .y3tick text, .yaxislayer-above .y4tick text');
+
+    allYTicks.forEach(function(label) {
+      if (label.textContent.trim() === '0') {
+        label.style.display = 'none';   // hide zero tick
+      } else {
+        label.style.display = '';       // show all others
+      }
+    });
+  }
+
+  // Hide zero tick on initial draw
+  hideZeroTicks();
+
+  // Hide zero tick after any zoom/pan/resize/autoscale
+  el.on('plotly_relayout', hideZeroTicks);
+  el.on('plotly_afterplot', hideZeroTicks);
+}
+")
+}
+
 

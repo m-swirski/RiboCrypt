@@ -253,20 +253,24 @@ study_and_gene_observers <- function(input, output, session) {
 
 org_and_study_changed_checker <- function(input, output, session) {
   with(rlang::caller_env(), {
-    cat("Server startup: "); print(round(Sys.time() - time_before, 2))
     ## Static values
     experiments <- all_exp$name
     ## Set reactive values
     org <- reactiveVal("ALL")
-    # Store current and last genome
-    exps_dir <- ORFik::config()["exp"]
+
     df <- reactiveVal(get_exp(browser_options["default_experiment"],
                               experiments, without_readlengths_env, exps_dir))
     df_with <- reactiveVal(get_exp(browser_options["default_experiment"],
                               experiments, with_readlengths_env, exps_dir))
     if (nrow(all_exp_meta) > 0) {
-      df_meta <- reactiveVal(get_exp(browser_options["default_experiment_meta"],
-                                     all_exp_meta$name, .GlobalEnv, exps_dir))
+      df_meta <- reactiveVal({
+        if(name(exp_init_meta) == browser_options["default_experiment_meta"]) {
+          print(paste("Loading exp:", name(exp_init_meta)))
+          print("- Init experiment loaded")
+          exp_init_meta
+        } else {get_exp(browser_options["default_experiment_meta"],
+                        all_exp_meta$name, .GlobalEnv, exps_dir)}
+      })
     } else print("No MegaBrowser exps given, ignoring MegaBrowser exp.")
 
     libs <- reactive(bamVarName(df()))
@@ -312,7 +316,7 @@ org_and_study_changed_checker <- function(input, output, session) {
       bindCache(rv$curval) %>%
       bindEvent(rv$changed, ignoreNULL = TRUE)
 
-    cat("Pre modules: "); print(round(Sys.time() - time_before, 2))
+    cat("Pre server modules: "); print(round(Sys.time() - time_before, 2))
   }
   )
 }
@@ -320,7 +324,6 @@ org_and_study_changed_checker <- function(input, output, session) {
 allsamples_observer_controller <- function(input, output, session) {
   with(rlang::caller_env(), {
   org <- reactive("ALL")
-  exps_dir <- ORFik::config()["exp"]
 
   rv <- reactiveValues(lstval=isolate(df())@txdb,
                        curval=isolate(df())@txdb,

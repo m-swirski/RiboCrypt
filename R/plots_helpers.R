@@ -73,7 +73,9 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
     }
 
     # browser()
-    profile_plot <- automateTicksRNA(profile_plot, as_plotly, FALSE)
+
+    profile_plot <- automateTicksRNA(profile_plot, as_plotly, type != "heatmap",
+                                     restrict_ticks = total_libs > 3)
     if (flip_ylabel | total_libs > 5) {
       y_text_size <- ifelse(total_libs < 30, 15, ifelse(total_libs < 50, 10,
                                                         ifelse(total_libs < 60, 7, 5)))
@@ -86,5 +88,5 @@ singlePlot_add_theme <- function(profile_plot, ylabels, type,
     }
     return(profile_plot)
   }
-  return(automateTicksRNA(profile_plot, as_plotly))
+  return(automateTicksRNA(profile_plot, as_plotly, restrict_ticks = total_libs > 3))
 }

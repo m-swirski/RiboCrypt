@@ -81,6 +81,9 @@ clipboard_url_button <- function(input, session) {
 #' @noRd
 reactive_url <- function() {
   with(rlang::caller_env(), {
+    cat("Server startup: "); print(round(Sys.time() - time_before, 2))
+    this_time_before <- Sys.time()
+
     # Page routing API
     observeEvent(session$clientData$url_hash, {
       currentHash <- getPageFromURL(session)

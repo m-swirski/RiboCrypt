@@ -14,7 +14,8 @@ automateTicks <- function(plot) {
 automateTicksLetters <- function(plot) {
   suppressWarnings(
     plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
-                     plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE),
+                     plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
+                                               zeroline = TRUE),
                                     xaxis=list(autorange=FALSE)) %>%
                      toWebGL())
 }
@@ -35,42 +36,26 @@ automateTicksAA <- function(plot, is_cellphone = FALSE) {
   return(p)
 }
 
-nice_ticks <- function(y_max, n_ticks = 3) {
-  if (y_max <= 0) return(numeric(0))
-
-  # Ask pretty() for one extra tick so we have room to drop 0
-  raw <- pretty(c(0, y_max), n = n_ticks + 1)
-
-  # Drop 0 and negatives
-  raw_pos <- raw[raw > 0]
-
-  # Keep at most n_ticks, biased toward the top
-  if (length(raw_pos) > n_ticks) {
-    raw_pos_even <- raw_pos[seq_along(raw_pos) %% 2 == 0]
-    raw_pos <- c(head(raw_pos_even, length(raw_pos_even) - 1), tail(raw_pos, 1))
-  }
-
-  raw_pos
-}
-
-
 #'
 #' @rawNamespace import(plotly, except = c(config, last_plot))
 #' @keywords internal
-automateTicksRNA <- function(plot, as_plotly = TRUE, scale_ticks = TRUE) {
+automateTicksRNA <- function(plot, as_plotly = TRUE, scale_ticks = TRUE,
+                             restrict_ticks = TRUE) {
   if (!as_plotly) return(plot)
   p <- plot %>% ggplotly() %>%  plotly::layout(xaxis=list(autorange=FALSE))
   if (scale_ticks) {
+
     y_max <- max(plot$data$count)
-    y_nticks <- ifelse(y_max > 3,
-                       ifelse(y_max > 10, 3, 2), 1)
-    tick_vals <- nice_ticks(y_max, n_ticks = y_nticks)
-    p <- p %>%
-      plotly::layout(yaxis=list(range = c(0, max(tick_vals)),
-                                tickvals = tick_vals,
-                                ticktext = tick_vals,
-                                title = list(standoff = 15),
-                                tickfont = list(size = 16)))
+    y_nticks <- min(y_max + 1, 3)
+    p <- p %>% plotly::layout(yaxis=list(autorange = TRUE, rangemode = "tozero", zeroline = TRUE,
+                                    tickmode = "auto", nticks = y_nticks,
+                                    title = list(standoff = 15),
+                                    tickfont = list(size = 16)))
+
+
+    if (restrict_ticks) {
+      p <- p %>% plotly::layout(yaxis = list(nticks = 2))
+    }
   }
   return(p)
 }
@@ -83,7 +68,6 @@ automateTicksX <- function(plot) {
                               tickvals=list(-0.5,0.5,1.5),
                               tickmode = "array")
   ) %>% style(hoverinfo = "none")
-
 }
 
 #' Call ggplotly with hoveron defined

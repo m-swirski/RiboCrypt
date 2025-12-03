@@ -116,15 +116,16 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   # TODO: Move all layout updates to earlier functions
   plots <- lapply(plots, function(x) x  %>%
                     layout(xaxis = list(title = list(font = list(size = 22)),
-                                        tickfont = list(size = 16)),
-                           yaxis = list(rangemode = "tozero", tick0 = 0,
-                                        dtick = 1, zeroline = TRUE)))
+                                        tickfont = list(size = 16))))
+
   multiomics_plot <- suppressWarnings(subplot(plots,
                                               margin = 0,
                                               nrows = nplots_all,
                                               heights = proportions,
                                               shareX = TRUE,
                                               titleY = TRUE, titleX = TRUE))
+  multiomics_plot <- remove_y_axis_zero_tick_js(multiomics_plot)
+
 
   if (!without_sequence_track) {
     print(frame_colors)

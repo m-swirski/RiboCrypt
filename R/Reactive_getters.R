@@ -55,8 +55,17 @@ bottom_panel_shiny <- function(mainPlotControls) {
                                                mainPlotControls()$gg_theme)
   custom_bigwig_panels <- custom_seq_track_panels(mainPlotControls,
                                                   annotation_list$display_range)
+  bottom_panel <- c(bottom_panel, annotation_list,
+                    ncustom = length(custom_bigwig_panels[[1]]))
+  # To plotly
+  bottom_plots <- c(list(DNA_model = bottom_panel$seq_nt_panel,
+                       gene_model = automateTicksGMP(bottom_panel$gene_model_panel),
+                       AA_model = automateTicksAA(bottom_panel$seq_panel, mainPlotControls()$is_cellphone)),
+                    lapply(custom_bigwig_panels[[1]], automateTicksCustomTrack))
+  bottom_panel$bottom_plots <- bottom_plots
+
   cat("Done (bottom):"); print(round(Sys.time() - time_before, 2))
-  return(c(bottom_panel, annotation_list, custom_bigwig_panels))
+  return(bottom_panel)
 }
 
 custom_seq_track_panels <- function(mainPlotControls, display_range) {
@@ -128,7 +137,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       annotation_proportions = NULL, width = NULL, height = NULL,
                                       plot_name = "default", plot_title = NULL,
                                       display_sequence = "nt",
-                                      seq_render_dist = ifelse(is_cellphone, 100, 250),
+                                      seq_render_dist = ifelse(mainPlotControls()$is_cellphone, 100, 250),
                                       aa_letter_code = c("one_letter", "three_letters")[1],
                                       log_scale = mainPlotControls()$log_scale,
                                       BPPARAM = BiocParallel::SerialParam(),
@@ -136,10 +145,9 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       summary_track_type = mainPlotControls()$summary_track_type,
                                       export.format = mainPlotControls()$export_format,
                                       zoom_range = mainPlotControls()$zoom_range,
-                                      frames_subset = mainPlotControls()$frames_subset,
-                                      is_cellphone = mainPlotControls()$is_cellphone) {
+                                      frames_subset = mainPlotControls()$frames_subset) {
   time_before <- Sys.time()
-  print("Creating full browser panel..")
+  print("Creating track panel..")
   # Input controller
   multiOmicsControllerView()
   # Get NGS data track panels
@@ -151,14 +159,14 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                                 bottom_panel$lines, frames_type,
                                                 summary_track, summary_track_type,
                                                 BPPARAM)
+  cat("Done (track panel):"); print(round(Sys.time() - time_before, 2))
   plot <- multiOmicsPlot_complete_plot(track_panel, bottom_panel,
                                        bottom_panel$display_range,
                                        proportions, seq_render_dist,
                                        display_sequence, aa_letter_code,
                                        input_id = session$ns("selectedRegion"),
                                        plot_name, plot_title, width, height,
-                                       export.format, zoom_range, frame_colors,
-                                       is_cellphone)
+                                       export.format, zoom_range, frame_colors)
   cat("Done (Full):"); print(round(Sys.time() - time_before, 2))
   return(plot)
 }

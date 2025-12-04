@@ -70,6 +70,13 @@ automateTicksX <- function(plot) {
   ) %>% style(hoverinfo = "none")
 }
 
+automateTicksCustomTrack <- function(plot) {
+  plot %>% ggplotly(dynamicTicks = TRUE) %>%
+    plotly::layout(yaxis=list(autorange = TRUE, fixedrange = TRUE,
+                              title = list(font = list(size = 22)))
+                   ) %>% style(hoverinfo = "none")
+}
+
 #' Call ggplotly with hoveron defined
 #' @param x a a ggplot argument
 #' @param ... additional arguments for ggplotly

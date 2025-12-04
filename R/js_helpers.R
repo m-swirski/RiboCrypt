@@ -15,7 +15,7 @@ fetchJS <- function(script_name) {
 #' @param nplots number of plots
 #' @param distance numeric, default 250 When to show sequence, when x-range is
 #' <= to this number.
-#' @param aa_letter_code "one_letter"
+#' @param aa_letter_code character, default: "one_letter", alternative: three_letters
 #' @param input_id shiny id of the object
 #' @return a list of 2 lists, the nt list (per frame, total 3)
 #'  and AA list (per frame, total 3)

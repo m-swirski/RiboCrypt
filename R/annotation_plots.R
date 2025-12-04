@@ -35,23 +35,30 @@ plotSeqPanel <- function(hits, sequence, frame = 1, frame_colors = "R", gg_theme
   pos <- NULL # avoid dt warning
   # New red: #FFA8A3 ?
   hits[, Type := fifelse(col == "white", "Start codon", fifelse(col == "black", "Stop codon", "User Motif"))]
+  seq_panel_template <- attr(gg_theme, "seq_panel_template")
+
+  if (is.null(seq_panel_template)) seq_panel_template <- seqPanelPlotTemplate()
   # theme_bw propogates to all subplots
-  fig <- ggplot() +
+  fig <-seq_panel_template +
     geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3)),
               fill = frame_colors) +
     suppressWarnings(
       geom_segment(data=hits,
                    mapping = aes(y = 2 - (frames + 1), yend =  2 - frames, x = pos, xend = pos,
                                  text = paste0("Pos: ", pos, "\n", "Type: ", Type)), col=hits$col)
-      ) +
+      )
+
+  return(fig)
+}
+
+seqPanelPlotTemplate <- function() {
+  ggplot() +
     ylab("frame") +
     xlab("position [nt]") +
     gg_theme +
     theme(plot.margin = unit(c(0,0,0,0), "pt"), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
     scale_y_continuous(breaks = c(-0.5,0.5, 1.5), labels = c("2","1", "0"), expand = c(0,0)) +
     scale_x_continuous(expand = c(0,0))
-
-  return(fig)
 }
 
 
@@ -328,6 +335,8 @@ geneModelPanelPlotTemplate <- function(frame = 1) {
     scale_y_continuous(expand = c(0,0)) +
     theme(panel.background = element_rect(fill= "white"))
 }
+
+
 
 nt_area_template <- function() {
   ggplot() +

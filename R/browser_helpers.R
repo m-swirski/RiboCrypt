@@ -22,7 +22,9 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
     attr(gg_theme, "gg_template")
   } else geneModelPanelPlotTemplate()
   gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]], gg_template = template)
-  return(list(seq_panel = seq_panel, gene_model_panel = gene_model_panel,
+  seq_nt_panel <- attr(gg_theme, "seq_panel_nt_template_plotly")
+  return(list(seq_panel = seq_panel, seq_nt_panel = seq_nt_panel,
+              gene_model_panel = gene_model_panel, frame_colors = frame_colors,
               lines = lines, target_seq = target_seq, annotation_layers = layers))
 }
 
@@ -91,66 +93,29 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                          display_sequence,
                                          aa_letter_code, input_id, plot_name,
                                          plot_title,  width, height, export.format,
-                                         zoom_range = NULL, frame_colors = "R",
-                                         is_cellphone = FALSE) {
+                                         zoom_range = NULL, frame_colors = "R") {
   print("Merging bottom and coverage tracks")
-  nplots <- track_panel$nplots
-  plots <- browser_plots_highlighted(track_panel$plots, zoom_range)
-
-  gene_model_panel <- bottom_panel$gene_model_panel
-  seq_panel <- bottom_panel$seq_panel
-  custom_seq_panel <- bottom_panel$custom_bigwig_panels
-  without_sequence_track <- display_sequence %in% c("none", FALSE)
-
-  bottom_plots <- list(gene_model = automateTicksGMP(gene_model_panel),
-                       AA_model = automateTicksAA(seq_panel, is_cellphone))
-  nplots <- nplots + ifelse(without_sequence_track, 2, 3)
-  if (!without_sequence_track) { # plotly subplot without sequence track
-    bottom_plots <- c(list(DNA_model = automateTicksLetters(nt_area_template())),
-                      bottom_plots)
-  }
-  plots <- c(plots, bottom_plots)
-
-  nplots_all <- nplots
-  if (length(custom_seq_panel) > 0) {
-    plots <- c(plots, lapply(custom_seq_panel, automateTicksX))
-    nplots_all <- nplots_all + length(custom_seq_panel)
-  }
-
-  # TODO: Move all layout updates to earlier functions
-  plots <- lapply(plots, function(x) x  %>%
-                    layout(xaxis = list(title = list(font = list(size = 22)),
-                                        tickfont = list(size = 16))))
+  track_plots <- browser_plots_highlighted(track_panel$plots, zoom_range)
+  bottom_plots <- bottom_panel$bottom_plots
+  plots <- c(track_plots, bottom_plots)
 
   multiomics_plot <- suppressWarnings(subplot(plots,
                                               margin = 0,
-                                              nrows = nplots_all,
+                                              nrows = length(plots),
                                               heights = proportions,
                                               shareX = TRUE,
                                               titleY = TRUE, titleX = TRUE))
-  multiomics_plot <- remove_y_axis_zero_tick_js(multiomics_plot)
 
-
-  if (!without_sequence_track) {
-    print(frame_colors)
+  if (isTruthy(display_sequence)) {
+    nt_seq_y_index <- length(plots) - bottom_panel$ncustom - 3
     multiomics_plot <- addJSrender(multiomics_plot, bottom_panel$target_seq,
-                                   nplots - 3, seq_render_dist,
-                                   aa_letter_code, input_id, frame_colors)
+                                   nt_seq_y_index, seq_render_dist,
+                                   aa_letter_code, input_id, bottom_panel$frame_colors)
   }
-  filename <- ifelse(plot_name == "default", names(display_range), plot_name)
-  multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
-                                             width, height, format = export.format)
-  if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>%
-    plotly::layout(title = plot_title)
-  # Lock proportions on zoom out
-  # multiomics_plot <- lock_yaxis_domains_by_proportions(multiomics_plot, proportions, gap = 0)
-  if (!is.null(zoom_range) && length(zoom_range) == 2) {
-    # Zoom in on init
-    multiomics_plot <- multiomics_plot %>%
-      plotly::layout(xaxis = list(range = zoom_range))
-  }
-  multiomics_plot <- lineDeSimplify(multiomics_plot)
-  return(multiomics_plot)
+
+  return(browser_plot_final_layout_polish(multiomics_plot, plot_name, display_range,
+                                          width, height, export.format, plot_title,
+                                          zoom_range, proportions))
 }
 
 #' @importFrom Biostrings nchar translate
@@ -392,5 +357,34 @@ lock_yaxis_domains_by_proportions <- function(p, proportions, gap = 0, fixed = T
 # }
 # ")
   p
+}
+
+browser_plot_final_layout_polish <- function(multiomics_plot,
+                                             plot_name,
+                                             display_range,
+                                             width,
+                                             height,
+                                             export.format,
+                                             plot_title,
+                                             zoom_range,
+                                             proportions) {
+  multiomics_plot <- remove_y_axis_zero_tick_js(multiomics_plot)
+
+  multiomics_plot <- multiomics_plot %>% layout(xaxis = list(title = list(font = list(size = 22)),
+                      tickfont = list(size = 16)))
+
+  filename <- ifelse(plot_name == "default", names(display_range), plot_name)
+  multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
+                                             width, height, format = export.format)
+  if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>%
+    plotly::layout(title = plot_title)
+  # Lock proportions on zoom out
+  # multiomics_plot <- lock_yaxis_domains_by_proportions(multiomics_plot, proportions, gap = 0)
+  if (!is.null(zoom_range) && length(zoom_range) == 2) {
+    # Zoom in on init
+    multiomics_plot <- multiomics_plot %>%
+      plotly::layout(xaxis = list(range = zoom_range))
+  }
+  return(lineDeSimplify(multiomics_plot))
 }
 

@@ -51,7 +51,7 @@ plotSeqPanel <- function(hits, sequence, frame = 1, frame_colors = "R", gg_theme
   return(fig)
 }
 
-seqPanelPlotTemplate <- function() {
+seqPanelPlotTemplate <- function(gg_theme) {
   ggplot() +
     ylab("frame") +
     xlab("position [nt]") +

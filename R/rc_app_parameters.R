@@ -157,8 +157,8 @@ rc_parameter_setup <- function() {
       default_libs <- libraries_string_split(browser_options["default_libs"], libs)
     }
     gg_theme <- theme_bw()
+    attr(gg_theme, "seq_panel_template") <- seqPanelPlotTemplate(gg_theme)
     attr(gg_theme, "gg_template") <- geneModelPanelPlotTemplate()
-    attr(gg_theme, "seq_panel_template") <- seqPanelPlotTemplate()
     attr(gg_theme, "seq_panel_nt_template_ggplot") <- nt_area_template()
     attr(gg_theme, "seq_panel_nt_template_plotly") <-
       automateTicksLetters(attr(gg_theme, "seq_panel_nt_template_ggplot"))

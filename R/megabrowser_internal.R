@@ -98,7 +98,7 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
                                        tx_annotation, display_region,
                                        cds_annotation, viewMode,
                                        collapse_intron_flank,
-                                       rel_heights = c(0.2, 0.75, 0.05)) {
+                                       rel_heights = c(0.15, 0.75, 0.1)) {
   stopifnot(is.numeric(rel_heights) && length(rel_heights) == 3)
   gene_model_panel <- summary_plot <- NULL
   to_use_logicals <- c(summary, TRUE, annotation)
@@ -117,8 +117,20 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
                                                     tx_annotation, viewMode, collapse_intron_flank)
   }
   if (plotType == "plotly") {
-    gene_model_panel <- ggplotly(gene_model_panel, tooltip = "")
+    # gene_model_panel <- ggplotly(gene_model_panel, tooltip = "")
+    # if (summary) summary_plot <- automateTicksRNA(summary_plot)
+    # plot_list <- list(summary_plot, heatmap, gene_model_panel)
+    # rel_heights <- rel_heights[to_use_logicals]
+    # if (annotation) rel_heights <- c(rel_heights, 0)
+    # final_plot <- subplot(
+    #   plot_list[to_use_logicals],
+    #   nrows = 1 + summary + ifelse(annotation, 2, 1),
+    #   heights = rel_heights,   # adjust to taste
+    #   shareX = TRUE,
+    #   margin = 0.02
+    # )
     final_plot <- heatmap
+
   } else {
     grob <- grid::grid.grabExpr(draw(heatmap))
     final_plot <- cowplot::plot_grid(plotlist = list(summary_plot, grob, gene_model_panel)[to_use_logicals],
@@ -132,8 +144,8 @@ summary_track_allsamples <- function(m, summary_track_type = "area", as_plotly =
   summary_profile <- data.table(count = rowSums(m))
   summary_profile[, `:=`(position = seq.int(.N)) ]
   summary_profile[, `:=`(frame = factor((position-1) %% 3)) ]
-  summary_plot <- createSinglePlot(summary_profile, TRUE, 1, "",
-                                   FALSE, lines = NULL,
+  summary_plot <- createSinglePlot(summary_profile, TRUE, "R", "",
+                                   "", lines = NULL,
                                    type = summary_track_type,
                                    flip_ylabel = FALSE, as_plotly = as_plotly)
   if (!as_plotly) {
@@ -145,7 +157,7 @@ summary_track_allsamples <- function(m, summary_track_type = "area", as_plotly =
 
 annotation_track_allsamples <- function(df, id, display_range, annotation,
                                         tx_annotation, viewMode, collapse_intron_flank) {
-  gene_model_panel <- createGeneModelPanel(display_range, annotation, frame = 1,
+  gene_model_panel <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
                                            custom_regions = NULL,
                                            viewMode = viewMode, collapse_intron_flank)

@@ -120,8 +120,8 @@ study_and_gene_observers <- function(input, output, session) {
     if (!exists("uses_libs", mode = "logical")) uses_libs <- TRUE
     if (!exists("env")) env <- new.env()
 
-    observe(if (rv$genome != input$genome & input$genome != "") {
-      message("Chaning org from org switch in other page")
+    observe(if (rv$genome != input$genome & isTruthy(input$genome)) {
+      message("Changing org from org switch in other page")
       rv$genome <- input$genome},
       priority = 2) %>%
       bindEvent(input$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
@@ -145,8 +145,8 @@ study_and_gene_observers <- function(input, output, session) {
     experiment_update_select_isolated(isolate(org()), all_exp, experiments,
                                       isolate(rv$exp))
 
-    observeEvent(org(), if (org() != input$genome & input$genome != "") {
-      message("Chaning exp from org switch")
+    observeEvent(org(), if (org() != input$genome & isTruthy(input$genome)) {
+      message("Changing exp from org switch")
       experiment_update_select(org, all_exp, experiments)},
       ignoreInit = TRUE, ignoreNULL = TRUE)
     # Gene & tx updaters
@@ -323,7 +323,7 @@ org_and_study_changed_checker <- function(input, output, session) {
 
 allsamples_observer_controller <- function(input, output, session) {
   with(rlang::caller_env(), {
-  org <- reactive("ALL")
+  org <- reactiveVal("ALL")
 
   rv <- reactiveValues(lstval=isolate(df())@txdb,
                        curval=isolate(df())@txdb,

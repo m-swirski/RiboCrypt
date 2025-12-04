@@ -3,6 +3,7 @@
 #' @noRd
 click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_theme, user_info) {
   {
+    time_before <- Sys.time()
     print("- Browser controller")
     print(paste("here is gene!", isolate(input$gene)))
     print(paste("here is tx!", isolate(input$tx)))
@@ -62,7 +63,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_them
 
 
     shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
-    print("-- Browser controller done")
+    cat("-- Browser controller done: "); print(round(Sys.time() - time_before, 2))
     reactiveValues(dff = dff,
                    display_region = display_region,
                    customRegions = customRegions,

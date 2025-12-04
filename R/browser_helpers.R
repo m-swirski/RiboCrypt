@@ -2,13 +2,13 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
                                          start_codons, stop_codons, custom_motif,
                                          custom_regions, viewMode,
                                          tx_annotation = NULL, collapse_intron_flank = 100,
-                                         frame_colors = "R", gg_theme = theme_bw()) {
+                                         frame_colors = "R", gg_theme = gg_theme_template()) {
   force(display_range)
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
                                           stop_codons = stop_codons, custom_motif = custom_motif)
-  seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]], 1, frame_colors, gg_theme)
+  seq_aa_panel <- plotAASeqPanel(seq_panel_hits, target_seq[[1]], frame_colors, gg_theme)
   # Get the panel for the annotation track
   gene_model_panel <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
@@ -18,12 +18,10 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
   lines <- gene_model_panel[[2]]
   layers <- max(gene_model_panel[[1]]$layers)
 
-  template <- if (!is.null(attr(gg_theme, "gg_template"))) {
-    attr(gg_theme, "gg_template")
-  } else geneModelPanelPlotTemplate()
-  gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]], gg_template = template)
+  gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]],
+                                         gg_template = attr(gg_theme, "gg_template"))
   seq_nt_panel <- attr(gg_theme, "seq_panel_nt_template_plotly")
-  return(list(seq_panel = seq_panel, seq_nt_panel = seq_nt_panel,
+  return(list(seq_panel = seq_aa_panel, seq_nt_panel = seq_nt_panel,
               gene_model_panel = gene_model_panel, frame_colors = frame_colors,
               lines = lines, target_seq = target_seq, annotation_layers = layers))
 }
@@ -138,7 +136,7 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
                                     input_id = "", summary_track = FALSE,
                                     summary_track_type = frames_type, export.format = "svg", frames_subset = "all",
                                     zoom_range = NULL, tx_annotation = NULL, collapse_intron_flank = 100,
-                                    frame_colors = "R") {
+                                    frame_colors = "R", phyloP = FALSE, mapability = FALSE) {
 
   multiOmicsController()
   # Get Bottom annotation and sequence panels
@@ -148,9 +146,15 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
                                                tx_annotation,
                                                collapse_intron_flank,
                                                frame_colors)
-  multiOmicsControllerView()
+  custom_bigwig_panels <- custom_seq_track_panels(df, display_range, phyloP, mapability)
+  bottom_panel <- c(bottom_panel, annotation_list, custom_bigwig_panels,
+                    ncustom = length(custom_bigwig_panels[[1]]))
+
+  bottom_panel$bottom_plots <- bottom_plots_to_plotly(bottom_panel)
+
 
   # Get NGS data track panels
+  multiOmicsControllerView()
   profiles <- multiOmicsPlot_all_profiles(display_range, reads, kmers,
                                           kmers_type, frames_type, frames_subset,
                                           withFrames, log_scale, BPPARAM)

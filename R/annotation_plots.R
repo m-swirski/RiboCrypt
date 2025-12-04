@@ -29,7 +29,7 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
 
 }
 
-plotSeqPanel <- function(hits, sequence, frame = 1, frame_colors = "R", gg_theme = theme_bw()) {
+plotAASeqPanel <- function(hits, sequence, frame_colors = "R", gg_theme = theme_bw()) {
   stopifnot(is(gg_theme, "theme"))
   frame_colors <- frame_color_themes(frame_colors, FALSE)
   pos <- NULL # avoid dt warning
@@ -39,7 +39,7 @@ plotSeqPanel <- function(hits, sequence, frame = 1, frame_colors = "R", gg_theme
 
   if (is.null(seq_panel_template)) seq_panel_template <- seqPanelPlotTemplate()
   # theme_bw propogates to all subplots
-  fig <-seq_panel_template +
+  fig <- seq_panel_template +
     geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3)),
               fill = frame_colors) +
     suppressWarnings(
@@ -51,8 +51,18 @@ plotSeqPanel <- function(hits, sequence, frame = 1, frame_colors = "R", gg_theme
   return(fig)
 }
 
+gg_theme_template <- function() {
+  gg_theme <- theme_bw()
+  attr(gg_theme, "seq_panel_template") <- seqPanelPlotTemplate(gg_theme)
+  attr(gg_theme, "gg_template") <- geneModelPanelPlotTemplate()
+  attr(gg_theme, "seq_panel_nt_template_ggplot") <- nt_area_template()
+  attr(gg_theme, "seq_panel_nt_template_plotly") <-
+    automateTicksLetters(attr(gg_theme, "seq_panel_nt_template_ggplot"))
+  return(gg_theme)
+}
+
 seqPanelPlotTemplate <- function(gg_theme) {
-  ggplot() +
+  suppressWarnings(ggplot(frame = "static")) +
     ylab("frame") +
     xlab("position [nt]") +
     gg_theme +
@@ -288,7 +298,7 @@ rc_rgb <- function(with_alpha = TRUE) {
   return(rgb_colors)
 }
 
-geneModelPanelPlot <- function(dt, frame = 1, gg_template = geneModelPanelPlotTemplate()) {
+geneModelPanelPlot <- function(dt, gg_template = geneModelPanelPlotTemplate()) {
   # If no annotation given, dt is empty, return blank
   if (nrow(dt) == 0) return(ggplot())
   # Else render exon boxes
@@ -322,8 +332,8 @@ geneModelPanelPlot <- function(dt, frame = 1, gg_template = geneModelPanelPlotTe
   return(result_plot)
 }
 
-geneModelPanelPlotTemplate <- function(frame = 1) {
-  suppressWarnings(ggplot(frame = frame)) +
+geneModelPanelPlotTemplate <- function() {
+  suppressWarnings(ggplot(frame = "static")) +
     ylab("") + xlab("") +
     theme(axis.title.x = element_blank(),
           axis.ticks.x = element_blank(),

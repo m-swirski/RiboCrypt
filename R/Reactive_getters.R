@@ -34,6 +34,7 @@ bottom_panel_shiny <- function(mainPlotControls) {
   print("Creating bottom panel..")
   viewMode <- ifelse(mainPlotControls()$viewMode, "genomic", "tx")
   df <- mainPlotControls()$dff
+  is_cellphone <- mainPlotControls()$is_cellphone
 
   annotation_list <- annotation_controller(df = df,
                                            display_range = mainPlotControls()$display_region,
@@ -53,28 +54,31 @@ bottom_panel_shiny <- function(mainPlotControls) {
                                                mainPlotControls()$collapsed_introns_width,
                                                mainPlotControls()$frame_colors,
                                                mainPlotControls()$gg_theme)
-  custom_bigwig_panels <- custom_seq_track_panels(mainPlotControls,
-                                                  annotation_list$display_range)
-  bottom_panel <- c(bottom_panel, annotation_list,
+  custom_bigwig_panels <- custom_seq_track_panels(df, annotation_list$display_range,
+                                                  mainPlotControls()$phyloP, mainPlotControls()$mapability)
+  bottom_panel <- c(bottom_panel, annotation_list, custom_bigwig_panels,
                     ncustom = length(custom_bigwig_panels[[1]]))
-  # To plotly
-  bottom_plots <- c(list(DNA_model = bottom_panel$seq_nt_panel,
-                       gene_model = automateTicksGMP(bottom_panel$gene_model_panel),
-                       AA_model = automateTicksAA(bottom_panel$seq_panel, mainPlotControls()$is_cellphone)),
-                    lapply(custom_bigwig_panels[[1]], automateTicksCustomTrack))
-  bottom_panel$bottom_plots <- bottom_plots
 
-  cat("Done (bottom):"); print(round(Sys.time() - time_before, 2))
+  bottom_panel$bottom_plots <- bottom_plots_to_plotly(bottom_panel, is_cellphone)
+
+  cat("Done (bottom panel):"); print(round(Sys.time() - time_before, 2))
   return(bottom_panel)
 }
 
-custom_seq_track_panels <- function(mainPlotControls, display_range) {
-  df <- mainPlotControls()$dff
+bottom_plots_to_plotly <- function(bottom_panel, is_cellphone = FALSE) {
+  c(list(DNA_model = bottom_panel$seq_nt_panel,
+         gene_model = automateTicksGMP(bottom_panel$gene_model_panel),
+         AA_model = automateTicksAA(bottom_panel$seq_panel, is_cellphone)),
+         lapply(bottom_panel$custom_bigwig_panels, automateTicksCustomTrack))
+}
+
+
+custom_seq_track_panels <- function(df, display_range, phyloP, mapability) {
   p <- list()
-  if (mainPlotControls()$phyloP) {
+  if (phyloP) {
     p <- c(p, phylo = list(phylo_custom_seq_track_panel(df, display_range)))
   }
-  if (mainPlotControls()$mapability) {
+  if (mapability) {
     p2 <- mapability_custom_seq_track_panel(df, display_range)
     p <- c(p, mapability = list(p2))
   }
@@ -167,7 +171,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                        input_id = session$ns("selectedRegion"),
                                        plot_name, plot_title, width, height,
                                        export.format, zoom_range, frame_colors)
-  cat("Done (Full):"); print(round(Sys.time() - time_before, 2))
+  cat("Done (Final panel):"); print(round(Sys.time() - time_before, 2))
   return(plot)
 }
 

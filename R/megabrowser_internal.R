@@ -163,3 +163,46 @@ annotation_track_allsamples <- function(df, id, display_range, annotation,
                                            viewMode = viewMode, collapse_intron_flank)
   return(geneModelPanelPlot(gene_model_panel[[1]]))
 }
+
+get_lib_sizes_file <- function(dff) {
+  lib_sizes <- file.path(QCfolder(dff), "totalCounts_mrna.rds")
+  if (!file.exists(lib_sizes))
+    stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
+         " see vignette for more information on how to make these.")
+  return(lib_sizes)
+}
+
+validate_enrichment_term <- function(enrichment_term, clusters, ratio_interval, other_gene, metadata_field) {
+  valid_enrichment_clusterings <- c(clusters != 1, isTruthy(ratio_interval), isTruthy(other_gene))
+  enrichment_test_types <- c("Clusters", "Ratio bins", "Other gene tpm bins")[valid_enrichment_clusterings]
+
+  valid_enrichment_terms <- c(metadata_field, enrichment_test_types)
+  if (!(enrichment_term %in% valid_enrichment_terms)) {
+    stop("Enrichment term is not valid, valid options:\n",
+         paste(valid_enrichment_terms, collapse = ", "))
+  }
+  return(invisible(NULL))
+}
+
+#' Given ratio interval user input, format correctly
+#' @param ratio_interval character or NULL, if defined character, will format it
+#' @return a numeric interval, if input !isTruthy, returns NULL
+#' @noRd
+get_ratio_interval <- function(ratio_interval) {
+  if (isTruthy(ratio_interval)) {
+    split_ratio <- unlist(strsplit(ratio_interval, ";"))
+
+    temp_interval <- strsplit(split_ratio, ":|-")
+    single_input <- lengths(temp_interval) == 1
+    if (any(lengths(temp_interval) > 2)) stop("Malformed sort in interval input!")
+    if(any(single_input)) {
+      temp_interval[which(single_input)] <- lapply(temp_interval[which(single_input)], function(x) rep(x, 2))
+    }
+    temp_interval <- as.numeric(unlist(temp_interval))
+
+    if (anyNA(temp_interval)) stop("Malformed sort in interval input!")
+    ratio_interval <- temp_interval
+  } else ratio_interval <- NULL
+
+  return(ratio_interval)
+}

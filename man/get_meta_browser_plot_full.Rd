@@ -18,7 +18,7 @@ get_meta_browser_plot_full(
   cds_annotation,
   viewMode,
   collapse_intron_flank,
-  rel_heights = c(0.2, 0.75, 0.05)
+  rel_heights = c(0.15, 0.75, 0.1)
 )
 }
 \arguments{

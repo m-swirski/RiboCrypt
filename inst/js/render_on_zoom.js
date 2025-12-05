@@ -122,10 +122,23 @@
     }
   };
 
-  // 📋 Show copied popup
-  const showCopiedMessage = (message) => {
+  // Show copied popup
+  const showCopiedMessage = (message, sequence) => {
     const messageDiv = document.createElement("div");
-    messageDiv.innerHTML = message;
+    const encodedSeq = encodeURIComponent(sequence);
+
+    // Build BLAST URL with pre-filled sequence
+    const blastUrl =
+      "https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_SPEC=GeoBlast&PAGE_TYPE=BlastSearch&QUERY="
+      + encodedSeq;
+
+
+    messageDiv.innerHTML = `
+      ${message}
+      &nbsp; <a href="${blastUrl}" target="_blank" style="color:#4DA3FF; text-decoration:underline;">
+        Blast
+      </a>
+    `;
     Object.assign(messageDiv.style, {
       position: "absolute",
       bottom: "10px",
@@ -141,7 +154,7 @@
     setTimeout(() => document.body.removeChild(messageDiv), 3000);
   };
 
-  // 📦 Click handler
+  //  Click handler
   const onClick = (ed) => {
     const point = ed.points?.[0];
     if (!point) return;
@@ -161,13 +174,16 @@
       navigator.clipboard.writeText(visibleSequence)
         .then(() => {
           console.log("Copied to clipboard!");
-          showCopiedMessage(`Sequence copied: ${visibleSequence.length} nt`);
+          showCopiedMessage(
+            `Sequence copied: ${visibleSequence.length} nt`,
+            visibleSequence
+          );
         })
         .catch(err => console.error("Clipboard copy failed:", err));
     }
   };
 
-  // ✅ Initial render with placeholder
+  // Initial render with placeholder
   Plotly.addTraces(elem, [createPlaceholderTrace(data.sequence.length / 2)]);
   const initialStart = 0;
   const initialEnd = data.sequence.length;

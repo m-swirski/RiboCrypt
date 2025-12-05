@@ -27,10 +27,10 @@ getPlotAnimate <- function(profile, withFrames, colors, frame_colors,
   if (withFrames) colors <- frame_color_themes(frame_colors)
 
   if (length(lines) > 0) profile_plot <- profile_plot +
-    geom_vline(xintercept = lines, col = names(lines), linetype = 4, alpha = 0.5, size = lines_size)
+    geom_vline(xintercept = lines, col = names(lines), linetype = 4, alpha = 0.5, linewidth = lines_size)
   if (withFrames) {
     profile_plot <- profile_plot +
-      suppressWarnings(geom_line(aes(y = count, x = position, color = frame, frame = file), size = 0.75)) +
+      suppressWarnings(geom_line(aes(y = count, x = position, color = frame, frame = file), linewidth = 0.75)) +
       scale_color_manual(values = colors) +
       theme(legend.position = "none") +
       xlab("position [nt]")

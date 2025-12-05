@@ -14,7 +14,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
                 size = 0.1, alpha = 0.8, position = "identity")
   } else if (type == "lines") {
     profile_plot <- profile_plot +
-      geom_line(aes(y = count, x = position, color = frame), size = 0.5) +
+      geom_line(aes(y = count, x = position, color = frame), linewidth = 0.5) +
       scale_color_manual(values = frame_colors)
   } else if (type == "stacks") {
     profile_plot <- profile_plot +

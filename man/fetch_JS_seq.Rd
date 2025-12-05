@@ -21,7 +21,7 @@ fetch_JS_seq(
 \item{distance}{numeric, default 250 When to show sequence, when x-range is
 <= to this number.}
 
-\item{aa_letter_code}{"one_letter"}
+\item{aa_letter_code}{character, default: "one_letter", alternative: three_letters}
 
 \item{input_id}{shiny id of the object}
 }

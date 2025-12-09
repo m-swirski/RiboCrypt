@@ -16,26 +16,41 @@ multiOmicsControllerView <- function() {
     if(!is(reads, "list")) reads <- list(reads)
 
     if (length(withFrames) == 0) withFrames <- FALSE
-    if (!(length(withFrames)  %in% c(1, length(reads)))) stop("length of withFrames must be 0, 1 or the same as reads list")
+    if (!(length(withFrames)  %in% c(1, length(reads), length(selectedSamples)))) stop("length of withFrames must be 0, 1 or the same as reads list")
     if (length(withFrames) == 1) withFrames <- rep(withFrames, length(reads))
 
-    if (length(colors) == 0) colors <- 1:length(reads)
-    if (!(length(colors)  %in% c(1, length(reads)))) stop("length of colors must be 0, 1 or the same as reads list")
-    if (length(colors) == 1) colors <- rep(colors, length(reads))
+    if (length(colors) == 0 && !useFST) colors <- 1:length(reads)
+    if (length(colors) == 0 && useFST) colors <- length(selectedSamples)
+
+    if (!(length(colors)  %in% c(1, length(reads), length(selectedSamples)))) stop("length of colors must be 0, 1 or the same as reads list")
+
+    if (length(colors) == 1 && !useFST) colors <- rep(colors, length(reads))
+    if (length(colors) == 1 && useFST) colors <- rep(colors, length(selectedSamples))
 
     if (length(kmers) == 0) kmers <- 1
-    if (!(length(kmers)  %in% c(1, length(reads)))) stop("length of kmers must be 0, 1 or the same as reads list")
-    if (length(kmers) == 1) kmers <- rep(kmers, length(reads))
+    if (!(length(kmers)  %in% c(1, length(reads), length(selectedSamples)))) stop("length of kmers must be 0, 1 or the same as reads list")
 
-    if (length(ylabels) == 0) ylabels <- as.character(1:length(reads))
-    if (!(length(ylabels)  %in% c(1, length(reads)))) stop("length of ylabels must be 0, 1 or the same as reads list")
-    if (length(ylabels) == 1) ylabels <- rep(ylabels, length(reads))
+    if (length(kmers) == 1 && !useFST) kmers <- rep(kmers, length(reads))
+    if (length(kmers) == 1 && useFST) kmers <- rep(kmers, length(selectedSamples))
+
+    if (length(ylabels) == 0 && !useFST) ylabels <- as.character(1:length(reads))
+    if (length(ylabels) == 0 && useFST) ylabels <- as.character(1:length(selectedSamples))
+
+    if (!(length(ylabels)  %in% c(1, length(reads), length(selectedSamples)))) stop("length of ylabels must be 0, 1 or the same as reads list")
+
+    if (length(ylabels) == 1 && !useFST) ylabels <- rep(ylabels, length(reads))
+    if (length(ylabels) == 1 && useFST) ylabels <- rep(ylabels, length(selectedSamples))
+
     ylabels_full_name <- ylabels
-    if (length(ylabels) > 5) ylabels <- 1:length(reads)
+
+    if (length(ylabels) > 5 && !useFST) ylabels <- 1:length(reads)
+    if (length(ylabels) > 5 && useFST) ylabels <- 1:length(selectedSamples)
 
     if (length(lib_proportions) == 0) lib_proportions <- 1
-    if (!(length(lib_proportions)  %in% c(1, length(reads)))) stop("length of lib_proportions must be 0, 1 or the same as reads list")
-    if (length(lib_proportions) == 1) lib_proportions <- if (frames_type == "animate") {lib_proportions} else rep(lib_proportions, length(reads))
+    if (!(length(lib_proportions)  %in% c(1, length(reads), length(selectedSamples)))) stop("length of lib_proportions must be 0, 1 or the same as reads list")
+    if (length(lib_proportions) == 1) lib_proportions <- if (frames_type == "animate") {lib_proportions} else {
+      if (!useFST) rep(lib_proportions, length(reads)) else rep(lib_proportions, length(selectedSamples))
+    }
     lib_proportions <- lib_proportions / sum(lib_proportions)
     if (length(annotation_proportions) == 0) {
       if (display_sequence %in% c("none", FALSE)) {

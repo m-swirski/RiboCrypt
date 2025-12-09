@@ -2,11 +2,6 @@
 #' Takes shiny input and converts to a proper list of settings
 #' @noRd
 click_plot_browser_main_controller <- function(
-  # TODO
-  # Make a separate mode to use fst based collection
-  # Use code from megabrowser
-  # Hints
-  # collection_path_from_exp
   tx,
   cds,
   libs,
@@ -95,11 +90,15 @@ click_plot_browser_main_controller <- function(
     withFrames <- rep(FALSE, nrow(dff))
   }
 
-  selectedSamples <- dff@listData$Run
+  selectedSamples <- lapply(dff@listData$Run, c)
 
   if (useFST) {
-    reads <- collection_path_from_exp(dff, shiny::isolate(selectedTx), must_exists = TRUE)
+    readsFST <- collection_path_from_exp(dff, shiny::isolate(selectedTx), must_exists = TRUE)
   } else {
+    readsFST <- NULL
+  }
+
+  if (!useFST) {
     reads <- try(filepath(dff, "bigwig", suffix_stem = c("_pshifted", "")))
     invalid_reads <- is(reads, "try-error") ||
       (!all(file.exists(unlist(reads, use.names = FALSE))) |
@@ -110,6 +109,8 @@ click_plot_browser_main_controller <- function(
         base_folders = libFolder(dff, "all")
       )
     }
+  } else {
+     reads <- NULL
   }
 
   # Hash strings for cache
@@ -173,6 +174,7 @@ click_plot_browser_main_controller <- function(
     hash_browser = hash_strings[["hash_browser"]],
     hash_expression = hash_strings[["hash_expression"]],
     useFST = useFST,
+    readsFST = readsFST,
     selectedSamples = selectedSamples
   ) }}
 

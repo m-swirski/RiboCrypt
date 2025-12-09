@@ -25,13 +25,3 @@ RiboCrypt_app(
     plot_on_start = FALSE
   )
 )
-
-ui <- {
-  umap_ui("umap", all_exp_meta)
-}
-
-server <- function(input, output, session) {
-  umap_server("umap", metadata, all_exp_meta)
-}
-
-shinyApp(ui, server, options = options)

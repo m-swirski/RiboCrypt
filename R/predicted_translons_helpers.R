@@ -31,7 +31,7 @@ load_data_umap <- function(species, color.by = NULL) {
     stop("Species has no computed UMAP, pick another!")
   }
 
-  reactiveValues(dt_umap = dt_umap, df = df)
+  dt_umap
 }
 
 # Generalized function to handle download trigger buttons.

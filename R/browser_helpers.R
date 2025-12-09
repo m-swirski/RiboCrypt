@@ -69,7 +69,7 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels
 
 multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
                                         kmers_type, frames_type, frames_subset,
-                                        withFrames, log_scale, BPPARAM, normalization, selectedSamples = NULL, useFST = FALSE) {
+                                        withFrames, log_scale, BPPARAM, normalization, selectedSamples = NULL, useFST = FALSE, readsFST = NULL) {
   force(display_range)
   force(reads)
   force(kmers)
@@ -80,21 +80,25 @@ multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
   force(frames_subset)
 
   if (useFST) {
-    count <- load_collection(
-      reads[[1]],
+    # selectedSamples should be a list of vectors, each vector containing a list of samples to aggregate
+    flatSelectedSamples <- unlist(selectedSamples, recursive = TRUE)
+    reads <- load_collection(
+      readsFST,
       grl = display_range,
       format = "wide",
-      columns = selectedSamples
-    ) %>% rowMeans(na.rm = TRUE)
-    profiles <-
+      columns = flatSelectedSamples
+    )
+    aggregationMethod <- rowMeans
+    profiles <- lapply(selectedSamples, function(samples) {
+      count <- aggregationMethod(reads[, samples, with = FALSE], na.rm = TRUE)
       data.table(
         count = count,
         position = 1:length(count),
         library = as.factor(rep_len(1, length.out = length(count))),
         frame = as.factor(rep_len(1:3, length.out = length(count)))
       ) %>%
-      smoothenMultiSampCoverage(kmers, kmers_type = kmers_type, split_by_frame = TRUE) %>%
-      list()
+        smoothenMultiSampCoverage(kmers, kmers_type = kmers_type, split_by_frame = TRUE)
+    })
   } else {
     if (is(BPPARAM, "SerialParam")) {
       profiles <- mapply(

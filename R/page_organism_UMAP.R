@@ -1,5 +1,6 @@
-umap_ui <- function(id, all_exp_translons, label = "umap") {
+umap_ui <- function(id, all_exp_translons, gene_names_init, browser_options, label = "umap") {
   ns <- NS(id)
+  all_isoforms <- subset(gene_names_init, label == browser_options["default_gene"])
   tabPanel(
     title = "UMAP", icon = icon("rectangle-list"),
     h2("UMAP from count tables of all samples of all genes in organism"),
@@ -23,6 +24,10 @@ umap_ui <- function(id, all_exp_translons, label = "umap") {
       ),
       tabPanel(
         "Browser",
+        fluidRow(
+          column(2, gene_input_select(ns, FALSE, browser_options)),
+          column(2, tx_input_select(ns, FALSE, all_isoforms, browser_options["default_isoform"])),
+        ),
         fluidRow()
       )
     ),
@@ -40,6 +45,23 @@ umap_server <- function(id, metadata, all_exp_meta) {
       default <- "all_samples-Homo_sapiens"
       selected_exp <- ifelse(default %in% all_exp_meta$name, default, "AUTO")
       experiment_update_select(NULL, all_exp_meta, all_exp_meta$name, selected_exp)
+      gene_name_list <- shiny::reactive({
+        shiny::req(input$dff)
+        shiny::req(input$dff != "")
+        get_gene_name_categories(ORFik::read.experiment(input$dff, validate = FALSE))
+      })
+      shiny::observe({
+        shiny::req(input$dff)
+        shiny::req(input$dff != "")
+        gene_update_select(gene_name_list)
+      }) %>% shiny::bindEvent(gene_name_list())
+      shiny::observe({
+        shiny::req(input$dff)
+        shiny::req(input$dff != "")
+        shiny::req(input$gene)
+        shiny::req(input$gene != "")
+        tx_update_select(gene = input$gene, gene_name_list = gene_name_list)
+      }) %>% shiny::bindEvent(input$gene)
       # observeEvent(TRUE, {
       #   experiment_update_select(org, all_exp, experiments, rv$exp)
       # }, once = TRUE)
@@ -57,9 +79,9 @@ umap_server <- function(id, metadata, all_exp_meta) {
           generated_plot <- {
             req(plot_triggered())
             if (isolate(input$umap_plot_type) == "UMAP") {
-              umap_plot(isolate(md()$dt_umap))
+              umap_plot(isolate(md()))
             } else {
-              umap_centroids_plot(isolate(md()$dt_umap))
+              umap_centroids_plot(isolate(md()))
             }
           }
           onRender(generated_plot, fetchJS("umap_plot_extension.js"), ns("selectedPoints"))

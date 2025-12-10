@@ -9,7 +9,7 @@ metadata_ui <- function(id, all_exp, all_exp_meta, gene_names_init, browser_opti
     study_info_ui("study_info"),
     sra_search_ui("sra_search"),
     predicted_translons_ui("predicted_translons", all_merged),
-    umap_ui("umap", all_exp_meta)
+    umap_ui("umap", all_exp_meta, gene_names_init, browser_options)
   )
 }
 

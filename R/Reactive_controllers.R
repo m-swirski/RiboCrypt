@@ -32,7 +32,8 @@ click_plot_browser_main_controller <- function(
   phyloP,
   mapability,
   expressionPlot,
-  useFST = TRUE
+  useFST = TRUE,
+  selectedSamples = NULL
 ) {{ print("- Browser controller")
   print(paste("here is gene!", isolate(selectedGene)))
   print(paste("here is tx!", isolate(selectedTx)))
@@ -84,16 +85,21 @@ click_plot_browser_main_controller <- function(
 
   dff <- observed_exp_subset(isolate(selectedLibraries), libs, df)
   if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
-  if (isolate(withFrames)) {
+  if (isolate(withFrames) && !useFST) {
     withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
+  } else if (isolate(withFrames) && useFST) {
+    withFrames <- rep_len(TRUE, length.out = length(selectedSamples))
   } else {
     withFrames <- rep(FALSE, nrow(dff))
   }
 
-  selectedSamples <- lapply(dff@listData$Run, c)
+  if (is.null(selectedSamples) && useFST) {
+    selectedSamples <- lapply(dff@listData$Run, c)
+    withFrames <- rep_len(TRUE, length.out = length(selectedSamples))
+  }
 
   if (useFST) {
-    readsFST <- collection_path_from_exp(dff, shiny::isolate(selectedTx), must_exists = TRUE)
+    readsFST <- collection_path_from_exp(df(), shiny::isolate(selectedTx), must_exists = TRUE)
   } else {
     readsFST <- NULL
   }
@@ -110,7 +116,7 @@ click_plot_browser_main_controller <- function(
       )
     }
   } else {
-     reads <- NULL
+    reads <- NULL
   }
 
   # Hash strings for cache

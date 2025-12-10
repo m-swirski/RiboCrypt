@@ -13,7 +13,7 @@ umap_ui <- function(id, all_exp_translons, gene_names_init, browser_options, lab
           column(2, umap_plot_type(ns)),
           column(2, experiment_input_select(all_exp_translons$name, ns)),
           column(2, umap_color_by_input_select(ns)),
-          column(1, plot_button(ns("go")))
+          column(1, plot_button(ns("goUmapPlot")))
         ),
         fluidRow(
           plotlyOutput(ns("c"), height = "700px")
@@ -24,18 +24,18 @@ umap_ui <- function(id, all_exp_translons, gene_names_init, browser_options, lab
       ),
       tabPanel(
         "Browser",
-        fluidRow(
-          column(2, gene_input_select(ns, FALSE, browser_options)),
-          column(2, tx_input_select(ns, FALSE, all_isoforms, browser_options["default_isoform"])),
-        ),
-        fluidRow()
+        browserPlotUi(
+          ns("browserPlot"),
+          gene_names_init = gene_names_init,
+          browser_options = browser_options
+        )
       )
     ),
   )
 }
 
 
-umap_server <- function(id, metadata, all_exp_meta) {
+umap_server <- function(id, metadata, all_exp_meta, browser_options) {
   moduleServer(
     id,
     function(input, output, session) {
@@ -45,30 +45,13 @@ umap_server <- function(id, metadata, all_exp_meta) {
       default <- "all_samples-Homo_sapiens"
       selected_exp <- ifelse(default %in% all_exp_meta$name, default, "AUTO")
       experiment_update_select(NULL, all_exp_meta, all_exp_meta$name, selected_exp)
-      gene_name_list <- shiny::reactive({
-        shiny::req(input$dff)
-        shiny::req(input$dff != "")
-        get_gene_name_categories(ORFik::read.experiment(input$dff, validate = FALSE))
-      })
-      shiny::observe({
-        shiny::req(input$dff)
-        shiny::req(input$dff != "")
-        gene_update_select(gene_name_list)
-      }) %>% shiny::bindEvent(gene_name_list())
-      shiny::observe({
-        shiny::req(input$dff)
-        shiny::req(input$dff != "")
-        shiny::req(input$gene)
-        shiny::req(input$gene != "")
-        tx_update_select(gene = input$gene, gene_name_list = gene_name_list)
-      }) %>% shiny::bindEvent(input$gene)
       # observeEvent(TRUE, {
       #   experiment_update_select(org, all_exp, experiments, rv$exp)
       # }, once = TRUE)
 
       # Trigger data loading when "Plot" is clicked.
       # Also reset the downloaded files vector.
-      observeEvent(input$go, {
+      observeEvent(input$goUmapPlot, {
         md(load_data_umap(isolate(input$dff), isolate(input$umap_col)))
         plot_triggered(TRUE)
       })
@@ -87,7 +70,7 @@ umap_server <- function(id, metadata, all_exp_meta) {
           onRender(generated_plot, fetchJS("umap_plot_extension.js"), ns("selectedPoints"))
         }) %>%
           bindCache(input$dff, input$umap_col, input$umap_plot_type) %>%
-          bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
+          bindEvent(input$goUmapPlot, ignoreInit = FALSE, ignoreNULL = TRUE)
       }
 
       rSelection <- shiny::reactiveVal(NULL)
@@ -109,6 +92,13 @@ umap_server <- function(id, metadata, all_exp_meta) {
         metadata,
         rSelection,
         rFilteredSelection
+      )
+
+      browserPlotServer(
+        "browserPlot",
+        browser_options,
+        shiny::reactive(input$dff),
+        rSelectedSamples
       )
 
       check_url_for_basic_parameters()

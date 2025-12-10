@@ -181,5 +181,3 @@ browser_server <- function(id, all_experiments, env, df, experiments,
     }
   )
 }
-
-

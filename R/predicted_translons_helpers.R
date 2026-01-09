@@ -1,39 +1,3 @@
-# Function to load data
-load_data <- function(species) {
-  df <- read.experiment(species, validate = FALSE)
-  table_path <- file.path(refFolder(df),
-                          "predicted_translons",
-                          "predicted_translons_with_sequence.fst")
-  if (file.exists(table_path)) {
-    translon_table <- fst::read_fst(table_path, as.data.table = TRUE)
-    setattr(translon_table, "exp", species)
-  } else {
-    NULL
-  }
-
-  reactiveValues(translon_table = translon_table, df = df)
-}
-
-# Function to load data
-load_data_umap <- function(species, color.by = NULL) {
-  df <- read.experiment(species, validate = FALSE)
-  dir <- file.path(refFolder(df), "UMAP")
-  table_path <- file.path(dir, "UMAP_by_gene_counts.fst")
-  if (file.exists(table_path)) {
-    dt_umap <- fst::read_fst(table_path, as.data.table = TRUE)
-    if (length(color.by) > 1) {
-      dt_umap[, color_column := do.call(paste, c(.SD, sep = " | ")), .SDcols = color.by]
-    } else dt_umap[, color_column := get(color.by)]
-
-    setattr(dt_umap, "exp", species)
-    setattr(dt_umap, "color.by", color.by)
-  } else {
-    stop("Species has no computed UMAP, pick another!")
-  }
-
-  reactiveValues(dt_umap = dt_umap, df = df)
-}
-
 # Generalized function to handle download trigger buttons.
 # 'format' should be either "csv" or "xlsx".
 # 'trigger_input' is the name of the visible actionButton (e.g. "trigger_download_csv").

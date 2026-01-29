@@ -30,6 +30,10 @@
 #' cds <- loadRegion(df, "cds")
 #' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df,
 #'                         frames_type = "columns")
+#' # Show 2 ribo-seq libs as animation
+#' df <- ORFik.template.experiment()[9:10,]
+#' multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df,
+#'                         frames_type = "animate")
 multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",reference_sequence = findFa(df),
                                 reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
                                                    naming = "full", BPPARAM = BiocParallel::SerialParam()),
@@ -47,7 +51,9 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                                 custom_motif = NULL, log_scale = FALSE,
                                 BPPARAM = BiocParallel::SerialParam(),
                                 input_id = "", summary_track = FALSE,
-                                summary_track_type = frames_type, export.format = "svg", frames_subset = "all") {
+                                summary_track_type = frames_type, export.format = "svg", frames_subset = "all",
+                                zoom_range = NULL, tx_annotation = NULL, collapse_intron_flank = 100,
+                                frame_colors = "R") {
 
   multiOmicsPlot_internal(display_range, df, annotation,reference_sequence,
                           reads,
@@ -63,6 +69,7 @@ multiOmicsPlot_ORFikExp <- function(display_range, df, annotation = "cds",refere
                           aa_letter_code,
                           annotation_names, start_codons, stop_codons,
                           custom_motif, log_scale, BPPARAM, input_id,
-                          summary_track, summary_track_type, export.format, frames_subset)
+                          summary_track, summary_track_type, export.format, frames_subset,
+                          zoom_range, tx_annotation, collapse_intron_flank, frame_colors)
 
 }

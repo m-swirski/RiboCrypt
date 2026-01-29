@@ -13,21 +13,25 @@ fetchJS <- function(script_name) {
 #'
 #' @param target_seq the target sequence
 #' @param nplots number of plots
-#' @param distance numeric, default 50.
-#' @param display_dist display distance
-#' @param aa_letter_code "one_letter"
+#' @param distance numeric, default 250 When to show sequence, when x-range is
+#' <= to this number.
+#' @param aa_letter_code character, default: "one_letter", alternative: three_letters
 #' @param input_id shiny id of the object
 #' @return a list of 2 lists, the nt list (per frame, total 3)
 #'  and AA list (per frame, total 3)
 #' @importFrom Biostrings AMINO_ACID_CODE
-fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
-                         aa_letter_code = "one_letter", input_id) {
-  fr_colors <- c("#F8766D","#00BA38", "#619CFF")
+fetch_JS_seq <- function(target_seq, nplots, distance = 250,
+                         aa_letter_code = "one_letter", input_id, frame_colors = "R") {
+  display_dist <- nchar(target_seq)
+  fr_colors <- frame_color_themes(frame_colors)
   nt_yaxis <- paste0("y", nplots + 1)
   aa_yaxis <- paste0("y", nplots + 3)
   nts <- lapply(1:3, function(x) seq(x, display_dist, 3))
   rendered_seq <- strsplit(as.character(target_seq),"")[[1]]
-  aas <- lapply(1:3, function(x) suppressWarnings(strsplit(as.character(translate(target_seq[[1]][x:display_dist], if.fuzzy.codon = "X")), "")[[1]]))
+  translate_fuzzy_logic <- ifelse(all(rendered_seq %in% DNA_BASES), "error", "X")
+  aas <- lapply(1:3, function(x) suppressWarnings(
+    strsplit(as.character(translate(target_seq[[1]][x:display_dist],
+                                    if.fuzzy.codon = translate_fuzzy_logic)), "")[[1]]))
   if (aa_letter_code == "three_letters") {
     aa_code <- AMINO_ACID_CODE
     aa_code["*"] <- "*"
@@ -45,7 +49,7 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
                                               y = rep(2.4 - fr, length(aas[[fr]])),
                                               xaxis = "x",
                                               yaxis = aa_yaxis,
-                                              distance = distance*2,
+                                              distance = distance,
                                               color = "grey45"))
 
   render_on_zoom_data <- c(nts_js_data, aa_js_data)
@@ -56,12 +60,10 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 50, display_dist,
 }
 
 addJSrender <- function(multiomics_plot, target_seq, nplots, seq_render_dist,
-                        display_dist, aa_letter_code, input_id) {
-  #browser()
-  display_dist <- nchar(target_seq)
+                        aa_letter_code, input_id, frame_colors) {
   render_on_zoom_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
-                                      distance = seq_render_dist, display_dist = display_dist,
-                                      aa_letter_code = aa_letter_code, input_id)
+                                      distance = seq_render_dist,
+                                      aa_letter_code = aa_letter_code, input_id, frame_colors)
   select_region_on_click_data <- list(nplots = nplots, input_id = input_id)
   multiomics_plot <- multiomics_plot %>%
     onRender(fetchJS("render_on_zoom.js"), render_on_zoom_data) %>%
@@ -86,6 +88,33 @@ helper_button_redirect_call <- function() {
                             }
                           };
         '))))
+}
+
+remove_y_axis_zero_tick_js <- function(multiomics_plot) {
+  multiomics_plot %>% htmlwidgets::onRender("
+function(el) {
+
+  function hideZeroTicks() {
+    // Select ALL y-axis tick labels for ALL subplots
+    var allYTicks = el.querySelectorAll('.yaxislayer-above .ytick text, .yaxislayer-above .y2tick text, .yaxislayer-above .y3tick text, .yaxislayer-above .y4tick text');
+
+    allYTicks.forEach(function(label) {
+      if (label.textContent.trim() === '0') {
+        label.style.display = 'none';   // hide zero tick
+      } else {
+        label.style.display = '';       // show all others
+      }
+    });
+  }
+
+  // Hide zero tick on initial draw
+  hideZeroTicks();
+
+  // Hide zero tick after any zoom/pan/resize/autoscale
+  el.on('plotly_relayout', hideZeroTicks);
+  el.on('plotly_afterplot', hideZeroTicks);
+}
+")
 }
 
 

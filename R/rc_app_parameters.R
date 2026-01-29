@@ -50,12 +50,27 @@ rc_parameter_setup <- function() {
         nrow(all_exp_meta) > 0) {
       stopifnot(browser_options["default_experiment_meta"] %in% all_exp_meta$name)
     }
+    if (!isTruthy(browser_options["default_experiment_translon"])) {
+      default <- "all_merged-Homo_sapiens"
+      selected_exp <- ifelse(default %in% all_exp$name, default, "AUTO")
+      if (selected_exp == "AUTO") {
+        default <- "human_all_merged_l50"
+        selected_exp <- ifelse(default %in% all_exp$name, default, "AUTO")
+      }
+      browser_options["default_experiment_translon"] <- selected_exp
+    }
+
+
     if (is.na(browser_options["plot_on_start"])) {
       browser_options["plot_on_start"] <- FALSE
     }
     if (!isTruthy(browser_options["default_view_mode"])) {
       browser_options["default_view_mode"] <- "tx"
     }
+    if (!isTruthy(browser_options["url_api_call"])) {
+      browser_options["url_api_call"] <- ""
+    }
+
     stopifnot(is.character(browser_options["default_view_mode"]) &
               browser_options["default_view_mode"] %in% c("tx", "genomic"))
     if (!isTruthy(browser_options["collapsed_introns_width"])) {
@@ -73,23 +88,29 @@ rc_parameter_setup <- function() {
     if (!isTruthy(browser_options["allow_non_bw"])) {
       browser_options["allow_non_bw"] <- FALSE
     }
+    exps_dir <- ORFik::config()["exp"]
     exp_init <- read.experiment(browser_options["default_experiment"],
-                                validate = FALSE)
+                                validate = FALSE, in.dir = exps_dir)
     names_init <- get_gene_name_categories(exp_init)
     if (!isTruthy(browser_options["default_gene"])) {
       browser_options["default_gene"] <- names_init$label[1]
     }
     stopifnot(browser_options["default_gene"] %in% names_init$label)
 
-    names_init_meta <- NULL
+
+    tx_init <- loadRegion(exp_init)
+    cds_init <- loadRegion(exp_init, "cds")
+
+    exp_init_meta <- names_init_meta <- NULL
+
     if (nrow(all_exp_meta) > 0) {
       meta_org <- all_exp_meta[name == browser_options["default_experiment_meta"]]$organism[1]
       browser_org <- all_exp[name == browser_options["default_experiment"]]$organism[1]
+      exp_init_meta <- read.experiment(browser_options["default_experiment_meta"],
+                                       validate = FALSE, in.dir = exps_dir)
       names_init_meta <- if (meta_org == browser_org) {
         copy(names_init)
         } else {
-        exp_init_meta <- read.experiment(browser_options["default_experiment_meta"],
-                                    validate = FALSE)
         get_gene_name_categories(exp_init_meta)
       }
       if (!isTruthy(browser_options["default_gene_meta"])) {
@@ -133,11 +154,11 @@ rc_parameter_setup <- function() {
     if (!isTruthy(browser_options["default_libs"])) {
       browser_options["default_libs"] <- libs[1]
     } else {
-      default_libs <- unlist(strsplit(browser_options["default_libs"], "\\|"))
-      if (!all(default_libs %in% libs))
-        stop("You defined default_libs, but some of those are not valid names,",
-             " in selected experiment!")
+      default_libs <- libraries_string_split(browser_options["default_libs"], libs)
     }
+
+    gg_theme <- gg_theme_template()
+
     cat("Done (Parameter setup):"); print(round(Sys.time() - time_before, 2))
   }
   )

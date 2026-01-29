@@ -199,8 +199,9 @@ footprints automatic shift detection and shifting”</a>.</p>
 <p>The browser is the basic coverage display page. It contains a
 selection panel on the left side and a display window (browser) on the
 right. It displays coverage of sequencing data in either transcript
-coordinates (default, collapsed introns), or genomic coordinates. The
-following (Fig. 1), SRD5A1 gene,
+coordinates (default, collapsed introns to width 0), collapsed introns
+to user defined size or genomic coordinates. The following (Fig. 1),
+SRD5A1 gene,
 <a href="https://doi.org/10.21203/rs.3.rs-5390104/v1" target="_blank">has
 recently been shown to be decoded in three frames</a>.</p>
 <p><img src="../images/tutorial_fig1.png" width="1000px" height="600px" style="display: block; margin: auto auto auto 0;" /></p>
@@ -226,9 +227,10 @@ Ribo-seq is rendered in 3 colors, where</li>
 <li>Sequence track (top middle), displayes DNA sequence when zoomed in
 (&lt; 100nt)</li>
 <li>Annotation track (middle), the annotation track displays the
-transcript annotation, together with black bars that is displayed on top
-of the data track. CDS and other annotations are color-coded according
-to relative reading frame</li>
+transcript annotation, together with black line-dotted bars that are
+displayed on top of the data track. CDS and other annotations are
+color-coded according to relative reading frame. Introns are thin gray
+lines and UTRs are gray and medium sized.</li>
 <li>Frame track (bottom), the 3 frames displayed with given color
 bars:</li>
 </ol>
@@ -256,13 +258,14 @@ etc):</p>
 <h3>Experiment</h3>
 <ul>
 <li>Select an organism: Either select “ALL” to keep all experiments, or
-select a specific organism to select display only that subset of
-experiments in experiment select tab.</li>
+subset to a specific organism to display only that subset of experiments
+in experiment select tab.</li>
 <li>Select an experiment: The experiments contain study names combined
 with organism (some studies are multi species, so sometimes one study
 have multiple experiments). Select which one you want. There also exist
 merged experiments (all samples merged for the organism, etc). RNA-seq
-experiments have an addition “_RNA” as suffix.</li>
+experiments have an addition “_RNA” as suffix. Modalities means all
+library types (e.g. Ribo-seq, RNA-seq in one experiment)</li>
 </ul>
 </div>
 <div id="gene" class="section level3">
@@ -301,7 +304,15 @@ gene) etc)</li>
 <p>It’s normal to see that if condition is KO (knockout), the fraction
 column contains a gene name (the name of the gene that was knocked out).
 Currently the best way to find SRR run number for respective sample is
-to go to metadata tab and search for the study.</p>
+to go to metadata tab and search for the study. The reverse is also
+true, if you want to select the library from only known SRR, you can
+either insert URL with library=SRR… or find the library name from
+the</p>
+<ul>
+<li>Unique Alignments checkbox: Specifies to use unique Alignments (SAM
+NH flag = 1), or all alignments (both track files must be pre-computed),
+see below on STAR alignment details for more info.</li>
+</ul>
 </div>
 <div id="linetype" class="section level3">
 <h3>Display type</h3>
@@ -353,53 +364,58 @@ widths.</p>
 <h2>Selection panel (Settings)</h2>
 <p>Settings tab contains additional parameters:</p>
 <ul>
-<li><p>5’ extension (extend viewed window upstream)</p></li>
-<li><p>3’ extension (extend viewed window downstream)</p></li>
-<li><p>Custom sequences highlight (Motif search, given in brown color,
-support IUPAC, examples: CTG or NTG)</p></li>
-<li><p>Genomic region (Browse genomic window instead of gene, syntax:
+<li>5’ extension (extend viewed window upstream)</li>
+<li>3’ extension (extend viewed window downstream)</li>
+<li>Custom sequences highlight (Motif search, given in brown color,
+support IUPAC, examples: CTG or NTG)</li>
+<li>Genomic region (Browse genomic window instead of gene, syntax:
 chromosome:start-stop:strand, human/mouse/zebrafish: 1:10000-20000:+ ,
 yeast: I:10000-20000:+. Both 1 and chr1 works, conversion will be done
-automatically)</p></li>
-<li><p>Zoom interval (start with a zoom and highlight on a subsection):
+automatically)</li>
+<li>Zoom interval (start with a zoom and highlight on a subsection):
 Either specified in tx/view coordinates, i.e. 20:50 will give zoom on
 region (20-10):(50+10) = 10:60, and a highlight color (light yellow) at
 coordinates 20:50. You can also specify in genomic coordinates as above
 for genomic region (remember the genomic coordinates must then be within
-the gene / region you are displaying).</p></li>
-<li><p>Genomic View (Activate/deactivate genomic view, displaying full
-introns, see Figure 3)</p></li>
-<li><p>Full annotation (display all transcript isoforms annotation or
-just the selected isoform)</p></li>
-<li><p>uORF annotation (display candidate uORFs in the annotation track)
+the gene / region you are displaying).</li>
+<li>Genomic View (Activate/deactivate genomic view, displaying full
+introns, see Figure 3)</li>
+<li>Full annotation (display all transcript isoforms annotation or just
+the selected isoform)</li>
+<li>Collapsed introns (Collapse introns of the annotation which are not
+overlapping any exons the in shown annotation. Subset to size defined in
+collapsed intron width box, setting to 0 should produce the same plot in
+genomic coordinates as turning genomic coordinates off.)</li>
+<li>uORF annotation (display candidate uORFs in the annotation track)
 this is not the predicted set, but all possible uORFs by seqnece. For
-predicted set, check the predicted translons checkbox.</p></li>
-<li><p>Predicted translons - display <a href="#translons">predicted
+predicted set, check the predicted translons checkbox.</li>
+<li>Predicted translons - display <a href="#translons">predicted
 translons</a> in the annotation track. Try turning it on for the <a
 href="https://ribocrypt.org/?&amp;dff=all_merged-Homo_sapiens_modalities&amp;gene=SRD5A1-ENSG00000145545&amp;tx=ENST00000274192&amp;library=RFP&amp;frames_type=area&amp;kmer=9&amp;log_scale=FALSE&amp;extendLeaders=0&amp;extendTrailers=0&amp;viewMode=FALSE&amp;other_tx=FALSE&amp;add_uorfs=FALSE&amp;genomic_region=&amp;customSequence=&amp;phyloP=FALSE&amp;summary_track=FALSE&amp;go=TRUE">example</a>
 in Figures 1 and 2 - notice that the red (second) translon was
-missed</p></li>
-<li><p>Log scale (Log scale the coverage, reduces effect of extreme
-peaks)</p></li>
-<li><p>Protein structures (If you click the annotation name of a
-transcript in the plot panel it will display the alpha-fold protein
-colored by the ribo-seq data displayed in the plot panel)</p></li>
-<li><p>PhyloP (PhyloP conservation track will be added on the
-bottom)</p></li>
-<li><p>Split color frame (Split riboseq signal into colors by frame)
+missed</li>
+<li>Log scale (Log scale the coverage, reduces effect of extreme
+peaks)</li>
+<li>Protein structures (If you click the annotation name of a transcript
+in the plot panel it will display the alpha-fold protein colored by the
+ribo-seq data displayed in the plot panel)</li>
+<li>PhyloP (PhyloP conservation track will be added on the bottom)</li>
+<li>Mappability (mappability track of 28-mers, showing strong / weak
+mappability regions.)</li>
+<li>Split color frame (Split riboseq signal into colors by frame)
 i.e. red, green and blue. If this is on, then Ribo-seq and Ti-seq will
-be displayed with colors split by frame.</p></li>
-<li><p>Frames subset (If split color frame is TRUE, you can display only
-wanted color)</p></li>
-<li><p>Summary top track (Add an additional plot track on top,
-summarizing all selected libraries)</p></li>
-<li><p>Select Summary display type (same as frames display type above,
-but for the summary track)</p></li>
-<li><p>Export format (Choose plot export format from plotly controls.
-The default is svg vector graphics that allows for high
-customizability)</p></li>
-<li><p>Plot (red button, render selected gene/region as plotly html,
-with specified settings)</p></li>
+be displayed with colors split by frame.</li>
+<li>Frames subset (If split color frame is TRUE, you can display only
+wanted color)</li>
+<li>Summary top track (Add an additional plot track on top, summarizing
+all selected libraries)</li>
+<li>Select Summary display type (same as frames display type above, but
+for the summary track)</li>
+<li>Export format (Choose plot export format from plotly controls. The
+default is svg vector graphics that allows for high
+customizability)</li>
+<li>Plot (red button, render selected gene/region as plotly html, with
+specified settings)</li>
 </ul>
 <p>Uniquely, RiboCrypt allows for toggling between transcriptomic and
 genomic views, while displaying coding exons in colors according to the
@@ -759,12 +775,34 @@ translon</li>
 </ul>
 </div>
 </div>
+<div id="UMAP" class="section level2">
+<h2>Sample clustering by organism</h2>
+<p>UMAP analysis from count tables of all samples of all genes in the
+organism:</p>
+<p>Plot types:</p>
+<ul>
+<li>UMAP: The default plot is a dotplot of UMAP component 1 and 2 giving
+clustering of samples from gene counts. The user can inspect metadata
+terms related to clusters, shown as colors on the dots (e.g. tissue,
+cell-type, author, study,…) It usually shows a clear correlation within
+cell lines and of course the study, also there should be correlation
+with who the author is, even between different studies from the same
+author. This can be used to detect outliers or believed false metadata,
+e.g. a HEK293 sample marked as HeLa but clearly clustering with
+HEK293.</li>
+<li>UMAP centroids: If you rather want to find distances between the
+centroids of each cluster this heatmap shows the distances colored.</li>
+</ul>
+</div>
 </div>
 <div id="additional-information" class="section level1">
 <h1>Additional information</h1>
+<div id="structure-of-experiments" class="section level2">
+<h2>Structure of experiments</h2>
 <p>All files are packed into ORFik experiments for easy access through
 the ORFik backend package:</p>
-<p>File formats used internally in experiments are:</p>
+<p>Per experiment processing (set of samples of a study per
+organism):</p>
 <ul>
 <li>Annotation (gtf + TxDb for random access)</li>
 <li>Fasta genome (.fasta, + index for random access)</li>
@@ -774,20 +812,35 @@ the ORFik backend package:</p>
 <li>Full genome coverage (only for collapsed read lengths): covRLE</li>
 <li>Full genome coverage (split by read lengths): covRLElist</li>
 </ul></li>
-<li>count Tables (Summarized experiments, r data serialized .rds)</li>
+<li>count Tables (Summarized experiments, serialized and compressed as
+.qs)</li>
 <li>Library size list (Integer vector, .rds)</li>
+</ul>
+<p>Collection processing (the set of samples per organism):</p>
+<ul>
+<li>Collection experiment (set of all samples per organism)</li>
+<li>Collection merged experiment (the organism collection merged into
+single file)</li>
 <li>Precomputed gene coverages per organism: fst (used for
 metabrowser)</li>
+<li>Translon predictions per organism</li>
+<li>UMAP clustering per organism</li>
 </ul>
-<div id="massivengspipe" class="section level2">
-<h2>massiveNGSpipe</h2>
+<p>Modalities processing (The set of library types per experiment /
+collection) - If we have RNA-seq, Disome-seq etc from the same
+experiment / organism, we create a “_modalities” experiment which is the
+experiment / collection with all library types.</p>
+<p>We therefor have an experiment per study + organism pair, and ##
+massiveNGSpipe</p>
 <p>For our webpage the processing pipeline used is
 <a href="https://github.com/rc-biotech/massiveNGSpipe" target="_blank">massiveNGSpipe</a>
 which wraps multiple tools:</p>
 <ol style="list-style-type: decimal">
-<li>Fastq files are download with ORFik download.sra</li>
+<li>Fastq files are download with massiveNGSpipe download</li>
 <li>Adapter is detected with either fastqc (sequence detection) and
-falls back to fastp auto detection.</li>
+falls back to fastp auto detection. Barcodes are detected with a custom
+made sliding window function in massiveNGSpipe using quality and base
+content of fastq files.</li>
 <li>Reads are then trimmed with fastp (using the wrapper in ORFik)</li>
 </ol>
 <ul>
@@ -805,6 +858,20 @@ ORFik), that supports contamination removal. Settings:</li>
 coordinates)</li>
 <li>local alignment (to remove unknown flank effects)</li>
 <li>minimum read size (20nt)</li>
+<li>Max mismatches 3 (Not sofclip nucleotides!)</li>
+<li>Max multimappers (10), a note here on definition of unique
+alignments: since –outFilterMultimapScoreRange 1 (default of STAR) a
+multimapper is any read with SAM flag ‘AS’ (Alignment score) as maximum
+- 1, i.e. all reads with 1 less mismatches will be included as
+“multimapper” etc. Another interesting case is that a read can be
+defined as primary alignment, even though it has more mismatches: Read A
+(28nt) has 2 mismatches, and read B (28nt) has 0 mismatches, but a novel
+junction. STAR gives novel junctions a score of -3, and mismatch a score
+of -1, so 28 - (2*-1) &gt; 28 - 3. A final thing to mention is that
+since default index seed for STAR is 14, a 27nt read with a mismatch on
+position 14, will never map to it’s correct site (as the 14nt seed must
+be a perfect match for STARs lookup table) All other settings are
+default.</li>
 </ul>
 <ol start="6" style="list-style-type: decimal">
 <li>When all samples of study are aligned, an ORFik experiment is
@@ -818,8 +885,8 @@ visualization</li>
 </div>
 <div id="api-for-url-access-and-sharing" class="section level2">
 <h2>API for URL access and sharing</h2>
-<p>RiboCrypt uses the shiny router API system for creating runable links
-and backspacing etc. The API specificiation is the following:</p>
+<p>RiboCrypt uses the shiny router API system for creating runnable
+links and backspacing etc. The API specification is the following:</p>
 <div id="primary-url" class="section level3">
 <h3>Primary url:</h3>
 <p><a href="https://ribocrypt.org/"
@@ -832,14 +899,16 @@ list is the following:</p>
 <ul>
 <li>broser page (/ or /#browser)</li>
 <li>MegaBrowser (/#MegaBrowser)</li>
-<li>heatmap (/#heatmap)</li>
-<li>codon (/#codon)</li>
-<li>Differential expression (/#Differential expression)</li>
-<li>Periodicity plot (/#periodicity)</li>
-<li>fastq QC report (/#fastq)</li>
-<li>SRA search (/#SRA search)</li>
-<li>Studies supported (/#Studies)</li>
+<li>Motif metaplot (/#Motif%20metaplot)</li>
+<li>Codon dwell time (/#Codon%20dwell%20time)</li>
+<li>Differential expression (/#Differential%20expression)</li>
+<li>Frame bias (/Frame%20bias)</li>
+<li>fastq QC report (/#FastQ%20report)</li>
+<li>Samples information (/#Samples)</li>
+<li>Studies information (/#Studies)</li>
+<li>SRA search (/SRA%20search)</li>
 <li>Predicted Translons (/#Predicted Translons)</li>
+<li>Studies supported (/#UMAP)</li>
 <li>This tutorial (/#tutorial)</li>
 </ul>
 <p>Example: <a href="https://ribocrypt.org/#tutorial"
@@ -893,17 +962,41 @@ support +)</li>
 </div>
 <div id="about" class="section level2">
 <h2>About</h2>
+<p>Where to send your queries:</p>
+<ul>
+<li>Request new data: send an email to Michal</li>
+<li>RiboCrypt web page questions: send an email to Michal</li>
+<li>Details on backend processing: send an email to Håkon</li>
+<li>Bugs (Please report in respective github page)</li>
+<li>Bugs in (front-end) RiboCrypt: <a
+href="https://github.com/m-swirski/RiboCrypt"
+class="uri">https://github.com/m-swirski/RiboCrypt</a></li>
+<li>Bugs in (back-end processing) ORFik: <a
+href="https://github.com/Roleren/ORFik"
+class="uri">https://github.com/Roleren/ORFik</a></li>
+<li>Bugs in (back-end pipeline) massiveNGSpipe: <a
+href="https://github.com/rc-biotech/massiveNGSpipe"
+class="uri">https://github.com/rc-biotech/massiveNGSpipe</a></li>
+</ul>
+<p>If you would like to contribute, improve or add features to our work,
+you have 2 options:</p>
+<ul>
+<li>Fork one of our github repositories, add code, make pull
+request</li>
+<li>Contact us to be included on the official discord server (not
+public) for more close contact collaboration.</li>
+</ul>
 <p>This app is created as a collaboration with:</p>
 <ul>
 <li>University of Warsaw, Poland</li>
-<li>University of Bergen, Norway</li>
+<li>University of Oslo &amp; University of Bergen, Norway</li>
 </ul>
 <p>Main authors and contact:</p>
 <ul>
 <li>Michal Swirski (Warsaw), email: <a
 href="mailto:michal.swirski@uw.edu.pl"
 class="email">michal.swirski@uw.edu.pl</a></li>
-<li>Håkon Tjeldnes (Bergen), email: <a
+<li>Håkon Tjeldnes (Oslo &amp; Bergen), email: <a
 href="mailto:hauken_heyken@hotmail.com"
 class="email">hauken_heyken@hotmail.com</a></li>
 </ul>

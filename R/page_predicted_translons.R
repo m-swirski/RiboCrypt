@@ -61,41 +61,15 @@ predicted_translons_server <- function(id, all_exp, browser_options) {
       md <- reactiveVal(NULL)
 
       # Set human to auto, clean this code later
-      default <- "all_merged-Homo_sapiens"
-      selected_exp <- ifelse(default %in% all_exp$name, default, "AUTO")
-      if (selected_exp == "AUTO") {
-        default <- "human_all_merged_l50"
-        selected_exp <- ifelse(default %in% all_exp$name, default, "AUTO")
-      }
-      experiment_update_select(NULL, all_exp, all_exp$name, selected_exp)
+
       # Trigger data loading when "Plot" is clicked.
       # Also reset the downloaded files vector.
       observeEvent(input$go, {
-        req(input$dff)
+        req(isTruthy(input$dff))
         md(load_data(isolate(input$dff)))
         plot_triggered(TRUE)
       })
 
-      # Use the helper for both CSV and Excel
-      for (format in c("csv", "xlsx")) {
-        local({
-          current_format <- format
-          type <- ifelse(current_format == "xlsx", "excel", current_format)
-          trigger_input <- paste0("trigger_download_", type)
-          download_button <- paste0("download_", type)
-          handle_download_trigger(input, output, current_format, trigger_input, download_button, md, session)
-          output[[download_button]] <- make_download_handler(current_format, function(file) {
-            if (current_format == "xlsx") {
-              write_xlsx(md()$translon_table, file)
-            } else if (current_format == "csv") {
-              fwrite(md()$translon_table, file)
-            } else {
-              stop("Invalid format for translon download!")
-            }
-          }, md)
-          outputOptions(output, download_button, suspendWhenHidden = FALSE)
-        })
-      }
 
       # Render DT Table ONLY if "Plot" was clicked
       output$translon_table <- DT::renderDT({
@@ -133,7 +107,31 @@ predicted_translons_server <- function(id, all_exp, browser_options) {
       gene_name_list <- reactiveVal(data.table())
       module_protein(input, output, gene_name_list, session)
 
-      check_url_for_basic_parameters()
+      translon_specific_url_checker()
+
+      selected_exp <- browser_options["default_experiment_translon"]
+      experiment_update_select(NULL, all_exp, all_exp$name, selected_exp)
+
+      # Use the helper for both CSV and Excel
+      for (format in c("csv", "xlsx")) {
+        local({
+          current_format <- format
+          type <- ifelse(current_format == "xlsx", "excel", current_format)
+          trigger_input <- paste0("trigger_download_", type)
+          download_button <- paste0("download_", type)
+          handle_download_trigger(input, output, current_format, trigger_input, download_button, md, session)
+          output[[download_button]] <- make_download_handler(current_format, function(file) {
+            if (current_format == "xlsx") {
+              write_xlsx(md()$translon_table, file)
+            } else if (current_format == "csv") {
+              fwrite(md()$translon_table, file)
+            } else {
+              stop("Invalid format for translon download!")
+            }
+          }, md)
+          outputOptions(output, download_button, suspendWhenHidden = FALSE)
+        })
+      }
     }
   )
 }

@@ -8,28 +8,56 @@ lineDeSimplify <- function(plot) {
 
 automateTicks <- function(plot) {
   plot %>% ggplotly(dynamicTicks = TRUE, tooltip=c("position")) %>%
-    plotly::layout(yaxis=list(autorange = FALSE),xaxis=list(autorange=FALSE))
+    plotly::layout(yaxis=list(autorange = FALSE), xaxis=list(autorange=FALSE))
 }
 
 automateTicksLetters <- function(plot) {
-  suppressWarnings(plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
-                     plotly::layout(yaxis=list(autorange = FALSE), xaxis=list(autorange=FALSE)) %>%
+  suppressWarnings(
+    plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
+                     plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
+                                               zeroline = TRUE),
+                                    xaxis=list(autorange=FALSE)) %>%
                      toWebGL())
 }
 
 automateTicksGMP <- function(plot) {
-  plot %>% ggplotly(dynamicTicks = TRUE, tooltip = "gene_names") %>%
-    plotly::layout(yaxis=list(autorange = FALSE), xaxis=list(autorange=FALSE)) %>%
-    style(hoverinfo = "text")
+  suppressWarnings(
+    plot %>% ggplotly(dynamicTicks = TRUE, tooltip = "gene_names") %>%
+      plotly::layout(yaxis=list(autorange = FALSE), xaxis=list(autorange=FALSE)) %>%
+      style(hoverinfo = "text"))
 }
+
+automateTicksAA <- function(plot, is_cellphone = FALSE) {
+  p <- plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
+    plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
+                              title = list(font = list(size = 22))),
+                   xaxis=list(autorange=FALSE))
+  if (!is_cellphone) p <- suppressWarnings(p %>% toWebGL())
+  return(p)
+}
+
 #'
 #' @rawNamespace import(plotly, except = c(config, last_plot))
 #' @keywords internal
-automateTicksRNA <- function(plot, as_plotly = TRUE, y_autorange = FALSE, y_nticks = 3) {
+automateTicksRNA <- function(plot, as_plotly = TRUE, scale_ticks = TRUE,
+                             restrict_ticks = TRUE) {
   if (!as_plotly) return(plot)
-  plot %>% ggplotly(dynamicTicks = TRUE) %>%
-    plotly::layout(yaxis=list(autorange = y_autorange, nticks = y_nticks),
-                   xaxis=list(autorange=FALSE))
+  p <- plot %>% ggplotly() %>%  plotly::layout(xaxis=list(autorange=FALSE))
+  if (scale_ticks) {
+
+    y_max <- max(plot$data$count)
+    y_nticks <- min(y_max + 1, 3)
+    p <- p %>% plotly::layout(yaxis=list(autorange = TRUE, rangemode = "tozero", zeroline = TRUE,
+                                    tickmode = "auto", nticks = y_nticks,
+                                    title = list(standoff = 15),
+                                    tickfont = list(size = 16)))
+
+
+    if (restrict_ticks) {
+      p <- p %>% plotly::layout(yaxis = list(nticks = 2))
+    }
+  }
+  return(p)
 }
 
 automateTicksX <- function(plot) {
@@ -40,7 +68,13 @@ automateTicksX <- function(plot) {
                               tickvals=list(-0.5,0.5,1.5),
                               tickmode = "array")
   ) %>% style(hoverinfo = "none")
+}
 
+automateTicksCustomTrack <- function(plot) {
+  plot %>% ggplotly(dynamicTicks = TRUE) %>%
+    plotly::layout(yaxis=list(autorange = TRUE, fixedrange = TRUE,
+                              title = list(font = list(size = 22)))
+                   ) %>% style(hoverinfo = "none")
 }
 
 #' Call ggplotly with hoveron defined
@@ -49,7 +83,7 @@ automateTicksX <- function(plot) {
 #' @return a ggplotly object
 #' @keywords internal
 ggplotlyHover <- function(x, ...) {
-  gg <- plotly::ggplotly(x, ...)
+  gg <- plotly::ggplotly(x, ..., tooltip = "text")
   gg$x$data <- lapply(gg$x$data, function(x) {
     x$hoveron <- NULL
     x

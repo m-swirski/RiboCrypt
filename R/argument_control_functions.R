@@ -19,6 +19,7 @@ multiOmicsControllerView <- function() {
     if (!(length(withFrames)  %in% c(1, length(reads)))) stop("length of withFrames must be 0, 1 or the same as reads list")
     if (length(withFrames) == 1) withFrames <- rep(withFrames, length(reads))
 
+
     if (length(colors) == 0) colors <- 1:length(reads)
     if (!(length(colors)  %in% c(1, length(reads)))) stop("length of colors must be 0, 1 or the same as reads list")
     if (length(colors) == 1) colors <- rep(colors, length(reads))
@@ -53,9 +54,8 @@ multiOmicsControllerView <- function() {
     proportions <- c(lib_proportions * lib_to_annotation_proportions[1], annotation_proportions * lib_to_annotation_proportions[2])
     if (summary_track) proportions <- c(0.2, proportions * 0.8)
 
-    custom_seq_panel <- bottom_panel$custom_bigwig_panels
-    if (!is.null(custom_seq_panel)) {
-      proportions <- c(proportions, rep(0.07, length(custom_seq_panel)))
+    if (bottom_panel$ncustom > 0) {
+      proportions <- c(proportions, rep(0.12, bottom_panel$ncustom))
     }
     proportions <- proportions/sum(proportions)
   }

@@ -40,7 +40,14 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
   )
 }
 
-
+#' DEG analysis
+#'
+#' A contrast compares 2 levels of a factor
+#' Given factor from 9 elements (samples):
+#'   A,A,A,B,B,B,C,C,C
+#' This is a contrast
+#' A + B
+#' A + B + A/B
 DEG_server <- function(id, all_experiments, env, df, experiments, libs,
                        org, gene_name_list, rv) {
   moduleServer(
@@ -59,6 +66,7 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
         } else "")
       observeEvent(factor(), factor_update_select(factor))
 
+      # cond is the vector of factor values
       cond <- reactive({
         req(isTruthy(input$factor))
         factor <- isolate(input$factor)

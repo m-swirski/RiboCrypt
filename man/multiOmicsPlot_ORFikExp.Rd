@@ -41,7 +41,11 @@ multiOmicsPlot_ORFikExp(
   summary_track = FALSE,
   summary_track_type = frames_type,
   export.format = "svg",
-  frames_subset = "all"
+  frames_subset = "all",
+  zoom_range = NULL,
+  tx_annotation = NULL,
+  collapse_intron_flank = 100,
+  frame_colors = "R"
 )
 }
 \arguments{
@@ -143,6 +147,15 @@ argument}
 when you click the top right image button export, what should it export as?}
 
 \item{frames_subset}{character, default "all". Alternatives: "red", "green", "blue".}
+
+\item{zoom_range}{numeric or NULL. Default NULL, else an interval of xrange of the plot to
+initate plot on and highlight.}
+
+\item{tx_annotation}{NULL}
+
+\item{collapse_intron_flank}{integer, default 100}
+
+\item{frame_colors}{character, color theme of the 3 coding frames, default "R", else "Color_blind".}
 }
 \value{
 the plot object
@@ -156,4 +169,8 @@ df <- ORFik.template.experiment()[9,] #Use third library in experiment only
 cds <- loadRegion(df, "cds")
 multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df,
                         frames_type = "columns")
+# Show 2 ribo-seq libs as animation
+df <- ORFik.template.experiment()[9:10,]
+multiOmicsPlot_ORFikExp(extendLeaders(extendTrailers(cds[1], 30), 30), df,
+                        frames_type = "animate")
 }

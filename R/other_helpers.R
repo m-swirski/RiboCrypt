@@ -132,7 +132,7 @@ selectFrames <- function(frames, locations) {
 }
 
 
-colour_bars <- function(locations, overlaps, display_range) {
+colour_bars <- function(locations, overlaps, display_range, frame_colors = "R") {
   all_colors <- rep("gray", length(locations))
   names(all_colors) <- names(locations)
   is_cds <- locations$type == "cds"
@@ -141,7 +141,8 @@ colour_bars <- function(locations, overlaps, display_range) {
   overlaps <- overlaps[overlaps$type == "cds"]
   frames <- start(locations) - 1
   frames <- frames + locations$rel_frame_orf
-  colors <- rc_rgb()[frames %% 3 + 1]
+  frame_colors <- frame_color_themes(frame_colors, TRUE)
+  colors <- frame_colors[frames %% 3 + 1]
   tx_mode <- 1 %in% start(locations)
   if (tx_mode) {
     plus_stranded <- as.logical(strand(display_range[[1]][1]) == "+")
@@ -150,14 +151,14 @@ colour_bars <- function(locations, overlaps, display_range) {
       target_start <- min(start(display_range))
       frames <- ov_starts - target_start
       frames <- frames + overlaps$rel_frame_exon
-      colors_general <- rc_rgb()[frames %% 3 + 1]
+      colors_general <- frame_colors[frames %% 3 + 1]
     } else {
       ov_starts <- end(overlaps)
       target_start <- max(end(display_range))
       frames <- ov_starts - target_start
       frames <- frames - overlaps$rel_frame_exon
       frames <- - frames
-      colors_general <- rc_rgb()[c(3,1,2)][(frames+1) %% 3 + 1]
+      colors_general <- frame_colors[c(3,1,2)][(frames+1) %% 3 + 1]
     }
     is_tx_init <- start(locations) == 1
     colors[is_tx_init] <- colors_general[which(is_tx_init)]

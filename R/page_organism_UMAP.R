@@ -47,8 +47,6 @@ umap_server <- function(id, all_exp_meta, browser_options) {
         }) %>%
         bindCache(input$dff, input$umap_col, input$umap_plot_type) %>%
         bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)
-
-      check_url_for_basic_parameters()
     }
   )
 }

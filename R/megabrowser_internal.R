@@ -98,7 +98,7 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
                                        tx_annotation, display_region,
                                        cds_annotation, viewMode,
                                        collapse_intron_flank,
-                                       rel_heights = c(0.2, 0.75, 0.05)) {
+                                       rel_heights = c(0.15, 0.75, 0.1)) {
   stopifnot(is.numeric(rel_heights) && length(rel_heights) == 3)
   gene_model_panel <- summary_plot <- NULL
   to_use_logicals <- c(summary, TRUE, annotation)
@@ -117,8 +117,20 @@ get_meta_browser_plot_full <- function(m, heatmap, id, df,
                                                     tx_annotation, viewMode, collapse_intron_flank)
   }
   if (plotType == "plotly") {
-    gene_model_panel <- ggplotly(gene_model_panel, tooltip = "")
+    # gene_model_panel <- ggplotly(gene_model_panel, tooltip = "")
+    # if (summary) summary_plot <- automateTicksRNA(summary_plot)
+    # plot_list <- list(summary_plot, heatmap, gene_model_panel)
+    # rel_heights <- rel_heights[to_use_logicals]
+    # if (annotation) rel_heights <- c(rel_heights, 0)
+    # final_plot <- subplot(
+    #   plot_list[to_use_logicals],
+    #   nrows = 1 + summary + ifelse(annotation, 2, 1),
+    #   heights = rel_heights,   # adjust to taste
+    #   shareX = TRUE,
+    #   margin = 0.02
+    # )
     final_plot <- heatmap
+
   } else {
     grob <- grid::grid.grabExpr(draw(heatmap))
     final_plot <- cowplot::plot_grid(plotlist = list(summary_plot, grob, gene_model_panel)[to_use_logicals],
@@ -132,8 +144,8 @@ summary_track_allsamples <- function(m, summary_track_type = "area", as_plotly =
   summary_profile <- data.table(count = rowSums(m))
   summary_profile[, `:=`(position = seq.int(.N)) ]
   summary_profile[, `:=`(frame = factor((position-1) %% 3)) ]
-  summary_plot <- createSinglePlot(summary_profile, TRUE, 1, "",
-                                   FALSE, lines = NULL,
+  summary_plot <- createSinglePlot(summary_profile, TRUE, "R", "",
+                                   "", lines = NULL,
                                    type = summary_track_type,
                                    flip_ylabel = FALSE, as_plotly = as_plotly)
   if (!as_plotly) {
@@ -145,9 +157,52 @@ summary_track_allsamples <- function(m, summary_track_type = "area", as_plotly =
 
 annotation_track_allsamples <- function(df, id, display_range, annotation,
                                         tx_annotation, viewMode, collapse_intron_flank) {
-  gene_model_panel <- createGeneModelPanel(display_range, annotation, frame = 1,
+  gene_model_panel <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
                                            custom_regions = NULL,
                                            viewMode = viewMode, collapse_intron_flank)
   return(geneModelPanelPlot(gene_model_panel[[1]]))
+}
+
+get_lib_sizes_file <- function(dff) {
+  lib_sizes <- file.path(QCfolder(dff), "totalCounts_mrna.rds")
+  if (!file.exists(lib_sizes))
+    stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
+         " see vignette for more information on how to make these.")
+  return(lib_sizes)
+}
+
+validate_enrichment_term <- function(enrichment_term, clusters, ratio_interval, other_gene, metadata_field) {
+  valid_enrichment_clusterings <- c(clusters != 1, isTruthy(ratio_interval), isTruthy(other_gene))
+  enrichment_test_types <- c("Clusters", "Ratio bins", "Other gene tpm bins")[valid_enrichment_clusterings]
+
+  valid_enrichment_terms <- c(metadata_field, enrichment_test_types)
+  if (!(enrichment_term %in% valid_enrichment_terms)) {
+    stop("Enrichment term is not valid, valid options:\n",
+         paste(valid_enrichment_terms, collapse = ", "))
+  }
+  return(invisible(NULL))
+}
+
+#' Given ratio interval user input, format correctly
+#' @param ratio_interval character or NULL, if defined character, will format it
+#' @return a numeric interval, if input !isTruthy, returns NULL
+#' @noRd
+get_ratio_interval <- function(ratio_interval) {
+  if (isTruthy(ratio_interval)) {
+    split_ratio <- unlist(strsplit(ratio_interval, ";"))
+
+    temp_interval <- strsplit(split_ratio, ":|-")
+    single_input <- lengths(temp_interval) == 1
+    if (any(lengths(temp_interval) > 2)) stop("Malformed sort in interval input!")
+    if(any(single_input)) {
+      temp_interval[which(single_input)] <- lapply(temp_interval[which(single_input)], function(x) rep(x, 2))
+    }
+    temp_interval <- as.numeric(unlist(temp_interval))
+
+    if (anyNA(temp_interval)) stop("Malformed sort in interval input!")
+    ratio_interval <- temp_interval
+  } else ratio_interval <- NULL
+
+  return(ratio_interval)
 }

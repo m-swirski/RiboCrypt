@@ -1,11 +1,10 @@
 #' Main controller for browser settings
 #' Takes shiny input and converts to a proper list of settings
 #' @noRd
-click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
+click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_theme, user_info) {
   {
-    print("- Browser controller")
-    print(paste("here is gene!", isolate(input$gene)))
-    print(paste("here is tx!", isolate(input$tx)))
+    time_before <- controller_init(input, id = "Browser")
+
     # Annotation
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
     tx_annotation <- observed_cds_annotation(isolate(input$tx), tx,
@@ -52,20 +51,16 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
     # Hash strings for cache
     hash_strings <- hash_strings_browser(input, dff, collapsed_introns_width)
 
-    reads <- try(filepath(dff, "bigwig", suffix_stem = c("_pshifted", "")))
-    invalid_reads <- is(reads, "try-error") ||
-      (!all(file.exists(unlist(reads, use.names = FALSE))) |
-         any(duplicated(unlist(reads, use.names = FALSE))))
-    if (invalid_reads) {
-      reads <- filepath(dff, "bigwig", suffix_stem = c("_pshifted", ""),
-                        base_folders = libFolder(dff, "all"))
-    }
+    if (input$unique_align) uniqueMappers(dff) <- TRUE
+    reads <- get_track_paths(dff)
     frames_subset <- input$frames_subset
     use_all_frames <- length(frames_subset) == 0 || any(c("","all") %in% frames_subset)
     if (use_all_frames) frames_subset <- "all"
+    frame_colors <- isolate(input$colors)
+    colors <- NULL
 
-    shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
 
+    cat("-- Browser controller done: "); print(round(Sys.time() - time_before, 2))
     reactiveValues(dff = dff,
                    display_region = display_region,
                    customRegions = customRegions,
@@ -88,6 +83,11 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
                    zoom_range = zoom_range,
                    frames_subset = frames_subset,
                    mapability = input$mapability,
+                   frame_colors = frame_colors,
+                   colors = colors,
+                   gg_theme = gg_theme,
+                   is_cellphone = user_info()$is_cellphone,
+                   user_browser_width = user_info()$width,
                    hash_bottom = hash_strings[["hash_bottom"]],
                    hash_browser = hash_strings[["hash_browser"]],
                    hash_expression = hash_strings[["hash_expression"]])
@@ -95,30 +95,30 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df) {
 }
 
 click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
-  {
-    shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
-    print(paste("Gene (Megabrowser):", isolate(input$gene)))
-    print(paste("Tx (Megabrowser):", isolate(input$tx)))
-    id <- isolate(input$tx)
-    if (id == "") stop("Emptry transcript isoforom given!")
+    time_before <- controller_init(input, id = "Mega Browser")
 
-    region_type <- isolate(input$region_type)
+    # Input copies
     dff <- df()
+
+    id <- isolate(input$tx)
+    region_type <- isolate(input$region_type)
     motif <- isolate(input$motif)
     leader_extension <- isolate(input$extendLeaders)
     trailer_extension <- isolate(input$extendTrailers)
     display_annot <- isolate(input$display_annot)
     viewMode <- isolate(input$viewMode)
+
+    # annotation extractors
     annotation_list <- subset_tx_by_region(dff, id, region_type)
     tx_annotation <- display_region <- annotation_list$region
-
     cds_annotation <- observed_cds_annotation_internal(id,
                                               annotation_list$cds_annotation,
                                               isolate(input$other_tx))
-    # browser()
-    if (!is.null(motif) && motif != "") {
+    # Select motif or gene
+    if (isTruthy(motif)) {
       table_path <- meta_motif_files(dff)[motif]
       display_annot <- FALSE
+      collapsed_introns_width <- 0
       message("Using motif: ", table_path)
     } else {
       collapsed_introns_width <- input$collapsed_introns_width
@@ -146,57 +146,32 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                                              grl_all = display_region)
     }
 
-    lib_sizes <- file.path(QCfolder(dff), "totalCounts_mrna.rds")
-    if (!file.exists(lib_sizes))
-      stop("Count table library size files are not created, missing file totalCounts_mrna.rds",
-           " see vignette for more information on how to make these.")
+    # Generic input copies
     clusters <- isolate(input$clusters)
     ratio_interval <- isolate(input$ratio_interval)
     metadata_field <- isolate(input$metadata)
     other_gene <- isolate(input$other_gene)
-
-    valid_enrichment_clusterings <- c(clusters != 1, isTruthy(ratio_interval), isTruthy(other_gene))
-    enrichment_test_types <- c("Clusters", "Ratio bins", "Other gene tpm bins")[valid_enrichment_clusterings]
     enrichment_term <- isolate(input$enrichment_term)
-    valid_enrichment_terms <- c(metadata_field, enrichment_test_types)
-    if (!(enrichment_term %in% valid_enrichment_terms)) {
-      stop("Enrichment term is not valid, valid options:\n",
-           paste(valid_enrichment_terms, collapse = ", "))
-    }
-
-
+    summary_track <- isolate(input$summary_track)
     normalization <- isolate(input$normalization)
     kmer <- isolate(input$kmer)
     min_count <- isolate(input$min_count)
-    if (!isTruthy(min_count)) min_count <- 0
     frame <- isolate(input$frame)
-    summary_track <- isolate(input$summary_track)
 
-    if (!is.null(ratio_interval)) {
-      if (ratio_interval != "") {
-        split_ratio <- unlist(strsplit(ratio_interval, ";"))
-
-        temp_interval <- strsplit(split_ratio, ":|-")
-        single_input <- lengths(temp_interval) == 1
-        if (any(lengths(temp_interval) > 2)) stop("Malformed sort in interval input!")
-        if(any(single_input)) {
-          temp_interval[which(single_input)] <- lapply(temp_interval[which(single_input)], function(x) rep(x, 2))
-        }
-        temp_interval <- as.numeric(unlist(temp_interval))
-
-        if (anyNA(temp_interval)) stop("Malformed sort in interval input!")
-        ratio_interval <- temp_interval
-      } else ratio_interval <- NULL
-    }
-
-    if (!is.null(other_gene) && other_gene != "") {
+    # Generic validators and geters
+    if (!isTruthy(min_count)) min_count <- 0
+    validate_enrichment_term(enrichment_term, clusters, ratio_interval, other_gene,
+                             metadata_field)
+    ratio_interval <- get_ratio_interval(ratio_interval)
+    lib_sizes <- get_lib_sizes_file(dff)
+    other_tx_hash <- other_tx <- NULL
+    if (isTruthy(other_gene)) {
       print(paste("Sorting on", other_gene))
       other_tx <- tx_from_gene_list(isolate(gene_name_list()), other_gene)[1]
       other_tx_hash <- paste0("sortOther:", other_tx)
-    } else {
-      other_tx_hash <- other_tx <- NULL
     }
 
+    # Hash strings
     table_hash <- paste(name(dff), id, table_path, lib_sizes, clusters, min_count,
                         region_type, paste(metadata_field, collapse = ":"), normalization, frame,
                         kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
@@ -206,7 +181,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                         display_annot, isolate(input$heatmap_color),
                         isolate(input$color_mult), sep = "|_|")
 
-    print(paste("Table hash: ", table_hash))
+    cat("-- Mega Browser controller done: "); print(round(Sys.time() - time_before, 2))
     reactiveValues(dff = dff,
                    id = id,
                    display_region = display_region,
@@ -230,7 +205,16 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    enrichment_term = enrichment_term,
                    table_hash = table_hash,
                    table_plot = table_plot)
-  }
+}
+
+controller_init <- function(input, id = "Browser") {
+  time_before <- Sys.time()
+  print(paste("-",  id, "controller"))
+  shinyjs::toggleClass(id = "floating_settings", class = "hidden", condition = TRUE)
+  print(paste("Gene:", isolate(input$gene)))
+  print(paste("Tx:", isolate(input$tx)))
+  if (isolate(input$tx) == "") stop("Empty transcript isoform given!")
+  return(time_before)
 }
 
 click_plot_browser_new_controller <- function(input, tx, cds, libs, df) {

@@ -18,6 +18,11 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
     shinyjs::useShinyjs(),
     rclipboardSetup(),
     tags$head(includeHTML(system.file("google_analytics_html", "google_analytics.html", package = "RiboCrypt"))),
+    tags$script(HTML(sprintf("
+      $(document).on('shiny:connected', function() {
+        Shiny.setInputValue('%s', navigator.userAgent, {priority: 'event'});
+      });
+    ", ns('js_user_agent')))),
     # ---- HEAD with floating settings style ----
     browser_ui_settings_style(),
     # ---- Floating Settings Panel ----
@@ -41,11 +46,14 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                          column(1, actionButton(ns("select_all_btn"), "", icon = icon("check"),
                                                 class = "btn btn-sm btn-primary", title = "Select all"))
                        ),
+                       fluidRow(prettySwitch(ns("unique_align"), "Unique alignments", value = FALSE,
+                                    status = "success", fill = TRUE, bigger = TRUE)),
                        fluidRow(
                          column(6, frame_type_select(ns, selected = browser_options["default_frame_type"])),
                          column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
                                                value = as.numeric(browser_options["default_kmer"])))
-                       )
+                       ),
+                       tags$hr(style = "padding-top: 50px; padding-bottom: 50px;")
               ),
               tabPanel("Settings",
                                 fluidRow(
@@ -72,12 +80,18 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                                 fluidRow(column(4, checkboxInput(ns("phyloP"), "Conservation (phyloP)", FALSE)),
                                          column(4, checkboxInput(ns("mapability"), "Mapability (28mers)", FALSE))),
                                 fluidRow(
-                                  column(6, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),
-                                  column(6, frame_subsetter_select(ns))
+                                  column(4, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),
+                                  column(4, selectizeInput(
+                                    inputId = ns("colors"),
+                                    label = "Frame Color theme",
+                                    choices = c("R", "Color_blind")
+                                  )),
+                                  column(4, frame_subsetter_select(ns))
                                 ),
                                 fluidRow(
-                                  column(6, checkboxInput(ns("summary_track"), "Summary top track", FALSE)),
-                                  column(6, frame_type_select(ns, "summary_track_type", "Summary display type"))
+                                  column(4, checkboxInput(ns("summary_track"), "Summary top track", FALSE)),
+                                  column(4, NULL),
+                                  column(4, frame_type_select(ns, "summary_track_type", "Summary display type"))
                                 ),
                                 fluidRow(
                                   column(4, downloadButton(ns("download_plot_html"), "Download HTML",
@@ -101,7 +115,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
     # ---- Full Width Main Panel ----
     fluidRow(
       column(12,
-             jqui_resizable(plotlyOutput(ns("c"), height = "500px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
+             jqui_resizable(plotlyOutput(ns("c"), height = "550px")) %>% shinycssloaders::withSpinner(color="#0dc5c1"),
              plotlyOutput(ns("e"), height = "50px"),
              uiOutput(ns("proteinStruct")),
              plotlyOutput(ns("d")) %>% shinycssloaders::withSpinner(color="#0dc5c1")
@@ -113,7 +127,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
 
 
 browser_server <- function(id, all_experiments, env, df, experiments,
-                           tx, cds, libs, org, gene_name_list, rv,
+                           tx, cds, libs, org, gene_name_list, gg_theme, rv,
                            browser_options) {
   moduleServer(
     id,
@@ -122,9 +136,10 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       output$clip <- renderUI({clipboard_url_button(input, session)})
 
       # Main plot controller, this code is only run if 'plot' is pressed
-      mainPlotControls <- eventReactive(input$go,
-        click_plot_browser_main_controller(input, tx, cds, libs, df),
-        ignoreInit = check_plot_on_start(browser_options),
+      i <- 1
+      mainPlotControls <- eventReactive(list(input$go, kickoff()),
+        {click_plot_browser_main_controller(input, tx, cds, libs, df, gg_theme, user_info)},
+        ignoreInit = TRUE,
         ignoreNULL = FALSE)
 
       bottom_panel <- reactive(bottom_panel_shiny(mainPlotControls))  %>%
@@ -145,6 +160,28 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       return(rv)
     }
   )
+}
+
+#' When input is ready, start ploting if specified.
+#' @noRd
+go_when_input_is_ready <- function(input, browser_options, fired, kickoff, libs) {
+  if (fired()) return()
+  if (!isTRUE(as.logical(browser_options[["plot_on_start"]]))) {
+    fired(TRUE)
+    return()
+  }
+  if (!nzchar(input$gene) || !nzchar(input$tx)) return()
+  if (!identical(input$gene, browser_options[["default_gene"]])) return()
+  if (!identical(input$tx,   browser_options[["default_isoform"]])) return()
+  libs_wanted <- libraries_string_split(browser_options[["default_libs"]], isolate(libs()))
+  if (!identical(input$library, libs_wanted)) {
+    message("Libraries wanted not matching yet!")
+    print(libs_wanted)
+    print(isolate(input$library))
+    return()
+  }
+  fired(TRUE)
+  kickoff(TRUE)
 }
 
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/3dbeacons_utils.R
 \name{fetch_summary}
 \alias{fetch_summary}
-\title{Fetch summary of uniprot id}
+\title{Fetch summary of uniprot id from provider}
 \usage{
 fetch_summary(qualifier, provider = "alphafold")
 }
@@ -15,5 +15,5 @@ fetch_summary(qualifier, provider = "alphafold")
 a character of json
 }
 \description{
-Fetch summary of uniprot id
+Fetch summary of uniprot id from provider
 }

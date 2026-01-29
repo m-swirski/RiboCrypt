@@ -56,6 +56,11 @@
 #' @param export.format character, default: "svg". alternative: "png".
 #' when you click the top right image button export, what should it export as?
 #' @param frames_subset character, default "all". Alternatives: "red", "green", "blue".
+#' @param zoom_range numeric or NULL. Default NULL, else an interval of xrange of the plot to
+#'  initate plot on and highlight.
+#' @param tx_annotation NULL
+#' @param collapse_intron_flank integer, default 100
+#' @param frame_colors character, color theme of the 3 coding frames, default "R", else "Color_blind".
 #' @inheritParams createSeqPanelPattern
 #' @return the plot object
 #' @importFrom GenomicFeatures extractTranscriptSeqs
@@ -69,6 +74,12 @@
 #' mrna <- loadRegion(df, "mrna")
 #' multiOmicsPlot_list(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
 #'                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
+#'                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
+#'                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
+#' # With Coding frame coloring
+#' multiOmicsPlot_list(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
+#'                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
+#'                     withFrames = TRUE,
 #'                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
 #'                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
 multiOmicsPlot_list <- function(display_range, annotation = display_range, reference_sequence,
@@ -88,7 +99,9 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
                                 custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
                                 log_scale = FALSE, BPPARAM = BiocParallel::SerialParam(), summary_track = FALSE,
                                 summary_track_type = frames_type,
-                                export.format = "svg", frames_subset = "all") {
+                                export.format = "svg", frames_subset = "all",
+                                zoom_range = NULL, tx_annotation = NULL, collapse_intron_flank = 100,
+                                frame_colors = "R") {
 
   multiOmicsPlot_internal(display_range, df = NULL, annotation,reference_sequence,
     reads,
@@ -104,109 +117,7 @@ multiOmicsPlot_list <- function(display_range, annotation = display_range, refer
     aa_letter_code,
     annotation_names, start_codons, stop_codons,
     custom_motif, log_scale, BPPARAM, "",
-    summary_track, summary_track_type, export.format, frames_subset)
+    summary_track, summary_track_type, export.format, frames_subset,
+    zoom_range, tx_annotation, collapse_intron_flank, frame_colors)
 
-}
-
-#' Multi-omics animation using list input
-#'
-#' The animation will move with a play butten, there is
-#' 1 transition per library given.
-#' @inheritParams multiOmicsPlot_list
-#' @return the plot object
-#' @export
-#' @examples
-#' library(RiboCrypt)
-#' df <- ORFik.template.experiment()[9:10,]
-#' cds <- loadRegion(df, "cds")
-#' mrna <- loadRegion(df, "mrna")
-#' multiOmicsPlot_animate(mrna[1], annotation = cds[1], reference_sequence = findFa(df),
-#'                     frames_type = "columns", leader_extension = 30, trailer_extension = 30,
-#'                     withFrames = c(TRUE, TRUE),
-#'                     reads = outputLibs(df, type = "pshifted", output.mode = "envirlist",
-#'                                   naming = "full", BPPARAM = BiocParallel::SerialParam()))
-multiOmicsPlot_animate <- function(display_range, annotation = display_range, reference_sequence,
-                                   reads, viewMode = c("tx", "genomic")[1], custom_regions = NULL,
-                                   leader_extension = 0, trailer_extension = 0,
-                                   withFrames = NULL,
-                                   frames_type = "lines", colors = NULL,
-                                   kmers = NULL, kmers_type = c("mean", "sum")[1],
-                                   ylabels = NULL, lib_to_annotation_proportions = c(0.8,0.2),
-                                   lib_proportions = NULL, annotation_proportions = NULL,
-                                   width = NULL, height = NULL, plot_name = "default",
-                                   plot_title = NULL,
-                                   display_sequence = c("both","nt", "aa", "none")[1], seq_render_dist = 100,
-                                   aa_letter_code = c("one_letter", "three_letters")[1],
-                                   annotation_names = NULL,
-                                   start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-                                   custom_motif = NULL, AA_code = Biostrings::GENETIC_CODE,
-                                   log_scale = FALSE, BPPARAM = BiocParallel::SerialParam(), summary_track = FALSE,
-                                   summary_track_type = frames_type,
-                                   export.format = "svg", frames_subset = "all") {
-  multiOmicsController()
-  bottom_panel <- list(annotation_layers = 1)
-  multiOmicsControllerView()
-  # Get sequence and create basic seq panel
-  target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
-  read_names <- names(reads) # Names for frames for seq panels
-  seq_panel_hits <- createSeqPanelPattern(
-    target_seq[[1]], start_codons = start_codons,
-    stop_codons = stop_codons, custom_motif = custom_motif,
-    frame = read_names)
-  seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]])
-
-
-  # Get the panel for the annotation track
-  gene_model_panel <- createGeneModelPanel(display_range, annotation,
-                                           custom_regions = custom_regions,
-                                           viewMode = viewMode,
-                                           frame = read_names)
-  lines <- gene_model_panel[[2]]
-  gene_model_panel <- gene_model_panel[[1]]
-  gene_model_panel <- geneModelPanelPlot(gene_model_panel, frame = read_names)
-
-  # profiles <- mapply(function(x,y,z) getProfileAnimate(display_range, x, y, z, kmers_type),
-  #                    reads, withFrames, kmers,  SIMPLIFY = FALSE)
-  profiles <- bpmapply(function(x,y,z) getProfileAnimate(display_range, x, y, z, kmers_type),
-                        reads, withFrames, kmers,  SIMPLIFY = FALSE, BPPARAM = BPPARAM)
-
-  profiles <- rbindlist(profiles, idcol = "file")
-  plot <- list(getPlotAnimate(profiles, withFrames = withFrames[1],
-                         colors = colors[1], ylabels = ylabels[1], lines = lines))
-
-  if (display_sequence %in% c("none", FALSE)){
-    plots <- c(plot, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
-    multiomics_plot <- subplot(plots,
-                               margin = 0,
-                               nrows = 3,
-                               heights = c(0.8, 0.05, 0.15),
-                               shareX = TRUE,
-                               titleY = TRUE, titleX = TRUE)
-  } else {
-    nplots <- length(plot)
-    nt_area <- ggplot() +
-      theme(axis.title = element_blank(),
-            axis.ticks = element_blank(),
-            axis.text = element_blank()) +
-      theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-      scale_x_continuous(expand = c(0,0))
-
-    plots <- plot # c(plot, list(automateTicks(nt_area), automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
-    multiomics_plot <- subplot(plots,
-                               margin = 0,
-                               nrows =1, #4
-                               heights = c(0.7), #0.15, 0.1, 0.05
-                               shareX = TRUE,
-                               titleY = TRUE,
-                               titleX = TRUE)
-  }
-  multiomics_plot <- lineDeSimplify(multiomics_plot)
-  multiomics_plot <- multiomics_plot %>% plotly::config(
-    toImageButtonOptions = list(
-      format = "svg",
-      filename = ifelse(plot_name == "default", names(display_range),plot_name),
-      width = width,
-      height = height))
-  if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>% plotly::layout(title = plot_title)
-  return(multiomics_plot)
 }

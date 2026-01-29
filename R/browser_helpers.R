@@ -1,57 +1,65 @@
 multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, annotation,
                                          start_codons, stop_codons, custom_motif,
                                          custom_regions, viewMode,
-                                         tx_annotation = NULL, collapse_intron_flank = 100) {
+                                         tx_annotation = NULL, collapse_intron_flank = 100,
+                                         frame_colors = "R", gg_theme = gg_theme_template()) {
   force(display_range)
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
                                           stop_codons = stop_codons, custom_motif = custom_motif)
-  seq_panel <- plotSeqPanel(seq_panel_hits, target_seq[[1]])
+  seq_aa_panel <- plotAASeqPanel(seq_panel_hits, target_seq[[1]], frame_colors, gg_theme)
   # Get the panel for the annotation track
-  gene_model_panel <- createGeneModelPanel(display_range, annotation, frame = 1,
+  gene_model_panel <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
                                            custom_regions = custom_regions,
-                                           viewMode = viewMode, collapse_intron_flank)
+                                           viewMode = viewMode, collapse_intron_flank,
+                                           frame_colors = frame_colors)
   lines <- gene_model_panel[[2]]
   layers <- max(gene_model_panel[[1]]$layers)
-  gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]])
-  return(list(seq_panel = seq_panel, gene_model_panel = gene_model_panel,
+
+  gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]],
+                                         gg_template = attr(gg_theme, "gg_template"))
+  seq_nt_panel <- attr(gg_theme, "seq_panel_nt_template_plotly")
+  return(list(seq_panel = seq_aa_panel, seq_nt_panel = seq_nt_panel,
+              gene_model_panel = gene_model_panel, frame_colors = frame_colors,
               lines = lines, target_seq = target_seq, annotation_layers = layers))
 }
 
-multiOmicsPlot_all_track_plots <- function(profiles, withFrames, colors, ylabels,
-                                           ylabels_full_name, lines,
-                                           frames_type, total_libs,
-                                           summary_track, summary_track_type,
+multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, colors,
+                                           ylabels, ylabels_full_name, lines,
+                                           frames_type, summary_track, summary_track_type,
                                            BPPARAM) {
-  total_libs <- length(profiles)
   force(colors)
   force(lines)
   force(ylabels)
 
   if (frames_type == "animate") {
     plots <- list(getPlotAnimate(rbindlist(profiles, idcol = "file"), withFrames = withFrames[1],
-                                colors = colors[1], ylabels = ylabels[1], lines = lines))
+                                colors = colors[1], frame_colors = frame_colors,
+                                ylabels = ylabels[1], lines = lines))
   } else {
+    total_libs <- length(profiles)
     if (is(BPPARAM, "SerialParam")) {
-      plots <- mapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
-                      profiles, withFrames, colors, ylabels, ylabels_full_name,
-                      SIMPLIFY = FALSE)
+      plots <- mapply(function(p,w,fc,c,yl,ylf, lib_index) {
+          createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
+        profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_along(total_libs),
+        SIMPLIFY = FALSE)
     } else {
-      plots <- bpmapply(function(x,y,z,c,d) createSinglePlot(x,y,z,c,d, lines, type = frames_type, total_libs),
-                        profiles, withFrames, colors, ylabels, ylabels_full_name,
-                        SIMPLIFY = FALSE, BPPARAM = BPPARAM)
+      plots <- bpmapply(function(p,w,fc,c,yl,ylf, lib_index) {
+          createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
+        profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_along(total_libs),
+        SIMPLIFY = FALSE, BPPARAM = BPPARAM)
     }
   }
 
   nplots <- ifelse(frames_type == "animate", 1, length(plots))
   if (summary_track) {
     nplots <- nplots + 1
-    plots <- make_summary_track(profiles, plots, withFrames, colors,
+    plots <- make_summary_track(profiles, plots, withFrames, frame_colors, colors,
                                 lines, summary_track_type, nplots)
   }
-  return(list(plots = plots, nplots = nplots))
+  return(list(plots = plots, nplots = nplots, track_type = frames_type))
 }
 
 multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
@@ -80,61 +88,32 @@ multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
 
 multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_range,
                                          proportions, seq_render_dist,
-                                         display_sequence, display_dist,
+                                         display_sequence,
                                          aa_letter_code, input_id, plot_name,
                                          plot_title,  width, height, export.format,
-                                         zoom_range = NULL) {
+                                         zoom_range = NULL, frame_colors = "R") {
   print("Merging bottom and coverage tracks")
-  nplots <- track_panel$nplots
-  plots <- browser_plots_highlighted(track_panel$plots, zoom_range)
+  track_plots <- browser_plots_highlighted(track_panel$plots, zoom_range)
+  bottom_plots <- bottom_panel$bottom_plots
+  plots <- c(track_plots, bottom_plots)
 
-  gene_model_panel <- bottom_panel$gene_model_panel
-  seq_panel <- bottom_panel$seq_panel
-  custom_seq_panel <- bottom_panel$custom_bigwig_panels
-  without_sequence_track <- display_sequence %in% c("none", FALSE)
+  multiomics_plot <- suppressWarnings(subplot(plots,
+                                              margin = 0,
+                                              nrows = length(plots),
+                                              heights = proportions,
+                                              shareX = TRUE,
+                                              titleY = TRUE, titleX = TRUE))
 
-  if (without_sequence_track) { # plotly subplot without sequence track
-    nplots <- nplots + 2
-    plots <- c(plots, list(automateTicksGMP(gene_model_panel), automateTicksX(seq_panel)))
-  } else { # plotly subplot with sequence track
-    nplots <- nplots + 3
-    plots <- c(plots, list(automateTicks(nt_area_template()),
-                           automateTicksGMP(gene_model_panel),
-                           automateTicksX(seq_panel)))
-  }
-
-  if (length(custom_seq_panel) > 0) {
-    plots <- c(plots, lapply(custom_seq_panel, automateTicksX))
-    nplots_all <- nplots + length(custom_seq_panel)
-  } else nplots_all <- nplots
-
-  plots <- lapply(plots, function(x) x  %>% layout(xaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16)),
-                                                   yaxis = list(title = list(font = list(size = 22)), tickfont = list(size = 16),
-                                                                rangemode = "tozero", tick0 = 0, dtick = 1,
-                                                                zeroline = TRUE)))
-  multiomics_plot <- subplot(plots,
-                             margin = 0,
-                             nrows = nplots_all,
-                             heights = proportions,
-                             shareX = TRUE,
-                             titleY = TRUE, titleX = TRUE)
-  if (!without_sequence_track) {
+  if (isTruthy(display_sequence)) {
+    nt_seq_y_index <- length(plots) - bottom_panel$ncustom - 3
     multiomics_plot <- addJSrender(multiomics_plot, bottom_panel$target_seq,
-                                   nplots - 3, seq_render_dist,
-                                   display_dist, aa_letter_code, input_id)
+                                   nt_seq_y_index, seq_render_dist,
+                                   aa_letter_code, input_id, bottom_panel$frame_colors)
   }
-  filename <- ifelse(plot_name == "default", names(display_range), plot_name)
-  multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
-                                             width, height, format = export.format)
-  if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>%
-    plotly::layout(title = plot_title)
-  if (!is.null(zoom_range) && length(zoom_range) == 2) {
-    multiomics_plot <- multiomics_plot %>%
-      plotly::layout(xaxis = list(range = zoom_range))
-  }
-  multiomics_plot <- lineDeSimplify(multiomics_plot)
 
-  return(multiomics_plot)
+  return(browser_plot_final_layout_polish(multiomics_plot, plot_name, display_range,
+                                          width, height, export.format, plot_title,
+                                          zoom_range, proportions))
 }
 
 #' @importFrom Biostrings nchar translate
@@ -155,30 +134,43 @@ multiOmicsPlot_internal <- function(display_range, df, annotation = "cds", refer
                                     annotation_names = NULL, start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
                                     custom_motif = NULL, log_scale = FALSE, BPPARAM = BiocParallel::SerialParam(),
                                     input_id = "", summary_track = FALSE,
-                                    summary_track_type = frames_type, export.format = "svg", frames_subset = "all") {
+                                    summary_track_type = frames_type, export.format = "svg", frames_subset = "all",
+                                    zoom_range = NULL, tx_annotation = NULL, collapse_intron_flank = 100,
+                                    frame_colors = "R", phyloP = FALSE, mapability = FALSE) {
 
   multiOmicsController()
   # Get Bottom annotation and sequence panels
   bottom_panel <- multiOmicsPlot_bottom_panels(reference_sequence, display_range, annotation,
                                                start_codons, stop_codons, custom_motif,
-                                               custom_regions, viewMode)
-  multiOmicsControllerView()
+                                               custom_regions, viewMode,
+                                               tx_annotation,
+                                               collapse_intron_flank,
+                                               frame_colors)
+  custom_bigwig_panels <- custom_seq_track_panels(df, display_range, phyloP, mapability)
+  bottom_panel <- c(bottom_panel, annotation_list, custom_bigwig_panels,
+                    ncustom = length(custom_bigwig_panels[[1]]))
+
+  bottom_panel$bottom_plots <- bottom_plots_to_plotly(bottom_panel)
+
 
   # Get NGS data track panels
+  multiOmicsControllerView()
   profiles <- multiOmicsPlot_all_profiles(display_range, reads, kmers,
                                           kmers_type, frames_type, frames_subset,
                                           withFrames, log_scale, BPPARAM)
 
-  track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, colors, ylabels,
+  track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames,
+                                          frame_colors, colors, ylabels,
                                           ylabels_full_name, bottom_panel$lines,
-                                          frames_type, total_libs,
+                                          frames_type,
                                           summary_track, summary_track_type,
                                           BPPARAM)
   return(multiOmicsPlot_complete_plot(track_panel, bottom_panel, display_range,
                                       proportions, seq_render_dist,
-                                      display_sequence, display_dist,
+                                      display_sequence,
                                       aa_letter_code, input_id, plot_name,
-                                      plot_title,  width, height, export.format))
+                                      plot_title,  width, height, export.format,
+                                      zoom_range, frame_colors))
 }
 
 genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6,
@@ -215,7 +207,8 @@ genomic_string_to_grl <- function(genomic_string, display_region, max_size = 1e6
 }
 
 get_zoom_range <- function(zoom_range, display_region, max_size,
-                           viewMode, leader_extension, trailer_extension) {
+                           viewMode, leader_extension, trailer_extension,
+                           zoom_range_flank = 10) {
   if (!is.null(zoom_range)) {
     valid_zoom <- is.character(zoom_range) && nchar(zoom_range) > 0
     if (valid_zoom) {
@@ -241,8 +234,9 @@ get_zoom_range <- function(zoom_range, display_region, max_size,
           display_range_zoom <- extendTrailers(display_range_zoom, trailer_extension)
         ir <- suppressWarnings(pmapToTranscriptF(gr, display_range_zoom))
         if (as.numeric(width(ir)) > 0) {
-          zoom_range <- c(max(as.numeric(start(ir))[1] - 10, 1),
-                          min(as.numeric(end(ir))[1] + 10, widthPerGroup(display_range_zoom, FALSE)))
+          zoom_range <- c(max(as.numeric(start(ir))[1] - zoom_range_flank, 1),
+                          min(as.numeric(end(ir))[1] + zoom_range_flank,
+                              widthPerGroup(display_range_zoom, FALSE)))
         } else {
           zoom_range <- numeric(0)
           if (!viewMode) {
@@ -288,7 +282,7 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
                        input$add_uorfs,  input$add_translon,
                        input$extendTrailers, input$extendLeaders,
                        input$genomic_region, input$viewMode,
-                       ciw,
+                       ciw, input$colors,
                        input$customSequence, input$phyloP, input$mapability,
                        collapse = "|_|")
   # Until plot and coverage is split (bottom must be part of browser hash)
@@ -298,6 +292,7 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
                         input$summary_track, input$summary_track_type,
                         input$kmer, input$frames_type, input$withFrames,
                         input$log_scale, input$zoom_range, input$frames_subset,
+                        input$unique_align,
                         collapse = "|_|")
   hash_expression <- paste(full_names, input$tx,
                            input$expression_plot, input$extendTrailers,
@@ -306,5 +301,94 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
                        hash_expression = hash_expression)
   stopifnot(all(lengths(hash_strings) == 1))
   return(hash_strings)
+}
+
+# Lock yaxis domains from a proportions vector (top -> bottom)
+lock_yaxis_domains_by_proportions <- function(p, proportions, gap = 0, fixed = TRUE, layer_below = TRUE,
+                                              uirevision = TRUE, margins = list(t = 30, b = 60, l = 60, r = 10)) {
+  stopifnot(length(proportions) >= 1)
+  n <- length(proportions)
+
+  # normalize proportions and compute absolute heights after gaps
+  prop <- proportions / sum(proportions)
+  total_gap <- (n - 1) * gap
+  avail <- 1 - total_gap
+  heights <- prop * avail
+
+  # build yaxisN domains (Plotly expects y=0 bottom, y=1 top; yaxis is the TOP row)
+  layout_updates <- list()
+  current_top <- 1.0
+  for (i in seq_len(n)) {
+    h  <- heights[i]
+    y1 <- current_top
+    y0 <- y1 - h
+    ax <- if (i == 1) "yaxis" else paste0("yaxis", i)
+
+    ya <- list(domain = c(y0, y1))
+    if (fixed)        ya$fixedrange <- FALSE
+    if (layer_below)  ya$layer <- "below traces"
+
+    layout_updates[[ax]] <- ya
+
+    # move down for next row (add gap below this row)
+    current_top <- y0 - gap
+  }
+
+  # apply with do.call (no tidy-eval)
+  p <- do.call(
+    plotly::layout,
+    c(
+      list(p, uirevision = uirevision, margin = margins),
+      layout_updates
+    )
+  )
+#   onRender(p, "
+# function(el, x){
+#   const gd = document.getElementById(el.id);
+#   let guarding = false;
+#   gd.on('plotly_relayout', ev => {
+#     if (guarding) return;
+#     // if the y range changed, clamp the lower bound to 0
+#     const y0 = ev['yaxis.range[0]'];
+#     const y1 = ev['yaxis.range[1]'];
+#     const y = ev['yaxis.range'];
+#     if (y0 !== undefined || y1 !== undefined || Array.isArray(y)) {
+#       const newMax = Array.isArray(y) ? y[1] : (y1 !== undefined ? y1 : gd.layout.yaxis.range[1]);
+#       guarding = true;
+#       Plotly.relayout(gd, {'yaxis.range': [0, newMax]}).then(() => guarding = false);
+#     }
+#   });
+# }
+# ")
+  p
+}
+
+browser_plot_final_layout_polish <- function(multiomics_plot,
+                                             plot_name,
+                                             display_range,
+                                             width,
+                                             height,
+                                             export.format,
+                                             plot_title,
+                                             zoom_range,
+                                             proportions) {
+  multiomics_plot <- remove_y_axis_zero_tick_js(multiomics_plot)
+
+  multiomics_plot <- multiomics_plot %>% layout(xaxis = list(title = list(font = list(size = 22)),
+                      tickfont = list(size = 16)))
+
+  filename <- ifelse(plot_name == "default", names(display_range), plot_name)
+  multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
+                                             width, height, format = export.format)
+  if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>%
+    plotly::layout(title = plot_title)
+  # Lock proportions on zoom out
+  # multiomics_plot <- lock_yaxis_domains_by_proportions(multiomics_plot, proportions, gap = 0)
+  if (!is.null(zoom_range) && length(zoom_range) == 2) {
+    # Zoom in on init
+    multiomics_plot <- multiomics_plot %>%
+      plotly::layout(xaxis = list(range = zoom_range))
+  }
+  return(lineDeSimplify(multiomics_plot))
 }
 

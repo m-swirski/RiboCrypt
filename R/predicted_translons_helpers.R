@@ -1,39 +1,3 @@
-# Function to load data
-load_data <- function(species) {
-  df <- read.experiment(species, validate = FALSE)
-  table_path <- file.path(refFolder(df),
-                          "predicted_translons",
-                          "predicted_translons_with_sequence.fst")
-  if (file.exists(table_path)) {
-    translon_table <- fst::read_fst(table_path, as.data.table = TRUE)
-    setattr(translon_table, "exp", species)
-  } else {
-    NULL
-  }
-
-  reactiveValues(translon_table = translon_table, df = df)
-}
-
-# Function to load data
-load_data_umap <- function(species, color.by = NULL) {
-  df <- read.experiment(species, validate = FALSE)
-  dir <- file.path(refFolder(df), "UMAP")
-  table_path <- file.path(dir, "UMAP_by_gene_counts.fst")
-  if (file.exists(table_path)) {
-    dt_umap <- fst::read_fst(table_path, as.data.table = TRUE)
-    if (length(color.by) > 1) {
-      dt_umap[, color_column := do.call(paste, c(.SD, sep = " | ")), .SDcols = color.by]
-    } else dt_umap[, color_column := get(color.by)]
-
-    setattr(dt_umap, "exp", species)
-    setattr(dt_umap, "color.by", color.by)
-  } else {
-    stop("Species has no computed UMAP, pick another!")
-  }
-
-  reactiveValues(dt_umap = dt_umap, df = df)
-}
-
 # Generalized function to handle download trigger buttons.
 # 'format' should be either "csv" or "xlsx".
 # 'trigger_input' is the name of the visible actionButton (e.g. "trigger_download_csv").
@@ -41,7 +5,9 @@ load_data_umap <- function(species, color.by = NULL) {
 handle_download_trigger <- function(input, output, current_format, trigger_input, download_button, md, session) {
   with(rlang::caller_env(), {
     observeEvent(input[[trigger_input]], {
-      if (is.null(md()) || isolate(input$dff) != name(md()$df)) md(load_data(isolate(input$dff)))
+      exp_to_use <- isolate(input$dff)
+      if (!isTruthy(exp_to_use)) exp_to_use <- browser_options["default_experiment_translon"]
+      if (is.null(md()) || exp_to_use != name(md()$df)) md(load_data(exp_to_use))
       req(md()$df)
       # For Excel, check that a table is available (otherwise abort)
       if (is.null(md()$translon_table)) {

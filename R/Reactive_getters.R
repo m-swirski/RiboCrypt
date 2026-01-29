@@ -13,7 +13,7 @@ get_gene_name_categories <- function(df) {
   dt[, merged_name := sub(" ",  "-", merged_name, fixed = TRUE)]
   dt[, merged_name := sub("(^-)|(^NA-)",  "", merged_name, perl = TRUE)]
   output_dt <- data.table(value = dt$ensembl_tx_name, label = dt$merged_name)
-  if (! is.null(dt$uniprot_id))  output_dt[, uniprot_id := dt$uniprot_id]
+  if (!is.null(dt$uniprot_id))  output_dt[, uniprot_id := dt$uniprot_id]
   return(output_dt)
 }
 
@@ -34,12 +34,15 @@ bottom_panel_shiny <- function(mainPlotControls) {
   print("Creating bottom panel..")
   viewMode <- ifelse(mainPlotControls()$viewMode, "genomic", "tx")
   df <- mainPlotControls()$dff
+  is_cellphone <- mainPlotControls()$is_cellphone
+
   annotation_list <- annotation_controller(df = df,
                                            display_range = mainPlotControls()$display_region,
                                            annotation = mainPlotControls()$annotation,
                                            leader_extension = mainPlotControls()$extendLeaders,
                                            trailer_extension = mainPlotControls()$extendTrailers,
                                            viewMode = viewMode)
+
   bottom_panel <- multiOmicsPlot_bottom_panels(reference_sequence = findFa(df),
                                                annotation_list$display_range,
                                                annotation_list$annotation,
@@ -48,20 +51,34 @@ bottom_panel_shiny <- function(mainPlotControls) {
                                                custom_regions = mainPlotControls()$customRegions,
                                                viewMode,
                                                tx_annotation = mainPlotControls()$tx_annotation,
-                                               mainPlotControls()$collapsed_introns_width)
-  custom_bigwig_panels <- custom_seq_track_panels(mainPlotControls,
-                                                  annotation_list$display_range)
-  cat("Done (bottom):"); print(round(Sys.time() - time_before, 2))
-  return(c(bottom_panel, annotation_list, custom_bigwig_panels))
+                                               mainPlotControls()$collapsed_introns_width,
+                                               mainPlotControls()$frame_colors,
+                                               mainPlotControls()$gg_theme)
+  custom_bigwig_panels <- custom_seq_track_panels(df, annotation_list$display_range,
+                                                  mainPlotControls()$phyloP, mainPlotControls()$mapability)
+  bottom_panel <- c(bottom_panel, annotation_list, custom_bigwig_panels,
+                    ncustom = length(custom_bigwig_panels[[1]]))
+
+  bottom_panel$bottom_plots <- bottom_plots_to_plotly(bottom_panel, is_cellphone)
+
+  cat("Done (bottom panel):"); print(round(Sys.time() - time_before, 2))
+  return(bottom_panel)
 }
 
-custom_seq_track_panels <- function(mainPlotControls, display_range) {
-  df <- mainPlotControls()$dff
+bottom_plots_to_plotly <- function(bottom_panel, is_cellphone = FALSE) {
+  c(list(DNA_model = bottom_panel$seq_nt_panel,
+         gene_model = automateTicksGMP(bottom_panel$gene_model_panel),
+         AA_model = automateTicksAA(bottom_panel$seq_panel, is_cellphone)),
+         lapply(bottom_panel$custom_bigwig_panels, automateTicksCustomTrack))
+}
+
+
+custom_seq_track_panels <- function(df, display_range, phyloP, mapability) {
   p <- list()
-  if (mainPlotControls()$phyloP) {
+  if (phyloP) {
     p <- c(p, phylo = list(phylo_custom_seq_track_panel(df, display_range)))
   }
-  if (mainPlotControls()$mapability) {
+  if (mapability) {
     p2 <- mapability_custom_seq_track_panel(df, display_range)
     p <- c(p, mapability = list(p2))
   }
@@ -115,14 +132,16 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       withFrames = mainPlotControls()$withFrames,
                                       viewMode = ifelse(mainPlotControls()$viewMode, "genomic","tx"),
                                       frames_type = mainPlotControls()$frames_type,
-                                      colors = NULL,
+                                      frame_colors = mainPlotControls()$frame_colors,
+                                      colors = mainPlotControls()$colors,
                                       kmers = mainPlotControls()$kmerLength,
                                       kmers_type = c("mean", "sum")[1],
                                       ylabels = bamVarName(mainPlotControls()$dff),
                                       lib_to_annotation_proportions = c(0.75,0.25), lib_proportions = NULL,
                                       annotation_proportions = NULL, width = NULL, height = NULL,
                                       plot_name = "default", plot_title = NULL,
-                                      display_sequence = "nt", seq_render_dist = 100,
+                                      display_sequence = "nt",
+                                      seq_render_dist = ifelse(mainPlotControls()$is_cellphone, 100, 250),
                                       aa_letter_code = c("one_letter", "three_letters")[1],
                                       log_scale = mainPlotControls()$log_scale,
                                       BPPARAM = BiocParallel::SerialParam(),
@@ -132,27 +151,27 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       zoom_range = mainPlotControls()$zoom_range,
                                       frames_subset = mainPlotControls()$frames_subset) {
   time_before <- Sys.time()
-  print("Creating full browser panel..")
+  print("Creating track panel..")
   # Input controller
   multiOmicsControllerView()
   # Get NGS data track panels
   profiles <- multiOmicsPlot_all_profiles(bottom_panel$display_range, reads, kmers,
                                           kmers_type, frames_type, frames_subset,
                                           withFrames, log_scale, BPPARAM)
-  track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, colors, ylabels,
-                                                ylabels_full_name, bottom_panel$lines,
-                                                frames_type, total_libs,
+  track_panel <- multiOmicsPlot_all_track_plots(profiles, withFrames, frame_colors,
+                                                colors, ylabels, ylabels_full_name,
+                                                bottom_panel$lines, frames_type,
                                                 summary_track, summary_track_type,
                                                 BPPARAM)
+  cat("Done (track panel):"); print(round(Sys.time() - time_before, 2))
   plot <- multiOmicsPlot_complete_plot(track_panel, bottom_panel,
                                        bottom_panel$display_range,
                                        proportions, seq_render_dist,
-                                       display_sequence, display_dist,
-                                       aa_letter_code,
+                                       display_sequence, aa_letter_code,
                                        input_id = session$ns("selectedRegion"),
                                        plot_name, plot_title, width, height,
-                                       export.format, zoom_range)
-  cat("Done (Full):"); print(round(Sys.time() - time_before, 2))
+                                       export.format, zoom_range, frame_colors)
+  cat("Done (Final panel):"); print(round(Sys.time() - time_before, 2))
   return(plot)
 }
 

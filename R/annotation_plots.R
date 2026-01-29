@@ -29,20 +29,46 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
 
 }
 
-plotSeqPanel <- function(hits, sequence, frame = 1) {
+plotAASeqPanel <- function(hits, sequence, frame_colors = "R", gg_theme = theme_bw()) {
+  stopifnot(is(gg_theme, "theme"))
+  frame_colors <- frame_color_themes(frame_colors, FALSE)
   pos <- NULL # avoid dt warning
   # New red: #FFA8A3 ?
-  fig <- ggplot() +
+  hits[, Type := fifelse(col == "white", "Start codon", fifelse(col == "black", "Stop codon", "User Motif"))]
+  seq_panel_template <- attr(gg_theme, "seq_panel_template")
+
+  if (is.null(seq_panel_template)) seq_panel_template <- seqPanelPlotTemplate()
+  # theme_bw propogates to all subplots
+  fig <- seq_panel_template +
     geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3)),
-              fill = c("#F8766D","#00BA38","#619CFF")) +
-    geom_segment(data=hits, mapping = aes(y = 2 - (frames + 1), yend =  2 - frames, x = pos, xend = pos), col=hits$col) +
-    ylab("frame") +
-    xlab("position [nt]") +
-    theme_bw() +
-    theme(plot.margin = unit(c(0,0,0,0), "pt"), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
-    scale_y_continuous(breaks = c(-0.5,0.5, 1.5), labels = c("2","1", "0"), expand = c(0,0)) + scale_x_continuous(expand = c(0,0))
+              fill = frame_colors) +
+    suppressWarnings(
+      geom_segment(data=hits,
+                   mapping = aes(y = 2 - (frames + 1), yend =  2 - frames, x = pos, xend = pos,
+                                 text = paste0("Pos: ", pos, "\n", "Type: ", Type)), col=hits$col)
+      )
 
   return(fig)
+}
+
+gg_theme_template <- function() {
+  gg_theme <- theme_bw()
+  attr(gg_theme, "seq_panel_template") <- seqPanelPlotTemplate(gg_theme)
+  attr(gg_theme, "gg_template") <- geneModelPanelPlotTemplate()
+  attr(gg_theme, "seq_panel_nt_template_ggplot") <- nt_area_template()
+  attr(gg_theme, "seq_panel_nt_template_plotly") <-
+    automateTicksLetters(attr(gg_theme, "seq_panel_nt_template_ggplot"))
+  return(gg_theme)
+}
+
+seqPanelPlotTemplate <- function(gg_theme) {
+  suppressWarnings(ggplot(frame = "static")) +
+    ylab("frame") +
+    xlab("position [nt]") +
+    gg_theme +
+    theme(plot.margin = unit(c(0,0,0,0), "pt"), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
+    scale_y_continuous(breaks = c(-0.5,0.5, 1.5), labels = c("2","1", "0"), expand = c(0,0)) +
+    scale_x_continuous(expand = c(0,0))
 }
 
 
@@ -97,22 +123,24 @@ geneTrackLayer <- function(grl) {
 #' @keywords internal
 #' @noRd
 createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL,
-                                 frame=1, custom_regions, viewMode, collapse_intron_flank = 100) {
+                                 custom_regions, viewMode, collapse_intron_flank = 100,
+                                 frame_colors = "R") {
   # TODO: Explain sections of this function, or split in sub functions
   # It is too complicated right now.
   use_custom_region <- !is.null(custom_regions) & length(custom_regions) > 0
+  overlap_type <- ifelse(viewMode == "tx", "within", "any")
   if (use_custom_region) {
     same_names <- names(custom_regions) %in% names(annotation)
     names(custom_regions)[same_names] <- paste(names(custom_regions)[same_names], "_1", sep="")
     overlaps_custom <- subsetByOverlaps(custom_regions, display_range,
-                                        type = ifelse(viewMode == "tx", "within", "any"))
+                                        type = overlap_type)
   }
   overlaps <- subsetByOverlaps(annotation, display_range,
-                               type = ifelse(viewMode == "tx", "within", "any"))
+                               type = overlap_type)
   overlaps_tx <- NULL
   if (viewMode != "tx") {
     overlaps_tx <- subsetByOverlaps(tx_annotation, display_range,
-                                    type = ifelse(viewMode == "tx", "within", "any"))
+                                    type = overlap_type)
     if (length(overlaps) > 0) {
       if (!all(names(overlaps_tx) %in% names(overlaps))) {
         overlaps_tx <- overlaps_tx[names(overlaps_tx) %in% names(overlaps)]
@@ -127,11 +155,11 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
   if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <- "utr"
 
   return(gene_box_fix_overlaps(display_range, c(overlaps, overlaps_tx), custom_regions,
-                               collapse_intron_flank))
+                               collapse_intron_flank, frame_colors))
 }
 
 gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
-                                  collapse_intron_flank) {
+                                  collapse_intron_flank, frame_colors) {
   if (length(overlaps) == 0) {
     result_dt <- data.table()
     lines_locations <- NULL
@@ -156,7 +184,7 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
   locations$rel_frame_orf <- getRelativeFrames(locations)
   locations <- unlistGrl(groupGRangesBy(locations))
 
-  cols <- colour_bars(locations, overlaps, display_range)
+  cols <- colour_bars(locations, overlaps, display_range, frame_colors)
   layers <- geneTrackLayer(groupGRangesBy(locations))
   plot_width <- widthPerGroup(display_range)
   geneBox <- geneBoxFromRanges(locations, plot_width, layers, cols,
@@ -253,27 +281,31 @@ move_utrs_touching_cds <- function(locations, type, plot_width) {
   return(locations)
 }
 
-rc_rgb <- function() {
-  return(c("#fbbab5","#7fdc9b","#afcdff"))
+frame_color_themes <- function(theme, with_alpha = FALSE) {
+  if (theme == "R") {
+    colors <- rc_rgb(with_alpha)
+  } else if (theme == "Color_blind") {
+    colors <- if (with_alpha) {
+      c("#8B90BA", "#FBCF79", "#C6E0EE")
+    } else c("#5056A0", "#F9AA2A", "#AED5EB")
+  } else stop("theme must be either R or Color blind")
 }
 
-geneModelPanelPlot <- function(dt, frame = 1) {
+rc_rgb <- function(with_alpha = TRUE) {
+  rgb_colors <- if (with_alpha) {
+    c("#fbbab5","#7fdc9b","#afcdff")
+  } else c("#F8766D","#00BA38","#619CFF")
+  return(rgb_colors)
+}
+
+geneModelPanelPlot <- function(dt, gg_template = geneModelPanelPlotTemplate()) {
   # If no annotation given, dt is empty, return blank
   if (nrow(dt) == 0) return(ggplot())
   # Else render exon boxes
   seg_dt <- dt[type %in% c("intron", "intron_collapsed")]
   dt <- dt[!(type %in% c("intron", "intron_collapsed"))]
 
-  result_plot <- ggplot(frame = frame) + ylab("") + xlab("") +
-    theme(axis.title.x = element_blank(),
-          axis.ticks.x = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          plot.margin = unit(c(0,0,0,0), "pt")) +
-    scale_x_continuous(expand = c(0,0)) +
-    scale_y_continuous(expand = c(0,0)) +
-    theme(panel.background = element_rect(fill= "white"))
+  result_plot <- gg_template
 
   draw_introns <- nrow(seg_dt) > 0
   if (draw_introns)  {
@@ -299,6 +331,22 @@ geneModelPanelPlot <- function(dt, frame = 1) {
 
   return(result_plot)
 }
+
+geneModelPanelPlotTemplate <- function() {
+  suppressWarnings(ggplot(frame = "static")) +
+    ylab("") + xlab("") +
+    theme(axis.title.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          plot.margin = unit(c(0,0,0,0), "pt")) +
+    scale_x_continuous(expand = c(0,0)) +
+    scale_y_continuous(expand = c(0,0)) +
+    theme(panel.background = element_rect(fill= "white"))
+}
+
+
 
 nt_area_template <- function() {
   ggplot() +

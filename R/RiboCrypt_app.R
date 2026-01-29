@@ -13,7 +13,8 @@
 #' - default_gene : Which genes to select, default: first one\cr
 #' - default_isoform : Which isoform to select, default: first one\cr
 #' - default_libs : Which libraries to select: first one, else a single string,
-#' where libs are seperated by "|", like "RFP_WT_r1|RFP_WT_r2".\cr
+#' where libs are seperated by ",", like "RFP_WT_r1|RFP_WT_r2". Also support
+#'  run ids (SRR... etc)\cr
 #' - default_kmer : K-mer windowing size, default: 1\cr
 #' - default_frame_type : Ribo-seq line type, default: "lines"\cr
 #' - default_view_mode : "tx", alternative "genomic"
@@ -83,7 +84,6 @@ RiboCrypt_app <- function(
     all_exp = list.experiments(validate = validate.experiments),
     browser_options = c(), init_tab_focus = "browser",
     metadata = NULL, all_exp_meta = all_exp[grep("all_samples-", name),]) {
-
   rc_parameter_setup()
   # User interface
   ui <- tagList(
@@ -107,25 +107,24 @@ RiboCrypt_app <- function(
   cat("Done (UI setup):"); print(round(Sys.time() - time_before, 2))
 
   server <- function(input, output, session) {
-    this_time_before <- Sys.time()
     reactive_url()
-    cds <- NULL
     org_and_study_changed_checker(input, output, session)
     tutorial_server("tutorial")
     rv <- browser_server("browser", all_exp, without_readlengths_env, df,
-                         experiments, tx, cds, libs, org, gene_name_list, rv,
-                         browser_options)
+                         experiments, tx, cds, libs, org, gene_name_list,
+                         gg_theme, rv, browser_options)
     if (nrow(all_exp_meta) > 0) {
       browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata,
-                             names_init_meta, browser_options)
+                             names_init_meta, browser_options, exp_init_meta,
+                             exps_dir)
     } else print("No MegaBrowser exps given, ignoring MegaBrowser server.")
     rv <- analysis_server("Analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
             gene_name_list, rv, metadata, names_init, browser_options)
     metadata_server("metadata", all_exp, metadata, all_exp_meta, browser_options)
+
     cat("Server this: "); print(round(Sys.time() - this_time_before, 2))
     cat("Server total: "); print(round(Sys.time() - time_before, 2))
   }
-  cat("Init: "); print(round(Sys.time() - time_before, 2))
   shinyApp(ui, server, options = options)
 }

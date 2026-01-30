@@ -325,10 +325,10 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
 click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_table) {
   cds_display <- observed_cds_heatmap(isolate(input$tx), cds, length_table,
                                       minFiveUTR = 3)
-  all_libs <- unique(isolate(input$library), isolate(input$background))
+  all_libs <- isolate(input$library)
   background <- if (isTruthy(input$background)) {
-    all_libs <- unique(all_libs, isolate(input$background))
-    ORFik:::name_decider(observed_exp_subset(isolate(input$background), libs, df), "full")
+    all_libs <- unique(c(all_libs, isolate(input$background)))
+    isolate(input$background)
   }
   dff <- observed_exp_subset(all_libs, libs, df)
 

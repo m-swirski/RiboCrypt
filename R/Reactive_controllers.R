@@ -328,7 +328,7 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_ta
   all_libs <- isolate(input$library)
   background <- if (isTruthy(input$background)) {
     all_libs <- unique(c(all_libs, isolate(input$background)))
-    isolate(input$background)
+    ORFik:::name_decider(observed_exp_subset(isolate(input$background), libs, df), "full")
   }
   dff <- observed_exp_subset(all_libs, libs, df)
 

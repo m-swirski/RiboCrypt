@@ -337,11 +337,14 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_ta
   differential <- input$differential
   exclude_start_stop <- input$exclude_start_stop
   ratio_thresh <- input$ratio_thresh
+  only_significant_difexp <- input$only_significant_difexp
+  background <- input$background
   plot_export_format <- isolate(input$plot_export_format)
 
-  hash_string <- paste(name(dff), names, filter_value, sep = "|__|")
+  hash_string <- paste(name(dff), names, filter_value, background, sep = "|__|")
   hash_string_plot <- paste(hash_string, normalization, differential,
-                            exclude_start_stop, ratio_thresh, plot_export_format, sep = "|__|")
+                            exclude_start_stop, ratio_thresh, plot_export_format,
+                            only_significant_difexp, sep = "|__|")
   if (differential & length(names) == 1) stop("For differential mode you need at least 2 libraries!")
 
   cat("Library loading: "); print(round(Sys.time() - time_before, 2))
@@ -355,6 +358,8 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_ta
                  differential = differential,
                  ratio_thresh = ratio_thresh,
                  exclude_start_stop = exclude_start_stop,
+                 background = background,
+                 only_significant_difexp = only_significant_difexp,
                  plot_export_format = plot_export_format,
                  hash_string = hash_string,
                  hash_string_plot = hash_string_plot)

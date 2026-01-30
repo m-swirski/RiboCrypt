@@ -158,7 +158,7 @@ check_url_for_basic_parameters <- function() {
 
 browser_specific_url_checker <- function() {
   with(rlang::caller_env(), {
-
+    # url tags
     if (id == "browser") {
       url_args <- isolate(getQueryString())
       if (length(url_args) > 0) {
@@ -209,6 +209,33 @@ browser_specific_url_checker <- function() {
           }
         }
       }
+    }
+
+    # User info is checked through browser
+    if (id == "browser") {
+      kickoff <- reactiveVal(FALSE)
+      fired <- reactiveVal(FALSE)
+      observeEvent(list(input$gene, input$tx, input$library),
+                   go_when_input_is_ready(input, browser_options, fired, kickoff, libs),
+                   ignoreInit = TRUE, ignoreNULL = TRUE)
+
+      user_info <- reactive({
+        is_cellphone <- grepl("Android|iPhone|iPad|iPod",
+                              input$js_user_agent,
+                              ignore.case = TRUE)
+        list(
+          userAgent = input$js_user_agent,
+          is_cellphone = is_cellphone,
+          width     = session$clientData$`output_browser-c_width`,
+          height    = session$clientData$`output_browser-c_height`
+        )
+      })
+
+      # Optional: print when something changes
+      observe({
+        cat("User info updated:\n")
+        str(user_info())
+      })
     }
   })
 }

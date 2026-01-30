@@ -325,7 +325,12 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
 click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_table) {
   cds_display <- observed_cds_heatmap(isolate(input$tx), cds, length_table,
                                       minFiveUTR = 3)
-  dff <- observed_exp_subset(isolate(input$library), libs, df)
+  all_libs <- unique(isolate(input$library), isolate(input$background))
+  background <- if (isTruthy(input$background)) {
+    all_libs <- unique(all_libs, isolate(input$background))
+    ORFik:::name_decider(observed_exp_subset(isolate(input$background), libs, df), "full")
+  }
+  dff <- observed_exp_subset(all_libs, libs, df)
 
   time_before <- Sys.time()
   reads <- load_reads(dff, "cov")
@@ -338,10 +343,11 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_ta
   exclude_start_stop <- input$exclude_start_stop
   ratio_thresh <- input$ratio_thresh
   only_significant_difexp <- input$only_significant_difexp
-  background <- input$background
+
+
   plot_export_format <- isolate(input$plot_export_format)
 
-  hash_string <- paste(name(dff), names, filter_value, background, sep = "|__|")
+  hash_string <- paste(name(dff), names, filter_value, paste(background, collapse = "|lib|"), sep = "|__|")
   hash_string_plot <- paste(hash_string, normalization, differential,
                             exclude_start_stop, ratio_thresh, plot_export_format,
                             only_significant_difexp, sep = "|__|")

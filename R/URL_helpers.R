@@ -152,6 +152,16 @@ check_url_for_basic_parameters <- function() {
         browser_options["plot_on_start"] <- as.character(value)
       }
     }
+
+    tag <- "search"
+    value <- query[tag][[1]]
+    if (!is.null(value)) {
+      temp_value <- as.character(value)
+      if (!is.na(temp_value)) {
+        browser_options["search_on_init"] <- as.character(value)
+      }
+    }
+
   }
   })
 }

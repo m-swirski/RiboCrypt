@@ -154,11 +154,15 @@ column contains a gene name (the name of the gene that was knocked out).
 Currently the best way to find SRR run number for respective sample is
 to go to metadata tab and search for the study. The reverse is also true,
 if you want to select the library from only known SRR, you can either insert
-URL with library=SRR... or find the library name from the 
+URL with library=SRR5090937 or find the Ribocrypt library name from the metadata tab.
+(e.g. https://ribocrypt.org/?search=SRR5090936#Samples)
 
 - Unique Alignments checkbox: Specifies to use unique Alignments (SAM NH flag = 1),
 or all alignments (both track files must be pre-computed), 
 see below on STAR alignment details for more info. 
+- Background libraries: For differential expression, background libraries are a 
+subset of libraries which should always be in the denominator (So if You have libs
+A, B, C, and B is background only do A vs B and C vs B, not A vs C etc.)
 
 ### Display type {#linetype}
 

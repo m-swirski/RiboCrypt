@@ -85,6 +85,10 @@ rc_parameter_setup <- function() {
       browser_options["translons"] <- FALSE
     }
 
+    if (!isTruthy(browser_options["search_on_init"])) {
+      browser_options["search_on_init"] <- ""
+    }
+
     if (!isTruthy(browser_options["allow_non_bw"])) {
       browser_options["allow_non_bw"] <- FALSE
     }

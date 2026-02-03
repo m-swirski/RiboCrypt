@@ -134,34 +134,15 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
                                                    isolate(input$plotType))) %>%
         bindEvent(table(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
+      # Main plot, either plotly or ggplot
       output$myPlotlyPlot <- renderPlotly({
         req(input$plotType == "plotly")
-        get_meta_browser_plot_full(table()$table,
-                                   plot_object(), controller()$id,
-                                   controller()$dff, controller()$summary_track,
-                                   controller()$display_annot,
-                                   region_type = controller()$region_type,
-                                   isolate(input$plotType), controller()$tx_annotation,
-                                   controller()$display_region,
-                                   controller()$annotation,
-                                   controller()$viewMode,
-                                   controller()$collapsed_introns_width
-                                   )}) %>%
+        get_meta_browser_plot_full_shiny(table, plot_object, controller)}) %>%
         bindCache(controller()$table_plot) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
       output$myGgplot <- renderPlot({
         req(input$plotType == "ggplot2")
-        get_meta_browser_plot_full(table()$table,
-                                   plot_object(), controller()$id,
-                                   controller()$dff, controller()$summary_track,
-                                   controller()$display_annot,
-                                   region_type = controller()$region_type,
-                                   isolate(input$plotType), controller()$tx_annotation,
-                                   controller()$display_region,
-                                   controller()$annotation,
-                                   controller()$viewMode,
-                                   controller()$collapsed_introns_width
-                                   )}) %>%
+        get_meta_browser_plot_full_shiny(table, plot_object, controller)}) %>%
         bindCache(controller()$table_plot) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
@@ -183,7 +164,7 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
                   isolate(input$color_mult)) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      # Addition plots
+      # Additional plots and tables
       meta_and_clusters <- reactive(
           allsamples_metadata_clustering(table()$metadata_field, plot_object(),
                                          controller()$enrichment_term)) %>%

@@ -200,6 +200,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    group_on_tx_tpm = other_tx,
                    ratio_interval = ratio_interval,
                    frame = frame,
+                   plotType = isolate(input$plotType),
                    display_annot = display_annot,
                    summary_track = summary_track,
                    enrichment_term = enrichment_term,

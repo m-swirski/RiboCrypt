@@ -70,6 +70,20 @@ row_order <- function(x) {
   } else attr(x, "row_order")
 }
 
+get_meta_browser_plot_full_shiny <- function(table, plot_object, controller) {
+  get_meta_browser_plot_full(table()$table,
+                             plot_object(), controller()$id,
+                             controller()$dff, controller()$summary_track,
+                             controller()$display_annot,
+                             region_type = controller()$region_type,
+                             controller()$plotType, controller()$tx_annotation,
+                             controller()$display_region,
+                             controller()$annotation,
+                             controller()$viewMode,
+                             controller()$collapsed_introns_width
+  )
+}
+
 #' Full plot for allsamples browser
 #'
 #' @param m data.table of coverage per sample (wide format)

@@ -6,7 +6,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
 
   if (length(lines) > 0) profile_plot <- profile_plot +
     geom_vline(xintercept = lines, col = names(lines), linetype = 4,
-               alpha = 0.2, size = line_size)
+               alpha = 0.2, linewidth = line_size)
   profile_plot <- profile_plot + geom_hline(yintercept = 0)
   if (!withFrames) {
     profile_plot <- profile_plot +

@@ -218,34 +218,13 @@ study_and_gene_observers <- function(input, output, session) {
           print("Pressed select all libs")
           library_update_select(libs, selected = libs())
         }, ignoreNULL = TRUE, ignoreInit = TRUE)  # Ensure the event is triggered on every click, including after initialization
+      } else if (id == "Codon") {
+        observeEvent(libs(), library_update_select(libs, id = "background"),
+                     ignoreNULL = TRUE, ignoreInit = TRUE)
       }
     }
     browser_specific_url_checker()
-    if (id == "browser") {
-      kickoff <- reactiveVal(FALSE)
-      fired <- reactiveVal(FALSE)
-      observeEvent(list(input$gene, input$tx, input$library),
-                   go_when_input_is_ready(input, browser_options, fired, kickoff, libs),
-                   ignoreInit = TRUE, ignoreNULL = TRUE)
 
-      user_info <- reactive({
-        is_cellphone <- grepl("Android|iPhone|iPad|iPod",
-                              input$js_user_agent,
-                              ignore.case = TRUE)
-        list(
-          userAgent = input$js_user_agent,
-          is_cellphone = is_cellphone,
-          width     = session$clientData$`output_browser-c_width`,
-          height    = session$clientData$`output_browser-c_height`
-        )
-      })
-
-      # Optional: print when something changes
-      observe({
-        cat("User info updated:\n")
-        str(user_info())
-      })
-    }
     init_round <- FALSE
   }
   )

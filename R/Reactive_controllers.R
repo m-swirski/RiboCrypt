@@ -200,6 +200,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    group_on_tx_tpm = other_tx,
                    ratio_interval = ratio_interval,
                    frame = frame,
+                   plotType = isolate(input$plotType),
                    display_annot = display_annot,
                    summary_track = summary_track,
                    enrichment_term = enrichment_term,
@@ -325,7 +326,12 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
 click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_table) {
   cds_display <- observed_cds_heatmap(isolate(input$tx), cds, length_table,
                                       minFiveUTR = 3)
-  dff <- observed_exp_subset(isolate(input$library), libs, df)
+  all_libs <- isolate(input$library)
+  background <- if (isTruthy(input$background)) {
+    all_libs <- unique(c(all_libs, isolate(input$background)))
+    ORFik:::name_decider(observed_exp_subset(isolate(input$background), libs, df), "full")
+  }
+  dff <- observed_exp_subset(all_libs, libs, df)
 
   time_before <- Sys.time()
   reads <- load_reads(dff, "cov")
@@ -337,11 +343,15 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_ta
   differential <- input$differential
   exclude_start_stop <- input$exclude_start_stop
   ratio_thresh <- input$ratio_thresh
+  only_significant_difexp <- input$only_significant_difexp
+
+
   plot_export_format <- isolate(input$plot_export_format)
 
-  hash_string <- paste(name(dff), names, filter_value, sep = "|__|")
+  hash_string <- paste(name(dff), names, filter_value, paste(background, collapse = "|lib|"), sep = "|__|")
   hash_string_plot <- paste(hash_string, normalization, differential,
-                            exclude_start_stop, ratio_thresh, plot_export_format, sep = "|__|")
+                            exclude_start_stop, ratio_thresh, plot_export_format,
+                            only_significant_difexp, sep = "|__|")
   if (differential & length(names) == 1) stop("For differential mode you need at least 2 libraries!")
 
   cat("Library loading: "); print(round(Sys.time() - time_before, 2))
@@ -355,6 +365,8 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_ta
                  differential = differential,
                  ratio_thresh = ratio_thresh,
                  exclude_start_stop = exclude_start_stop,
+                 background = background,
+                 only_significant_difexp = only_significant_difexp,
                  plot_export_format = plot_export_format,
                  hash_string = hash_string,
                  hash_string_plot = hash_string_plot)

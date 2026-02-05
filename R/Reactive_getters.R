@@ -242,106 +242,27 @@ click_plot_codon_shiny <- function(mainPlotControls, coverage) {
   click_plot_codon(coverage, min_ratio_change = mainPlotControls$ratio_thresh, min_total_N_codons = 100,
                    exclude_start_stop = mainPlotControls$exclude_start_stop,
                    codon_score = mainPlotControls$codon_score, differential = mainPlotControls$differential,
+                   background = mainPlotControls$background,
+                   only_significant_difexp = mainPlotControls$only_significant_difexp,
                    format = mainPlotControls$plot_export_format)
 }
 
-
 click_plot_codon <- function(dt, min_ratio_change = 1.7, min_total_N_codons = 100,
                              exclude_start_stop = FALSE, codon_score = "percentage",
-                             differential = FALSE, format = "png") {
+                             differential = FALSE, background = NULL,
+                             only_significant_difexp = FALSE, format = "png") {
   message("-- Plotting codon usage")
-  if (exclude_start_stop) {
-    dt <- dt[grep("(\\*)|(\\#)", seqs, invert = TRUE)]
-    dt[, relative_to_max_score := relative_to_max_score / max(relative_to_max_score), by = .(variable, type)]
-    dt[, seqs := factor(seqs, levels = levels(seqs)[levels(seqs) %in% unique(seqs)], ordered = TRUE)]
-  }
 
-  score_column_name <-
-    if (codon_score == "percentage") {
-      score_column_name <- "relative_to_max_score"
-    } else if (codon_score == "dispersion(NB)") {
-      score_column_name <- "dispersion_txNorm"
-    } else if (codon_score == "alpha(DMN)") {
-      score_column_name <- "alpha"
-    } else if (codon_score == "sum") {
-      score_column_name <- "sum"
-    }
-
-  levels <- which(dt$type == "A" & dt$variable == dt$variable[1])
-  levels <- as.character(dt$seqs[levels][order(dt[, ..score_column_name][[1]][levels], decreasing = TRUE)])
-  levels <- c(levels, levels(dt$seqs)[!(levels(dt$seqs) %in% levels)])
-  dt[, seqs := factor(seqs, levels = levels, ordered = TRUE)]
-  dt[, type := factor(type, levels = c("A", "P"), ordered = TRUE)]
-  dt <- dt[order(seqs, decreasing = TRUE),][order(type, decreasing = TRUE),]
-
-  score_column <- dt[, ..score_column_name][[1]]
-
-
-  if (differential) {
-    pairs <- ORFik::combn.pairs(unique(dt$variable))
-    dt_final <- data.table()
-    type <- NULL # avoid BiocCheck error
-    for (pair in pairs) {
-      sample1 <- dt[variable == pair[1],]
-      sample2 <- dt[variable == pair[2],]
-      score_column <-
-        sample1[, score_column_name, with = FALSE] /
-        sample2[, score_column_name, with = FALSE]
-      dt_final <- rbindlist(list(dt_final,
-                 data.table(variable = paste(sample1$variable,
-                                            sample2$variable, sep = " vs "),
-                            seqs = sample1$seqs,
-                            type = sample1$type,
-                            score_column = score_column[[1]],
-                            N_sites = paste("S1:", sample1$N.total, "S2:", sample2$N.total),
-                            N_min = pmin(sample1$N.total, sample2$N.total))))
-    }
-    dt <- dt_final
-    dt[, simulated_error := sample(c(1,-1))*runif(N_min, 0.1, 0.2)]
-    dt[, p_value := ifelse(N_min == 0, NA, wilcox.test(x = rep(score_column + simulated_error, N_min), y = rep(1, N_min), var.equal = FALSE)$p.value),
-       by = .(variable, type, seqs)]
-    diff_size <- min_ratio_change
-    diff_size <- c(diff_size, 1 / diff_size)
-
-    dt[, significant := seq(nrow(dt)) %in% which(N_min >= min_total_N_codons & p_value < 0.05 & (score_column > max(diff_size) | score_column < min(diff_size)))]
-    dt[, tooltip_text := paste0(
-      "Score: ", round(score_column, 2), "<br>",
-      "Sequence: ", seqs, "<br>",
-      "Total Sites: ", N_sites, "<br>",
-      "P-value:", sprintf("%.2e", p_value)
-    )]
-    vline_data <- data.frame(x = 1, y = c(min(as.numeric(dt$seqs)), max(as.numeric(dt$seqs))), tooltip_text = "")
-    vline_data_p <- data.frame(x = diff_size[1], y = c(min(as.numeric(dt$seqs)), max(as.numeric(dt$seqs))), tooltip_text = "")
-    vline_data_m <- data.frame(x = diff_size[2], y = c(min(as.numeric(dt$seqs)), max(as.numeric(dt$seqs))), tooltip_text = "")
-
-    plot <- ggplot(dt, aes(score_column, seqs, text = tooltip_text)) +
-      geom_point(color = ifelse(dt$N_min < min_total_N_codons, "red", ifelse(dt$significant == TRUE, "green", "blue"))) +
-      geom_line(data = vline_data, aes(x = x, y = y), color = "gray", linetype = "dashed", size = 0.8, alpha = 0.4) +
-      geom_line(data = vline_data_p, aes(x = x, y = y), color = "red", linetype = "dashed", size = 0.8, alpha = 0.4) +
-      geom_line(data = vline_data_m, aes(x = x, y = y), color = "red", linetype = "dashed", size = 0.8, alpha = 0.4) +
-      facet_grid(~ variable + type)
+  plot <- if (differential) {
+    dt <- ORFik::diff_exp_codon(dt, min_ratio_change, min_total_N_codons,
+                                 exclude_start_stop, codon_score, background)
+    ORFik::diff_exp_codon_plot(dt, min_total_N_codons, only_significant_difexp)
   } else {
-    dt[, N_sites := paste(dt$N.total)]
-    dt[, N_min := dt$N.tota]
-    dt[, tooltip_text := paste0(
-      "Score: ", round(score_column, 2), "<br>",
-      "Sequence: ", seqs, "<br>",
-      "Total Sites: ", N_sites
-    )]
-    plot <- ggplot(dt, aes(score_column, seqs, text = tooltip_text)) + # fill = score_column
-      geom_point(color = ifelse(dt$N_min < 100, "red","blue")) + facet_wrap(variable ~ type, nrow = 1)
-    # geom_tile(color = "white") + scale_fill_gradient2(low = "blue", high = "orange", mid = "white")
+    ORFik::codon_dotplot(dt, codon_score, min_total_N_codons)
   }
-  plot <- plot + theme_bw() +
-    theme(axis.title = element_text(family = "monospace", size = 14, face = "bold"),
-          axis.text = element_text(family = "monospace", size = 12),
-          strip.background = element_blank(),
-          strip.text = element_text(size = 14, face = "bold"),
-          strip.placement = "inside",
-          plot.margin = margin(t = 20, b = 20, l = 10, r = 10)) +
-     ylab("AA:Codon") + xlab("Score (by Ribosome site & library)")
 
   plotly_plot <- plotly::ggplotly(plot, tooltip = "text") %>%
     plotly::config(toImageButtonOptions = list(format = format, filename = "RC_codon_analysis"), displaylogo = FALSE)
+  attr(plotly_plot, "input_data") <- dt
   return(plotly_plot)
 }

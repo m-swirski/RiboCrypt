@@ -176,6 +176,11 @@ compute_collection_table <- function(path, lib_sizes, df,
                                      ratio_interval = NULL,
                                      decreasing_order = FALSE) {
   table <- load_collection(path)
+  intersect <- intersect(unique(table$library), runIDs(df))
+  if (length(intersect) == 0) stop("Malformed experiment to megafst format intersect, no matching runs!")
+  if (!all(runIDs(df) %in% intersect)) df <- df[runIDs(df) %in% intersect,]
+  if (!all(unique(table$library) %in% intersect)) table <- table[library %in% intersect,]
+
   if (!is.null(subset)) {
     table <- subset_fst_by_interval(table, subset)
   }

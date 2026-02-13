@@ -211,22 +211,21 @@ geneBoxFromRanges <- function(locations, plot_width,
   blocks <- sort(blocks)
   lines_locations <- blocks[!(blocks %in% c(1, plot_width))]
 
-
   rect_locations <- locations
-
   locations <- resize(locations, width = 1, fix = "center")
-
   labels_locations <- start(locations)
+  gene_names <- names(locations)
 
-  too_close <- labels_locations < 0.02 * plot_width
+  cap <- 0.00133*nchar(gene_names)
+  too_close <- labels_locations < cap * plot_width
+  too_far <- labels_locations > (1-cap) * plot_width
 
-  too_far <- labels_locations > 0.98 * plot_width
   labels_locations[too_close] <- 1
   labels_locations[too_far] <- plot_width
   hjusts <- rep("center", length(labels_locations))
   hjusts[too_close] <- "left"
   hjusts[too_far] <- "right"
-  gene_names <- names(locations)
+
   custom_region_names <- which(names(lines_locations) %in% names(custom_regions))
   names(lines_locations) <- rep("black", length(lines_locations))
   names(lines_locations)[custom_region_names] <- "orange4"
@@ -307,6 +306,7 @@ geneModelPanelPlot <- function(dt, gg_template = geneModelPanelPlotTemplate()) {
 
   result_plot <- gg_template
 
+  trans <- c("cds", "translon")
   draw_introns <- nrow(seg_dt) > 0
   if (draw_introns)  {
     intron_flank_coords <- seg_dt[type %in% c("intron_collapsed")]
@@ -321,7 +321,7 @@ geneModelPanelPlot <- function(dt, gg_template = geneModelPanelPlotTemplate()) {
 
   suppressWarnings({
     result_plot <-  result_plot +
-     geom_rect(data = dt, mapping=aes(ymin=0 - layers + ifelse(type == "cds", 0, 0.33), ymax = 1 - layers - ifelse(type == "cds", 0, 0.33),
+     geom_rect(data = dt, mapping=aes(ymin=0 - layers + ifelse(type %in% trans, 0, 0.33), ymax = 1 - layers - ifelse(type %in% trans, 0, 0.33),
                                       xmin=rect_starts,xmax = rect_ends, text = gene_names),
                fill = dt$cols, color = "grey45") +
       geom_text(data = dt[,.(layers = layers[1], labels_locations = mean(labels_locations)), gene_names],

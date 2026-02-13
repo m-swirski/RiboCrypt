@@ -4,7 +4,6 @@
 click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_theme, user_info) {
   {
     time_before <- controller_init(input, id = "Browser")
-
     # Annotation
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
     tx_annotation <- observed_cds_annotation(isolate(input$tx), tx,

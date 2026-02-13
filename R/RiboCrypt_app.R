@@ -40,6 +40,7 @@
 #' remaining all_exp are used in all other modules.
 #' @import shiny bslib ORFik NGLVieweR ggplot2 fst rclipboard data.table
 #' @importFrom Biostrings strsplit width
+#' @importFrom GenomeInfoDb seqlevelsStyle seqlevelsStyle<-
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
 #' @importFrom shinyjqui jqui_resizable jqui_draggable

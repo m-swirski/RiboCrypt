@@ -23,7 +23,8 @@ experiment_input_select <- function(names, ns, browser_options = NULL,
     label = "Select an experiment",
     choices = as.character(browser_options[option_name]),
     selected = browser_options[option_name],
-    multiple = FALSE
+    multiple = FALSE,
+    options = list(maxOptions = 50)
   )
 }
 
@@ -38,7 +39,8 @@ gene_input_select <- function(ns, multiple = FALSE, browser_options = NULL,
     selected = selected,
     label = label,
     multiple = multiple,
-    options = list(placeholder = 'Insert valid gene')
+    options = list(placeholder = 'Insert valid gene',
+                   maxOptions = 50)
   ) %>%
     helper(onclick = "fakeClick('tutorial', 'gene')")
 }

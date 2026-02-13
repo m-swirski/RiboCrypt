@@ -14,7 +14,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_them
     uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
                                                 isolate(input$other_tx), isolate(input$add_uorfs))
     translon_annotation <- observed_translon_annotation(isolate(input$tx), df(),
-                                                        isolate(input$other_tx), isolate(input$add_translon))
+                                                        isolate(input$other_tx), isolate(input$add_translon),
+                                                        isolate(input$add_translons_transcode))
     customRegions <- c(uorf_annotation, translon_annotation)
 
     # View controller

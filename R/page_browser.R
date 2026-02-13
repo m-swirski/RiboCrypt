@@ -10,6 +10,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
   introns_width <- as.numeric(browser_options["collapsed_introns_width"])
   full_annotation <- as.logical(browser_options["full_annotation"])
   translons <- as.logical(browser_options["translons"])
+  translons_transcode <- as.logical(browser_options["translons_transcode"])
   panel_hidden_or_not_class <- ifelse(browser_options["hide_settings"] == "TRUE",
                                       "floating_settings_panel hidden",
                                       "floating_settings_panel")
@@ -66,12 +67,15 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                                          textInput(ns("zoom_range"), "Zoom interval", ""),
                                          textInput(ns("customSequence"), "Custom sequences highlight", "")
                                 ),
+                                fluidRow(checkboxInput(ns("add_uorfs"), tagList("uORF annotation", tags$br(), "(all candidates)"), FALSE)),
                                 fluidRow(
-                                  checkboxInput(ns("add_uorfs"), "uORF annotation", FALSE),
-                                  checkboxInput(ns("add_translon"), "Predicted translons", translons),
+                                  column(4, checkboxInput(ns("add_translon"), "Predicted translons (Our all-merged: T)", translons)),
+                                  column(4, checkboxInput(ns("add_translons_transcode"), "Predicted translons (TransCode: TC)",
+                                                          translons_transcode))
                                   ),
-                                fluidRow(checkboxInput(ns("log_scale"), "Log scale", FALSE),
-                                         checkboxInput(ns("log_scale_protein"), "Log scale Protein", FALSE)
+                                fluidRow(
+                                  column(4, checkboxInput(ns("log_scale"), "Log scale", FALSE)),
+                                  column(4, checkboxInput(ns("log_scale_protein"), "Log scale Protein", FALSE))
                                 ),
                                 fluidRow(
                                   column(4, checkboxInput(ns("expression_plot"), "Gene expression plot", FALSE)),

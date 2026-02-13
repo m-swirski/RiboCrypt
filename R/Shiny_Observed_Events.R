@@ -124,24 +124,40 @@ observed_uorf_annotation <- function(gene, df, all = TRUE, add_uorfs = FALSE) {
   } else GRangesList()
 }
 
-observed_translon_annotation <- function(gene, df, all = TRUE, add_translons = FALSE) {
+observed_translon_annotation <- function(gene, df, all = TRUE, add_translons = FALSE,
+                                         add_translons_transcode = FALSE) {
+  all_translons <- GRangesList()
   if (add_translons) {
     translon_annotation <- file.path(dirname(df@fafile),
                                      "predicted_translons",
                                      "predicted_translons_with_sequence_ranges.rds")
 
     if (file.exists(translon_annotation)) {
-      if (all) {
-        translons <- readRDS(translon_annotation)
-      } else {
-        translons <- readRDS(translon_annotation)
+      translons <- read_RDSQS(translon_annotation)
+      if (!all) {
         translons <- translons[names(translons) %in% gene]
       }
       if (length(translons) > 0) names(translons) <- paste0("T", seq(length(translons)))
-      return(translons)
+      all_translons <- c(all_translons, translons)
     }
   }
-  return(GRangesList())
+
+  if (add_translons_transcode) {
+    translon_annotation <- file.path(dirname(df@fafile),
+                                     "predicted_translons", "TransCode",
+                                     "predicted_translons_ranges.qs")
+
+    if (file.exists(translon_annotation)) {
+      translons <- read_RDSQS(translon_annotation)
+      if (!all) {
+        translons <- translons[names(translons) %in% gene]
+      }
+      if (length(translons) > 0) names(translons) <- paste0("TC", seq(length(translons)))
+      all_translons <- c(all_translons, translons)
+    }
+  }
+
+  return(all_translons)
 }
 
 update_rv <- function(rv, df) {

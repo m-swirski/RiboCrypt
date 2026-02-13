@@ -49,6 +49,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
         paste("other_tx", input$other_tx, sep = "="),
         paste("add_uorfs", input$add_uorfs, sep = "="),
         paste("add_translon", input$add_translon, sep = "="),
+        paste("add_translons_transcode", input$add_translons_transcode, sep = "="),
         paste("genomic_region", sub("\\+;", "p;", sub("\\+$", "p", input$genomic_region)), sep = "="),
         paste("zoom_range", sub("\\+$", "p", input$zoom_range), sep = "="),
         paste("customSequence", input$customSequence, sep = "="),
@@ -210,7 +211,8 @@ browser_specific_url_checker <- function() {
         }
 
         # Checkbox updates
-        for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon","summary_track",
+        for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon",
+                      "add_translons_transcode", "summary_track",
                       "log_scale", "log_scale_protein","phyloP", "mapability",
                       "collapsed_introns", "unique_align")) {
           value <- query[tag][[1]]
@@ -329,7 +331,8 @@ browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                      libraries = NULL, leader_extension = 0, trailer_extension = 0,
                      viewMode = FALSE, other_tx = FALSE,
                      plot_on_start = TRUE, frames_type = "columns", kmer=1,
-                     add_translons = FALSE, zoom_range = NULL,
+                     add_translons = FALSE, add_translons_transcode = FALSE,
+                     zoom_range = NULL,
                      genomic_region = NULL,
                      host = "https://ribocrypt.org",
                      browser = getOption("browser")) {
@@ -337,7 +340,8 @@ browseRC <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
   full_url <- make_rc_url(symbol, gene_id, tx_id, exp, libraries,
                           leader_extension, trailer_extension,
                           viewMode, other_tx, plot_on_start, frames_type,
-                          kmer, add_translons, zoom_range, genomic_region, host)
+                          kmer, add_translons, add_translons_transcode,
+                          zoom_range, genomic_region, host)
   browseURL(full_url, browser = browser)
 }
 
@@ -371,7 +375,8 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                         libraries = NULL, leader_extension = 0, trailer_extension = 0,
                         viewMode = FALSE, other_tx = FALSE,
                         plot_on_start = TRUE, frames_type = "columns", kmer=1,
-                        add_translons = FALSE, zoom_range = NULL,
+                        add_translons = FALSE, add_translons_transcode = FALSE,
+                        zoom_range = NULL,
                         genomic_region = NULL,
                         host = "https://ribocrypt.org") {
   # TODO: Update to use input function above, to avoid writing twice
@@ -387,6 +392,7 @@ make_rc_url <- function(symbol = NULL, gene_id = NULL, tx_id = NULL,
                     paste("viewMode", viewMode, sep = "="),
                     paste("other_tx", other_tx, sep = "="),
                     paste("add_translon", add_translons, sep = "="),
+                    paste("add_translons_transcode", add_translons, sep = "="),
                     sep = "&"))
   if (!is.null(zoom_range)){
     zoom_range <- gsub("\\+;", "p;", sub("\\+$", "p", zoom_range))

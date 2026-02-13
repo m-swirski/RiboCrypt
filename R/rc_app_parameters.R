@@ -84,6 +84,9 @@ rc_parameter_setup <- function() {
     if (!isTruthy(browser_options["translons"])) {
       browser_options["translons"] <- FALSE
     }
+    if (!isTruthy(browser_options["translons_transcode"])) {
+      browser_options["translons_transcode"] <- FALSE
+    }
 
     if (!isTruthy(browser_options["search_on_init"])) {
       browser_options["search_on_init"] <- ""

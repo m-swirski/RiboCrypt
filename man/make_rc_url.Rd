@@ -18,6 +18,7 @@ make_rc_url(
   frames_type = "columns",
   kmer = 1,
   add_translons = FALSE,
+  add_translons_transcode = FALSE,
   zoom_range = NULL,
   genomic_region = NULL,
   host = "https://ribocrypt.org"

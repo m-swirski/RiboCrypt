@@ -1,14 +1,38 @@
-create_observatory_module <- function(organisms_df, samples_df) {}
-
-# A vector with label of all available organisms
-available_organisms <- c("")
-
-# A vector with labels of all available samples
-available_samples <- c("")
-
-annotation_type_list <- c("")
-library_type_list <- c("")
+annotation_type_list <- c(
+  "cds",
+  "tx",
+  "uORF",
+  "translon",
+  "phyloP",
+  "mappability"
+)
+library_type_list <- c("RFP")
 reading_frames <- c(1, 2, 3)
+
+create_observatory_module <- function(meta_experiment_df, samples_df) {
+  # gene_list <- ORFik::loadRegion(organism_meta_df, "cds")
+  # transcript_list <- ORFik::loadRegion(organism_meta_df, "tx")
+  # transcript_to_gene_map <- get_gene_name_categories(organism_meta_df)
+  organism_samples <- samples_df[Run %in% meta_experiment_df$Run]
+
+  # TODO
+  # A function that returns a UMAP projection over samples for a given organisms
+  # returns a dataframe(TODO expand on the contents of dataframe)
+  get_umap_data <- function(color_by = c("tissue", "cell_line")) {
+    load_data_umap_internal(meta_experiment_df@experiment, color.by = color_by)
+  }
+
+  # A function that returns a list of samples available for a given organism
+  # returns a vector of character vectors
+  get_samples_data <- function(library_types = library_type_list) {
+    organism_samples[LIBRARYTYPE %in% library_types]
+  }
+
+  list(
+    get_umap_data = get_umap_data,
+    get_samples_data = get_samples_data
+  )
+}
 
 # A function that returns a list of genes for a given organism
 # returns a vector of character vectors
@@ -25,15 +49,6 @@ get_region_for_isoform <- function(isoform) {}
 extend_region_leader <- function(region) {}
 
 extend_region_trailer <- function(region) {}
-
-# A function that returns a list of samples available for a given organism
-# returns a vector of character vectors
-get_sample_list <- function(organism, library_types = library_type_list) {}
-
-# TODO
-# A function that returns a UMAP projection over samples for a given organisms
-# returns a dataframe(TODO expand on the contents of dataframe)
-# get_umap_data(oraganism, ?, ?, ?)
 
 # TODO
 # A function that returns coverage over a given region for selected samples

@@ -100,6 +100,7 @@ RiboCrypt_app <- function(
       browser_ui("browser", all_exp, browser_options, names_init, libs),
       browser_allsamp_ui("browser_allsamp", all_exp_meta, browser_options, metadata,
                          names_init_meta),
+      observatory_ui("observatory", all_exp_meta),
       analysis_ui("Analysis", all_exp, browser_options, libs, metadata),
       metadata_ui("metadata", all_exp, all_exp_meta),
       tutorial_ui("tutorial")
@@ -121,7 +122,17 @@ RiboCrypt_app <- function(
     rv <- analysis_server("Analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
             gene_name_list, rv, metadata, names_init, browser_options)
-    metadata_server("metadata", all_exp, metadata, all_exp_meta, browser_options)
+    metadata_server(
+      "metadata",
+      all_exp, metadata,
+      all_exp_meta,
+      browser_options
+    )
+    observatory_server(
+      "observatory",
+      meta_experiment_list = all_exp_meta,
+      samples_df = metadata
+    )
 
     cat("Server this: "); print(round(Sys.time() - this_time_before, 2))
     cat("Server total: "); print(round(Sys.time() - time_before, 2))

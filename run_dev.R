@@ -10,7 +10,7 @@ all_exp <- list.experiments(
 valid_collections <- c("all_samples-Homo_sapiens")
 metadata <- fread("~/livemount/Bio_data/NGS_pipeline/metadata_rc.csv")
 all_exp_meta <- all_exp[
-  name %in% c(grep("all_samples-", name, invert = TRUE, value = TRUE), valid_collections),
+  name %in% c(grep("all_samples-", name), valid_collections),
 ]
 RiboCrypt_app(
   FALSE,

@@ -58,9 +58,7 @@ observatory_server <- function(id, meta_experiment_list, samples_df) {
       observatory_module()$get_samples_data()
     })
 
-    filtered_samples_df <- shiny::reactive({
-      unfiltered_samples_df()[1:50, ]
-    })
+    filtered_samples_df <- shiny::reactiveVal()
 
     output$samples_umap_plot <- plotly::renderPlotly({
       observatory_module()$get_umap_data(input$color_by) |>
@@ -82,6 +80,16 @@ observatory_server <- function(id, meta_experiment_list, samples_df) {
         filtered_samples_df(),
         resetPaging = FALSE
       )
-    }) |> shiny::bindEvent(input$go_proxy)
+    }) |> shiny::bindEvent(filtered_samples_df())
+
+    datatable_selection <- shiny::reactive({
+      selected_indexes <- if (is.null(input$samples_datatable_rows_selected)) {
+        input$samples_datatable_rows_all
+      } else {
+        input$samples_datatable_rows_selected
+      }
+
+      unfiltered_samples_df()[selected_indexes]
+    })
   })
 }

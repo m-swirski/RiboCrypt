@@ -50,7 +50,11 @@ browseRC(
 
 \item{kmer}{integer, default 1 (no binning), binning size of windows, to smear out the signal.}
 
-\item{add_translons}{logical, default FALSE. If TRUE, add translons predicted sequences in annotation.}
+\item{add_translons}{logical, default FALSE. If TRUE, add translons predicted sequences in annotation,
+if file exists.}
+
+\item{add_translons_transcode}{logical, default FALSE. If TRUE, add transcode translons predicted sequences in annotation,
+if file exists.}
 
 \item{zoom_range}{character, zoom values.}
 

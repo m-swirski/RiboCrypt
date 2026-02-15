@@ -34,9 +34,9 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                         tabsetPanel(
                           tabPanel("MegaBrowser",
                                    fluidRow(
-                                     organism_input_select(c("ALL", genomes), ns),
-                                     experiment_input_select(experiments, ns, browser_options,
-                                                             "default_experiment_meta"),
+                                     column(6, organism_input_select(c("ALL", genomes), ns)),
+                                     column(6, experiment_input_select(experiments, ns, browser_options,
+                                                             "default_experiment_meta")),
                                    ),
                                    fluidRow(column(6, metadata_input_select(ns, metadata, TRUE)),
                                             column(6, metadata_input_select(ns, metadata, FALSE,
@@ -48,6 +48,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                             column(6, radioButtons(ns("plotType"), "Choose Plot Type:",
                                                 choices = c("Plotly" = "plotly", "ComplexHeatmap" = "ggplot2"),
                                                 selected = "ggplot2", inline = TRUE))),
+                                   tags$hr(style = "padding-top: 50px; padding-bottom: 50px;"),
                                    helper_button_redirect_call()
                           ),
                           tabPanel("Settings",
@@ -117,10 +118,9 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
       allsamples_observer_controller(input, output, session)
       plot_type <- "plotly"
       # Main plot controller, this code is only run if 'plot' is pressed
-      controller <- eventReactive(input$go,
-                                  click_plot_browser_allsamp_controller(input, df, gene_name_list),
-                                  ignoreInit = TRUE,
-                                  ignoreNULL = FALSE)
+      controller <- reactive(click_plot_browser_allsamp_controller(input, df, gene_name_list)) %>%
+        bindCache(input_to_list(input)) %>%
+        bindEvent(input$go, ignoreInit = TRUE, ignoreNULL = FALSE)
       # Main plot, this code is only run if 'plot' is pressed
       table <- reactive(compute_collection_table_shiny(controller,
                                                    metadata = metadata)) %>%

@@ -1,20 +1,16 @@
 
 #' Load a ORFik collection table
-#' @param path the path to gene counts
+#' @param path the path to megafst index file
 #' @param grl a GRangesList, default attr(path, "range"),
 #' for new fst format, which range to get.
-#' @return a data.table in long format
+#' @return a data.table in wide format
 #' @importFrom fst read_fst
 load_collection <- function(path, grl = attr(path, "range")) {
   new_format <- length(names(path)) > 0 && names(path) == "index"
   if (new_format) {
     stopifnot(!is.null(grl))
-    table <- setnames(suppressWarnings(data.table::melt.data.table(coverageByTranscriptFST(grl, path)[[1]])),
-                      c("library", "count"))
-  } else table <- fst::read_fst(path, as.data.table = TRUE)
-
-  table[, position := 1:.N, by = library]
-  table[, `:=`(library, factor(library, levels = unique(library), ordered = TRUE))]
+    table <- coverageByTranscriptFST(grl, path)[[1]]
+  } else stop("Old megafst format is no longer supported")
   return(table)
 }
 
@@ -32,28 +28,33 @@ load_collection <- function(path, grl = attr(path, "range")) {
 normalize_collection <- function(table, normalization, lib_sizes = NULL,
                                  kmer = 1L, add_logscore = TRUE,
                                  split_by_frame = FALSE) {
+  valid_libs <- attr(table, "valid_libs")
   # Sliding window
-  if (kmer > 1) table <- smoothenMultiSampCoverage(table, kmer = kmer,
-                                                   split_by_frame = split_by_frame)
+  if (kmer > 1) table <- multiSampleBinRows(table, kmer, split_by_frame)
+
   # Make tpm
   if (!is.null(lib_sizes)) {
     if (is.character(lib_sizes)) lib_sizes <- readRDS(lib_sizes)
-    table[, score_tpm := ((count * 1000)  / lib_sizes[as.integer(library)]) * 10^6]
-  } else table[, score_tpm := count]
+    table <- ((table * 1000L)  / lib_sizes[valid_libs]) * as.integer(10^6)
+  }
+
   # Transcript normalization mode
   norm_opts <- normalizations("metabrowser")
+
   if (normalization == "transcriptNormalized") {
-    table[,score := score_tpm / sum(score_tpm), by = library]
-    table[,score := score * 1e6]
+    table[, (names(table)) := Map(`/`, .SD, colSums(table))]
+    table <- table * as.integer(1e6)
   } else if (normalization == "maxNormalized") {
-    table[,score := score_tpm / max(score_tpm), by = library]
+    table[, (names(table)) := Map(`/`, .SD, matrixStats::colMaxs(as.matrix(table)))]
   } else if (normalization == "zscore") {
-    table[, score := (score_tpm - mean(score_tpm)) / sd(score_tpm), by = library]
+    table[, (names(table)) := Map(function(x) (x - mean(x)) / sd(x), .SD)]
   } else if (normalization == "tpm") {
-    table[, score := score_tpm]
+    #
   } else stop("Invalid normalization for collection!")
-  table[is.na(score), score := 0]
-  if (add_logscore) table[,logscore := log(score + 1)]
+  table[is.na(table)] <- 0L
+
+  if (add_logscore) table <- log(table + 1L)
+  setattr(table, "valid_libs", valid_libs)
   return(table)
 }
 
@@ -65,18 +66,26 @@ match_collection_to_exp <- function(metadata, df) {
   return(matchings)
 }
 
+match_metadata_to_table <- function(metadata, table) {
+  matchings <- chmatch(colnames(table), metadata$Run)
+  matchings <- matchings[!is.na(matchings)]
+  if (length(matchings) != ncol(table))
+    stop("Metadata does not contain information on all megafst samples!")
+  return(matchings)
+}
+
 filter_collection_on_count <- function(table, min_count) {
   if (min_count > 0) {
-    libs_counts_total <- table[,.(count = sum(count)), library][, valid := count >= min_count]
-    valid_libs <- libs_counts_total$valid
+    libs_counts_total <- colSums(table)
+    valid_libs <- libs_counts_total >= min_count
     if (sum(valid_libs) == 0)
       stop("Count filter too strict, no libraries with that much reads for this transcript!")
 
-    filt_libs <- libs_counts_total[valid == TRUE,]$library
-    table <- table[library %in% filt_libs]
-    table[, library := factor(library, levels = unique(library), ordered = TRUE)]
+    filt_libs <- names(libs_counts_total[valid_libs])
+    table <- table[, ..filt_libs]
+
     setattr(table, "valid_libs", valid_libs)
-  } else setattr(table, "valid_libs", rep(TRUE, length(unique(table$library))))
+  } else setattr(table, "valid_libs", rep(TRUE, ncol(table)))
 
   return(table)
 }
@@ -84,9 +93,10 @@ filter_collection_on_count <- function(table, min_count) {
 compute_collection_table_grouping <- function(metadata, df, metadata_field, table,
                                               ratio_interval, group_on_tx_tpm,
                                               decreasing_order = FALSE) {
-  matchings <- match_collection_to_exp(metadata, df)
+  matchings <- match_metadata_to_table(metadata, table)
   valid_libs <- attr(table, "valid_libs")
-  all_metadata_fields <- metadata[matchings, metadata_field, with = FALSE][valid_libs == TRUE,]
+  valid_run_ids <- names(valid_libs[valid_libs])
+  all_metadata_fields <- metadata[Run %in% valid_run_ids, ..metadata_field]
   ordering_vector_temp <- all_metadata_fields[, 1][[1]]
   other_columns <- all_metadata_fields
 
@@ -110,7 +120,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
     ordering_vector <- tpm[valid_libs]
   } else {
     ordering_vector <- ordering_vector_temp
-    names(ordering_vector) <- levels(table$library)
+    names(ordering_vector) <- colnames(table)
     other_columns <- other_columns[, -1]
   }
 
@@ -119,7 +129,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
   attr(ordering_vector, "meta_order") <- meta_order
   attr(ordering_vector, "other_columns") <- other_columns[meta_order, ]
   attr(ordering_vector, "xlab") <- colnames(all_metadata_fields)[1]
-  attr(ordering_vector, "runIDs") <- metadata[matchings, c("Run", "BioProject"), with = FALSE][valid_libs == TRUE,][meta_order,]
+  attr(ordering_vector, "runIDs") <- metadata[Run %in% valid_run_ids, .(Run, BioProject)][meta_order,]
   return(ordering_vector)
 }
 
@@ -175,8 +185,10 @@ compute_collection_table <- function(path, lib_sizes, df,
                                      split_by_frame = FALSE,
                                      ratio_interval = NULL,
                                      decreasing_order = FALSE) {
+
+
   table <- load_collection(path)
-  intersect <- intersect(unique(table$library), runIDs(df))
+  intersect <- intersect(colnames(table), runIDs(df))
   if (length(intersect) == 0) stop("Malformed experiment to megafst format intersect, no matching runs!")
   if (!all(runIDs(df) %in% intersect)) df <- df[runIDs(df) %in% intersect,]
   if (!all(unique(table$library) %in% intersect)) table <- table[library %in% intersect,]
@@ -195,12 +207,8 @@ compute_collection_table <- function(path, lib_sizes, df,
                                                 ratio_interval, group_on_tx_tpm,
                                                 decreasing_order)
   # Update order of libraries to follow grouping created
-  table[, library := factor(library, levels = levels(library)[attr(meta_sub, "meta_order")],
-                            ordered = TRUE)]
-  # Cast to wide format and return
-  if (format == "wide") {
-    table <- collection_to_wide(table, value.var = value.var)
-  }
+  setcolorder(table, attr(meta_sub, "meta_order"))
+
   if (as_list) return(list(table = table, metadata_field = meta_sub))
   return(table)
 }

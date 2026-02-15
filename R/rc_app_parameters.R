@@ -104,7 +104,6 @@ rc_parameter_setup <- function() {
     }
     stopifnot(browser_options["default_gene"] %in% names_init$label)
 
-
     tx_init <- loadRegion(exp_init)
     cds_init <- loadRegion(exp_init, "cds")
 

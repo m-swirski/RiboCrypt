@@ -140,7 +140,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       # Main plot controller, this code is only run if 'plot' is pressed
       i <- 1
       mainPlotControls <- reactive(click_plot_browser_main_controller(input, tx, cds, libs, df, gg_theme, user_info)) %>%
-        bindCache(input_to_list(input, user_info)) %>%
+        bindCache(input_to_list(input, user_info())) %>%
         bindEvent(list(input$go, kickoff()), ignoreInit = TRUE, ignoreNULL = FALSE)
 
       bottom_panel <- reactive(bottom_panel_shiny(mainPlotControls))  %>%
@@ -189,14 +189,14 @@ go_when_input_is_ready <- function(input, browser_options, fired, kickoff, libs)
 
 #' Convert input to list, and remove irrelevant items and add user_info
 #' @noRd
-input_to_list <- function(input, user_info) {
+input_to_list <- function(input, user_info = NULL) {
 
   a <- reactiveValuesToList(input, TRUE)
   to_ignore <- c("go", "toggle_settings", "select_all_btn",
                  "c__shinyjquiBookmarkState__resizable", "c_is_resizing", "c_size")
 
   a <- a[-which(names(a) %in% to_ignore)]
-  a <- c(a, user.info = user_info()[-1])
+  a <- c(a, user.info = user_info[-1])
   return(a)
 }
 

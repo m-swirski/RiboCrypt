@@ -44,6 +44,16 @@ smoothenMultiSampCoverage <- function(dt, kmer, kmers_type = "mean", split_by_fr
   return(dt[,count := get(paste("froll",kmers_type, sep = ""))(count, kmer, fill = 0, align = "center"), by = library])
 }
 
+multiSampleBinRows <- function(dt, ratio = 9, split_by_frame = FALSE) {
+  if (nrow(dt) <= ratio) return(dt)
+  # Aggregate sum
+  res <- dt[, lapply(.SD, sum),
+            by = .(..dummy = (seq_len(nrow(dt)) - 1) %/% ratio)]
+  # Remove helper
+  res[, ..dummy := NULL]
+  return(res)
+}
+
 #' Get coverage profile
 #'
 #' @param grl a GRangesList

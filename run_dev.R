@@ -5,10 +5,10 @@ devtools::load_all(".")
 all_exp <- list.experiments(
   validate = FALSE,
   BPPARAM = BiocParallel::SerialParam(),
-  dir = "~/Bio_data/ORFik_experiments"
+  dir = "~/livemount/Bio_data/ORFik_experiments"
 )
 valid_collections <- c("all_samples-Homo_sapiens")
-metadata <- fread("~/Bio_data/NGS_pipeline/metadata_rc.csv")
+metadata <- fread("~/livemount/Bio_data/NGS_pipeline/metadata_rc.csv")
 all_exp_meta <- all_exp[
   name %in% c(grep("all_samples-", name, invert = TRUE, value = TRUE), valid_collections),
 ]

@@ -311,12 +311,14 @@ geneModelPanelPlot <- function(dt, gg_template = geneModelPanelPlotTemplate()) {
   if (draw_introns)  {
     intron_flank_coords <- seg_dt[type %in% c("intron_collapsed")]
     intron_flank_coords[, tooltip := "Collapsed Intron"]
+    suppressWarnings({
     result_plot <- result_plot +
       geom_segment(data = seg_dt,
                    mapping = aes(x = rect_starts, xend = rect_ends, y = 0.5 - layers, yend = 0.5 - layers, text = gene_names),
                    color = "grey45", alpha = 0.6) +
       geom_text(data = intron_flank_coords, aes(x = (rect_starts + rect_ends) / 2, y = 0.5 - layers, text = tooltip),
                 label = "...", size = 6)
+    })
   }
 
   suppressWarnings({

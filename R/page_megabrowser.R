@@ -94,8 +94,10 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
       tabsetPanel(type = "tabs",
                   tabPanel("Heatmap", fluidRow(
                     jqui_resizable(
-                      splitLayout(cellWidths = c("10%", "90%"),
-                                  plotlyOutput(outputId = ns("d"), height = "618px", width = "130px"),
+                      splitLayout(cellWidths = c("5%", "95%"),
+                                  div(style = "margin-top: 98px;",
+                                    plotly::plotlyOutput(outputId = ns("d"),
+                                      height = "465px",width = "130px")),
                                   uiOutput(outputId = ns("c")) %>%
                                     shinycssloaders::withSpinner(color="#0dc5c1"),
                                   width=9, cellArgs = list(style = "padding: 0px")))
@@ -110,7 +112,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
 
 browser_allsamp_server <- function(id, all_experiments, df, metadata,
                                    names_init, browser_options, exp_init,
-                                   exps_dir, experiments = all_experiments$name) {
+                                   exps_dir, gg_theme, experiments = all_experiments$name) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
@@ -137,31 +139,29 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
       # Main plot, either plotly or ggplot
       output$myPlotlyPlot <- renderPlotly({
         req(input$plotType == "plotly")
-        get_meta_browser_plot_full_shiny(table, plot_object, controller)}) %>%
-        bindCache(controller()$table_plot) %>%
+        plot_object()}) %>%
+        bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
       output$myGgplot <- renderPlot({
         req(input$plotType == "ggplot2")
-        get_meta_browser_plot_full_shiny(table, plot_object, controller)}) %>%
-        bindCache(controller()$table_plot) %>%
+        plot_object()}) %>%
+        bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      output$c <- renderUI(
-        if (input$plotType == "plotly") {
-          plotlyOutput(
-            outputId = ns("myPlotlyPlot"), # Specific ID for Plotly output
-            height = "700px",
-            width = "100%"
-          ) %>% shinycssloaders::withSpinner(color="#0dc5c1")
-      } else if (input$plotType == "ggplot2") {
-          plotOutput(
-            outputId = ns("myGgplot"), # Specific ID for ggplot2 output
-            height = "700px",
-            width = "100%"
-          ) %>% shinycssloaders::withSpinner(color="#0dc5c1")
+      output$mb_top_summary <- renderPlot({
+        summary_track_allsamples(table()$table)
       }) %>%
-        bindCache(controller()$table_hash, input$heatmap_color,
-                  isolate(input$color_mult)) %>%
+        bindCache(controller()$table_hash) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      output$mb_bottom_gene <- renderPlot({
+        get_megabrowser_annotation_plot_shiny(controller, gg_theme)
+      }) %>%
+        bindCache(controller()$table_hash) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      output$c <- renderUI(renderMegabrowser(input$plotType, ns)) %>%
+        bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       # Additional plots and tables
@@ -185,10 +185,9 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
-      output$result_table <- renderDT(cbind(attr(meta_and_clusters()$meta, "runIDs"),
-                                            meta_and_clusters()$meta)[, c("index", "order") := NULL],
-                                      extensions = 'Buttons',
-                                      filter = "top",
+
+      output$result_table <- renderDT(allsamples_meta_table(meta_and_clusters()),
+                                      extensions = 'Buttons', filter = "top",
                                       options = list(dom = 'Bfrtip',
                                                      buttons = NULL,
                                                      pageLength = 130)) %>%

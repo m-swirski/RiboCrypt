@@ -177,11 +177,11 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                         kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
                         leader_extension, trailer_extension, input$plotType,
                         isolate(input$viewMode), collapsed_introns_width, sep = "|_|")
-    table_plot <- paste(table_hash, isolate(input$other_tx), summary_track,
-                        display_annot, isolate(input$heatmap_color),
-                        isolate(input$color_mult), sep = "|_|")
+    table_plot_hash <- paste(table_hash, isolate(input$other_tx), summary_track,
+                             display_annot, isolate(input$heatmap_color),
+                             isolate(input$color_mult), sep = "|_|")
 
-    cat("-- Mega Browser controller done: "); print(round(Sys.time() - time_before, 2))
+    timer_done_nice_print("-- Mega Browser controller done: ", time_before)
     reactiveValues(dff = dff,
                    id = id,
                    display_region = display_region,
@@ -205,7 +205,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    summary_track = summary_track,
                    enrichment_term = enrichment_term,
                    table_hash = table_hash,
-                   table_plot = table_plot)
+                   table_plot_hash = table_plot_hash)
 }
 
 controller_init <- function(input, id = "Browser") {

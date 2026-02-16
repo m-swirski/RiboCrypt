@@ -20,19 +20,20 @@ compute_collection_table_shiny <- function(mainPlotControls,
                                      group_on_tx_tpm = group_on_tx_tpm,
                                      split_by_frame = split_by_frame,
                                      ratio_interval = ratio_interval)
-  cat("Done: lib loading + Coverage calc: "); print(round(Sys.time() - time_before, 2))
+  timer_done_nice_print("Done: lib loading + Coverage calc: ", time_before)
   return(dtable)
 }
 
 get_meta_browser_plot <- function(table, color_theme, clusters = 1,
                                   color_mult = 3, plotType = "plotly") {
+  time_before <- Sys.time()
+  cat("Creating metabrowser heatmap\n")
+
   colors <- if (color_theme == "default (White-Blue)") {
     c("white", "lightblue", rep("blue", 4 + color_mult), "navy", "black")
   } else if (color_theme == "Matrix (black,green,red)") {
     c("#000000", "#2CFA1F", "yellow2", rep("#FF2400", color_mult))
   } else stop("Invalid color theme!")
-  cat("Creating metabrowser heatmap\n")
-
   if (plotType == "plotly") {
     mat <- t(table)
 
@@ -47,8 +48,9 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
     plot <- plotly::plot_ly(
       z = mat[unlist(row_clusters, use.names = FALSE),],
       colors = colors,
+      showscale = FALSE,
       type = "heatmapgl"
-    )
+    ) %>% plotly::layout(margin = list(l = 30, r = 100, t = 10, b = 20))
     attr(plot, "row_order") <- row_clusters
   } else {
     plot <- ComplexHeatmap::Heatmap(t(table), show_row_dend = FALSE,
@@ -59,9 +61,8 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
                             col =  colors, show_row_names = FALSE,
                             show_heatmap_legend = FALSE)
   }
-
+  timer_done_nice_print("-- metabrowser heatmap done: ", time_before)
   return(plot)
-
 }
 
 row_order <- function(x) {
@@ -70,7 +71,7 @@ row_order <- function(x) {
   } else attr(x, "row_order")
 }
 
-get_meta_browser_plot_full_shiny <- function(table, plot_object, controller) {
+get_meta_browser_plot_full_shiny <- function(table, plot_object, controller, gg_theme) {
   get_meta_browser_plot_full(table()$table,
                              plot_object(), controller()$id,
                              controller()$dff, controller()$summary_track,
@@ -80,7 +81,54 @@ get_meta_browser_plot_full_shiny <- function(table, plot_object, controller) {
                              controller()$display_region,
                              controller()$annotation,
                              controller()$viewMode,
-                             controller()$collapsed_introns_width
+                             controller()$collapsed_introns_width,
+                             gg_theme
+  )
+}
+
+renderMegabrowser <- function(plotType, ns,
+                              height = "700px", width = "100%",
+                              rel_heights = c(0.15, 0.75, 0.10)) {
+  time_before <- Sys.time()
+  # split container height by rel_heights
+  rel_heights <- rel_heights / sum(rel_heights)
+  h1 <- sprintf("calc(%s * %.6f)", height, rel_heights[1])
+  h2 <- sprintf("calc(%s * %.6f)", height, rel_heights[2])
+  h3 <- sprintf("calc(%s * %.6f)", height, rel_heights[3])
+
+  top <- div(
+    style = sprintf("height:%s; width:%s;", h1, width),
+    plotOutput(ns("mb_top_summary"), height = "100%", width = "100%")
+  )
+
+  middle <- if (plotType == "plotly") {
+    plotly::plotlyOutput(ns("myPlotlyPlot"), height = h2, width = width)
+  } else {
+    plotOutput(ns("myGgplot"), height = h2, width = width)
+  }
+
+  middle <- middle %>% shinycssloaders::withSpinner(color = "#0dc5c1")
+
+  bottom <- div(
+    style = sprintf("height:%s; width:%s;", h3, width),
+    plotOutput(ns("mb_bottom_gene"), height = "100%", width = "100%")
+  )
+  tagList <- tagList(top, middle, bottom)
+  timer_done_nice_print("-- Mega browser 3 row plot done: ", time_before)
+  return(tagList)
+}
+
+get_megabrowser_annotation_plot_shiny <- function(controller, gg_theme) {
+  get_megabrowser_annotation_plot(controller()$id,
+                             controller()$dff, controller()$summary_track,
+                             controller()$display_annot,
+                             region_type = controller()$region_type,
+                             controller()$plotType, controller()$tx_annotation,
+                             controller()$display_region,
+                             controller()$annotation,
+                             controller()$viewMode,
+                             controller()$collapsed_introns_width,
+                             gg_theme
   )
 }
 
@@ -105,56 +153,25 @@ get_meta_browser_plot_full_shiny <- function(table, plot_object, controller) {
 #' Relative heights, sum to 1 and must be length 3.
 #' @return a cowplot grub
 #' @importFrom cowplot plot_grid
-get_meta_browser_plot_full <- function(m, heatmap, id, df,
+get_megabrowser_annotation_plot <- function(id, df,
                                        summary = TRUE, annotation = TRUE,
                                        region_type,
                                        plotType = "plotly",
                                        tx_annotation, display_region,
                                        cds_annotation, viewMode,
                                        collapse_intron_flank,
-                                       rel_heights = c(0.15, 0.75, 0.1)) {
-  stopifnot(is.numeric(rel_heights) && length(rel_heights) == 3)
-  gene_model_panel <- summary_plot <- NULL
-  to_use_logicals <- c(summary, TRUE, annotation)
+                                       gg_theme) {
+  time_before <- Sys.time()
+  res <- annotation_track_allsamples(df, id, display_region, cds_annotation,
+                                     tx_annotation, viewMode, collapse_intron_flank,
+                                     gg_theme)
 
-  if (!summary & !annotation) {
-    gene_model_panel <- ggplot() + theme_classic()
-    to_use_logicals[3] <- TRUE
-  }
-
-  if (summary) {
-    summary_plot <- summary_track_allsamples(m)
-  }
-
-  if (annotation) {
-    gene_model_panel <- annotation_track_allsamples(df, id, display_region, cds_annotation,
-                                                    tx_annotation, viewMode, collapse_intron_flank)
-  }
-  if (plotType == "plotly") {
-    # gene_model_panel <- ggplotly(gene_model_panel, tooltip = "")
-    # if (summary) summary_plot <- automateTicksRNA(summary_plot)
-    # plot_list <- list(summary_plot, heatmap, gene_model_panel)
-    # rel_heights <- rel_heights[to_use_logicals]
-    # if (annotation) rel_heights <- c(rel_heights, 0)
-    # final_plot <- subplot(
-    #   plot_list[to_use_logicals],
-    #   nrows = 1 + summary + ifelse(annotation, 2, 1),
-    #   heights = rel_heights,   # adjust to taste
-    #   shareX = TRUE,
-    #   margin = 0.02
-    # )
-    final_plot <- heatmap
-
-  } else {
-    grob <- grid::grid.grabExpr(draw(heatmap))
-    final_plot <- cowplot::plot_grid(plotlist = list(summary_plot, grob, gene_model_panel)[to_use_logicals],
-                                     ncol = 1, rel_heights = rel_heights[to_use_logicals])
-  }
-  return(final_plot)
+  timer_done_nice_print("-- Mega browser annotation plot done: ", time_before)
+  return(res)
 }
 
 summary_track_allsamples <- function(m, summary_track_type = "area", as_plotly = FALSE) {
-
+  time_before <- Sys.time()
   summary_profile <- data.table(count = rowSums(m))
   summary_profile[, `:=`(position = seq.int(.N)) ]
   summary_profile[, `:=`(frame = factor((position-1) %% 3)) ]
@@ -166,16 +183,20 @@ summary_track_allsamples <- function(m, summary_track_type = "area", as_plotly =
     summary_plot +
       theme(axis.text.y=element_blank(),  axis.ticks.y=element_blank())
   }
+  timer_done_nice_print("-- Mega browser summary track done: ", time_before)
   return(summary_plot)
 }
 
 annotation_track_allsamples <- function(df, id, display_range, annotation,
-                                        tx_annotation, viewMode, collapse_intron_flank) {
+                                        tx_annotation, viewMode, collapse_intron_flank,
+                                        gg_theme) {
   gene_model_panel <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
                                            custom_regions = NULL,
                                            viewMode = viewMode, collapse_intron_flank)
-  return(geneModelPanelPlot(gene_model_panel[[1]]))
+
+  return(geneModelPanelPlot(gene_model_panel[[1]], attr(gg_theme, "gg_template")) +
+           theme(plot.margin = margin(l = 23, r = 5)))
 }
 
 get_lib_sizes_file <- function(dff) {

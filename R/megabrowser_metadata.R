@@ -1,14 +1,18 @@
 allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "Cluster",
                                            numeric_bins = 5) {
-  time_before <- Sys.time()
+
   print("Starting metabrowser clustering info")
   at_least_2_values <- length(unique(values)) > 1
   if (!at_least_2_values) message("Single value analysis not possible, skipping!")
 
+  time_before <- Sys.time()
   req(at_least_2_values)
+
+  time_before2 <- Sys.time()
   pdf(NULL) # TODO: Make a better fix for blank pdf write
   row_orders <- suppressWarnings(row_order(plot))
   dev.off()
+  timer_done_nice_print("-- row order: ", time_before2)
   orders <- unlist(row_orders, use.names = FALSE)
   clustering_was_done <- is.list(row_orders)
 
@@ -40,13 +44,13 @@ allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "C
   }
   attr(meta, "runIDs") <- attr(values, "runIDs")[orders,]
 
-
   enrich_dt <- allsamples_meta_stats(meta)
-  cat("metabrowser clustering info done"); print(round(Sys.time() - time_before, 2))
+  timer_done_nice_print("-- metabrowser clustering info done: ", time_before)
   return(list(meta = meta, enrich_dt = enrich_dt))
 }
 
 allsamples_sidebar <- function(meta) {
+  time_before <- Sys.time()
   gg <- allsamples_sidebar_ggproto(meta)
   columns_to_drop <- c("order", "index", "cluster", attr(meta, "xlab"))
   other_columns <- meta[, !(colnames(meta) %in% columns_to_drop), with = FALSE]
@@ -59,10 +63,9 @@ allsamples_sidebar <- function(meta) {
     }
   })
 
-  res <- subplot(plot_list, nrows = 1)
-  return(res %>% plotly::config(displayModeBar = FALSE) %>%
-           layout(margin = list(autoexpand = FALSE, t = 4))
-         )
+  res <- subplot(plot_list, nrows = 1) %>% plotly::config(displayModeBar = FALSE)
+  timer_done_nice_print("-- metabrowser sidebar done: ", time_before)
+  return(res)
 }
 
 allsamples_sidebar_ggproto <- function(meta) {
@@ -114,7 +117,7 @@ allsamples_meta_stats <- function(meta, attr_xlab = attr(meta, "xlab"), attr_yla
   attr(res, "ylab") <- attr_ylab
   attr(res, "tooltip") <- tooltipe
 
-  cat("metabrowser statistics done"); print(round(Sys.time() - time_before, 2))
+  timer_done_nice_print("-- metabrowser statistics done: ", time_before)
   return(res)
 }
 allsamples_enrich_bar_plotly <- function(enrich) {
@@ -149,4 +152,9 @@ allsamples_enrich_bar_plot <- function(enrich) {
       geom_hline(yintercept = c(3, -3), linetype="dashed", color = "red", linewidth=0.7, alpha = 0.7)
   }
   return(enrichment_plot)
+}
+
+allsamples_meta_table <- function(meta_and_clusters) {
+  cbind(attr(meta_and_clusters$meta, "runIDs"),
+        meta_and_clusters$meta)[, c("index", "order") := NULL]
 }

@@ -8,13 +8,9 @@ allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "C
   time_before <- Sys.time()
   req(at_least_2_values)
 
-  time_before2 <- Sys.time()
-  pdf(NULL) # TODO: Make a better fix for blank pdf write
-  row_orders <- suppressWarnings(row_order(plot))
-  dev.off()
-  timer_done_nice_print("-- row order: ", time_before2)
+  row_orders <- row_order(plot)
   orders <- unlist(row_orders, use.names = FALSE)
-  clustering_was_done <- is.list(row_orders)
+  clustering_was_done <- length(row_orders) == 1
 
   if (!clustering_was_done) {
     orders <- order(values) # Order by variable instead of cluster
@@ -67,6 +63,73 @@ allsamples_sidebar <- function(meta) {
   timer_done_nice_print("-- metabrowser sidebar done: ", time_before)
   return(res)
 }
+
+
+allsamples_sidebar_plotly <- function(meta) {
+  time_before <- Sys.time()
+
+  stopifnot(is.data.table(meta))
+  stopifnot(all(c("index", "grouping") %in% names(meta)))
+
+  columns_to_drop <- c("order", "index", "cluster", attr(meta, "xlab"))
+  cols <- setdiff(names(meta), columns_to_drop)
+
+  y <- meta[["index"]]
+  hover_text <- as.character(meta[["grouping"]])  # hover text only
+
+  plot_list <- vector("list", length(cols))
+  names(plot_list) <- cols
+
+  for (j in seq_along(cols)) {
+    col <- cols[j]
+    xj  <- meta[[col]]
+
+    if (is.numeric(xj)) {
+      # thin track line; hover shows grouping
+      plot_list[[j]] <- plot_ly(
+        x = xj, y = y,
+        type = "scatter", mode = "lines",
+        hoverinfo = "text", text = hover_text,
+        line = list(width = 1)
+      ) %>%
+        layout(
+          margin = list(l = 0, r = 0, t = 0, b = 0),
+          paper_bgcolor = "rgba(0,0,0,0)",
+          plot_bgcolor  = "rgba(0,0,0,0)",
+          xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL,
+                       rangeslider = list(visible = FALSE)),
+          yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL)
+        )
+    } else {
+      # categorical track as 1-col heatmap; hover shows grouping
+      f <- factor(xj, exclude = NULL)
+      z <- matrix(as.integer(f), ncol = 1)
+
+      plot_list[[j]] <- plot_ly(
+        x = 1, y = y, z = z,
+        type = "heatmap",
+        showscale = FALSE,
+        hoverinfo = "text",
+        text = matrix(hover_text, ncol = 1)
+      ) %>%
+        layout(
+          margin = list(l = 0, r = 0, t = 0, b = 0),
+          paper_bgcolor = "rgba(0,0,0,0)",
+          plot_bgcolor  = "rgba(0,0,0,0)",
+          xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL,
+                       rangeslider = list(visible = FALSE)),
+          yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL)
+        )
+    }
+  }
+
+  res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE) %>%
+    plotly::config(displayModeBar = FALSE)
+
+  timer_done_nice_print("-- metabrowser sidebar done: ", time_before)
+  res
+}
+
 
 allsamples_sidebar_ggproto <- function(meta) {
   ggplot(meta, aes(y = rev(index), x = factor(1), fill = grouping)) +

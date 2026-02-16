@@ -95,9 +95,9 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                   tabPanel("Heatmap", fluidRow(
                     jqui_resizable(
                       splitLayout(cellWidths = c("5%", "95%"),
-                                  div(style = "margin-top: 98px;",
+                                  div(style = "margin-top: 115px; overflow:hidden;",
                                     plotly::plotlyOutput(outputId = ns("d"),
-                                      height = "465px",width = "130px")),
+                                      height = "437px",width = "130px")),
                                   uiOutput(outputId = ns("c")) %>%
                                     shinycssloaders::withSpinner(color="#0dc5c1"),
                                   width=9, cellArgs = list(style = "padding: 0px")))
@@ -144,7 +144,7 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
       output$myGgplot <- renderPlot({
         req(input$plotType == "ggplot2")
-        plot_object()}) %>%
+        plot_object()}, res = 200) %>%
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
@@ -171,7 +171,7 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindCache(controller()$table_hash, controller()$enrichment_term) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      output$d <- renderPlotly(allsamples_sidebar(meta_and_clusters()$meta)) %>%
+      output$d <- renderPlotly(allsamples_sidebar_plotly(meta_and_clusters()$meta)) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,

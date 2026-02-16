@@ -34,41 +34,47 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
   } else if (color_theme == "Matrix (black,green,red)") {
     c("#000000", "#2CFA1F", "yellow2", rep("#FF2400", color_mult))
   } else stop("Invalid color theme!")
+  mat <- t(table)
+
+  km <- kmeans(mat, centers = clusters)
+  row_clusters <- seq_along(km$cluster)
+  row_clusters <- split(row_clusters, km$cluster)
+
+
   if (plotType == "plotly") {
-    mat <- t(table)
-
-    km <- kmeans(mat, centers = clusters)
-    row_clusters <- seq_along(km$cluster)
-    row_clusters <- split(row_clusters, km$cluster)
-
-    if (clusters == 1) {
-      row_clusters <- unlist(row_clusters, use.names = FALSE)
-    }
-
+    mat <- mat[unlist(row_clusters, use.names = FALSE),]
     plot <- plotly::plot_ly(
-      z = mat[unlist(row_clusters, use.names = FALSE),],
+      z = mat,
       colors = colors,
       showscale = FALSE,
       type = "heatmapgl"
-    ) %>% plotly::layout(margin = list(l = 30, r = 100, t = 10, b = 20))
-    attr(plot, "row_order") <- row_clusters
+    ) %>% plotly::layout(margin = list(l = 30, r = 100, t = 10, b = 82))
   } else {
-    plot <- ComplexHeatmap::Heatmap(t(table), show_row_dend = FALSE,
+    mat <- mat[rev(unlist(row_clusters, use.names = FALSE)),]
+    cluster <- km$cluster[rev(unlist(row_clusters, use.names = FALSE))]
+    cluster <- factor(cluster, levels = rev(sort(unique(cluster))))
+    plot <- ComplexHeatmap::Heatmap(mat, show_row_dend = FALSE,
                             cluster_columns = FALSE,
                             cluster_rows = FALSE,
                             use_raster = TRUE,  raster_quality = 5,
-                            km = clusters,
+                            split = cluster,
                             col =  colors, show_row_names = FALSE,
                             show_heatmap_legend = FALSE)
   }
+
+  attr(plot, "row_order_list") <- row_clusters
+  attr(plot, "clusters") <- length(row_clusters)
+
   timer_done_nice_print("-- metabrowser heatmap done: ", time_before)
   return(plot)
 }
 
 row_order <- function(x) {
-  if (is(x, "Heatmap")) {
+  if (!is.null(attr(x, "row_order_list"))) {
+    attr(x, "row_order_list")
+  } else if (is(x, "Heatmap")) {
     ComplexHeatmap::row_order(x)
-  } else attr(x, "row_order")
+  } else stop("row_order must be attribute or x must be ComplexHeatmap!")
 }
 
 get_meta_browser_plot_full_shiny <- function(table, plot_object, controller, gg_theme) {

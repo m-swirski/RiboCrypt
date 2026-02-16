@@ -10,7 +10,7 @@ allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "C
 
   row_orders <- row_order(plot)
   orders <- unlist(row_orders, use.names = FALSE)
-  clustering_was_done <- length(row_orders) == 1
+  clustering_was_done <- length(row_orders) > 1
 
   if (!clustering_was_done) {
     orders <- order(values) # Order by variable instead of cluster

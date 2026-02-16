@@ -48,7 +48,8 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
       colors = colors,
       showscale = FALSE,
       type = "heatmapgl"
-    ) %>% plotly::layout(margin = list(l = 30, r = 100, t = 10, b = 82))
+    ) %>% plotly::layout(margin = list(l = 30, r = 100, t = 10, b = 82)) %>%
+      plotly::config(doubleClick = "reset")
   } else {
     mat <- mat[rev(unlist(row_clusters, use.names = FALSE)),]
     cluster <- km$cluster[rev(unlist(row_clusters, use.names = FALSE))]
@@ -61,7 +62,6 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
                             col =  colors, show_row_names = FALSE,
                             show_heatmap_legend = FALSE)
   }
-
   attr(plot, "row_order_list") <- row_clusters
   attr(plot, "clusters") <- length(row_clusters)
 

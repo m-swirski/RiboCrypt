@@ -25,6 +25,7 @@ observatory_ui <- function(id, meta_experiment_list) {
           ns("color_by"),
           "Color by",
           umap_column_names,
+          selected = umap_column_names[1:2],
           multiple = TRUE
         )
       ),
@@ -58,13 +59,26 @@ observatory_server <- function(id, meta_experiment_list, samples_df) {
       observatory_module()$get_samples_data()
     })
 
-    filtered_samples_df <- shiny::reactiveVal()
+    filtered_samples_df <- shiny::reactive({
+      order_by <- c(toupper(input$color_by), "Run")
+      data.table::setorderv(
+        unfiltered_samples_df(),
+        cols = order_by
+      )[BioProject == "PRJNA591767"]
+    })
 
     output$samples_umap_plot <- plotly::renderPlotly({
       observatory_module()$get_umap_data(input$color_by) |>
         umap_plot(color.by = input$color_by) |>
-        htmlwidgets::onRender(fetchJS("umap_plot_extension.js"))
+        htmlwidgets::onRender(
+          fetchJS("umap_plot_extension.js"),
+          session$ns("samples_umap_plot_selection")
+        )
     }) |> shiny::bindEvent(observatory_module())
+
+    shiny::observe({
+      print(unfiltered_samples_df()[Run %in% input$samples_umap_plot_selection])
+    })
 
     output$samples_datatable <- DT::renderDT({
       unfiltered_samples_df()
@@ -75,12 +89,14 @@ observatory_server <- function(id, meta_experiment_list, samples_df) {
     })
 
     shiny::observe({
-      DT::replaceData(
-        samples_data_table_proxy(),
-        filtered_samples_df(),
-        resetPaging = FALSE
-      )
-    }) |> shiny::bindEvent(filtered_samples_df())
+      # DT::replaceData(
+      #   samples_data_table_proxy(),
+      #   filtered_samples_df(),
+      #   resetPaging = FALSE
+      # )
+      message <- filtered_samples_df()
+      session$sendCustomMessage("samplesActiveSelectionChanged", message$Run)
+    }) |> shiny::bindEvent(input$go_proxy)
 
     datatable_selection <- shiny::reactive({
       selected_indexes <- if (is.null(input$samples_datatable_rows_selected)) {

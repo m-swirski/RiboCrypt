@@ -30,30 +30,33 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
                                  split_by_frame = FALSE) {
   valid_libs <- attr(table, "valid_libs")
   # Sliding window
-  if (kmer > 1) table <- multiSampleBinRows(table, kmer, split_by_frame)
+  mat <- as.matrix(table)
+  if (kmer > 1) table <- multiSampleBinRows(mat, kmer, split_by_frame)
 
   # Make tpm
   if (!is.null(lib_sizes)) {
     if (is.character(lib_sizes)) lib_sizes <- readRDS(lib_sizes)
-    table <- ((table * 1000L)  / lib_sizes[valid_libs]) * as.integer(10^6)
+    mat <- ((mat * 1000L)  / lib_sizes[valid_libs]) * as.integer(10^6)
   }
 
   # Transcript normalization mode
   norm_opts <- normalizations("metabrowser")
-
   if (normalization == "transcriptNormalized") {
-    table[, (names(table)) := Map(`/`, .SD, colSums(table))]
-    table <- table * as.integer(1e6)
+    cs <- colSums(mat)
+    mat <- sweep(mat, 2L, cs, "/")
+    mat <- mat * as.integer(1e6)
   } else if (normalization == "maxNormalized") {
-    table[, (names(table)) := Map(`/`, .SD, matrixStats::colMaxs(as.matrix(table)))]
+    cs <- matrixStats::colMaxs(mat)
+    mat <- sweep(mat, 2L, cs, "/")
   } else if (normalization == "zscore") {
-    table[, (names(table)) := Map(function(x) (x - mean(x)) / sd(x), .SD)]
+    mat <- scale(mat, center = TRUE, scale = TRUE)
   } else if (normalization == "tpm") {
     #
   } else stop("Invalid normalization for collection!")
-  table[is.na(table)] <- 0L
+  mat[is.na(mat)] <- 0L
 
-  if (add_logscore) table <- log(table + 1L)
+  if (add_logscore) mat <- log(mat + 1L)
+  table <- as.data.table(mat)
   setattr(table, "valid_libs", valid_libs)
   return(table)
 }
@@ -186,7 +189,6 @@ compute_collection_table <- function(path, lib_sizes, df,
                                      ratio_interval = NULL,
                                      decreasing_order = FALSE) {
 
-
   table <- load_collection(path)
   intersect <- intersect(colnames(table), runIDs(df))
   if (length(intersect) == 0) stop("Malformed experiment to megafst format intersect, no matching runs!")
@@ -197,7 +199,6 @@ compute_collection_table <- function(path, lib_sizes, df,
     table <- subset_fst_by_interval(table, subset)
   }
   table <- filter_collection_on_count(table, min_count)
-
   # Normalize
   table <- normalize_collection(table, normalization, lib_sizes, kmer, TRUE,
                                 split_by_frame)

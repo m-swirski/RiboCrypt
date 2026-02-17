@@ -135,26 +135,34 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
     overlaps_custom <- subsetByOverlaps(custom_regions, display_range,
                                         type = overlap_type)
   }
-  overlaps <- subsetByOverlaps(annotation, display_range,
-                               type = overlap_type)
+
+  if (all(length(annotation) == 1 & length(display_range) == 1) & identical(names(annotation), names(display_range))) {
+    annotation_shown <- annotation
+  } else annotation_shown <- subsetByOverlaps(annotation, display_range,
+                                      type = overlap_type)
+
   overlaps_tx <- NULL
+
   if (viewMode != "tx") {
-    overlaps_tx <- subsetByOverlaps(tx_annotation, display_range,
-                                    type = overlap_type)
-    if (length(overlaps) > 0) {
-      if (!all(names(overlaps_tx) %in% names(overlaps))) {
-        overlaps_tx <- overlaps_tx[names(overlaps_tx) %in% names(overlaps)]
+    if (all(length(tx_annotation) == 1 & length(display_range) == 1) & identical(names(tx_annotation), names(display_range))) {
+      overlaps_tx <- tx_annotation
+    } else overlaps_tx <- subsetByOverlaps(tx_annotation, display_range,
+                                        type = overlap_type)
+    if (length(annotation_shown) > 0) {
+      if (!all(names(overlaps_tx) %in% names(annotation_shown))) {
+        overlaps_tx <- overlaps_tx[names(overlaps_tx) %in% names(annotation_shown)]
       }
-      overlaps_tx <- groupGRangesBy(unlistGrl(GenomicRanges::psetdiff(unlistGrl(overlaps_tx),
-                                                                      overlaps[names(unlistGrl(overlaps_tx))])))
+      unl_grl <- unlistGrl(overlaps_tx)
+      overlaps_tx <- groupGRangesBy(
+        unlistGrl(GenomicRanges::psetdiff(unl_grl, annotation_shown[names(unl_grl)])))
     }
   }
 
-  if (use_custom_region) overlaps <- c(overlaps, overlaps_custom)
-  if (length(overlaps) > 0) overlaps@unlistData$type <- "cds"
+  if (use_custom_region) annotation_shown <- c(annotation_shown, overlaps_custom)
+  if (length(annotation_shown) > 0) annotation_shown@unlistData$type <- "cds"
   if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <- "utr"
 
-  return(gene_box_fix_overlaps(display_range, c(overlaps, overlaps_tx), custom_regions,
+  return(gene_box_fix_overlaps(display_range, c(annotation_shown, overlaps_tx), custom_regions,
                                collapse_intron_flank, frame_colors))
 }
 
@@ -170,8 +178,7 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
   overlaps <- unlistGrl(overlaps)
   names(overlaps) <- names_grouping
   overlaps$rel_frame_exon <- getRelativeFrames(overlaps)
-  overlaps <- subsetByOverlaps(overlaps, display_range)
-
+  # overlaps <- subsetByOverlaps(overlaps, display_range)
 
   intersections <- trimOverlaps(overlaps, display_range)
   intersections <- groupGRangesBy(intersections, paste0(names(intersections), "___", intersections$type))

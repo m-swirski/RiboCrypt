@@ -30,7 +30,12 @@ observatory_ui <- function(id, meta_experiment_list) {
         )
       ),
       shiny::column(1, plot_button(ns("go"))),
-      shiny::column(1, plot_button(ns("go_proxy")))
+      shiny::column(
+        2,
+        sample_selection_picker(ns("sample_selection")),
+        offset = 4
+      ),  
+      shiny::column(1, sample_selection_reset_button(ns("sample_selection")))
     ),
     shiny::fluidRow(
       shiny::fluidRow(
@@ -109,7 +114,10 @@ observatory_server <- function(id, meta_experiment_list, all_samples_df) {
       } else {
         samples_df()
       }
-    }) |> shiny::bindEvent(selected_samples$active_plot_selection())
+    }) |> shiny::bindEvent(
+      selected_samples$active_plot_selection(),
+      ignoreNULL = FALSE
+    )
 
     shiny::observe({
       DT::replaceData(
@@ -119,6 +127,10 @@ observatory_server <- function(id, meta_experiment_list, all_samples_df) {
       )
     }) |> shiny::bindEvent(filtered_samples_df())
 
+
+    # TODO
+    # ignoreNULL false
+    # switch on NULL value and perform clean up on js side
     shiny::observe({
       session$sendCustomMessage(
         "samplesActiveSelectionChanged",

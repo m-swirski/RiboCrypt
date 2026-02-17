@@ -1,13 +1,15 @@
-sample_selection_ui <- function(id) {
+sample_selection_picker <- function(id) {
   ns <- shiny::NS(id)
-  shiny::fluidRow(
-    shiny::selectizeInput(
-      ns("active_selection_id"),
-      "Selection",
-      choices = list()
-    ),
-    shiny::actionButton("reset_active_selection")
+  shiny::selectizeInput(
+    ns("active_selection_id"),
+    "Selection",
+    choices = list()
   )
+}
+
+sample_selection_reset_button <- function(id) {
+  ns <- shiny::NS(id)
+  shiny::actionButton(ns("reset_active_selection"), "Reset")
 }
 
 # reactive_plot_selection -
@@ -44,7 +46,6 @@ sample_selection_server <- function(
 
     # reactive value to keep track of the current plot selection
     active_plot_selection <- shiny::reactive({
-      print("active plot selection changed")
       shiny::req(!is.null(active_selection_id()) && active_selection_id() != "")
       selection_store$plot_selections()[[active_selection_id()]]
     }) |> shiny::bindEvent(
@@ -105,6 +106,21 @@ sample_selection_server <- function(
       active_selection_id(input$active_selection_id)
     }) |> shiny::bindEvent(input$active_selection_id)
 
+    # Observer for reseting active selection
+    shiny::observe({
+      plot_selections <- selection_store$plot_selections()
+      plot_selections[[active_selection_id()]] <-
+        NULL
+      selection_store$plot_selections(plot_selections)
+
+      data_table_selections <- selection_store$data_table_selections()
+      data_table_selections[[active_selection_id()]] <-
+        NULL
+      selection_store$data_table_selections(data_table_selections)
+    }) |> shiny::bindEvent(
+      input$reset_active_selection
+    )
+
     # Observer to keep active plot_selection
     # in sync with incoming values of reactive_plot_selection
     shiny::observe({
@@ -114,6 +130,20 @@ sample_selection_server <- function(
 
       selection_store$plot_selections(plot_selections)
     }) |> shiny::bindEvent(reactive_plot_selection_input())
+
+    # Observer to keep active_data_table_selection
+    # in sync with incoming values of reactive_data_table_selection
+    shiny::observe({
+      shiny::req(!is.null(active_plot_selection()))
+
+      data_table_selections <- selection_store$data_table_selections()
+      data_table_selections[[active_selection_id()]] <-
+        reactive_data_table_selection_input()
+      selection_store$data_table_selections(data_table_selections)
+    }) |> shiny::bindEvent(
+      reactive_data_table_selection_input(),
+      ignoreNULL = FALSE
+    )
 
     # Observer to update active_data_table_selection
     # when active_plot_selection changes
@@ -127,35 +157,6 @@ sample_selection_server <- function(
     }) |> shiny::bindEvent(
       active_plot_selection(),
       ignoreNULL = FALSE
-    )
-
-    # Observer to keep active_data_table_selection
-    # in sync with incoming values of reactive_data_table_selection
-    shiny::observe({
-      data_table_selections <- selection_store$data_table_selections()
-
-      data_table_selections[[active_selection_id()]] <-
-        reactive_data_table_selection_input()
-
-      selection_store$data_table_selections(data_table_selections)
-    }) |> shiny::bindEvent(
-      reactive_data_table_selection_input(),
-      ignoreNULL = FALSE
-    )
-
-    # Observer for reseting active selection
-    shiny::observe({
-      plot_selections <- selection_store()$plot_selections
-      plot_selections[[active_selection_id()]] <-
-        NULL
-      selection_store$data_table_selections(plot_selections)
-
-      data_table_selections <- selection_store$data_table_selections()
-      data_table_selections[[active_selection_id()]] <-
-        NULL
-      selection_store$data_table_selections(data_table_selections)
-    }) |> shiny::bindEvent(
-      input$reset_active_selection
     )
 
     list(

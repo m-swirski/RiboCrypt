@@ -47,11 +47,9 @@ smoothenMultiSampCoverage <- function(dt, kmer, kmers_type = "mean", split_by_fr
 multiSampleBinRows <- function(dt, ratio = 9, split_by_frame = FALSE) {
   if (nrow(dt) <= ratio) return(dt)
   # Aggregate sum
-  res <- dt[, lapply(.SD, sum),
-            by = .(..dummy = (seq_len(nrow(dt)) - 1) %/% ratio)]
-  # Remove helper
-  res[, ..dummy := NULL]
-  return(res)
+  k <- (seq_len(nrow(dt)) - 1L) %/% ratio + 1L
+  out <- rowsum(as.matrix(dt), group = k, reorder = FALSE)
+  res <- as.data.table(out)
 }
 
 #' Get coverage profile

@@ -183,39 +183,93 @@ allsamples_meta_stats <- function(meta, attr_xlab = attr(meta, "xlab"), attr_yla
   timer_done_nice_print("-- metabrowser statistics done: ", time_before)
   return(res)
 }
+
 allsamples_enrich_bar_plotly <- function(enrich) {
-  ggplotly(allsamples_enrich_bar_plot(enrich), tooltip = "text")
-}
+  stopifnot(!is.null(enrich))
+  time_before <- Sys.time()
 
-allsamples_enrich_bar_plot <- function(enrich) {
-  enrich_dt <- as.data.table(enrich, keep.rownames = TRUE)
-  enrich_dt <- suppressWarnings(melt(enrich_dt))
+  # Build long table (same semantics as your ggplot version)
+  enrich_dt <- data.table::as.data.table(enrich, keep.rownames = TRUE)
+  enrich_dt <- suppressWarnings(data.table::melt(enrich_dt, id.vars = "rn"))
   enrich_dt[, variable := factor(as.character(variable))]
-  enrich_dt <- enrich_dt[rn != "",]
+  enrich_dt <- enrich_dt[rn != "", ]
 
-  did_enrichment_test <- all(enrich_dt$variable != "counts")
+  did_enrichment_test <- all(as.character(enrich_dt$variable) != "counts")
+
+  # Tooltips (match your HTML line breaks)
+  tip_prefix <- attr(enrich, "tooltip")
+  if (is.null(tip_prefix)) tip_prefix <- ""
+
+  xlab_attr <- attr(enrich, "xlab")
+  if (is.null(xlab_attr)) xlab_attr <- "Category"
+
+  ylab_attr <- attr(enrich, "ylab")
+  if (is.null(ylab_attr)) ylab_attr <- "Value"
+
   enrich_dt[, tooltip_text := paste0(
     "Category : ", rn, "<br>",
-    attr(enrich, "tooltip"), round(value, 2), "<br>",
+    tip_prefix, round(value, 2), "<br>",
     if (did_enrichment_test) {
-      paste0(sub("s \\(K-means\\)", "", attr(enrich, "xlab")), ": ", variable)
+      paste0(sub("s \\(K-means\\)", "", xlab_attr), ": ", as.character(variable))
+    } else {
+      ""
     }
   )]
 
-  enrichment_plot <- ggplot(enrich_dt, aes(x = rn, y = value, fill = variable, text = tooltip_text)) +
-    geom_bar(stat="identity", position=position_dodge()) +
-    theme_minimal() + labs(fill = "Cluster") + xlab(attr(enrich, "xlab")) + ylab(attr(enrich, "ylab")) +
-    theme(axis.title = element_text(size = 32),
-          axis.text.x = element_text(size = (22), angle = 45),
-          axis.text.y = element_text(size = (22)),
-          legend.text = element_text(size = 22),
-          legend.title = element_text(size = 32))
+  # Direct plotly grouped bar chart
+  p <- plotly::plot_ly(
+    data = enrich_dt,
+    x = ~rn,
+    y = ~value,
+    color = ~variable,
+    colors = "Set2",
+    type = "bar",
+    text = ~tooltip_text,
+    hoverinfo = "text"
+  ) |>
+    plotly::layout(
+      barmode = "group",
+      xaxis = list(
+        title = xlab_attr,
+        tickangle = 45,
+        titlefont = list(size = 30),
+        tickfont  = list(size = 20)
+      ),
+      yaxis = list(
+        title = ylab_attr,
+        titlefont = list(size = 30),
+        tickfont  = list(size = 20)
+      ),
+      legend = list(
+        title = list(text = "Cluster", font = list(size = 22)),
+        font  = list(size = 15)
+      )
+    )
+
+  # Optional dashed red threshold lines at y = 3 and y = -3
   if (did_enrichment_test) {
-    enrichment_plot <- enrichment_plot +
-      geom_hline(yintercept = c(3, -3), linetype="dashed", color = "red", linewidth=0.7, alpha = 0.7)
+    p <- p |>
+      plotly::layout(
+        shapes = list(
+          list(
+            type = "line", xref = "paper", yref = "y",
+            x0 = 0, x1 = 1, y0 = 3, y1 = 3,
+            line = list(color = "red", width = 1, dash = "dash"),
+            opacity = 0.7
+          ),
+          list(
+            type = "line", xref = "paper", yref = "y",
+            x0 = 0, x1 = 1, y0 = -3, y1 = -3,
+            line = list(color = "red", width = 1, dash = "dash"),
+            opacity = 0.7
+          )
+        )
+      )
   }
-  return(enrichment_plot)
+  timer_done_nice_print("-- metabrowser enrichment plot done: ", time_before)
+  p
 }
+
 
 allsamples_meta_table <- function(meta_and_clusters) {
   cbind(attr(meta_and_clusters$meta, "runIDs"),

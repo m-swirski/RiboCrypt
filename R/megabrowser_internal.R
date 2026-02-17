@@ -14,6 +14,7 @@ compute_collection_table_shiny <- function(mainPlotControls,
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
   cat("Starting loading + Profile + plot calc\n")
+  # browser()
   dtable <- compute_collection_table(path, lib_sizes, df, metadata_field,
                                      normalization, kmer, metadata, min_count,
                                      as_list = TRUE, subset = subset,

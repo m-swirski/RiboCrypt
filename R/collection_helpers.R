@@ -31,7 +31,7 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
   valid_libs <- attr(table, "valid_libs")
   # Sliding window
   mat <- as.matrix(table)
-  if (kmer > 1) table <- multiSampleBinRows(mat, kmer, split_by_frame)
+  if (kmer > 1) mat <- multiSampleBinRows(mat, kmer, split_by_frame)
 
   # Make tpm
   if (!is.null(lib_sizes)) {

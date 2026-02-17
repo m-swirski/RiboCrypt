@@ -1,143 +1,166 @@
-createNewSelectionChoice <- "New selection..."
-
-sampleSelectionsUi <- function(id) {
+sample_selection_ui <- function(id) {
   ns <- shiny::NS(id)
-  shiny::selectizeInput(ns("activeSelectionSelect"), "Selection", choices = list())
+  shiny::fluidRow(
+    shiny::selectizeInput(
+      ns("active_selection_id"),
+      "Selection",
+      choices = list()
+    ),
+    shiny::actionButton("reset_active_selection")
+  )
 }
 
-sampleSelectionsServer <- function(id, metadata, rSelection, rFilteredSelection) {
+# reactive_plot_selection -
+# a reactiveVal holding a vector of character vectors representing runIds
+# reactive_dataplot_selection -
+# a reactiveVal holding a vector of character vectors representing runIds
+# reactive_dataplot_selection is always a subset of reactive_plot_selection
+sample_selection_server <- function(
+  id,
+  reactive_plot_selection_input,
+  reactive_data_table_selection_input
+) {
   shiny::moduleServer(id, function(input, output, session) {
-    # reactive values
+    # label for a choice that will result in creating a new selection
+    new_selection_choice <- "New selection..."
+
+    # counter used to generate unique ids for selections
     counter <- shiny::reactiveVal(2)
-    rSelections <- {
-      selections <- list()
-      selections[[as.character(1)]] <- NULL
-      filteredSelections <- list()
-      filteredSelections[[as.character(1)]] <- NULL
-      shiny::reactiveVal(list(
-        index = c(as.character(1)),
-        selections = selections,
-        filteredSelections = filteredSelections
-      ))
+    # reactive value to store multiple selections
+    selection_store <- {
+      plot_selections <- list()
+      plot_selections[[as.character(1)]] <- NULL
+      data_table_selections <- list()
+      data_table_selections[[as.character(1)]] <- NULL
+      list(
+        index = shiny::reactiveVal(c(as.character(1))),
+        plot_selections = shiny::reactiveVal(plot_selections),
+        data_table_selections = shiny::reactiveVal(data_table_selections)
+      )
     }
 
-    rActiveSelectionId <- shiny::reactiveVal(as.character(1))
+    # reactive value to keep track of which selection is active at the moment
+    active_selection_id <- shiny::reactiveVal(as.character(1))
 
-    rActiveSelection <- shiny::reactive({
-      shiny::req(!is.null(rActiveSelectionId()) && rActiveSelectionId() != "")
-      rSelections()$selections[[rActiveSelectionId()]]
-    }) %>% shiny::bindEvent(rSelections(), rActiveSelectionId())
+    # reactive value to keep track of the current plot selection
+    active_plot_selection <- shiny::reactive({
+      print("active plot selection changed")
+      shiny::req(!is.null(active_selection_id()) && active_selection_id() != "")
+      selection_store$plot_selections()[[active_selection_id()]]
+    }) |> shiny::bindEvent(
+      selection_store$plot_selections(),
+      active_selection_id()
+    )
 
-    rActiveFilteredSelection <- shiny::reactive({
-      shiny::req(!is.null(rActiveSelectionId()) && rActiveSelectionId() != "")
-      rSelections()$filteredSelections[[rActiveSelectionId()]]
-    }) %>% shiny::bindEvent(rSelections(), rActiveSelectionId())
+    # reactive value to keep track of the current data_table selection
+    active_data_table_selection <- shiny::reactive({
+      shiny::req(!is.null(active_selection_id()) && active_selection_id() != "")
+      selection_store$data_table_selections()[[active_selection_id()]]
+    }) |> shiny::bindEvent(
+      selection_store$data_table_selections(),
+      active_selection_id()
+    )
 
-    # Observer for creating a new selection
-    shiny::observe({
-      shiny::req(input$activeSelectionSelect == createNewSelectionChoice)
-      newSelectionId <- counter()
-      counter(newSelectionId + 1)
-
-      selections <- rSelections()
-
-      selections$index <- c(selections$index, as.character(newSelectionId))
-      selections$selections[[as.character(newSelectionId)]] <- NULL
-      selections$filteredSelections[[as.character(newSelectionId)]] <- NULL
-
-      rSelections(selections)
-      rActiveSelectionId(as.character(newSelectionId))
-    }) %>% shiny::bindEvent(input$activeSelectionSelect)
-
-    # Observers for selecting the active selection
+    # Observer to keep input in sync with selection store
     shiny::observe({
       shiny::updateSelectizeInput(
         session,
-        "activeSelectionSelect",
-        choices = c(rSelections()$index, createNewSelectionChoice),
-        selected = rActiveSelectionId()
+        "active_selection_id",
+        choices = c(selection_store$index(), new_selection_choice),
+        selected = active_selection_id()
       )
-    }) %>% shiny::bindEvent(rSelections())
+    }) |> shiny::bindEvent(selection_store$index())
 
+    # Observer for creating a new selection
+    shiny::observe({
+      shiny::req(input$active_selection_id == new_selection_choice)
+      new_selection_id <- counter()
+      counter(new_selection_id + 1)
+
+      # add new empty selection to the store
+      index <- c(selection_store$index(), as.character(new_selection_id))
+
+      plot_selections <- selection_store$plot_selections()
+      plot_selections[[as.character(new_selection_id)]] <- NULL
+
+      data_table_selections <- selection_store$data_table_selections()
+      data_table_selections[[as.character(new_selection_id)]] <- NULL
+
+      # update the store
+      selection_store$index(index)
+      selection_store$plot_selections(plot_selections)
+      selection_store$data_table_selections(data_table_selections)
+
+      # set new selection as active
+      active_selection_id(as.character(new_selection_id))
+    }) |> shiny::bindEvent(input$active_selection_id)
+
+    # Observer for changing the active selection
     shiny::observe({
       shiny::req(
-        !is.null(input$activeSelectionSelect) &&
-          input$activeSelectionSelect != "" &&
-          input$activeSelectionSelect != createNewSelectionChoice
+        !is.null(input$active_selection_id) &&
+          input$active_selection_id != "" &&
+          input$active_selection_id != new_selection_choice
       )
-      rActiveSelectionId(input$activeSelectionSelect)
-    }) %>% shiny::bindEvent(input$activeSelectionSelect)
+      active_selection_id(input$active_selection_id)
+    }) |> shiny::bindEvent(input$active_selection_id)
 
-    # Observers for handling interactions with selection
+    # Observer to keep active plot_selection
+    # in sync with incoming values of reactive_plot_selection
     shiny::observe({
-      selections <- rSelections()
-      selections$selections[[rActiveSelectionId()]] <- rSelection()
+      plot_selections <- selection_store$plot_selections()
+      plot_selections[[active_selection_id()]] <-
+        reactive_plot_selection_input()
 
-      rSelections(selections)
-    }) %>% shiny::bindEvent(rSelection())
+      selection_store$plot_selections(plot_selections)
+    }) |> shiny::bindEvent(reactive_plot_selection_input())
 
+    # Observer to update active_data_table_selection
+    # when active_plot_selection changes
     shiny::observe({
-      rSelection(rActiveSelection())
-    }) %>% shiny::bindEvent(rActiveSelection(), ignoreNULL = FALSE)
+      data_table_selections <- selection_store$data_table_selections()
 
+      data_table_selections[[active_selection_id()]] <-
+        active_plot_selection()
+
+      selection_store$data_table_selections(data_table_selections)
+    }) |> shiny::bindEvent(
+      active_plot_selection(),
+      ignoreNULL = FALSE
+    )
+
+    # Observer to keep active_data_table_selection
+    # in sync with incoming values of reactive_data_table_selection
     shiny::observe({
-      message <- if (is.null(rActiveSelection())) {
-        list(
-          curveIndex = list(),
-          pointIndex = list()
-        )
-      } else {
-        curveIndex <- rActiveSelection()$curveIndex
-        pointIndex <- rActiveSelection()$pointIndex
+      data_table_selections <- selection_store$data_table_selections()
 
-        list(
-          curveIndex = unique(curveIndex),
-          pointIndex = lapply(unique(curveIndex), function(idx) {
-            pointIndex[curveIndex == idx]
-          })
-        )
-      }
+      data_table_selections[[active_selection_id()]] <-
+        reactive_data_table_selection_input()
 
-      session$sendCustomMessage(
-        "samplesActiveSelectionChanged",
-        message
-      )
-    }) %>% shiny::bindEvent(rActiveSelection(), ignoreNULL = FALSE)
+      selection_store$data_table_selections(data_table_selections)
+    }) |> shiny::bindEvent(
+      reactive_data_table_selection_input(),
+      ignoreNULL = FALSE
+    )
 
-    # Observers for handling interactions with filtered selection
-
+    # Observer for reseting active selection
     shiny::observe({
-      selections <- rSelections()
+      plot_selections <- selection_store()$plot_selections
+      plot_selections[[active_selection_id()]] <-
+        NULL
+      selection_store$data_table_selections(plot_selections)
 
-      if (is.null(rFilteredSelection())) {
-        selections$filteredSelections[[rActiveSelectionId()]] <- rSelection()
-      } else {
-        selections$filteredSelections[[rActiveSelectionId()]] <- rFilteredSelection()
-      }
+      data_table_selections <- selection_store$data_table_selections()
+      data_table_selections[[active_selection_id()]] <-
+        NULL
+      selection_store$data_table_selections(data_table_selections)
+    }) |> shiny::bindEvent(
+      input$reset_active_selection
+    )
 
-      rSelections(selections)
-    }) %>% shiny::bindEvent(rSelection(), rFilteredSelection(), ignoreNULL = FALSE)
-
-    shiny::observe({
-      shiny::req(!is.null(rActiveFilteredSelection()))
-      message <- {
-        curveIndex <- rActiveFilteredSelection()$curveIndex
-        pointIndex <- rActiveFilteredSelection()$pointIndex
-
-        list(
-          curveIndex = unique(curveIndex),
-          pointIndex = lapply(unique(curveIndex), function(idx) {
-            pointIndex[curveIndex == idx]
-          })
-        )
-      }
-
-      session$sendCustomMessage(
-        "samplesActiveFilteredSelectionChanged",
-        message
-      )
-    }) %>% shiny::bindEvent(rActiveFilteredSelection())
-
-    rSelections
+    list(
+      active_plot_selection = active_plot_selection,
+      active_data_table_selection = active_data_table_selection
+    )
   })
 }

@@ -131,7 +131,7 @@ RiboCrypt_app <- function(
     observatory_server(
       "observatory",
       meta_experiment_list = all_exp_meta,
-      samples_df = metadata
+      all_samples_df = metadata
     )
 
     cat("Server this: "); print(round(Sys.time() - this_time_before, 2))

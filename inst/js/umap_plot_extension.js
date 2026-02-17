@@ -6,26 +6,34 @@
       return elem.text.split("<br />")[1].split(": ")[1]
     });
     Shiny.setInputValue(valuesInputId, pointValuesToSet);
+    console.log("onSelected fired");
+    console.log(pointValuesToSet);
   };
   elem.on("plotly_selected", onSelected);
 
   onChangedSelection = (message) => {
+    let selected = null
+    if(Array.isArray(message)) {
+      selected = message;
+    } else {
+      selected = [message];
+    };
+
     let runId_counter = 0;
     const tracesToUpdate = Array.from({ length: elem.data.length }, (_, i) => i + 1);
     let indicesToUpdate = Array.from({ length: elem.data.length }, (_, i) => []);
 
-    while (runId_counter < message.length) {
+    while (runId_counter < selected.length) {
       elem.data.forEach((trace, index) => {
-        let indices_buffer = [];
         if (Array.isArray(trace.text)) {
           trace.text.forEach((t, tIndex) => {
-            if (t.includes(message[runId_counter])) {
+            if (t.includes(selected[runId_counter])) {
               indicesToUpdate[index].push(tIndex);
               runId_counter += 1;
             };
           });
         } else {
-          if (trace.text.includes(message[runId_counter])) {
+          if (trace.text.includes(selected[runId_counter])) {
             indicesToUpdate[index].push(1)
             runId_counter += 1;
           }

@@ -38,33 +38,25 @@ observatory_ui <- function(id, meta_experiment_list) {
           shinycssloaders::withSpinner(color = "#0dc5c1")
       ),
       shiny::fluidRow(
-        DT::DTOutput(ns("samples_datatable")) |>
+        DT::DTOutput(ns("samples_data_table")) |>
           shinycssloaders::withSpinner(color = "#0dc5c1")
       )
     )
   )
 }
 
-observatory_server <- function(id, meta_experiment_list, samples_df) {
+observatory_server <- function(id, meta_experiment_list, all_samples_df) {
   shiny::moduleServer(id, function(input, output, session) {
     observatory_module <- shiny::reactive({
       meta_experiment_df <- ORFik::read.experiment(
         meta_experiment_list[name == input$meta_experiment][[1]],
         validate = FALSE
       )
-      create_observatory_module(meta_experiment_df, samples_df)
+      create_observatory_module(meta_experiment_df, all_samples_df)
     }) |> shiny::bindEvent(input$go)
 
-    unfiltered_samples_df <- shiny::reactive({
+    samples_df <- shiny::reactive({
       observatory_module()$get_samples_data()
-    })
-
-    filtered_samples_df <- shiny::reactive({
-      order_by <- c(toupper(input$color_by), "Run")
-      data.table::setorderv(
-        unfiltered_samples_df(),
-        cols = order_by
-      )[BioProject == "PRJNA591767"]
     })
 
     output$samples_umap_plot <- plotly::renderPlotly({
@@ -76,36 +68,62 @@ observatory_server <- function(id, meta_experiment_list, samples_df) {
         )
     }) |> shiny::bindEvent(observatory_module())
 
-    shiny::observe({
-      print(unfiltered_samples_df()[Run %in% input$samples_umap_plot_selection])
+    plot_selection <- shiny::reactive({
+      print("plot selection changed")
+      shiny::req(!is.null(input$samples_umap_plot_selection))
+      input$samples_umap_plot_selection
     })
 
-    output$samples_datatable <- DT::renderDT({
-      unfiltered_samples_df()
+    output$samples_data_table <- DT::renderDT({
+      samples_df()
     })
 
     samples_data_table_proxy <- shiny::reactive({
-      DT::dataTableProxy("samples_datatable")
+      DT::dataTableProxy("samples_data_table")
     })
 
-    shiny::observe({
-      # DT::replaceData(
-      #   samples_data_table_proxy(),
-      #   filtered_samples_df(),
-      #   resetPaging = FALSE
-      # )
-      message <- filtered_samples_df()
-      session$sendCustomMessage("samplesActiveSelectionChanged", message$Run)
-    }) |> shiny::bindEvent(input$go_proxy)
+    data_table_selection <- shiny::reactive({
+      selection_is_defined <-
+        !is.null(input$samples_data_table_rows_selected)
 
-    datatable_selection <- shiny::reactive({
-      selected_indexes <- if (is.null(input$samples_datatable_rows_selected)) {
-        input$samples_datatable_rows_all
+      selected_indexes <- if (!selection_is_defined) {
+        input$samples_data_table_rows_all
       } else {
-        input$samples_datatable_rows_selected
+        input$samples_data_table_rows_selected
       }
 
-      unfiltered_samples_df()[selected_indexes]
+      shiny::isolate(filtered_samples_df())[selected_indexes]$Run
     })
+
+    selected_samples <- sample_selection_server(
+      "sample_selection",
+      plot_selection,
+      data_table_selection
+    )
+
+    filtered_samples_df <- shiny::reactive({
+      if (!is.null(selected_samples$active_plot_selection())) {
+        samples_df()[
+          Run %in% selected_samples$active_plot_selection()
+        ]
+      } else {
+        samples_df()
+      }
+    }) |> shiny::bindEvent(selected_samples$active_plot_selection())
+
+    shiny::observe({
+      DT::replaceData(
+        samples_data_table_proxy(),
+        filtered_samples_df(),
+        resetPaging = FALSE
+      )
+    }) |> shiny::bindEvent(filtered_samples_df())
+
+    shiny::observe({
+      session$sendCustomMessage(
+        "samplesActiveSelectionChanged",
+        selected_samples$active_data_table_selection()
+      )
+    }) |> shiny::bindEvent(selected_samples$active_data_table_selection())
   })
 }

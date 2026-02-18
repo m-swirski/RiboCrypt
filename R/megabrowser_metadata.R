@@ -7,7 +7,6 @@ allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "C
 
   time_before <- Sys.time()
   req(at_least_2_values)
-
   row_orders <- row_order(plot)
   orders <- unlist(row_orders, use.names = FALSE)
   clustering_was_done <- length(row_orders) > 1
@@ -72,12 +71,10 @@ allsamples_sidebar_plotly <- function(meta) {
   stopifnot(all(c("index", "grouping") %in% names(meta)))
   columns_to_drop <- c("order", "index", "cluster", attr(meta, "xlab"))
   cols <- setdiff(names(meta), columns_to_drop)
-
   y <- meta[["index"]]
 
   plot_list <- vector("list", length(cols))
   names(plot_list) <- cols
-
   for (j in seq_along(cols)) {
     col <- cols[j]
     xj  <- meta[[col]]
@@ -120,10 +117,30 @@ allsamples_sidebar_plotly <- function(meta) {
         )
     }
   }
-
   res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE) %>%
     plotly::config(displayModeBar = FALSE)
 
+  did_clustering <- length(unique(meta$cluster)) > 1
+  if (did_clustering) {
+    centers <- meta[, .(
+      y_center = (min(index) + max(index)) / 2
+    ), by = cluster][order(cluster)]
+    cluster_ann <- lapply(seq_len(nrow(centers)), function(i) {
+      list(
+        xref = "paper",   # paper coords for x so it stays at the left edge
+        yref = "y",       # data coords for y so it matches heatmap rows
+        x = -0.02,        # move left of plotting area; tweak as needed
+        y = centers$y_center[i],
+        text = as.character(centers$cluster[i]),
+        showarrow = FALSE,
+        textangle = -90,  # sideways
+        xanchor = "right",
+        yanchor = "middle",
+        font = list(size = 12, color = "black")
+      )
+    })
+    res <- res %>% layout(margin = list(l = 30), annotations = cluster_ann)
+  }
   timer_done_nice_print("-- metabrowser sidebar done: ", time_before)
   res
 }

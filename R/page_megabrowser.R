@@ -148,7 +148,7 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      output$mb_top_summary <- renderPlot({
+      output$mb_top_summary <- renderPlotly({
         summary_track_allsamples(attr(table()$table, "summary_cov"))
       }) %>%
         bindCache(controller()$table_hash) %>%

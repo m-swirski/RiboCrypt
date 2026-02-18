@@ -504,15 +504,17 @@ geneModelPanelPlotly <- function(dt) {
       )
   }
   p %>% plotly::config(displayModeBar = FALSE) %>%
-    plotly::layout(margin = list(
-        l = 23,
-        r = 100,
-        t = 0,
-        b = 0
-      ))
+    plotly::layout(margin = margin_megabrowser())
 }
 
-
+margin_megabrowser <- function() {
+  list(
+    l = 23,
+    r = 100,
+    t = 0,
+    b = 0
+  )
+}
 
 
 nt_area_template <- function() {

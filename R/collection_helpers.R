@@ -114,16 +114,16 @@ filter_collection_on_count <- function(table, min_count) {
 
 compute_collection_table_grouping <- function(metadata, df, metadata_field, table,
                                               ratio_interval, group_on_tx_tpm,
-                                              decreasing_order = FALSE) {
+                                              decreasing_order = FALSE,
+                                              enrichment_term) {
   matchings <- match_metadata_to_table(metadata, table)
   valid_libs <- attr(table, "valid_libs")
   valid_run_ids <- names(valid_libs[valid_libs])
   all_metadata_fields <- metadata[Run %in% valid_run_ids, ..metadata_field]
-  ordering_vector_temp <- all_metadata_fields[, 1][[1]]
-  other_columns <- all_metadata_fields
 
   order_on_ratios <- !is.null(ratio_interval)
   order_on_other_tx_tpm <- !is.null(group_on_tx_tpm)
+  enrichment_term_char <- colnames(all_metadata_fields)[1]
   if (order_on_ratios) {
     tpm <- subset_fst_interval_sum(ratio_interval[seq(2)], table)
     is_ratio <- length(ratio_interval) == 4
@@ -139,16 +139,19 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
     setattr(table_other, "valid_libs", valid_libs)
     table_other <- normalize_collection(table_other, "tpm", attr(table, "lib_sizes"), 1)
     ordering_vector <- colSums(table_other)
-  } else {
-    ordering_vector <- ordering_vector_temp
+  } else { # Else order on metadata enrichment_term column
+    if (!enrichment_term %in% colnames(all_metadata_fields))
+      enrichment_term <- enrichment_term_char
+    ordering_vector <- all_metadata_fields[, ..enrichment_term][[1]]
     names(ordering_vector) <- colnames(table)
-    other_columns <- other_columns[, -1]
+    other_columns <- all_metadata_fields[, .SD, .SDcols = !enrichment_term]
+    enrichment_term_char <- enrichment_term
   }
   meta_order <- order(ordering_vector, decreasing = decreasing_order)
   ordering_vector <- ordering_vector[meta_order]
   attr(ordering_vector, "meta_order") <- meta_order
   attr(ordering_vector, "other_columns") <- other_columns[meta_order, ]
-  attr(ordering_vector, "xlab") <- colnames(all_metadata_fields)[1]
+  attr(ordering_vector, "xlab") <- enrichment_term_char
   attr(ordering_vector, "runIDs") <- metadata[Run %in% valid_run_ids, .(Run, BioProject)][meta_order,]
   return(ordering_vector)
 }
@@ -204,7 +207,8 @@ compute_collection_table <- function(path, lib_sizes, df,
                                      subset = NULL, group_on_tx_tpm = NULL,
                                      split_by_frame = FALSE,
                                      ratio_interval = NULL,
-                                     decreasing_order = FALSE) {
+                                     decreasing_order = FALSE,
+                                     enrichment_term = metadata_field[1]) {
 
   table <- load_collection(path)
   intersect <- intersect(colnames(table), runIDs(df))
@@ -224,7 +228,7 @@ compute_collection_table <- function(path, lib_sizes, df,
   # Match metadata table and collection runIDs
   meta_sub <- compute_collection_table_grouping(metadata, df, metadata_field, table,
                                                 ratio_interval, group_on_tx_tpm,
-                                                decreasing_order)
+                                                decreasing_order, enrichment_term)
   # Update order of libraries to follow grouping created
   setcolorder(table, attr(meta_sub, "meta_order"))
 

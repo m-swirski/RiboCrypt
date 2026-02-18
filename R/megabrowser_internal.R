@@ -10,6 +10,7 @@ compute_collection_table_shiny <- function(mainPlotControls,
                                            group_on_tx_tpm = mainPlotControls()$group_on_tx_tpm,
                                            split_by_frame = mainPlotControls()$frame,
                                            ratio_interval = mainPlotControls()$ratio_interval,
+                                           enrichment_term = mainPlotControls()$enrichment_term,
                                            metadata) {
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
@@ -20,7 +21,8 @@ compute_collection_table_shiny <- function(mainPlotControls,
                                      as_list = TRUE, subset = subset,
                                      group_on_tx_tpm = group_on_tx_tpm,
                                      split_by_frame = split_by_frame,
-                                     ratio_interval = ratio_interval)
+                                     ratio_interval = ratio_interval,
+                                     enrichment_term = enrichment_term)
   timer_done_nice_print("Done: lib loading + Coverage calc: ", time_before)
   return(dtable)
 }
@@ -58,13 +60,14 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
     mat <- mat[rev(unlist(row_clusters, use.names = FALSE)),]
     cluster <- km$cluster[rev(unlist(row_clusters, use.names = FALSE))]
     cluster <- factor(cluster, levels = rev(sort(unique(cluster))))
+
     plot <- ComplexHeatmap::Heatmap(mat, show_row_dend = FALSE,
                             cluster_columns = FALSE,
                             cluster_rows = FALSE,
                             use_raster = TRUE,  raster_quality = 5,
-                            split = cluster, gap = unit(0.5, "mm"),
+                            split = cluster, gap = unit(0.2, "mm"),
                             col =  colors, show_row_names = FALSE,
-                            show_heatmap_legend = FALSE)
+                            show_heatmap_legend = FALSE, row_title = NULL)
   }
   attr(plot, "row_order_list") <- row_clusters
   attr(plot, "clusters") <- length(row_clusters)
@@ -106,10 +109,7 @@ renderMegabrowser <- function(plotType, ns,
   h2 <- sprintf("calc(%s * %.6f)", height, rel_heights[2])
   h3 <- sprintf("calc(%s * %.6f)", height, rel_heights[3])
 
-  top <- div(
-    style = sprintf("height:%s; width:%s;", h1, width),
-    plotOutput(ns("mb_top_summary"), height = "100%", width = "100%")
-  )
+  top <- plotly::plotlyOutput(ns("mb_top_summary"), height = h1, width = width)
 
   middle <- if (plotType == "plotly") {
     plotly::plotlyOutput(ns("myPlotlyPlot"), height = h2, width = width)
@@ -177,16 +177,81 @@ get_megabrowser_annotation_plot <- function(id, df,
   return(res)
 }
 
+add_alpha <- function(cols, alpha = 0.7) {
+  rgb <- grDevices::col2rgb(cols)
+  sprintf("rgba(%d,%d,%d,%.3f)",
+          rgb[1, ], rgb[2, ], rgb[3, ], alpha)
+}
+
+profile_plotly_gl <- function(dt, frame_colors = frame_color_themes("R"),
+                              bar_px = 6, alpha = 0.7) {
+  # dt needs: position, count, frame
+  stopifnot(is.data.table(dt) || is.data.frame(dt))
+  dt <- as.data.table(dt)
+
+
+  # ensure deterministic order
+  dt[, frame := as.character(frame)]
+  frame_colors <- add_alpha(frame_colors, alpha)
+
+  p <- plot_ly()
+  for (fr in unique(dt$frame)) {
+    d <- dt[frame == fr]
+    if (nrow(d) == 0L) next
+
+    tt <- paste0(
+      "frame: ", fr,
+      "<br>pos: ", d$position,
+      "<br>count: ", d$count
+    )
+    # Build vertical segments: (x,0)->(x,count), separated by NA
+    xseg <- c(rbind(d$position, d$position, NA_real_))
+    yseg <- c(rbind(rep(0, nrow(d)), d$count,   NA_real_))
+    textseg <- c(rbind(tt, tt, NA_character_))
+
+    col <- frame_colors[as.integer(fr) + 1L]
+    if (is.null(col)) col <- "grey50"
+
+    p <- p %>%
+      add_trace(
+        x = xseg, y = yseg,
+        type = "scattergl", mode = "lines",
+        name = fr,
+        line = list(color = col, width = bar_px),
+        hoverinfo = "text",
+        text = textseg,
+        showlegend = TRUE
+      )
+  }
+
+  p %>%
+    layout(
+      showlegend = FALSE,        # remove legend globally
+      margin = margin_megabrowser(),
+      paper_bgcolor = "rgba(0,0,0,0)",
+      plot_bgcolor  = "rgba(0,0,0,0)",
+      xaxis = list(
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL,
+        fixedrange = TRUE
+      ),
+      yaxis = list(
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL,
+        fixedrange = TRUE
+      )
+    )
+}
+
 summary_track_allsamples <- function(mat, summary_track_type = "area", as_plotly = FALSE) {
   time_before <- Sys.time()
-  summary_plot <- createSinglePlot(mat, TRUE, "R", "",
-                                   "", lines = NULL,
-                                   type = summary_track_type,
-                                   flip_ylabel = FALSE, as_plotly = as_plotly)
-  if (!as_plotly) {
-    summary_plot +
-      theme(axis.text.y=element_blank(),  axis.ticks.y=element_blank())
-  }
+  summary_plot <- profile_plotly_gl(mat)
   timer_done_nice_print("-- Mega browser summary track done: ", time_before)
   return(summary_plot)
 }
@@ -194,6 +259,7 @@ summary_track_allsamples <- function(mat, summary_track_type = "area", as_plotly
 annotation_track_allsamples <- function(df, id, display_range, annotation,
                                         tx_annotation, viewMode, collapse_intron_flank,
                                         gg_theme) {
+  browser()
   gene_model_panel <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
                                            custom_regions = NULL,

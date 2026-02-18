@@ -70,12 +70,10 @@ allsamples_sidebar_plotly <- function(meta) {
 
   stopifnot(is.data.table(meta))
   stopifnot(all(c("index", "grouping") %in% names(meta)))
-
   columns_to_drop <- c("order", "index", "cluster", attr(meta, "xlab"))
   cols <- setdiff(names(meta), columns_to_drop)
 
   y <- meta[["index"]]
-  hover_text <- as.character(meta[["grouping"]])  # hover text only
 
   plot_list <- vector("list", length(cols))
   names(plot_list) <- cols
@@ -83,14 +81,14 @@ allsamples_sidebar_plotly <- function(meta) {
   for (j in seq_along(cols)) {
     col <- cols[j]
     xj  <- meta[[col]]
-
+    hover_text <- as.character(xj)  # hover text only
     if (is.numeric(xj)) {
       # thin track line; hover shows grouping
       plot_list[[j]] <- plot_ly(
         x = xj, y = y,
         type = "scatter", mode = "lines",
         hoverinfo = "text", text = hover_text,
-        line = list(width = 1)
+        line = list(width = 1), showlegend = FALSE
       ) %>%
         layout(
           margin = list(l = 0, r = 0, t = 0, b = 0),

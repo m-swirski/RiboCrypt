@@ -28,14 +28,21 @@ load_collection <- function(path, grl = attr(path, "range")) {
 normalize_collection <- function(table, normalization, lib_sizes = NULL,
                                  kmer = 1L, add_logscore = TRUE,
                                  split_by_frame = FALSE) {
-  valid_libs <- attr(table, "valid_libs")
-  # Sliding window
+
+
   mat <- as.matrix(table)
+  setattr(table, "summary_cov", summary_track(mat))
+  if (is.character(lib_sizes)) lib_sizes <- readRDS(lib_sizes)
+  setattr(table, "lib_sizes", lib_sizes)
+  setattr(table, "ratio", kmer)
+  attr <- attributes(table)[-seq(4)]
+  # Binned window
   if (kmer > 1) mat <- multiSampleBinRows(mat, kmer, split_by_frame)
 
   # Make tpm
   if (!is.null(lib_sizes)) {
-    if (is.character(lib_sizes)) lib_sizes <- readRDS(lib_sizes)
+    valid_libs <- if(!is.null(attr$valid_libs)){
+      attr$valid_libs} else colnames(mat)
     mat <- ((mat * 1000L)  / lib_sizes[valid_libs]) * as.integer(10^6)
   }
 
@@ -57,8 +64,16 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
 
   if (add_logscore) mat <- log(mat + 1L)
   table <- as.data.table(mat)
-  setattr(table, "valid_libs", valid_libs)
+
+  lapply(seq_along(attr), function(i) setattr(table, names(attr)[i], attr[[i]]))
   return(table)
+}
+
+summary_track <- function(mat) {
+  summary_profile <- data.table(count = rowSums(mat))
+  summary_profile[, `:=`(position = seq.int(.N)) ]
+  summary_profile[, `:=`(frame = factor((position-1) %% 3)) ]
+  return(summary_profile)
 }
 
 match_collection_to_exp <- function(metadata, df) {
@@ -88,7 +103,11 @@ filter_collection_on_count <- function(table, min_count) {
     table <- table[, ..filt_libs]
 
     setattr(table, "valid_libs", valid_libs)
-  } else setattr(table, "valid_libs", rep(TRUE, ncol(table)))
+  } else {
+    x <- rep(TRUE, ncol(table))
+    names(x) <- colnames(table)
+    setattr(table, "valid_libs", x)
+  }
 
   return(table)
 }
@@ -116,17 +135,15 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
   } else if (order_on_other_tx_tpm) {
     isoform <- group_on_tx_tpm
     table_path_other <- collection_path_from_exp(df, isoform)
-    table_other <- load_collection(table_path_other)
-    table_other <- normalize_collection(table_other, "tpm", lib_sizes, 1)
-    counts <- table_other[ , .(tpm = sum(score)), by = library]
-    tpm <- counts$tpm
-    ordering_vector <- tpm[valid_libs]
+    table_other <- load_collection(table_path_other)[, ..valid_libs]
+    setattr(table_other, "valid_libs", valid_libs)
+    table_other <- normalize_collection(table_other, "tpm", attr(table, "lib_sizes"), 1)
+    ordering_vector <- colSums(table_other)
   } else {
     ordering_vector <- ordering_vector_temp
     names(ordering_vector) <- colnames(table)
     other_columns <- other_columns[, -1]
   }
-
   meta_order <- order(ordering_vector, decreasing = decreasing_order)
   ordering_vector <- ordering_vector[meta_order]
   attr(ordering_vector, "meta_order") <- meta_order
@@ -199,6 +216,7 @@ compute_collection_table <- function(path, lib_sizes, df,
     table <- subset_fst_by_interval(table, subset)
   }
   table <- filter_collection_on_count(table, min_count)
+
   # Normalize
   table <- normalize_collection(table, normalization, lib_sizes, kmer, TRUE,
                                 split_by_frame)
@@ -235,13 +253,15 @@ subset_fst_interval_sum <- function(ratio_interval, table) {
 
   if (ratio_interval[1] > ratio_interval[2]) stop("Ratio interval must start on >= 1")
   if (ratio_interval[1] < 1) stop("Ratio interval must start on >= 1")
-  if (ratio_interval[2] > max(table$position)) stop("Ratio interval must end on <= ncol(heatmap)")
+  table_pos_ratio <- attr(table, "ratio")
+  if (!is.null(table_pos_ratio) && table_pos_ratio > 1) {
+    coordinates <- seq.int(1, nrow(table), by = table_pos_ratio)
+    ratio_interval[1] <- tail(which(coordinates <= ratio_interval[1]), 1)
+    ratio_interval[2] <- tail(which(coordinates <= ratio_interval[2]), 1)
+  }
+  if (ratio_interval[2] > max(nrow(table))) stop("Ratio interval must end on <= max position (i.e. nrow)")
 
-  counts <- table[position %in% seq.int(ratio_interval[1], ratio_interval[2]),
-                  .(tpm = sum(score)), by = library]
-  tpm <- counts$tpm
-  names(tpm) <- counts$library
-  return(tpm)
+  return(colSums(table[seq.int(ratio_interval[1], ratio_interval[2]), ]))
 }
 
 

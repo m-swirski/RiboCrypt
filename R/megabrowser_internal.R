@@ -44,7 +44,10 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
 
   if (plotType == "plotly") {
     mat <- mat[unlist(row_clusters, use.names = FALSE),]
+    ratio <- attr(table, "ratio")
+    x_range <- which(!duplicated((seq_len(nrow(mat)) - 1L) %/% ratio + 1L))
     plot <- plotly::plot_ly(
+      x = ~x_range,
       z = mat,
       colors = colors,
       showscale = FALSE,
@@ -59,7 +62,7 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
                             cluster_columns = FALSE,
                             cluster_rows = FALSE,
                             use_raster = TRUE,  raster_quality = 5,
-                            split = cluster,
+                            split = cluster, gap = unit(0.5, "mm"),
                             col =  colors, show_row_names = FALSE,
                             show_heatmap_legend = FALSE)
   }
@@ -116,10 +119,7 @@ renderMegabrowser <- function(plotType, ns,
 
   middle <- middle %>% shinycssloaders::withSpinner(color = "#0dc5c1")
 
-  bottom <- div(
-    style = sprintf("height:%s; width:%s;", h3, width),
-    plotOutput(ns("mb_bottom_gene"), height = "100%", width = "100%")
-  )
+  bottom <- plotly::plotlyOutput(ns("mb_bottom_gene"), height = h3, width = width)
   tagList <- tagList(top, middle, bottom)
   timer_done_nice_print("-- Mega browser 3 row plot done: ", time_before)
   return(tagList)
@@ -177,12 +177,9 @@ get_megabrowser_annotation_plot <- function(id, df,
   return(res)
 }
 
-summary_track_allsamples <- function(m, summary_track_type = "area", as_plotly = FALSE) {
+summary_track_allsamples <- function(mat, summary_track_type = "area", as_plotly = FALSE) {
   time_before <- Sys.time()
-  summary_profile <- data.table(count = rowSums(m))
-  summary_profile[, `:=`(position = seq.int(.N)) ]
-  summary_profile[, `:=`(frame = factor((position-1) %% 3)) ]
-  summary_plot <- createSinglePlot(summary_profile, TRUE, "R", "",
+  summary_plot <- createSinglePlot(mat, TRUE, "R", "",
                                    "", lines = NULL,
                                    type = summary_track_type,
                                    flip_ylabel = FALSE, as_plotly = as_plotly)
@@ -202,8 +199,9 @@ annotation_track_allsamples <- function(df, id, display_range, annotation,
                                            custom_regions = NULL,
                                            viewMode = viewMode, collapse_intron_flank)
 
-  return(geneModelPanelPlot(gene_model_panel[[1]], attr(gg_theme, "gg_template")) +
-           theme(plot.margin = margin(l = 23, r = 5)))
+  # return(geneModelPanelPlot(gene_model_panel[[1]], attr(gg_theme, "gg_template")) +
+  #          theme(plot.margin = margin(l = 23, r = 5)))
+  return(geneModelPanelPlotly(gene_model_panel[[1]]))
 }
 
 get_lib_sizes_file <- function(dff) {

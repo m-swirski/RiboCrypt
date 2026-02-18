@@ -355,6 +355,164 @@ geneModelPanelPlotTemplate <- function() {
     theme(panel.background = element_rect(fill= "white"))
 }
 
+# Pure plotly version (no ggplot/ggplotly)
+geneModelPanelPlotly <- function(dt) {
+  # If no annotation given, return blank plotly
+  if (is.null(dt) || nrow(dt) == 0) {
+    return(plotly::plot_ly() |>
+             plotly::layout(
+               xaxis = list(visible = FALSE),
+               yaxis = list(visible = FALSE),
+               margin = list(l = 0, r = 0, b = 0, t = 0),
+               paper_bgcolor = "white",
+               plot_bgcolor  = "white"
+             ))
+  }
+
+  stopifnot(data.table::is.data.table(dt))
+
+  # Split introns vs boxes
+  seg_dt <- dt[type %in% c("intron", "intron_collapsed")]
+  box_dt <- dt[!(type %in% c("intron", "intron_collapsed"))]
+
+  trans <- c("cds", "translon")
+
+  # Compute rectangle y coords to match ggplot logic:
+  # ymin = 0 - layers + ifelse(type %in% trans, 0, 0.33)
+  # ymax = 1 - layers - ifelse(type %in% trans, 0, 0.33)
+  box_dt[, `:=`(
+    ymin = 0 - layers + ifelse(type %in% trans, 0, 0.33),
+    ymax = 1 - layers - ifelse(type %in% trans, 0, 0.33)
+  )]
+
+  # Helpful for axis range
+  x_min <- min(dt$rect_starts, dt$rect_ends, na.rm = TRUE)
+  x_max <- max(dt$rect_starts, dt$rect_ends, na.rm = TRUE)
+  y_min <- min(box_dt$ymin, if (nrow(seg_dt)) (0.5 - seg_dt$layers) else Inf, na.rm = TRUE) - 0.05
+  y_max <- max(box_dt$ymax, if (nrow(seg_dt)) (0.5 - seg_dt$layers) else -Inf, na.rm = TRUE) + 0.05
+
+  p <- plotly::plot_ly() |>
+    plotly::layout(
+      showlegend = FALSE,
+      xaxis = list(
+        visible = FALSE,
+        range = c(x_min, x_max),
+        fixedrange = TRUE,
+        zeroline = FALSE
+      ),
+      yaxis = list(
+        visible = FALSE,
+        range = c(y_min, y_max),
+        fixedrange = TRUE,
+        zeroline = FALSE
+      ),
+      margin = list(l = 0, r = 0, b = 0, t = 0),
+      paper_bgcolor = "white",
+      plot_bgcolor  = "white",
+      hovermode = "closest"
+    )
+
+  # --- Introns as segments (grey lines) ---
+  if (nrow(seg_dt) > 0) {
+    # One trace for all segments
+    seg_x <- c(rbind(seg_dt$rect_starts, seg_dt$rect_ends, NA_real_))
+    seg_y <- c(rbind(0.5 - seg_dt$layers, 0.5 - seg_dt$layers, NA_real_))
+
+    # Hover text per segment: repeat text for start/end, NA for breaks
+    seg_text <- c(rbind(seg_dt$gene_names, seg_dt$gene_names, NA_character_))
+
+    p <- p |>
+      plotly::add_trace(
+        x = seg_x, y = seg_y,
+        type = "scatter", mode = "lines",
+        line = list(color = "grey45", width = 2),
+        opacity = 0.6,
+        text = seg_text,
+        hoverinfo = "text"
+      )
+
+    # Collapsed intron label "..."
+    intron_flank_coords <- seg_dt[type %in% c("intron_collapsed")]
+    if (nrow(intron_flank_coords) > 0) {
+      intron_flank_coords[, `:=`(
+        xmid = (rect_starts + rect_ends) / 2,
+        ymid = 0.5 - layers,
+        tooltip = "Collapsed Intron"
+      )]
+
+      p <- p |>
+        plotly::add_text(
+          data = intron_flank_coords,
+          x = ~xmid, y = ~ymid,
+          text = "...",
+          textfont = list(size = 18, color = "black"),
+          hovertext = ~tooltip,
+          hoverinfo = "text"
+        )
+    }
+  }
+
+  # --- Exon/CDS/etc boxes as filled rectangles ---
+  if (nrow(box_dt) > 0) {
+    # Shapes for rectangles (fast render, but shapes don't carry per-shape hover)
+    rect_shapes <- lapply(seq_len(nrow(box_dt)), function(i) {
+      list(
+        type = "rect",
+        layer = "below",
+        xref = "x", yref = "y",
+        x0 = box_dt$rect_starts[i], x1 = box_dt$rect_ends[i],
+        y0 = box_dt$ymin[i],        y1 = box_dt$ymax[i],
+        line = list(color = "grey45", width = 1),
+        fillcolor = box_dt$cols[i],
+        opacity = 1
+      )
+    })
+
+    p <- p |>
+      plotly::layout(shapes = rect_shapes)
+
+    # Add an invisible scatter trace to provide per-rectangle hover tooltips
+    box_dt[, `:=`(
+      xmid = (rect_starts + rect_ends) / 2,
+      ymid = (ymin + ymax) / 2
+    )]
+
+    p <- p |>
+      plotly::add_markers(
+        data = box_dt,
+        x = ~xmid, y = ~ymid,
+        marker = list(opacity = 0),
+        hovertext = ~gene_names,
+        hoverinfo = "text"
+      )
+
+    # Gene name labels per (layer, gene_names) at mean(labels_locations)
+    lab_dt <- box_dt[, .(
+      layers = layers[1],
+      labels_locations = mean(labels_locations)
+    ), by = gene_names]
+
+    p <- p |>
+      plotly::add_text(
+        data = lab_dt,
+        x = ~labels_locations,
+        y = ~(0.50 - layers),
+        text = ~gene_names,
+        textposition = "middle center",
+        textfont = list(color = "black", size = 16),
+        hoverinfo = "skip"
+      )
+  }
+  p %>% plotly::config(displayModeBar = FALSE) %>%
+    plotly::layout(margin = list(
+        l = 23,
+        r = 100,
+        t = 0,
+        b = 0
+      ))
+}
+
+
 
 
 nt_area_template <- function() {

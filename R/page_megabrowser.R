@@ -94,7 +94,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
       tabsetPanel(type = "tabs",
                   tabPanel("Heatmap", fluidRow(
                     jqui_resizable(
-                      splitLayout(cellWidths = c("5%", "95%"),
+                      splitLayout(cellWidths = c("8%", "92%"),
                                   div(style = "margin-top: 115px; overflow:hidden;",
                                     plotly::plotlyOutput(outputId = ns("d"),
                                       height = "437px",width = "130px")),
@@ -149,12 +149,12 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$mb_top_summary <- renderPlot({
-        summary_track_allsamples(table()$table)
+        summary_track_allsamples(attr(table()$table, "summary_cov"))
       }) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      output$mb_bottom_gene <- renderPlot({
+      output$mb_bottom_gene <- renderPlotly({
         get_megabrowser_annotation_plot_shiny(controller, gg_theme)
       }) %>%
         bindCache(controller()$table_hash) %>%

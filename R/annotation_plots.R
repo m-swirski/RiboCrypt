@@ -369,7 +369,7 @@ geneModelPanelPlotly <- function(dt) {
              ))
   }
 
-  stopifnot(data.table::is.data.table(dt))
+  stopifnot(is(dt, "data.table"))
 
   # Split introns vs boxes
   seg_dt <- dt[type %in% c("intron", "intron_collapsed")]

@@ -259,7 +259,6 @@ summary_track_allsamples <- function(mat, summary_track_type = "area", as_plotly
 annotation_track_allsamples <- function(df, id, display_range, annotation,
                                         tx_annotation, viewMode, collapse_intron_flank,
                                         gg_theme) {
-  browser()
   gene_model_panel <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
                                            custom_regions = NULL,

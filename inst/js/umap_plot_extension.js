@@ -11,7 +11,7 @@
   };
   elem.on("plotly_selected", onSelected);
 
-  onChangedSelection = (message) => {
+  onSelectionChanged = (message) => {
     let selected = null
     if(Array.isArray(message)) {
       selected = message;
@@ -52,6 +52,20 @@
 
     Plotly.react(elem, updatedData, updatedLayout);
   };
-  Shiny.addCustomMessageHandler("samplesActiveSelectionChanged", onChangedSelection);
-  Shiny.addCustomMessageHandler("samplesActiveFilteredSelectionChanged", onChangedSelection);
+  Shiny.addCustomMessageHandler("samplesActiveSelectionChanged", onSelectionChanged);
+  
+  onSelectionReset = (_) => {
+    const tracesToUpdate = Array.from({ length: elem.data.length }, (_, i) => i + 1);
+    
+    let updatedData = [...elem.data]
+    tracesToUpdate.forEach((t, index) => {
+      updatedData[index]["selectedpoints"] = []
+    });
+
+    let updatedLayout = { ...elem.layout };
+    updatedLayout["selections"] = [];
+
+    Plotly.react(elem, updatedData, updatedLayout);
+  };
+  Shiny.addCustomMessageHandler("samplesActiveSelectionReset", onSelectionReset);
 };

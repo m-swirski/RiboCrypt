@@ -74,7 +74,6 @@ observatory_server <- function(id, meta_experiment_list, all_samples_df) {
     }) |> shiny::bindEvent(observatory_module())
 
     plot_selection <- shiny::reactive({
-      print("plot selection changed")
       shiny::req(!is.null(input$samples_umap_plot_selection))
       input$samples_umap_plot_selection
     })
@@ -132,10 +131,17 @@ observatory_server <- function(id, meta_experiment_list, all_samples_df) {
     # ignoreNULL false
     # switch on NULL value and perform clean up on js side
     shiny::observe({
-      session$sendCustomMessage(
-        "samplesActiveSelectionChanged",
-        selected_samples$active_data_table_selection()
-      )
-    }) |> shiny::bindEvent(selected_samples$active_data_table_selection())
+      if (is.null(selected_samples$active_data_table_selection())) {
+        session$sendCustomMessage(
+          "samplesActiveSelectionReset",
+          ""
+        )
+      } else {
+        session$sendCustomMessage(
+          "samplesActiveSelectionChanged",
+          selected_samples$active_data_table_selection()
+        )
+      }
+    }) |> shiny::bindEvent(selected_samples$active_data_table_selection(), ignoreNULL = FALSE)
   })
 }

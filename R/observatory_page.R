@@ -52,13 +52,16 @@ observatory_ui <- function(id, meta_experiment_list) {
 
 observatory_server <- function(id, meta_experiment_list, all_samples_df) {
   shiny::moduleServer(id, function(input, output, session) {
-    observatory_module <- shiny::reactive({
-      meta_experiment_df <- ORFik::read.experiment(
+    meta_experiment_df <- shiny::reactive({
+      ORFik::read.experiment(
         meta_experiment_list[name == input$meta_experiment][[1]],
         validate = FALSE
       )
-      create_observatory_module(meta_experiment_df, all_samples_df)
     }) |> shiny::bindEvent(input$go)
+
+    observatory_module <- shiny::reactive({
+      create_observatory_module(meta_experiment_df(), all_samples_df)
+    }) |> shiny::bindEvent(meta_experiment_df())
 
     samples_df <- shiny::reactive({
       observatory_module()$get_samples_data()
@@ -141,6 +144,11 @@ observatory_server <- function(id, meta_experiment_list, all_samples_df) {
     }) |> shiny::bindEvent(
       selected_samples$active_data_table_selection(),
       ignoreNULL = FALSE
+    )
+
+    list(
+      meta_experiment_df = meta_experiment_df,
+      selected_samples = selected_samples$all_selections
     )
   })
 }

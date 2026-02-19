@@ -172,17 +172,20 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       summary_track_type = mainPlotControls()$summary_track_type,
                                       export.format = mainPlotControls()$export_format,
                                       zoom_range = mainPlotControls()$zoom_range,
-                                      frames_subset = mainPlotControls()$frames_subset) {
+                                      frames_subset = mainPlotControls()$frames_subset,
+                                      profiles = NULL) {
   time_before <- Sys.time()
   print("Creating track panel..")
   # Input controller
   multiOmicsControllerView()
   # Get NGS data track panels
-  profiles <- multiOmicsPlot_all_profiles(
-    bottom_panel$display_range, reads, kmers,
-    kmers_type, frames_type, frames_subset,
-    withFrames, log_scale, BPPARAM
-  )
+  if (is.null(profiles)) {
+    profiles <- multiOmicsPlot_all_profiles(
+      bottom_panel$display_range, reads, kmers,
+      kmers_type, frames_type, frames_subset,
+      withFrames, log_scale, BPPARAM
+    )
+  }
   track_panel <- multiOmicsPlot_all_track_plots(
     profiles, withFrames, frame_colors,
     colors, ylabels, ylabels_full_name,

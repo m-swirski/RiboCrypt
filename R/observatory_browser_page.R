@@ -99,7 +99,13 @@ observatory_browser_server <- function(
       tx_annotation <- observed_cds_annotation(selected_tx, cds)
 
       # Subset experiment to selected libraries (if any)
-      dff <- meta_experiment_df()
+      experiment_df <- meta_experiment_df()
+
+      browser()
+      path <- collection_path_from_exp(experiment_df, selected_tx)
+      runs <- c(unlist(library_selections()))
+      reads <- load_collection(path, format = "wide", columns = runs)
+
       if (!is.null(library_selections())) {
         runs <- c(library_selections())
         if (length(runs) > 0) {
@@ -157,7 +163,10 @@ observatory_browser_server <- function(
     }) |> shiny::bindEvent(main_plot_controls(), ignoreNULL = TRUE)
 
     browser_plot <- shiny::reactive({
-      browser_track_panel_shiny(main_plot_controls, bottom_panel(), session)
+      browser_track_panel_shiny(
+        main_plot_controls, bottom_panel(), session,
+        profiles = NULL
+      )
     }) |> shiny::bindEvent(bottom_panel(), ignoreNULL = TRUE)
 
     output$browser_plot <- plotly::renderPlotly({

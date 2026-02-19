@@ -138,7 +138,7 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindCache(input_to_list(input)) %>%
         bindEvent(input$go, ignoreInit = TRUE, ignoreNULL = FALSE)
       # Table
-      table <- reactive(mb_table_shiny(controller, metadata)) %>%
+      table <- reactive(compute_collection_table_shiny(controller, metadata = metadata)) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(controller()$table_hash, ignoreInit = FALSE, ignoreNULL = TRUE)
 
@@ -161,8 +161,7 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
 
       output$myPlotlyPlot <- renderPlotly({
         req(input$plotType == "plotly")
-        mb_mid_plot() %>%
-          plotly::layout(margin = list(t = 8, b = 8))
+        mb_mid_plot()
       }) %>%
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)

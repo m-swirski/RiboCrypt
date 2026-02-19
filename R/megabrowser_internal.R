@@ -33,10 +33,6 @@ mb_controller_shiny <- function(input, df, gene_name_list) {
   click_plot_browser_allsamp_controller(input, df, gene_name_list)
 }
 
-mb_table_shiny <- function(controller, metadata) {
-  compute_collection_table_shiny(controller, metadata = metadata)
-}
-
 mb_plot_object_shiny <- function(table_obj, input) {
   get_meta_browser_plot(table_obj, isolate(input$heatmap_color),
                         isolate(input$color_mult),
@@ -197,22 +193,24 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
   mat <- t(table)
 
   km <- attr(table, "km")
-  row_clusters <- seq_along(km$cluster)
-  row_clusters <- split(row_clusters, km$cluster)
-
+  row_clusters <- split(seq_along(km$cluster), km$cluster)
 
   if (plotType == "plotly") {
     mat <- mat[unlist(row_clusters, use.names = FALSE),]
     ratio <- attr(table, "ratio")
-    x_range <- which(!duplicated((seq_len(nrow(mat)) - 1L) %/% ratio + 1L))
+    x_range <- which(!duplicated((seq_len(ncol(mat)) - 1L) %/% ratio + 1L))
+
+    margins <- margin_megabrowser()
+    margins$t <- margins$b  <- 8
     plot <- plotly::plot_ly(
       x = ~x_range,
       z = mat,
       colors = colors,
       showscale = FALSE,
       type = "heatmapgl"
-    ) %>% plotly::layout(margin = margin_megabrowser()) %>%
+    ) %>% plotly::layout(margin = margins) %>%
       plotly::config(doubleClick = "reset")
+
   } else {
     mat <- mat[rev(unlist(row_clusters, use.names = FALSE)),]
     cluster <- km$cluster[rev(unlist(row_clusters, use.names = FALSE))]

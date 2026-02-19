@@ -208,7 +208,8 @@ compute_collection_table <- function(path, lib_sizes, df,
                                      split_by_frame = FALSE,
                                      ratio_interval = NULL,
                                      decreasing_order = FALSE,
-                                     enrichment_term = metadata_field[1]) {
+                                     enrichment_term = metadata_field[1],
+                                     clusters = 1) {
 
   table <- load_collection(path)
   intersect <- intersect(colnames(table), runIDs(df))
@@ -231,6 +232,7 @@ compute_collection_table <- function(path, lib_sizes, df,
                                                 decreasing_order, enrichment_term)
   # Update order of libraries to follow grouping created
   setcolorder(table, attr(meta_sub, "meta_order"))
+  setattr(table, "km", kmeans(t(as.matrix(table)), centers = clusters))
 
   if (as_list) return(list(table = table, metadata_field = meta_sub))
   return(table)

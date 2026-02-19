@@ -175,10 +175,10 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     table_hash <- paste(name(dff), id, table_path, lib_sizes, clusters, min_count,
                         region_type, paste(metadata_field, collapse = ":"), normalization, frame,
                         kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
-                        leader_extension, trailer_extension, input$plotType,
+                        leader_extension, trailer_extension,
                         isolate(input$viewMode), collapsed_introns_width, sep = "|_|")
-    table_plot_hash <- paste(table_hash, isolate(input$other_tx), summary_track,
-                             display_annot, isolate(input$heatmap_color),
+    table_plot_hash <- paste(table_hash, isolate(input$other_tx), input$plotType,
+                             summary_track, display_annot, isolate(input$heatmap_color),
                              isolate(input$color_mult), sep = "|_|")
 
     timer_done_nice_print("-- Mega Browser controller done: ", time_before)
@@ -200,6 +200,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    group_on_tx_tpm = other_tx,
                    ratio_interval = ratio_interval,
                    frame = frame,
+                   clusters = clusters,
                    plotType = isolate(input$plotType),
                    display_annot = display_annot,
                    summary_track = summary_track,

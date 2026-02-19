@@ -11,6 +11,7 @@ compute_collection_table_shiny <- function(mainPlotControls,
                                            split_by_frame = mainPlotControls()$frame,
                                            ratio_interval = mainPlotControls()$ratio_interval,
                                            enrichment_term = mainPlotControls()$enrichment_term,
+                                           clusters = mainPlotControls()$clusters,
                                            metadata) {
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
@@ -22,7 +23,8 @@ compute_collection_table_shiny <- function(mainPlotControls,
                                      group_on_tx_tpm = group_on_tx_tpm,
                                      split_by_frame = split_by_frame,
                                      ratio_interval = ratio_interval,
-                                     enrichment_term = enrichment_term)
+                                     enrichment_term = enrichment_term,
+                                     clusters = clusters)
   timer_done_nice_print("Done: lib loading + Coverage calc: ", time_before)
   return(dtable)
 }
@@ -37,7 +39,7 @@ mb_table_shiny <- function(controller, metadata) {
 
 mb_plot_object_shiny <- function(table_obj, input) {
   get_meta_browser_plot(table_obj, isolate(input$heatmap_color),
-                        isolate(input$clusters), isolate(input$color_mult),
+                        isolate(input$color_mult),
                         isolate(input$plotType))
 }
 
@@ -106,10 +108,6 @@ mb_static_subplot_shiny <- function(top_plot, mid_image, bottom_plot, rel_height
     )
 }
 
-mb_meta_and_clusters_shiny <- function(metadata_field, plot_object, enrichment_term) {
-  allsamples_metadata_clustering(metadata_field, plot_object, enrichment_term)
-}
-
 mb_read_axis_event <- function(ed, axes) {
   for (ax in axes) {
     k0 <- paste0(ax, ".range[0]")
@@ -171,7 +169,7 @@ sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sideb
   } else if (yed$auto) {
     yrelayout <- list(
       yaxis = list(
-        autorange = TRUE,
+        autorange = "reversed",
         showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL
       )
     )
@@ -186,8 +184,8 @@ sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sideb
   invisible(NULL)
 }
 
-get_meta_browser_plot <- function(table, color_theme, clusters = 1,
-                                  color_mult = 3, plotType = "plotly") {
+get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
+                                  plotType = "plotly") {
   time_before <- Sys.time()
   cat("Creating metabrowser heatmap\n")
 
@@ -198,7 +196,7 @@ get_meta_browser_plot <- function(table, color_theme, clusters = 1,
   } else stop("Invalid color theme!")
   mat <- t(table)
 
-  km <- kmeans(mat, centers = clusters)
+  km <- attr(table, "km")
   row_clusters <- seq_along(km$cluster)
   row_clusters <- split(row_clusters, km$cluster)
 

@@ -41,6 +41,9 @@ allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "C
 
   enrich_dt <- allsamples_meta_stats(meta)
   timer_done_nice_print("-- metabrowser clustering info done: ", time_before)
+  # Show it reversed
+  meta <- meta[.N:1]
+  meta[, index := .I]
   return(list(meta = meta, enrich_dt = enrich_dt))
 }
 

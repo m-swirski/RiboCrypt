@@ -123,7 +123,7 @@ observatory_browser_server <- function(
           frame = as.factor(rep_len(1:3, length.out = length(count)))
         ) |>
           smoothenMultiSampCoverage(
-            1,
+            9,
             kmers_type = "mean",
             split_by_frame = TRUE
           )
@@ -141,8 +141,8 @@ observatory_browser_server <- function(
         summary_track_type = "lines",
         viewMode = FALSE,
         collapsed_introns_width = 0,
-        kmerLength = 1,
-        frames_type = "lines",
+        kmerLength = 9,
+        frames_type = "area",
         annotation = cds_annotation,
         tx_annotation = tx_annotation,
         reads = reads,
@@ -164,7 +164,8 @@ observatory_browser_server <- function(
           paste(experiment_df$Run, collapse = ","),
           collapse = "|"
         ),
-        hash_expression = paste(selected_tx, collapse = "|")
+        hash_expression = paste(selected_tx, collapse = "|"),
+        profiles = profiles
       )
     }) |> shiny::bindEvent(input$go, ignoreNULL = TRUE, ignoreInit = TRUE)
 
@@ -177,7 +178,10 @@ observatory_browser_server <- function(
     browser_plot <- shiny::reactive({
       browser_track_panel_shiny(
         main_plot_controls, bottom_panel(), session,
-        profiles = profiles
+        ylabels = names(library_selections()),
+        profiles = main_plot_controls()$profiles,
+        use_fst = TRUE,
+        selected_libraries = library_selections()
       )
     }) |> shiny::bindEvent(bottom_panel(), ignoreNULL = TRUE)
 

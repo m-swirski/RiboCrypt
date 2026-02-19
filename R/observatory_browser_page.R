@@ -61,6 +61,9 @@ observatory_browser_server <- function(
         selected = isoforms[1],
         server = TRUE
       )
-    }) |> shiny::bindEvent(input$gene_input, ignoreNULL = TRUE, ignoreInit = TRUE)
+    }) |> shiny::bindEvent(
+      input$gene_input,
+      ignoreNULL = TRUE, ignoreInit = TRUE
+    )
   })
 }

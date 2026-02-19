@@ -32,18 +32,18 @@ observatory_selector_ui <- function(id, meta_experiment_list) {
       shiny::column(1, plot_button(ns("go"))),
       shiny::column(
         2,
-        sample_selection_picker(ns("sample_selection")),
+        library_selection_picker(ns("library_selection")),
         offset = 4
       ),
-      shiny::column(1, sample_selection_reset_button(ns("sample_selection")))
+      shiny::column(1, library_selection_reset_button(ns("library_selection")))
     ),
     shiny::fluidRow(
       shiny::fluidRow(
-        plotly::plotlyOutput(ns("samples_umap_plot")) |>
+        plotly::plotlyOutput(ns("libraries_umap_plot")) |>
           shinycssloaders::withSpinner(color = "#0dc5c1")
       ),
       shiny::fluidRow(
-        DT::DTOutput(ns("samples_data_table")) |>
+        DT::DTOutput(ns("libraries_data_table")) |>
           shinycssloaders::withSpinner(color = "#0dc5c1")
       )
     )
@@ -53,7 +53,7 @@ observatory_selector_ui <- function(id, meta_experiment_list) {
 observatory_selector_server <- function(
   id,
   meta_experiment_list,
-  all_samples_df
+  all_libraries_df
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     meta_experiment_df <- shiny::reactive({
@@ -64,95 +64,95 @@ observatory_selector_server <- function(
     }) |> shiny::bindEvent(input$go)
 
     observatory_module <- shiny::reactive({
-      create_observatory_module(meta_experiment_df(), all_samples_df)
+      create_observatory_module(meta_experiment_df(), all_libraries_df)
     }) |> shiny::bindEvent(meta_experiment_df())
 
-    samples_df <- shiny::reactive({
-      observatory_module()$get_samples_data()
+    libraries_df <- shiny::reactive({
+      observatory_module()$get_libraries_data()
     })
 
-    output$samples_umap_plot <- plotly::renderPlotly({
+    output$libraries_umap_plot <- plotly::renderPlotly({
       observatory_module()$get_umap_data(input$color_by) |>
         umap_plot(color.by = input$color_by) |>
         htmlwidgets::onRender(
           fetchJS("umap_plot_extension.js"),
-          session$ns("samples_umap_plot_selection")
+          session$ns("libraries_umap_plot_selection")
         )
     }) |> shiny::bindEvent(observatory_module())
 
     plot_selection <- shiny::reactive({
-      shiny::req(!is.null(input$samples_umap_plot_selection))
-      input$samples_umap_plot_selection
+      shiny::req(!is.null(input$libraries_umap_plot_selection))
+      input$libraries_umap_plot_selection
     })
 
-    output$samples_data_table <- DT::renderDT({
-      samples_df()
+    output$libraries_data_table <- DT::renderDT({
+      libraries_df()
     })
 
-    samples_data_table_proxy <- shiny::reactive({
-      DT::dataTableProxy("samples_data_table")
+    libraries_data_table_proxy <- shiny::reactive({
+      DT::dataTableProxy("libraries_data_table")
     })
 
     data_table_selection <- shiny::reactive({
       selection_is_defined <-
-        !is.null(input$samples_data_table_rows_selected)
+        !is.null(input$libraries_data_table_rows_selected)
 
       selected_indexes <- if (!selection_is_defined) {
-        input$samples_data_table_rows_all
+        input$libraries_data_table_rows_all
       } else {
-        input$samples_data_table_rows_selected
+        input$libraries_data_table_rows_selected
       }
 
-      shiny::isolate(filtered_samples_df())[selected_indexes]$Run
+      shiny::isolate(filtered_libraries_df())[selected_indexes]$Run
     })
 
-    selected_samples <- sample_selection_server(
-      "sample_selection",
+    selected_libraries <- library_selection_server(
+      "library_selection",
       plot_selection,
       data_table_selection
     )
 
-    filtered_samples_df <- shiny::reactive({
-      if (!is.null(selected_samples$active_plot_selection())) {
-        samples_df()[
-          Run %in% selected_samples$active_plot_selection()
+    filtered_libraries_df <- shiny::reactive({
+      if (!is.null(selected_libraries$active_plot_selection())) {
+        libraries_df()[
+          Run %in% selected_libraries$active_plot_selection()
         ]
       } else {
-        samples_df()
+        libraries_df()
       }
     }) |> shiny::bindEvent(
-      selected_samples$active_plot_selection(),
+      selected_libraries$active_plot_selection(),
       ignoreNULL = FALSE
     )
 
     shiny::observe({
       DT::replaceData(
-        samples_data_table_proxy(),
-        filtered_samples_df(),
+        libraries_data_table_proxy(),
+        filtered_libraries_df(),
         resetPaging = FALSE
       )
-    }) |> shiny::bindEvent(filtered_samples_df())
+    }) |> shiny::bindEvent(filtered_libraries_df())
 
     shiny::observe({
-      if (is.null(selected_samples$active_data_table_selection())) {
+      if (is.null(selected_libraries$active_data_table_selection())) {
         session$sendCustomMessage(
-          "samplesActiveSelectionReset",
+          "librariesActiveSelectionReset",
           ""
         )
       } else {
         session$sendCustomMessage(
-          "samplesActiveSelectionChanged",
-          selected_samples$active_data_table_selection()
+          "librariesActiveSelectionChanged",
+          selected_libraries$active_data_table_selection()
         )
       }
     }) |> shiny::bindEvent(
-      selected_samples$active_data_table_selection(),
+      selected_libraries$active_data_table_selection(),
       ignoreNULL = FALSE
     )
 
     list(
       meta_experiment_df = meta_experiment_df,
-      selected_samples = selected_samples$all_selections
+      selected_libraries = selected_libraries$all_selections
     )
   })
 }

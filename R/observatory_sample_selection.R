@@ -1,4 +1,4 @@
-sample_selection_picker <- function(id) {
+library_selection_picker <- function(id) {
   ns <- shiny::NS(id)
   shiny::selectizeInput(
     ns("active_selection_id"),
@@ -7,7 +7,7 @@ sample_selection_picker <- function(id) {
   )
 }
 
-sample_selection_reset_button <- function(id) {
+library_selection_reset_button <- function(id) {
   ns <- shiny::NS(id)
   shiny::actionButton(ns("reset_active_selection"), "Reset")
 }
@@ -17,7 +17,7 @@ sample_selection_reset_button <- function(id) {
 # reactive_dataplot_selection -
 # a reactiveVal holding a vector of character vectors representing runIds
 # reactive_dataplot_selection is always a subset of reactive_plot_selection
-sample_selection_server <- function(
+library_selection_server <- function(
   id,
   reactive_plot_selection_input,
   reactive_data_table_selection_input

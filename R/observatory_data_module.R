@@ -9,28 +9,28 @@ annotation_type_list <- c(
 library_type_list <- c("RFP")
 reading_frames <- c(1, 2, 3)
 
-create_observatory_module <- function(meta_experiment_df, samples_df) {
+create_observatory_module <- function(meta_experiment_df, libraries_df) {
   # gene_list <- ORFik::loadRegion(organism_meta_df, "cds")
   # transcript_list <- ORFik::loadRegion(organism_meta_df, "tx")
   # transcript_to_gene_map <- get_gene_name_categories(organism_meta_df)
-  organism_samples <- samples_df[Run %in% meta_experiment_df$Run]
+  organism_libraries <- libraries_df[Run %in% meta_experiment_df$Run]
 
   # TODO
-  # A function that returns a UMAP projection over samples for a given organisms
+  # A function that returns a UMAP projection over libraries for a given organisms
   # returns a dataframe(TODO expand on the contents of dataframe)
   get_umap_data <- function(color_by = c("tissue", "cell_line")) {
     load_data_umap_internal(meta_experiment_df@experiment, color.by = color_by)
   }
 
-  # A function that returns a list of samples available for a given organism
+  # A function that returns a list of libraries available for a given organism
   # returns a vector of character vectors
-  get_samples_data <- function(library_types = library_type_list) {
-    organism_samples[LIBRARYTYPE %in% library_types]
+  get_libraries_data <- function(library_types = library_type_list) {
+    organism_libraries[LIBRARYTYPE %in% library_types]
   }
 
   list(
     get_umap_data = get_umap_data,
-    get_samples_data = get_samples_data
+    get_libraries_data = get_libraries_data
   )
 }
 
@@ -51,9 +51,9 @@ extend_region_leader <- function(region) {}
 extend_region_trailer <- function(region) {}
 
 # TODO
-# A function that returns coverage over a given region for selected samples
+# A function that returns coverage over a given region for selected libraries
 # returns a dataframe(TODO expand on the contents of the dataframe)
-get_coverage_for_samples <- function(organism, samples, region) {}
+get_coverage_for_libraries <- function(organism, libraries, region) {}
 
 # TODO
 # It will possibly be a few different functions

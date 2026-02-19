@@ -63,27 +63,28 @@
 #' # RiboCrypt_app(browser_options = c(plot_on_start = "TRUE"))
 #' ## Init with an experiment and gene (you must of course have the experiment)
 #'
-#' #RiboCrypt_app(validate.experiments = FALSE,
+#' # RiboCrypt_app(validate.experiments = FALSE,
 #' #       browser_options = c(plot_on_start = "TRUE",
 #' #                           default_experiment = "all_merged-Homo_sapiens_2024_8",
 #' #                           default_gene = "ATF4-ENSG00000128272"))
-#' #RiboCrypt_app(validate.experiments = FALSE, all_exp = all_exp,
-#' #browser_options = c(plot_on_start = "TRUE",
+#' # RiboCrypt_app(validate.experiments = FALSE, all_exp = all_exp,
+#' # browser_options = c(plot_on_start = "TRUE",
 #' #                    default_experiment = "human_all_merged_l50",
 #' #                    default_gene = "RPL12-ENSG00000197958",
 #' #                    default_isoform = "ENST00000361436",
 #' #                    default_view_mode = "genomic"))
-#' #RiboCrypt_app(validate.experiments = FALSE,
+#' # RiboCrypt_app(validate.experiments = FALSE,
 #' #       browser_options = c(plot_on_start = "TRUE",
 #' #                           default_experiment = "all_merged-Saccharomyces_cerevisiae",
 #' #                           default_gene = "EFM5-YGR001",
 #' #                           default_view_mode = "genomic"))
 RiboCrypt_app <- function(
-    validate.experiments = TRUE,
-    options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
-    all_exp = list.experiments(validate = validate.experiments),
-    browser_options = c(), init_tab_focus = "browser",
-    metadata = NULL, all_exp_meta = all_exp[grep("all_samples-", name),]) {
+  validate.experiments = TRUE,
+  options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
+  all_exp = list.experiments(validate = validate.experiments),
+  browser_options = c(), init_tab_focus = "browser",
+  metadata = NULL, all_exp_meta = all_exp[grep("all_samples-", name), ]
+) {
   rc_parameter_setup()
   # User interface
   ui <- tagList(
@@ -98,30 +99,42 @@ RiboCrypt_app <- function(
       theme = rc_theme(),
       selected = init_tab_focus,
       browser_ui("browser", all_exp, browser_options, names_init, libs),
-      browser_allsamp_ui("browser_allsamp", all_exp_meta, browser_options, metadata,
-                         names_init_meta),
+      browser_allsamp_ui(
+        "browser_allsamp", all_exp_meta, browser_options, metadata,
+        names_init_meta
+      ),
       observatory_ui("observatory", all_exp_meta),
       analysis_ui("Analysis", all_exp, browser_options, libs, metadata),
       metadata_ui("metadata", all_exp, all_exp_meta),
       tutorial_ui("tutorial")
-  ))
-  cat("Done (UI setup):"); print(round(Sys.time() - time_before, 2))
+    )
+  )
+  cat("Done (UI setup):")
+  print(round(Sys.time() - time_before, 2))
 
   server <- function(input, output, session) {
     reactive_url()
     org_and_study_changed_checker(input, output, session)
     tutorial_server("tutorial")
-    rv <- browser_server("browser", all_exp, without_readlengths_env, df,
-                         experiments, tx, cds, libs, org, gene_name_list,
-                         gg_theme, rv, browser_options)
+    rv <- browser_server(
+      "browser", all_exp, without_readlengths_env, df,
+      experiments, tx, cds, libs, org, gene_name_list,
+      gg_theme, rv, browser_options
+    )
     if (nrow(all_exp_meta) > 0) {
-      browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata,
-                             names_init_meta, browser_options, exp_init_meta,
-                             exps_dir)
-    } else print("No MegaBrowser exps given, ignoring MegaBrowser server.")
-    rv <- analysis_server("Analysis", all_exp, without_readlengths_env,
-            with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
-            gene_name_list, rv, metadata, names_init, browser_options)
+      browser_allsamp_server(
+        "browser_allsamp", all_exp_meta, df_meta, metadata,
+        names_init_meta, browser_options, exp_init_meta,
+        exps_dir
+      )
+    } else {
+      print("No MegaBrowser exps given, ignoring MegaBrowser server.")
+    }
+    rv <- analysis_server(
+      "Analysis", all_exp, without_readlengths_env,
+      with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
+      gene_name_list, rv, metadata, names_init, browser_options
+    )
     metadata_server(
       "metadata",
       all_exp, metadata,
@@ -131,11 +144,13 @@ RiboCrypt_app <- function(
     observatory_server(
       "observatory",
       meta_experiment_list = all_exp_meta,
-      all_samples_df = metadata
+      all_libraries_df = metadata
     )
 
-    cat("Server this: "); print(round(Sys.time() - this_time_before, 2))
-    cat("Server total: "); print(round(Sys.time() - time_before, 2))
+    cat("Server this: ")
+    print(round(Sys.time() - this_time_before, 2))
+    cat("Server total: ")
+    print(round(Sys.time() - time_before, 2))
   }
   shinyApp(ui, server, options = options)
 }

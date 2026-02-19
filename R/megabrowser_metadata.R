@@ -259,7 +259,7 @@ allsamples_enrich_bar_plotly <- function(enrich) {
     type = "bar",
     text = ~tooltip_text,
     hoverinfo = "text"
-  ) |>
+  ) %>%
     plotly::layout(
       barmode = "group",
       xaxis = list(
@@ -281,7 +281,7 @@ allsamples_enrich_bar_plotly <- function(enrich) {
 
   # Optional dashed red threshold lines at y = 3 and y = -3
   if (did_enrichment_test) {
-    p <- p |>
+    p <- p %>%
       plotly::layout(
         shapes = list(
           list(

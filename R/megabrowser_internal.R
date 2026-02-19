@@ -124,6 +124,7 @@ mb_read_axis_event <- function(ed, axes) {
 }
 
 sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sidebar = TRUE,
+                                     y_max = NULL, y_reversed = TRUE,
                                      x_axes = c("xaxis", "xaxis2", "xaxis3"),
                                      y_axes = c("yaxis", "yaxis2", "yaxis3")) {
   if (is.null(ed)) return(invisible(NULL))
@@ -149,16 +150,50 @@ sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sideb
   }
 
   if (!is.null(yed$r0) && !is.null(yed$r1)) {
+    y0_raw <- yed$r0
+    y1_raw <- yed$r1
+    if (y_reversed && !is.null(y_max)) {
+      y0_raw <- (y_max + 1) - y0_raw
+      y1_raw <- (y_max + 1) - y1_raw
+    }
+    y0 <- min(y0_raw, y1_raw)
+    y1 <- max(y0_raw, y1_raw)
+    y0c <- round(y0)
+    y1c <- round(y1)
+    if (y0c > y1c) {
+      tmp <- y0c
+      y0c <- y1c
+      y1c <- tmp
+    }
+    y0e <- y0c - 0.5
+    y1e <- y1c + 0.5
     yrelayout <- list(
       yaxis = list(
-        range = c(yed$r0, yed$r1), autorange = FALSE,
+        range = c(y1e, y0e), autorange = FALSE,
         showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL
       )
     )
   } else if (!is.null(yed$r) && length(yed$r) == 2) {
+    y0_raw <- yed$r[[1]]
+    y1_raw <- yed$r[[2]]
+    if (y_reversed && !is.null(y_max)) {
+      y0_raw <- (y_max + 1) - y0_raw
+      y1_raw <- (y_max + 1) - y1_raw
+    }
+    y0 <- min(y0_raw, y1_raw)
+    y1 <- max(y0_raw, y1_raw)
+    y0c <- round(y0)
+    y1c <- round(y1)
+    if (y0c > y1c) {
+      tmp <- y0c
+      y0c <- y1c
+      y1c <- tmp
+    }
+    y0e <- y0c - 0.5
+    y1e <- y1c + 0.5
     yrelayout <- list(
       yaxis = list(
-        range = c(yed$r[[1]], yed$r[[2]]), autorange = FALSE,
+        range = c(y1e, y0e), autorange = FALSE,
         showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL
       )
     )

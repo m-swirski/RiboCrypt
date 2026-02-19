@@ -359,7 +359,7 @@ geneModelPanelPlotTemplate <- function() {
 geneModelPanelPlotly <- function(dt) {
   # If no annotation given, return blank plotly
   if (is.null(dt) || nrow(dt) == 0) {
-    return(plotly::plot_ly() |>
+    return(plotly::plot_ly() %>%
              plotly::layout(
                xaxis = list(visible = FALSE),
                yaxis = list(visible = FALSE),
@@ -391,7 +391,7 @@ geneModelPanelPlotly <- function(dt) {
   y_min <- min(box_dt$ymin, if (nrow(seg_dt)) (0.5 - seg_dt$layers) else Inf, na.rm = TRUE) - 0.05
   y_max <- max(box_dt$ymax, if (nrow(seg_dt)) (0.5 - seg_dt$layers) else -Inf, na.rm = TRUE) + 0.05
 
-  p <- plotly::plot_ly() |>
+  p <- plotly::plot_ly() %>%
     plotly::layout(
       showlegend = FALSE,
       xaxis = list(
@@ -421,7 +421,7 @@ geneModelPanelPlotly <- function(dt) {
     # Hover text per segment: repeat text for start/end, NA for breaks
     seg_text <- c(rbind(seg_dt$gene_names, seg_dt$gene_names, NA_character_))
 
-    p <- p |>
+    p <- p %>%
       plotly::add_trace(
         x = seg_x, y = seg_y,
         type = "scatter", mode = "lines",
@@ -440,7 +440,7 @@ geneModelPanelPlotly <- function(dt) {
         tooltip = "Collapsed Intron"
       )]
 
-      p <- p |>
+      p <- p %>%
         plotly::add_text(
           data = intron_flank_coords,
           x = ~xmid, y = ~ymid,
@@ -468,7 +468,7 @@ geneModelPanelPlotly <- function(dt) {
       )
     })
 
-    p <- p |>
+    p <- p %>%
       plotly::layout(shapes = rect_shapes)
 
     # Add an invisible scatter trace to provide per-rectangle hover tooltips
@@ -477,7 +477,7 @@ geneModelPanelPlotly <- function(dt) {
       ymid = (ymin + ymax) / 2
     )]
 
-    p <- p |>
+    p <- p %>%
       plotly::add_markers(
         data = box_dt,
         x = ~xmid, y = ~ymid,
@@ -492,7 +492,7 @@ geneModelPanelPlotly <- function(dt) {
       labels_locations = mean(labels_locations)
     ), by = gene_names]
 
-    p <- p |>
+    p <- p %>%
       plotly::add_text(
         data = lab_dt,
         x = ~labels_locations,

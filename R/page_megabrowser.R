@@ -193,7 +193,8 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         req(input$plotType == "plotly")
         ed <- suppressWarnings(plotly::event_data("plotly_relayout", source = "mb_mid"))
         req(!is.null(ed))
-        sync_megabrowser_x_shiny(ed, session)
+        y_max <- ncol(table()$table)
+        sync_megabrowser_x_shiny(ed, session, y_max = y_max, y_reversed = TRUE)
       })
 
       output$c <- renderUI(renderMegabrowser(input$plotType, ns)) %>%

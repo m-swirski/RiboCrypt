@@ -118,6 +118,10 @@ allsamples_sidebar_plotly <- function(meta) {
     }
   }
   res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE) %>%
+    plotly::layout(
+      xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
+      yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL)
+    ) %>%
     plotly::config(displayModeBar = FALSE)
 
   did_clustering <- length(unique(meta$cluster)) > 1
@@ -125,13 +129,17 @@ allsamples_sidebar_plotly <- function(meta) {
     centers <- meta[, .(
       y_center = (min(index) + max(index)) / 2
     ), by = cluster][order(cluster)]
+    centers[, cluster_idx := seq_len(.N)]
+
     cluster_ann <- lapply(seq_len(nrow(centers)), function(i) {
       list(
         xref = "paper",   # paper coords for x so it stays at the left edge
         yref = "y",       # data coords for y so it matches heatmap rows
         x = -0.02,        # move left of plotting area; tweak as needed
         y = centers$y_center[i],
-        text = as.character(centers$cluster[i]),
+        text = as.character(centers$cluster_idx[i]),
+        hovertext = as.character(centers$cluster[i]),
+        captureevents = TRUE,
         showarrow = FALSE,
         textangle = -90,  # sideways
         xanchor = "right",
@@ -142,7 +150,15 @@ allsamples_sidebar_plotly <- function(meta) {
     res <- res %>% layout(margin = list(l = 30), annotations = cluster_ann)
   }
   timer_done_nice_print("-- metabrowser sidebar done: ", time_before)
-  res
+  res %>% plotly::layout(margin = list(t = 8, b = 8), yaxis = list(
+        autorange = "reversed",
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL
+      )
+    )
 }
 
 
@@ -210,7 +226,6 @@ allsamples_enrich_bar_plotly <- function(enrich) {
   enrich_dt <- enrich_dt[rn != "", ]
 
   did_enrichment_test <- all(as.character(enrich_dt$variable) != "counts")
-
   # Tooltips (match your HTML line breaks)
   tip_prefix <- attr(enrich, "tooltip")
   if (is.null(tip_prefix)) tip_prefix <- ""

@@ -397,7 +397,7 @@ geneModelPanelPlotly <- function(dt) {
       xaxis = list(
         visible = FALSE,
         range = c(x_min, x_max),
-        fixedrange = TRUE,
+        fixedrange = FALSE,
         zeroline = FALSE
       ),
       yaxis = list(
@@ -509,7 +509,7 @@ geneModelPanelPlotly <- function(dt) {
 
 margin_megabrowser <- function() {
   list(
-    l = 23,
+    l = 30,
     r = 100,
     t = 0,
     b = 0

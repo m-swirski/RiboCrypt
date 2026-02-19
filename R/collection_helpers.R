@@ -119,7 +119,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
   matchings <- match_metadata_to_table(metadata, table)
   valid_libs <- attr(table, "valid_libs")
   valid_run_ids <- names(valid_libs[valid_libs])
-  all_metadata_fields <- metadata[Run %in% valid_run_ids, ..metadata_field]
+  other_columns <- all_metadata_fields <- metadata[Run %in% valid_run_ids, ..metadata_field]
 
   order_on_ratios <- !is.null(ratio_interval)
   order_on_other_tx_tpm <- !is.null(group_on_tx_tpm)

@@ -92,6 +92,7 @@ observatory_browser_server <- function(
     # Uses hardcoded defaults (no advanced settings panel in UI).
     main_plot_controls <- shiny::reactive({
       selected_tx <- input$tx_input
+      aggregation_method <- rowMeans
       shiny::req(selected_tx, selected_tx != "")
 
       display_region <- observed_tx_annotation(selected_tx, tx)
@@ -101,25 +102,36 @@ observatory_browser_server <- function(
       # Subset experiment to selected libraries (if any)
       experiment_df <- meta_experiment_df()
 
-      browser()
       path <- collection_path_from_exp(experiment_df, selected_tx)
-      runs <- c(unlist(library_selections()))
+      runs <- unlist(library_selections())
       reads <- load_collection(path, format = "wide", columns = runs)
-
-      if (!is.null(library_selections())) {
-        runs <- c(library_selections())
-        if (length(runs) > 0) {
-          dff <- dff[dff$Run %in% runs[[1]], ]
-        }
-      }
-      shiny::req(nrow(dff) > 0)
-
-      with_frames <- ORFik::libraryTypes(dff, uniqueTypes = FALSE) %in%
+      with_frames <- ORFik::libraryTypes(
+        experiment_df,
+        uniqueTypes = FALSE
+      ) %in%
         c("RFP", "RPF", "LSU", "TI")
-      reads <- get_track_paths(dff)
+
+      profiles <- lapply(library_selections(), function(selection) {
+        count <- aggregation_method(
+          reads[, selection, with = FALSE],
+          na.rm = TRUE
+        )
+        data.table::data.table(
+          count = count,
+          position = seq_along(count),
+          library = as.factor(rep_len(1, length.out = length(count))),
+          frame = as.factor(rep_len(1:3, length.out = length(count)))
+        ) |>
+          smoothenMultiSampCoverage(
+            1,
+            kmers_type = "mean",
+            split_by_frame = TRUE
+          )
+      })
+
 
       shiny::reactiveValues(
-        dff = dff,
+        dff = experiment_df,
         display_region = display_region,
         customRegions = NULL,
         extendTrailers = 0,
@@ -137,7 +149,7 @@ observatory_browser_server <- function(
         custom_sequence = NULL,
         log_scale = FALSE,
         phyloP = FALSE,
-        withFrames = with_frames,
+        withFrames = TRUE,
         zoom_range = numeric(0),
         frames_subset = "all",
         mapability = FALSE,
@@ -149,7 +161,7 @@ observatory_browser_server <- function(
         hash_bottom = paste(selected_tx, collapse = "|"),
         hash_browser = paste(
           selected_tx,
-          paste(dff$Run, collapse = ","),
+          paste(experiment_df$Run, collapse = ","),
           collapse = "|"
         ),
         hash_expression = paste(selected_tx, collapse = "|")
@@ -165,7 +177,7 @@ observatory_browser_server <- function(
     browser_plot <- shiny::reactive({
       browser_track_panel_shiny(
         main_plot_controls, bottom_panel(), session,
-        profiles = NULL
+        profiles = profiles
       )
     }) |> shiny::bindEvent(bottom_panel(), ignoreNULL = TRUE)
 

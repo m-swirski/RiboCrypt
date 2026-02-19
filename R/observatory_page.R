@@ -25,7 +25,7 @@ observatory_server <- function(
     observatory_browser_server(
       "browser",
       selections$meta_experiment_df,
-      selections$selected_libraries
+      selections$selected_libraries$data_table_selections
     )
   })
 }

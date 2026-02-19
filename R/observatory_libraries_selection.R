@@ -162,7 +162,7 @@ library_selection_server <- function(
     list(
       active_plot_selection = active_plot_selection,
       active_data_table_selection = active_data_table_selection,
-      all_selections = shiny::reactive(selection_store())
+      all_selections = selection_store
     )
   })
 }

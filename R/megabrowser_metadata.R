@@ -1,13 +1,14 @@
-allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "Cluster",
+allsamples_metadata_clustering <- function(table, enrichment_test_on = "Cluster",
                                            numeric_bins = 5) {
 
   print("Starting metabrowser clustering info")
+  values <- table$metadata_field
   at_least_2_values <- length(unique(values)) > 1
   if (!at_least_2_values) message("Single value analysis not possible, skipping!")
 
   time_before <- Sys.time()
   req(at_least_2_values)
-  row_orders <- row_order(plot)
+  row_orders <- attr(table$table, "row_order_list")
   orders <- unlist(row_orders, use.names = FALSE)
   clustering_was_done <- length(row_orders) > 1
 
@@ -15,7 +16,8 @@ allsamples_metadata_clustering <- function(values, plot, enrichment_test_on = "C
     orders <- order(values) # Order by variable instead of cluster
   }
   # TODO Fix ordering if clustering
-  meta <- data.table(grouping = values, order = orders, attr(values, "other_columns"))
+  meta <- merge.data.table(data.table(Run = names(values), grouping = values, order = orders),
+                     attr(values, "other_columns"), by = "Run", all.x = TRUE, sort = FALSE)
   meta <- meta[meta$order, ]
   if (clustering_was_done) {
     meta[, cluster := rep(seq(length(row_orders)), lengths(row_orders))]
@@ -72,7 +74,7 @@ allsamples_sidebar_plotly <- function(meta) {
 
   stopifnot(is.data.table(meta))
   stopifnot(all(c("index", "grouping") %in% names(meta)))
-  columns_to_drop <- c("order", "index", "cluster", attr(meta, "xlab"))
+  columns_to_drop <- c("Run","order", "index", "cluster", attr(meta, "xlab"))
   cols <- setdiff(names(meta), columns_to_drop)
   y <- meta[["index"]]
 
@@ -199,7 +201,7 @@ allsamples_meta_stats <- function(meta, attr_xlab = attr(meta, "xlab"), attr_yla
   clustering_was_done <- !is.null(res$cluster)
   if (clustering_was_done) {
     concat_table <- table(res$grouping, res$cluster)
-    chi_test <- chisq.test(concat_table)
+    chi_test <- suppressWarnings(chisq.test(concat_table))
     res <- chi_test$stdres
     tooltipe <- "Chi-squared-stdres: "
   } else {
@@ -305,6 +307,7 @@ allsamples_enrich_bar_plotly <- function(enrich) {
 
 
 allsamples_meta_table <- function(meta_and_clusters) {
-  cbind(attr(meta_and_clusters$meta, "runIDs"),
-        meta_and_clusters$meta)[, c("index", "order") := NULL]
+  merge.data.table(attr(meta_and_clusters$meta, "runIDs"),
+                   meta_and_clusters$meta[, c("index", "order") := NULL],
+                   by = "Run", sort = FALSE)
 }

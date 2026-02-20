@@ -203,7 +203,7 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
 
       # Additional plots and tables
       meta_and_clusters <- reactive(
-        allsamples_metadata_clustering(table()$metadata_field, plot_object(),
+        allsamples_metadata_clustering(table(),
                                        controller()$enrichment_term)) %>%
         bindCache(controller()$table_hash, controller()$enrichment_term) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)

@@ -119,8 +119,8 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
   matchings <- match_metadata_to_table(metadata, table)
   valid_libs <- attr(table, "valid_libs")
   valid_run_ids <- names(valid_libs[valid_libs])
+  metadata_field <- c(metadata_field, "Run")
   other_columns <- all_metadata_fields <- metadata[Run %in% valid_run_ids, ..metadata_field]
-
   order_on_ratios <- !is.null(ratio_interval)
   order_on_other_tx_tpm <- !is.null(group_on_tx_tpm)
   enrichment_term_char <- colnames(all_metadata_fields)[1]
@@ -147,13 +147,22 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
     other_columns <- all_metadata_fields[, .SD, .SDcols = !enrichment_term]
     enrichment_term_char <- enrichment_term
   }
-  meta_order <- order(ordering_vector, decreasing = decreasing_order)
-  ordering_vector <- ordering_vector[meta_order]
-  attr(ordering_vector, "meta_order") <- meta_order
-  attr(ordering_vector, "other_columns") <- other_columns[meta_order, ]
+  sample_ordering <- order(ordering_vector, decreasing = decreasing_order)
+  ordering_vector <- ordering_vector[sample_ordering]
+  attr(ordering_vector, "meta_order") <- sample_ordering
+  attr(ordering_vector, "other_columns") <- other_columns[sample_ordering, ]
   attr(ordering_vector, "xlab") <- enrichment_term_char
-  attr(ordering_vector, "runIDs") <- metadata[Run %in% valid_run_ids, .(Run, BioProject)][meta_order,]
+  attr(ordering_vector, "runIDs") <- metadata[Run %in% valid_run_ids, .(Run, BioProject)][sample_ordering,]
   return(ordering_vector)
+}
+
+clustering_megabrowser <- function(table, clusters = 1) {
+  km <- kmeans(t(as.matrix(table)), centers = clusters)
+  row_clusters <- split(seq_along(km$cluster), km$cluster)
+  setattr(table, "km", km)
+  setattr(table, "row_order_list", row_clusters)
+  setattr(table, "clusters", length(row_clusters))
+  return(table)
 }
 
 #' Cast a collection table to wide format
@@ -232,7 +241,8 @@ compute_collection_table <- function(path, lib_sizes, df,
                                                 decreasing_order, enrichment_term)
   # Update order of libraries to follow grouping created
   setcolorder(table, attr(meta_sub, "meta_order"))
-  setattr(table, "km", kmeans(t(as.matrix(table)), centers = clusters))
+  table <- clustering_megabrowser(table, clusters)
+
 
   if (as_list) return(list(table = table, metadata_field = meta_sub))
   return(table)

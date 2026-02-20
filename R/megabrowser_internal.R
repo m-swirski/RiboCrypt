@@ -228,7 +228,9 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
   mat <- t(table)
 
   km <- attr(table, "km")
-  row_clusters <- split(seq_along(km$cluster), km$cluster)
+  stopifnot(!is.null(km))
+  row_clusters <- attr(table, "row_order_list")
+  stopifnot(!is.null(row_clusters))
 
   if (plotType == "plotly") {
     mat <- mat[unlist(row_clusters, use.names = FALSE),]
@@ -259,19 +261,8 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
                             col =  colors, show_row_names = FALSE,
                             show_heatmap_legend = FALSE, row_title = NULL)
   }
-  attr(plot, "row_order_list") <- row_clusters
-  attr(plot, "clusters") <- length(row_clusters)
-
   timer_done_nice_print("-- metabrowser heatmap done: ", time_before)
   return(plot)
-}
-
-row_order <- function(x) {
-  if (!is.null(attr(x, "row_order_list"))) {
-    attr(x, "row_order_list")
-  } else if (is(x, "Heatmap")) {
-    ComplexHeatmap::row_order(x)
-  } else stop("row_order must be attribute or x must be ComplexHeatmap!")
 }
 
 get_meta_browser_plot_full_shiny <- function(table, plot_object, controller, gg_theme) {

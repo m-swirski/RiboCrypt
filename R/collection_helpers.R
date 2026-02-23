@@ -1,4 +1,3 @@
-
 #' Load a ORFik collection table
 #' @param path the path to gene counts
 #' @param grl a GRangesList, default attr(path, "range"),
@@ -10,7 +9,6 @@ load_collection <- function(
   grl = attr(path, "range"),
   format = c("long", "wide")[1], columns = NULL
 ) {
-  # browser()
   new_format <- length(names(path)) > 0 && names(path) == "index"
   if (new_format) {
     stopifnot(!is.null(grl))
@@ -50,50 +48,62 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
                                  kmer = 1L, add_logscore = TRUE,
                                  split_by_frame = FALSE) {
   # Sliding window
-  if (kmer > 1) table <- smoothenMultiSampCoverage(table, kmer = kmer,
-                                                   split_by_frame = split_by_frame)
+  if (kmer > 1) {
+    table <- smoothenMultiSampCoverage(table,
+      kmer = kmer,
+      split_by_frame = split_by_frame
+    )
+  }
   # Make tpm
   if (!is.null(lib_sizes)) {
     if (is.character(lib_sizes)) lib_sizes <- readRDS(lib_sizes)
-    table[, score_tpm := ((count * 1000)  / lib_sizes[as.integer(library)]) * 10^6]
-  } else table[, score_tpm := count]
+    table[, score_tpm := ((count * 1000) / lib_sizes[as.integer(library)]) * 10^6]
+  } else {
+    table[, score_tpm := count]
+  }
   # Transcript normalization mode
   norm_opts <- normalizations("metabrowser")
   if (normalization == "transcriptNormalized") {
-    table[,score := score_tpm / sum(score_tpm), by = library]
-    table[,score := score * 1e6]
+    table[, score := score_tpm / sum(score_tpm), by = library]
+    table[, score := score * 1e6]
   } else if (normalization == "maxNormalized") {
-    table[,score := score_tpm / max(score_tpm), by = library]
+    table[, score := score_tpm / max(score_tpm), by = library]
   } else if (normalization == "zscore") {
     table[, score := (score_tpm - mean(score_tpm)) / sd(score_tpm), by = library]
   } else if (normalization == "tpm") {
     table[, score := score_tpm]
-  } else stop("Invalid normalization for collection!")
+  } else {
+    stop("Invalid normalization for collection!")
+  }
   table[is.na(score), score := 0]
-  if (add_logscore) table[,logscore := log(score + 1)]
+  if (add_logscore) table[, logscore := log(score + 1)]
   return(table)
 }
 
 match_collection_to_exp <- function(metadata, df) {
   matchings <- chmatch(runIDs(df), metadata$Run)
   matchings <- matchings[!is.na(matchings)]
-  if (length(matchings) != nrow(df))
+  if (length(matchings) != nrow(df)) {
     stop("Metadata does not contain information on all collection samples!")
+  }
   return(matchings)
 }
 
 filter_collection_on_count <- function(table, min_count) {
   if (min_count > 0) {
-    libs_counts_total <- table[,.(count = sum(count)), library][, valid := count >= min_count]
+    libs_counts_total <- table[, .(count = sum(count)), library][, valid := count >= min_count]
     valid_libs <- libs_counts_total$valid
-    if (sum(valid_libs) == 0)
+    if (sum(valid_libs) == 0) {
       stop("Count filter too strict, no libraries with that much reads for this transcript!")
+    }
 
-    filt_libs <- libs_counts_total[valid == TRUE,]$library
+    filt_libs <- libs_counts_total[valid == TRUE, ]$library
     table <- table[library %in% filt_libs]
     table[, library := factor(library, levels = unique(library), ordered = TRUE)]
     setattr(table, "valid_libs", valid_libs)
-  } else setattr(table, "valid_libs", rep(TRUE, length(unique(table$library))))
+  } else {
+    setattr(table, "valid_libs", rep(TRUE, length(unique(table$library))))
+  }
 
   return(table)
 }
@@ -103,7 +113,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
                                               decreasing_order = FALSE) {
   matchings <- match_collection_to_exp(metadata, df)
   valid_libs <- attr(table, "valid_libs")
-  all_metadata_fields <- metadata[matchings, metadata_field, with = FALSE][valid_libs == TRUE,]
+  all_metadata_fields <- metadata[matchings, metadata_field, with = FALSE][valid_libs == TRUE, ]
   ordering_vector_temp <- all_metadata_fields[, 1][[1]]
   other_columns <- all_metadata_fields
 
@@ -113,7 +123,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
     tpm <- subset_fst_interval_sum(ratio_interval[seq(2)], table)
     is_ratio <- length(ratio_interval) == 4
     if (is_ratio) {
-      tpm2 <- subset_fst_interval_sum(ratio_interval[seq(3,4)], table)
+      tpm2 <- subset_fst_interval_sum(ratio_interval[seq(3, 4)], table)
       tpm <- (tpm + 1) / (tpm2 + 1) # Pseudo ratio
     }
     ordering_vector <- tpm
@@ -122,7 +132,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
     table_path_other <- collection_path_from_exp(df, isoform)
     table_other <- load_collection(table_path_other)
     table_other <- normalize_collection(table_other, "tpm", lib_sizes, 1)
-    counts <- table_other[ , .(tpm = sum(score)), by = library]
+    counts <- table_other[, .(tpm = sum(score)), by = library]
     tpm <- counts$tpm
     ordering_vector <- tpm[valid_libs]
   } else {
@@ -136,7 +146,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
   attr(ordering_vector, "meta_order") <- meta_order
   attr(ordering_vector, "other_columns") <- other_columns[meta_order, ]
   attr(ordering_vector, "xlab") <- colnames(all_metadata_fields)[1]
-  attr(ordering_vector, "runIDs") <- metadata[matchings, c("Run", "BioProject"), with = FALSE][valid_libs == TRUE,][meta_order,]
+  attr(ordering_vector, "runIDs") <- metadata[matchings, c("Run", "BioProject"), with = FALSE][valid_libs == TRUE, ][meta_order, ]
   return(ordering_vector)
 }
 
@@ -195,8 +205,8 @@ compute_collection_table <- function(path, lib_sizes, df,
   table <- load_collection(path)
   intersect <- intersect(unique(table$library), runIDs(df))
   if (length(intersect) == 0) stop("Malformed experiment to megafst format intersect, no matching runs!")
-  if (!all(runIDs(df) %in% intersect)) df <- df[runIDs(df) %in% intersect,]
-  if (!all(unique(table$library) %in% intersect)) table <- table[library %in% intersect,]
+  if (!all(runIDs(df) %in% intersect)) df <- df[runIDs(df) %in% intersect, ]
+  if (!all(unique(table$library) %in% intersect)) table <- table[library %in% intersect, ]
 
   if (!is.null(subset)) {
     table <- subset_fst_by_interval(table, subset)
@@ -204,27 +214,35 @@ compute_collection_table <- function(path, lib_sizes, df,
   table <- filter_collection_on_count(table, min_count)
 
   # Normalize
-  table <- normalize_collection(table, normalization, lib_sizes, kmer, TRUE,
-                                split_by_frame)
+  table <- normalize_collection(
+    table, normalization, lib_sizes, kmer, TRUE,
+    split_by_frame
+  )
   ## # Sort table by metadata column selected
   # Match metadata table and collection runIDs
-  meta_sub <- compute_collection_table_grouping(metadata, df, metadata_field, table,
-                                                ratio_interval, group_on_tx_tpm,
-                                                decreasing_order)
+  meta_sub <- compute_collection_table_grouping(
+    metadata, df, metadata_field, table,
+    ratio_interval, group_on_tx_tpm,
+    decreasing_order
+  )
   # Update order of libraries to follow grouping created
-  table[, library := factor(library, levels = levels(library)[attr(meta_sub, "meta_order")],
-                            ordered = TRUE)]
+  table[, library := factor(library,
+    levels = levels(library)[attr(meta_sub, "meta_order")],
+    ordered = TRUE
+  )]
   # Cast to wide format and return
   if (format == "wide") {
     table <- collection_to_wide(table, value.var = value.var)
   }
-  if (as_list) return(list(table = table, metadata_field = meta_sub))
+  if (as_list) {
+    return(list(table = table, metadata_field = meta_sub))
+  }
   return(table)
 }
 
 subset_fst_by_region <- function(df_all, table, id,
                                  gene_mrna = loadRegion(df_all, names.keep = id),
-                                 subset = loadRegion(df_all,part = "cds", names.keep = id),
+                                 subset = loadRegion(df_all, part = "cds", names.keep = id),
                                  flank_cutoff = 0) {
   stopifnot(is(table, "data.table"))
 
@@ -232,9 +250,9 @@ subset_fst_by_region <- function(df_all, table, id,
   subset_pos <- subset_coordinates_grl_to_ir(gene_mrna, subset, flank_cutoff)
   is_long_format <- all(c("library", "position") %in% colnames(table))
   if (is_long_format) {
-    return(table[position %in% subset_pos,])
+    return(table[position %in% subset_pos, ])
   }
-  return(table[subset_pos,])
+  return(table[subset_pos, ])
 }
 
 subset_fst_interval_sum <- function(ratio_interval, table) {
@@ -246,7 +264,9 @@ subset_fst_interval_sum <- function(ratio_interval, table) {
   if (ratio_interval[2] > max(table$position)) stop("Ratio interval must end on <= ncol(heatmap)")
 
   counts <- table[position %in% seq.int(ratio_interval[1], ratio_interval[2]),
-                  .(tpm = sum(score)), by = library]
+    .(tpm = sum(score)),
+    by = library
+  ]
   tpm <- counts$tpm
   names(tpm) <- counts$library
   return(tpm)
@@ -261,7 +281,9 @@ subset_fst_coord_by_region <- function(df, id, region_type) {
       if (organism(df) == "Saccharomyces cerevisiae") {
         region2 <- loadRegion(df, part = "cds", names.keep = id)
         gene_mrna <- extendTrailers(extendLeaders(region2, extend), extend)
-      } else gene_mrna <- loadRegion(df, part = "mrna", names.keep = id)
+      } else {
+        gene_mrna <- loadRegion(df, part = "mrna", names.keep = id)
+      }
 
       if (region_type == "leader+cds") {
         if (organism(df) == "Saccharomyces cerevisiae") {
@@ -281,15 +303,18 @@ subset_fst_coord_by_region <- function(df, id, region_type) {
           } else if (region_type == "trailer") {
             region <- extendTrailers(GRangesList(stopSites(region2, TRUE, FALSE, FALSE)), extend)
           }
-        } else region <- loadRegion(df, part = region_type, names.keep = id)
+        } else {
+          region <- loadRegion(df, part = region_type, names.keep = id)
+        }
       }
-  }
+    }
   if (!is.null(region)) {
-    subset <- subset_coordinates_grl_to_ir(df, id = id, gene_mrna = gene_mrna,
-                                 subset = region)
+    subset <- subset_coordinates_grl_to_ir(df,
+      id = id, gene_mrna = gene_mrna,
+      subset = region
+    )
     attr(subset, "region") <- region
     attr(subset, "full_region") <- region
-
   }
   return(subset)
 }
@@ -301,7 +326,9 @@ subset_tx_by_region <- function(df, id, region_type) {
   if (organism(df) == "Saccharomyces cerevisiae") {
     region <- region2 <- cds_annotation
     gene_mrna <- extendTrailers(extendLeaders(region2, extend), extend)
-  } else region <- gene_mrna <- loadRegion(df, part = "tx")
+  } else {
+    region <- gene_mrna <- loadRegion(df, part = "tx")
+  }
 
   is_mrna <- id %in% names(region)
   if (!is_mrna) {
@@ -334,7 +361,9 @@ subset_tx_by_region <- function(df, id, region_type) {
           } else if (region_type == "trailer") {
             region <- extendTrailers(GRangesList(stopSites(region2, TRUE, FALSE, FALSE)), extend)
           }
-        } else region <- loadRegion(df, part = region_type, names.keep = id)
+        } else {
+          region <- loadRegion(df, part = region_type, names.keep = id)
+        }
       }
     }
   return(list(region = region, gene_mrna = gene_mrna, cds_annotation = cds_annotation))
@@ -343,7 +372,7 @@ subset_tx_by_region <- function(df, id, region_type) {
 
 subset_coordinates_grl_to_ir <- function(df, id,
                                          gene_mrna = loadRegion(df, names.keep = id),
-                                         subset = loadRegion(df,part = "cds", names.keep = id),
+                                         subset = loadRegion(df, part = "cds", names.keep = id),
                                          flank_cutoff = 0) {
   stopifnot(flank_cutoff >= 0)
   stopifnot(length(subset) == 1)
@@ -360,9 +389,9 @@ subset_fst_by_interval <- function(table, subset) {
 
   is_long_format <- all(c("library", "position") %in% colnames(table))
   if (is_long_format) {
-    return(table[position %in% subset,])
+    return(table[position %in% subset, ])
   }
-  return(table[subset,])
+  return(table[subset, ])
 }
 
 #' Get collection directory
@@ -379,9 +408,12 @@ collection_dir_from_exp <- function(df, must_exists = FALSE, new_format = TRUE) 
   table_dir <- file.path(resFolder(df), "collection_tables")
   if (new_format) table_dir <- paste0(table_dir, "_indexed")
 
-  if (must_exists & !dir.exists(table_dir))
-    stop("There is no collection fst tables directory for this organism,",
-         " see vignette for more information on how to make these.")
+  if (must_exists & !dir.exists(table_dir)) {
+    stop(
+      "There is no collection fst tables directory for this organism,",
+      " see vignette for more information on how to make these."
+    )
+  }
   return(table_dir)
 }
 
@@ -415,7 +447,7 @@ collection_path_from_exp <- function(df, id, gene_name_list = NULL,
     if (must_exists && !file.exists(table_path)) {
       all_ids_print <- "None"
       if (!is.null(gene_name_list)) {
-        all_ids <- gene_name_list[label == gene_name_list[value == id,]$label,]$value
+        all_ids <- gene_name_list[label == gene_name_list[value == id, ]$label, ]$value
         all_ids_paths <- file.path(collection_dir, paste0(all_ids, ".fst"))
         all_ids <- all_ids[file.exists(all_ids_paths)]
         if (length(all_ids) > 0) {

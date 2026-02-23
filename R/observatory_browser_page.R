@@ -31,6 +31,8 @@ observatory_browser_ui <- function(id) {
   )
 }
 
+# TODO
+# Add settings for kmer, leader and trailer extensions and aggregation method
 observatory_browser_server <- function(
   id,
   meta_experiment_df,

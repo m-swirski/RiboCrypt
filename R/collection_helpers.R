@@ -6,11 +6,16 @@
 #' @return a data.table in wide format
 #' @importFrom fst read_fst
 load_collection <- function(path, grl = attr(path, "range")) {
-  new_format <- length(names(path)) > 0 && names(path) == "index"
-  if (new_format) {
-    stopifnot(!is.null(grl))
+  stopifnot(length(path) == 1 & is.character(path))
+
+  subset_defined <- !is.null(grl)
+  index_provided <- basename(path) == "coverage_index.fst"
+  if (index_provided) {
+    if (!subset_defined) stop("When path is index, grl must be a defined GRangesList")
     table <- coverageByTranscriptFST(grl, path)[[1]]
-  } else stop("Old megafst format is no longer supported")
+  } else table <- fst::read_fst(path, as.data.table = TRUE)
+  if ("position" %in% colnames(table)) warning("Old megafst format not supported downstream anymore!")
+
   return(table)
 }
 
@@ -39,13 +44,6 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
   # Binned window
   if (kmer > 1) mat <- multiSampleBinRows(mat, kmer, split_by_frame)
 
-  # Make tpm
-  if (!is.null(lib_sizes)) {
-    valid_libs <- if(!is.null(attr$valid_libs)){
-      attr$valid_libs} else colnames(mat)
-    mat <- ((mat * 1000L)  / lib_sizes[valid_libs]) * as.integer(10^6)
-  }
-
   # Transcript normalization mode
   norm_opts <- normalizations("metabrowser")
   if (normalization == "transcriptNormalized") {
@@ -58,7 +56,9 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
   } else if (normalization == "zscore") {
     mat <- scale(mat, center = TRUE, scale = TRUE)
   } else if (normalization == "tpm") {
-    #
+    valid_libs <- if(!is.null(attr$valid_libs)){
+      attr$valid_libs} else colnames(mat)
+    mat <- ppm_calc_megabrowser(mat, valid_libs)
   } else stop("Invalid normalization for collection!")
   mat[is.na(mat)] <- 0L
 
@@ -74,6 +74,28 @@ summary_track <- function(mat) {
   summary_profile[, `:=`(position = seq.int(.N)) ]
   summary_profile[, `:=`(frame = factor((position-1) %% 3)) ]
   return(summary_profile)
+}
+
+tpm_calc_megabrowser <- function(mat, valid_libs = colnames(mat), lib_sizes) {
+  if (!is.null(lib_sizes)) {
+    overflowed <- FALSE
+    mat_scaled <- withCallingHandlers(
+      {
+        ((mat * 1000L) / lib_sizes[valid_libs]) * as.integer(1e6)
+      },
+      warning = function(w) {
+        if (grepl("integer overflow", conditionMessage(w), fixed = TRUE)) {
+          overflowed <<- TRUE
+          invokeRestart("muffleWarning")
+        }
+      }
+    )
+    if (overflowed) {
+      mat_scaled <- ((mat * 1000) / as.numeric(lib_sizes[valid_libs])) * 1e6
+    }
+    mat <- mat_scaled
+  }
+  return(mat)
 }
 
 match_collection_to_exp <- function(metadata, df) {

@@ -192,7 +192,7 @@ allsamples_meta_stats <- function(meta, attr_xlab = attr(meta, "xlab"), attr_yla
   time_before <- Sys.time()
   print("Starting metabrowser statistics")
   res <- copy(meta)
-  res[, index := NULL]
+  if (!is.null(res$index)) res[, index := NULL]
   if ("grouping_numeric_bins" %in% colnames(res)) {
     res[, grouping := grouping_numeric_bins]
   }
@@ -203,6 +203,7 @@ allsamples_meta_stats <- function(meta, attr_xlab = attr(meta, "xlab"), attr_yla
     concat_table <- table(res$grouping, res$cluster)
     chi_test <- suppressWarnings(chisq.test(concat_table))
     res <- chi_test$stdres
+    res[concat_table %in% c(1,2)] <- res[concat_table %in% c(1,2)] / 3
     tooltipe <- "Chi-squared-stdres: "
   } else {
     concat_table <- table(res$grouping)
@@ -215,6 +216,7 @@ allsamples_meta_stats <- function(meta, attr_xlab = attr(meta, "xlab"), attr_yla
   attr(res, "xlab") <- attr_xlab
   attr(res, "ylab") <- attr_ylab
   attr(res, "tooltip") <- tooltipe
+  attr(res, "concat_table") <- concat_table
 
   timer_done_nice_print("-- metabrowser statistics done: ", time_before)
   return(res)
@@ -228,8 +230,9 @@ allsamples_enrich_bar_plotly <- function(enrich) {
   enrich_dt <- data.table::as.data.table(enrich, keep.rownames = TRUE)
   enrich_dt <- suppressWarnings(data.table::melt(enrich_dt, id.vars = "rn"))
   enrich_dt[, variable := factor(as.character(variable))]
+  enrich_dt[, N := as.data.table(attr(enrich, "concat_table"))$N]
+  enrich_dt[, N_total := sum(N), by = rn]
   enrich_dt <- enrich_dt[rn != "", ]
-
   did_enrichment_test <- all(as.character(enrich_dt$variable) != "counts")
   # Tooltips (match your HTML line breaks)
   tip_prefix <- attr(enrich, "tooltip")
@@ -245,7 +248,8 @@ allsamples_enrich_bar_plotly <- function(enrich) {
     "Category : ", rn, "<br>",
     tip_prefix, round(value, 2), "<br>",
     if (did_enrichment_test) {
-      paste0(sub("s \\(K-means\\)", "", xlab_attr), ": ", as.character(variable))
+      paste0(sub("s \\(K-means\\)", "", xlab_attr), ": ", as.character(variable), "<br>",
+             "Samples: ", N, "/", N_total)
     } else {
       ""
     }
@@ -257,6 +261,8 @@ allsamples_enrich_bar_plotly <- function(enrich) {
     x = ~rn,
     y = ~value,
     color = ~variable,
+    customdata = ~as.character(variable),
+    source = "mb_enrich",
     colors = "Set2",
     type = "bar",
     text = ~tooltip_text,
@@ -307,7 +313,14 @@ allsamples_enrich_bar_plotly <- function(enrich) {
 
 
 allsamples_meta_table <- function(meta_and_clusters) {
-  merge.data.table(attr(meta_and_clusters$meta, "runIDs"),
-                   meta_and_clusters$meta[, c("index", "order") := NULL],
-                   by = "Run", sort = FALSE)
+  res <- merge.data.table(attr(meta_and_clusters$meta, "runIDs"),
+                          suppressWarnings(meta_and_clusters$meta[, c("index", "order") := NULL]),
+                          by = "Run", sort = FALSE)
+  if ("cluster" %in% names(res)) {
+    res[, cluster := as.character(cluster)]
+  }
+  if ("Cluster" %in% names(res)) {
+    res[, Cluster := as.character(Cluster)]
+  }
+  res
 }

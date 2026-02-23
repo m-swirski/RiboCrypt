@@ -7,7 +7,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   enrichment_test_types <- c(`Clusters (Order factor 1)` = "Clusters", `Ratio bins` = "Ratio bins", `Other gene tpm bins` = "Other gene tpm bins")
   columns_to_show <- c("BioProject", "CONDITION", "INHIBITOR",
                        "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION")
-  metadata <- metadata[, colnames(metadata) %in% columns_to_show, with = FALSE]
+  metadata <- metadata[, ..columns_to_show]
   full_annotation <- as.logical(browser_options["full_annotation"])
   if (!is.null(browser_options["default_gene_meta"])) {
     all_isoforms <- subset(gene_names_init, label == browser_options["default_gene_meta"])
@@ -47,7 +47,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                    fluidRow(column(6, region_view_select(ns, "region_type", "Select region to view")),
                                             column(6, radioButtons(ns("plotType"), "Choose Plot Type:",
                                                 choices = c("Plotly" = "plotly", "ComplexHeatmap" = "ggplot2"),
-                                                selected = "ggplot2", inline = TRUE))),
+                                                selected = "plotly", inline = TRUE))),
                                    tags$hr(style = "padding-top: 50px; padding-bottom: 50px;"),
                                    helper_button_redirect_call()
                           ),
@@ -91,7 +91,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
     tags$hr(),
     # ---- Full Width Main Panel ----
     fluidRow(
-      tabsetPanel(type = "tabs",
+      tabsetPanel(id = ns("mb_tabs"), type = "tabs",
                   tabPanel("Heatmap", fluidRow(
                     jqui_resizable(
                       div(
@@ -118,7 +118,10 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                   ),
                   plotlyOutput(outputId = ns("e"))),
                   tabPanel("Statistics", DTOutput(outputId = ns("stats")) %>% shinycssloaders::withSpinner(color="#0dc5c1")),
-                  tabPanel("Result table", DTOutput(outputId = ns("result_table")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))
+                  tabPanel("Result table",
+                           uiOutput(outputId = ns("result_table_controls")),
+                           DTOutput(outputId = ns("result_table")) %>%
+                             shinycssloaders::withSpinner(color="#0dc5c1"))
       )
     )
   )
@@ -208,6 +211,11 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindCache(controller()$table_hash, controller()$enrichment_term) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
+      selected_enrich_filters <- reactiveVal(NULL)
+      observeEvent(meta_and_clusters(), {
+        selected_enrich_filters(NULL)
+      }, ignoreInit = TRUE)
+
       output$d <- renderPlotly({
         allsamples_sidebar_plotly(meta_and_clusters()$meta)
       }) %>%
@@ -220,17 +228,99 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
+
+      observeEvent(plotly::event_data("plotly_click", source = "mb_enrich"), {
+        ed <- plotly::event_data("plotly_click", source = "mb_enrich")
+        req(!is.null(ed))
+
+        category <- as.character(ed$x)
+        cluster <- NULL
+        if (!is.null(ed$customdata) && !identical(ed$customdata, "counts")) {
+          cluster <- as.character(ed$customdata)
+        }
+
+        selected_enrich_filters(list(category = category, cluster = cluster))
+        updateTabsetPanel(session, "mb_tabs", selected = "Result table")
+        shinyjs::runjs(
+          sprintf(
+            "document.getElementById('%s').scrollIntoView({behavior:'smooth'});",
+            ns("result_table")
+          )
+        )
+      })
+
+      selected_cluster_from_filtered <- reactive({
+        filt <- selected_enrich_filters()
+        if (is.null(filt)) return(NULL)
+        if (!is.null(filt$cluster)) return(as.character(filt$cluster))
+
+        tbl <- filtered_meta_table()
+        if ("cluster" %in% names(tbl)) {
+          vals <- unique(tbl$cluster)
+        } else if ("Cluster" %in% names(tbl)) {
+          vals <- unique(tbl$Cluster)
+        } else {
+          vals <- character(0)
+        }
+        if (length(vals) == 1) return(as.character(vals))
+        NULL
+      })
+
+      output$result_table_controls <- renderUI({
+        filt <- selected_enrich_filters()
+        if (is.null(filt)) return(NULL)
+
+        show_cluster_btn <- FALSE
+        cluster_val <- selected_cluster_from_filtered()
+        if (!is.null(cluster_val)) {
+          already_full_cluster <- is.null(filt$category) && !is.null(filt$cluster)
+          show_cluster_btn <- !already_full_cluster
+        }
+
+        tagList(
+          actionButton(ns("reset_result_table"), "Show full table"),
+          if (show_cluster_btn) actionButton(ns("expand_cluster"), "Show full cluster") else NULL
+        )
+      })
+
+      observeEvent(input$reset_result_table, {
+        selected_enrich_filters(NULL)
+      }, ignoreInit = TRUE)
+
+      observeEvent(input$expand_cluster, {
+        cluster_val <- selected_cluster_from_filtered()
+        req(!is.null(cluster_val))
+        selected_enrich_filters(list(category = NULL, cluster = cluster_val))
+      }, ignoreInit = TRUE)
+
+      filtered_meta_table <- reactive({
+        tbl <- allsamples_meta_table(meta_and_clusters())
+        filt <- selected_enrich_filters()
+        if (is.null(filt)) return(tbl)
+        if (!is.null(filt$category) && "grouping" %in% names(tbl)) {
+          tbl <- tbl[as.character(grouping) %in% filt$category]
+        }
+        if (!is.null(filt$cluster)) {
+          if ("cluster" %in% names(tbl)) {
+            tbl <- tbl[as.character(cluster) %in% filt$cluster]
+          } else if ("Cluster" %in% names(tbl)) {
+            tbl <- tbl[as.character(Cluster) %in% filt$cluster]
+          }
+        }
+        tbl
+      })
+
       output$stats <- renderDT(allsamples_meta_stats_shiny(meta_and_clusters()$enrich_dt)) %>%
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
 
-      output$result_table <- renderDT(allsamples_meta_table(meta_and_clusters()),
+      output$result_table <- renderDT(filtered_meta_table(),
                                       extensions = 'Buttons', filter = "top",
                                       options = list(dom = 'Bfrtip',
                                                      buttons = NULL,
                                                      pageLength = 130)) %>%
-        bindEvent(meta_and_clusters(),
+        bindEvent(meta_and_clusters(), selected_enrich_filters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
       observeEvent(input$toggle_settings, {

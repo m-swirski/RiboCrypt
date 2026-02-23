@@ -108,19 +108,25 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     display_annot <- isolate(input$display_annot)
     viewMode <- isolate(input$viewMode)
 
-    # annotation extractors
-    annotation_list <- subset_tx_by_region(dff, id, region_type)
-    tx_annotation <- display_region <- annotation_list$region
-    cds_annotation <- observed_cds_annotation_internal(id,
-                                              annotation_list$cds_annotation,
-                                              isolate(input$other_tx))
+
     # Select motif or gene
     if (isTruthy(motif)) {
       table_path <- meta_motif_files(dff)[motif]
-      display_annot <- FALSE
+      total_positions <- fst::metadata_fst(table_path)$nrOfRows
+      tx_annotation <- display_region <- GRangesList(GRanges(motif, IRanges(1, total_positions), "+"))
+      center <- widthPerGroup(tx_annotation, FALSE) / 2
+      cds_annotation <- GRangesList(GRanges(motif, IRanges(center - 8, center + 8), "+"))
+      names(tx_annotation) <- names(display_region) <- names(cds_annotation) <- motif
       collapsed_introns_width <- 0
       message("Using motif: ", table_path)
     } else {
+      # annotation extractors
+      annotation_list <- subset_tx_by_region(dff, id, region_type)
+      tx_annotation <- display_region <- annotation_list$region
+      cds_annotation <- observed_cds_annotation_internal(id,
+                                                         annotation_list$cds_annotation,
+                                                         isolate(input$other_tx))
+
       collapsed_introns_width <- input$collapsed_introns_width
       if (!input$collapsed_introns) collapsed_introns_width <- 0
       if (collapsed_introns_width > 0) {
@@ -178,7 +184,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                         leader_extension, trailer_extension,
                         isolate(input$viewMode), collapsed_introns_width, sep = "|_|")
     table_plot_hash <- paste(table_hash, isolate(input$other_tx), input$plotType,
-                             summary_track, display_annot, isolate(input$heatmap_color),
+                             summary_track, isolate(input$heatmap_color),
                              isolate(input$color_mult), sep = "|_|")
 
     timer_done_nice_print("-- Mega Browser controller done: ", time_before)
@@ -202,7 +208,6 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    frame = frame,
                    clusters = clusters,
                    plotType = isolate(input$plotType),
-                   display_annot = display_annot,
                    summary_track = summary_track,
                    enrichment_term = enrichment_term,
                    table_hash = table_hash,

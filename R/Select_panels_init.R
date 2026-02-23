@@ -234,10 +234,15 @@ condition_input_select <- function(ns, multiple = TRUE) {
 
 metadata_input_select <- function(ns, metadata,
                                   multiple = FALSE, browser_options = NULL,
-                                  choices = colnames(metadata), selected = "TISSUE",
+                                  choices = colnames(metadata),
+                                  selected = c("TISSUE", "CELL_LINE", "CONDITION", "GENE", "INHIBITOR",
+                                               "FRACTION"),
                                   label = "Order on:", id = "metadata",
                                   add = NULL) {
   choices <- c(choices, add)
+  if (!is.null(selected)) {
+    choices <- c(selected, setdiff(choices, selected))
+  }
   selectizeInput(
     inputId = ns(id),
     choices = choices,

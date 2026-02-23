@@ -19,7 +19,27 @@ observatory_browser_ui <- function(id) {
           choices = list()
         )
       ),
-      shiny::column(1, plot_button(ns("go")))
+      shiny::column(1, plot_button(ns("go"))),
+      shiny::column(5,
+        shiny::fluidRow(
+          shiny::column(
+            4,
+            shiny::sliderInput(
+              ns("kmer"), "K-mer length",
+              min = 1, max = 20, value = 9
+            )
+          ),
+          shiny::column(
+            4,
+            shiny::numericInput(ns("extendLeaders"), "5' extension", 0)
+          ),
+          shiny::column(
+            4,
+            shiny::numericInput(ns("extendTrailers"), "3' extension", 0)
+          )
+        ),
+        offset = 2
+      )
     ),
     shiny::fluidRow(
       shiny::column(
@@ -105,8 +125,12 @@ observatory_browser_server <- function(
       experiment_df <- meta_experiment_df()
 
       path <- collection_path_from_exp(experiment_df, selected_tx)
+      display_region_grl <- ORFik::extendTrailers(
+        ORFik::extendLeaders(attr(path, "range"), input$extendLeaders),
+        input$extendTrailers
+      )
       runs <- unlist(library_selections())
-      reads <- load_collection(path, format = "wide", columns = runs)
+      reads <- load_collection(path, grl = display_region_grl, format = "wide", columns = runs)
       with_frames <- ORFik::libraryTypes(
         experiment_df,
         uniqueTypes = FALSE
@@ -125,7 +149,7 @@ observatory_browser_server <- function(
           frame = as.factor(rep_len(1:3, length.out = length(count)))
         ) |>
           smoothenMultiSampCoverage(
-            9,
+            input$kmer,
             kmers_type = "mean",
             split_by_frame = TRUE
           )
@@ -136,14 +160,14 @@ observatory_browser_server <- function(
         dff = experiment_df,
         display_region = display_region,
         customRegions = NULL,
-        extendTrailers = 0,
-        extendLeaders = 0,
+        extendTrailers = input$extendTrailers,
+        extendLeaders = input$extendLeaders,
         export_format = "svg",
         summary_track = FALSE,
         summary_track_type = "lines",
         viewMode = FALSE,
         collapsed_introns_width = 0,
-        kmerLength = 9,
+        kmerLength = input$kmer,
         frames_type = "area",
         annotation = cds_annotation,
         tx_annotation = tx_annotation,

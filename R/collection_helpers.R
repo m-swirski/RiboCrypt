@@ -140,9 +140,8 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
                                               enrichment_term) {
   matchings <- match_metadata_to_table(metadata, table)
   valid_libs <- attr(table, "valid_libs")
-  valid_run_ids <- names(valid_libs[valid_libs])
   metadata_field <- c(metadata_field, "Run")
-  other_columns <- all_metadata_fields <- metadata[Run %in% valid_run_ids, ..metadata_field]
+  other_columns <- all_metadata_fields <- metadata[matchings, ..metadata_field]
   order_on_ratios <- !is.null(ratio_interval)
   order_on_other_tx_tpm <- !is.null(group_on_tx_tpm)
   enrichment_term_char <- colnames(all_metadata_fields)[1]
@@ -165,7 +164,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
     if (!enrichment_term %in% colnames(all_metadata_fields))
       enrichment_term <- enrichment_term_char
     ordering_vector <- all_metadata_fields[, ..enrichment_term][[1]]
-    names(ordering_vector) <- colnames(table)
+    names(ordering_vector) <- all_metadata_fields$Run
     other_columns <- all_metadata_fields[, .SD, .SDcols = !enrichment_term]
     enrichment_term_char <- enrichment_term
   }
@@ -174,7 +173,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
   attr(ordering_vector, "meta_order") <- sample_ordering
   attr(ordering_vector, "other_columns") <- other_columns[sample_ordering, ]
   attr(ordering_vector, "xlab") <- enrichment_term_char
-  attr(ordering_vector, "runIDs") <- metadata[Run %in% valid_run_ids, .(Run, BioProject)][sample_ordering,]
+  attr(ordering_vector, "runIDs") <- metadata[matchings, .(Run, BioProject)][sample_ordering,]
   return(ordering_vector)
 }
 

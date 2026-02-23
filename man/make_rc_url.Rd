@@ -18,6 +18,7 @@ make_rc_url(
   frames_type = "columns",
   kmer = 1,
   add_translons = FALSE,
+  add_translons_transcode = FALSE,
   zoom_range = NULL,
   genomic_region = NULL,
   host = "https://ribocrypt.org"
@@ -48,7 +49,11 @@ make_rc_url(
 
 \item{kmer}{integer, default 1 (no binning), binning size of windows, to smear out the signal.}
 
-\item{add_translons}{logical, default FALSE. If TRUE, add translons predicted sequences in annotation.}
+\item{add_translons}{logical, default FALSE. If TRUE, add translons predicted sequences in annotation,
+if file exists.}
+
+\item{add_translons_transcode}{logical, default FALSE. If TRUE, add transcode translons predicted sequences in annotation,
+if file exists.}
 
 \item{zoom_range}{character, zoom values.}
 

@@ -40,6 +40,7 @@
 #' remaining all_exp are used in all other modules.
 #' @import shiny bslib ORFik NGLVieweR ggplot2 fst rclipboard data.table
 #' @importFrom Biostrings strsplit width
+#' @importFrom GenomeInfoDb seqlevelsStyle seqlevelsStyle<-
 #' @importFrom shinycssloaders withSpinner
 #' @importFrom markdown mark_html
 #' @importFrom shinyjqui jqui_resizable jqui_draggable
@@ -116,7 +117,7 @@ RiboCrypt_app <- function(
     if (nrow(all_exp_meta) > 0) {
       browser_allsamp_server("browser_allsamp", all_exp_meta, df_meta, metadata,
                              names_init_meta, browser_options, exp_init_meta,
-                             exps_dir)
+                             exps_dir, gg_theme)
     } else print("No MegaBrowser exps given, ignoring MegaBrowser server.")
     rv <- analysis_server("Analysis", all_exp, without_readlengths_env,
             with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,

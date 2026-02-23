@@ -280,6 +280,7 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
   full_names <- ORFik:::name_decider(dff, naming = "full")
   hash_bottom <- paste(input$tx, input$other_tx,
                        input$add_uorfs,  input$add_translon,
+                       input$add_translons_transcode,
                        input$extendTrailers, input$extendLeaders,
                        input$genomic_region, input$viewMode,
                        ciw, input$colors,

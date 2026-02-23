@@ -4,7 +4,6 @@
 click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_theme, user_info) {
   {
     time_before <- controller_init(input, id = "Browser")
-
     # Annotation
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
     tx_annotation <- observed_cds_annotation(isolate(input$tx), tx,
@@ -14,7 +13,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_them
     uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
                                                 isolate(input$other_tx), isolate(input$add_uorfs))
     translon_annotation <- observed_translon_annotation(isolate(input$tx), df(),
-                                                        isolate(input$other_tx), isolate(input$add_translon))
+                                                        isolate(input$other_tx), isolate(input$add_translon),
+                                                        isolate(input$add_translons_transcode))
     customRegions <- c(uorf_annotation, translon_annotation)
 
     # View controller
@@ -108,19 +108,25 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     display_annot <- isolate(input$display_annot)
     viewMode <- isolate(input$viewMode)
 
-    # annotation extractors
-    annotation_list <- subset_tx_by_region(dff, id, region_type)
-    tx_annotation <- display_region <- annotation_list$region
-    cds_annotation <- observed_cds_annotation_internal(id,
-                                              annotation_list$cds_annotation,
-                                              isolate(input$other_tx))
+
     # Select motif or gene
     if (isTruthy(motif)) {
       table_path <- meta_motif_files(dff)[motif]
-      display_annot <- FALSE
+      total_positions <- fst::metadata_fst(table_path)$nrOfRows
+      tx_annotation <- display_region <- GRangesList(GRanges(motif, IRanges(1, total_positions), "+"))
+      center <- widthPerGroup(tx_annotation, FALSE) / 2
+      cds_annotation <- GRangesList(GRanges(motif, IRanges(center - 8, center + 8), "+"))
+      names(tx_annotation) <- names(display_region) <- names(cds_annotation) <- motif
       collapsed_introns_width <- 0
       message("Using motif: ", table_path)
     } else {
+      # annotation extractors
+      annotation_list <- subset_tx_by_region(dff, id, region_type)
+      tx_annotation <- display_region <- annotation_list$region
+      cds_annotation <- observed_cds_annotation_internal(id,
+                                                         annotation_list$cds_annotation,
+                                                         isolate(input$other_tx))
+
       collapsed_introns_width <- input$collapsed_introns_width
       if (!input$collapsed_introns) collapsed_introns_width <- 0
       if (collapsed_introns_width > 0) {
@@ -175,13 +181,13 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     table_hash <- paste(name(dff), id, table_path, lib_sizes, clusters, min_count,
                         region_type, paste(metadata_field, collapse = ":"), normalization, frame,
                         kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
-                        leader_extension, trailer_extension, input$plotType,
+                        leader_extension, trailer_extension,
                         isolate(input$viewMode), collapsed_introns_width, sep = "|_|")
-    table_plot <- paste(table_hash, isolate(input$other_tx), summary_track,
-                        display_annot, isolate(input$heatmap_color),
-                        isolate(input$color_mult), sep = "|_|")
+    table_plot_hash <- paste(table_hash, isolate(input$other_tx), input$plotType,
+                             summary_track, isolate(input$heatmap_color),
+                             isolate(input$color_mult), sep = "|_|")
 
-    cat("-- Mega Browser controller done: "); print(round(Sys.time() - time_before, 2))
+    timer_done_nice_print("-- Mega Browser controller done: ", time_before)
     reactiveValues(dff = dff,
                    id = id,
                    display_region = display_region,
@@ -200,12 +206,12 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    group_on_tx_tpm = other_tx,
                    ratio_interval = ratio_interval,
                    frame = frame,
+                   clusters = clusters,
                    plotType = isolate(input$plotType),
-                   display_annot = display_annot,
                    summary_track = summary_track,
                    enrichment_term = enrichment_term,
                    table_hash = table_hash,
-                   table_plot = table_plot)
+                   table_plot_hash = table_plot_hash)
 }
 
 controller_init <- function(input, id = "Browser") {

@@ -10,6 +10,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
   introns_width <- as.numeric(browser_options["collapsed_introns_width"])
   full_annotation <- as.logical(browser_options["full_annotation"])
   translons <- as.logical(browser_options["translons"])
+  translons_transcode <- as.logical(browser_options["translons_transcode"])
   panel_hidden_or_not_class <- ifelse(browser_options["hide_settings"] == "TRUE",
                                       "floating_settings_panel hidden",
                                       "floating_settings_panel")
@@ -66,12 +67,15 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
                                          textInput(ns("zoom_range"), "Zoom interval", ""),
                                          textInput(ns("customSequence"), "Custom sequences highlight", "")
                                 ),
+                                fluidRow(checkboxInput(ns("add_uorfs"), tagList("uORF annotation", tags$br(), "(all candidates)"), FALSE)),
                                 fluidRow(
-                                  checkboxInput(ns("add_uorfs"), "uORF annotation", FALSE),
-                                  checkboxInput(ns("add_translon"), "Predicted translons", translons),
+                                  column(4, checkboxInput(ns("add_translon"), "Predicted translons (Our all-merged: T)", translons)),
+                                  column(4, checkboxInput(ns("add_translons_transcode"), "Predicted translons (TransCode: TC)",
+                                                          translons_transcode))
                                   ),
-                                fluidRow(checkboxInput(ns("log_scale"), "Log scale", FALSE),
-                                         checkboxInput(ns("log_scale_protein"), "Log scale Protein", FALSE)
+                                fluidRow(
+                                  column(4, checkboxInput(ns("log_scale"), "Log scale", FALSE)),
+                                  column(4, checkboxInput(ns("log_scale_protein"), "Log scale Protein", FALSE))
                                 ),
                                 fluidRow(
                                   column(4, checkboxInput(ns("expression_plot"), "Gene expression plot", FALSE)),
@@ -124,8 +128,6 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
   )
 }
 
-
-
 browser_server <- function(id, all_experiments, env, df, experiments,
                            tx, cds, libs, org, gene_name_list, gg_theme, rv,
                            browser_options) {
@@ -137,14 +139,13 @@ browser_server <- function(id, all_experiments, env, df, experiments,
 
       # Main plot controller, this code is only run if 'plot' is pressed
       i <- 1
-      mainPlotControls <- eventReactive(list(input$go, kickoff()),
-        {click_plot_browser_main_controller(input, tx, cds, libs, df, gg_theme, user_info)},
-        ignoreInit = TRUE,
-        ignoreNULL = FALSE)
+      mainPlotControls <- reactive(click_plot_browser_main_controller(input, tx, cds, libs, df, gg_theme, user_info)) %>%
+        bindCache(input_to_list(input, user_info())) %>%
+        bindEvent(list(input$go, kickoff()), ignoreInit = TRUE, ignoreNULL = FALSE)
 
       bottom_panel <- reactive(bottom_panel_shiny(mainPlotControls))  %>%
         bindCache(mainPlotControls()$hash_bottom) %>%
-        bindEvent(mainPlotControls(), ignoreInit = FALSE, ignoreNULL = TRUE)
+        bindEvent(mainPlotControls()$hash_bottom, ignoreInit = FALSE, ignoreNULL = TRUE)
 
       browser_plot <- reactive(browser_track_panel_shiny(mainPlotControls, bottom_panel(), session)) %>%
         bindCache(mainPlotControls()$hash_browser) %>%
@@ -153,6 +154,8 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       output$c <- renderPlotly(browser_plot()) %>%
         bindCache(mainPlotControls()$hash_browser) %>%
         bindEvent(browser_plot(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+
 
       # Additional outputs
       module_additional_browser(input, output, session)
@@ -184,4 +187,35 @@ go_when_input_is_ready <- function(input, browser_options, fired, kickoff, libs)
   kickoff(TRUE)
 }
 
+#' Convert input to list, and remove irrelevant items and add user_info
+#' @noRd
+input_to_list <- function(input, user_info = NULL) {
 
+  a <- reactiveValuesToList(input, TRUE)
+  to_ignore <- c("go", "toggle_settings", "select_all_btn",
+                 "c__shinyjquiBookmarkState__resizable", "c_is_resizing", "c_size")
+
+  a <- a[-which(names(a) %in% to_ignore)]
+  a <- c(a, user.info = user_info[-1])
+  return(a)
+}
+
+# Tester (put in server if needed):
+# observeEvent(input$go, {
+#   message("CACHE TIMER START:")
+#   t <- system.time({
+#     x <- mainPlotControls()   # should be a cache hit if key unchanged
+#   }, gcFirst = FALSE)
+#   message("mainPlotControls() access elapsed: ", t[["elapsed"]])
+#   key <- mainPlotControls()$hash_browser
+#   # message("hash_bottom: ", key)
+#   t <- system.time({
+#     x <- bottom_panel()   # should be a cache hit if key unchanged
+#   }, gcFirst = FALSE)
+#   message("bottom_panel() access elapsed: ", t[["elapsed"]])
+#
+#   t <- system.time({
+#     x <- browser_plot()   # should be a cache hit if key unchanged
+#   }, gcFirst = FALSE)
+#   message("browser_plot() access elapsed: ", t[["elapsed"]])
+# }, priority = 1000)

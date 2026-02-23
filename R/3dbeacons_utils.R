@@ -116,7 +116,7 @@ get_protein_structure_local_on_disk <- function(selectedRegion, region_dir,
   if (!isTruthy(selectedRegion)) return(paths)
   pdb_input <- grepl("\\.pdb$", selectedRegion)
   uorf_clicked <- length(grep("^U[0-9]+$", selectedRegion)) == 1
-  translon_clicked <- length(grep("^T[0-9]+$", selectedRegion)) == 1
+  translon_clicked <- length(grep(translon_name_regex(), selectedRegion)) == 1
   if (pdb_input) {
     paths <- selectedRegion
   } else if (uorf_clicked) {

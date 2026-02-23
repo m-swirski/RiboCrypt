@@ -24,7 +24,7 @@ compute_collection_table(
 )
 }
 \arguments{
-\item{path}{the path to gene counts}
+\item{path}{the path to megafst index file}
 
 \item{lib_sizes}{named integer vector, default NULL. If given will do a pre tpm normalization
 for full library sizes}

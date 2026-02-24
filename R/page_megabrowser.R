@@ -129,7 +129,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
 
 browser_allsamp_server <- function(id, all_experiments, df, metadata,
                                    names_init, browser_options, exp_init,
-                                   exps_dir, gg_theme, experiments = all_experiments$name) {
+                                   exps_dir, experiments = all_experiments$name) {
   moduleServer(
     id,
     function(input, output, session, all_exp = all_experiments) {
@@ -150,7 +150,7 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(table(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      mb_top_plot <- reactive(mb_top_plot_shiny(table()$table)) %>%
+      mb_top_plot <- reactive(summary_track_allsamples(attr(table()$table, "summary_cov"))) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
@@ -158,7 +158,7 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      mb_bottom_plot <- reactive(mb_bottom_plot_shiny(controller, gg_theme)) %>%
+      mb_bottom_plot <- reactive(get_megabrowser_annotation_plot_shiny(controller)) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
@@ -192,14 +192,6 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      observe({
-        req(input$plotType == "plotly")
-        ed <- suppressWarnings(plotly::event_data("plotly_relayout", source = "mb_mid"))
-        req(!is.null(ed))
-        y_max <- ncol(table()$table)
-        sync_megabrowser_x_shiny(ed, session, y_max = y_max, y_reversed = TRUE)
-      })
-
       output$c <- renderUI(renderMegabrowser(input$plotType, ns)) %>%
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
@@ -224,16 +216,12 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
 
-      module_additional_megabrowser(input, output, session)
-
       output$stats <- renderDT(allsamples_meta_stats_shiny(meta_and_clusters()$enrich_dt)) %>%
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
-      observeEvent(input$toggle_settings, {
-        # Toggle visibility by adding/removing 'hidden' class
-        shinyjs::toggleClass(id = "floating_settings", class = "hidden")
-      })
+
+      module_additional_megabrowser(input, output, session)
     }
   )
 }

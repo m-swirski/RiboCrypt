@@ -160,6 +160,14 @@ module_additional_megabrowser <- function(input, output, session) {
       )
     })
 
+    observe({
+      req(input$plotType == "plotly")
+      ed <- suppressWarnings(plotly::event_data("plotly_relayout", source = "mb_mid"))
+      req(!is.null(ed))
+      y_max <- ncol(table()$table)
+      sync_megabrowser_x_shiny(ed, session, y_max = y_max, y_reversed = TRUE)
+    })
+
     selected_cluster_from_filtered <- reactive({
       filt <- selected_enrich_filters()
       if (is.null(filt)) return(NULL)
@@ -229,6 +237,11 @@ module_additional_megabrowser <- function(input, output, session) {
       bindEvent(meta_and_clusters(), selected_enrich_filters(),
                 ignoreInit = FALSE,
                 ignoreNULL = TRUE)
+
+    observeEvent(input$toggle_settings, {
+      # Toggle visibility by adding/removing 'hidden' class
+      shinyjs::toggleClass(id = "floating_settings", class = "hidden")
+    })
   })
 }
 

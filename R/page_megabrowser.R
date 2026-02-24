@@ -249,6 +249,26 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         )
       })
 
+      observeEvent(plotly::event_data("plotly_click", source = "mb_sidebar"), {
+        ed <- plotly::event_data("plotly_click", source = "mb_sidebar")
+        req(!is.null(ed))
+
+        cluster_val <- NULL
+        if (is.data.frame(ed) && "customdata" %in% names(ed)) {
+          cluster_val <- as.character(ed$customdata[[1]])
+        }
+        req(!is.null(cluster_val))
+
+        selected_enrich_filters(list(category = NULL, cluster = cluster_val))
+        updateTabsetPanel(session, "mb_tabs", selected = "Result table")
+        shinyjs::runjs(
+          sprintf(
+            "document.getElementById('%s').scrollIntoView({behavior:'smooth'});",
+            ns("result_table")
+          )
+        )
+      })
+
       selected_cluster_from_filtered <- reactive({
         filt <- selected_enrich_filters()
         if (is.null(filt)) return(NULL)

@@ -138,34 +138,41 @@ allsamples_sidebar_plotly <- function(meta) {
     ), by = cluster][order(cluster)]
     centers[, cluster_idx := seq_len(.N)]
 
-    cluster_labels <- plotly::plot_ly(
-      x = 0,
-      y = centers$y_center,
-      type = "scatter",
-      mode = "text",
-      text = as.character(centers$cluster_idx),
-      customdata = as.character(centers$cluster_idx),
-      hoverinfo = "text",
-      textangle = -90,
-      textfont = list(size = 12, color = "black"),
-      showlegend = FALSE,
-      source = "mb_sidebar"
-    ) %>%
+    cluster_ann <- lapply(seq_len(nrow(centers)), function(i) {
+      list(
+        xref = "x",
+        yref = "y",
+        x = 0,
+        y = centers$y_center[i],
+        text = as.character(centers$cluster_idx[i]),
+        showarrow = FALSE,
+        textangle = -90,
+        xanchor = "right",
+        yanchor = "middle",
+        font = list(size = 12, color = "black"),
+        captureevents = TRUE
+      )
+    })
+
+    cluster_labels <- plotly::plot_ly(source = "mb_sidebar") %>%
       plotly::layout(
         margin = list(l = 0, r = 0, t = 0, b = 0),
         paper_bgcolor = "rgba(0,0,0,0)",
         plot_bgcolor  = "rgba(0,0,0,0)",
         xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL,
                      range = c(-1, 1)),
-        yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL)
+        yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
+        annotations = cluster_ann,
+        showlegend = FALSE
       )
 
     plot_list <- c(list(cluster_labels), plot_list)
     widths <- c(0.06, rep((0.94 / length(cols)), length(cols)))
-    res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE, widths = widths) %>%
+  res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE, widths = widths) %>%
       plotly::layout(
         xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
         yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
+        dragmode = FALSE,
         margin = list(l = 30)
       ) %>%
       plotly::config(displayModeBar = FALSE)

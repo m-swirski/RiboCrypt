@@ -20,7 +20,9 @@ compute_collection_table(
   group_on_tx_tpm = NULL,
   split_by_frame = FALSE,
   ratio_interval = NULL,
-  decreasing_order = FALSE
+  decreasing_order = FALSE,
+  enrichment_term = metadata_field[1],
+  clusters = 1
 )
 }
 \arguments{

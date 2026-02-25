@@ -39,18 +39,10 @@ mb_plot_object_shiny <- function(table_obj, input) {
                         isolate(input$plotType))
 }
 
-mb_top_plot_shiny <- function(table_obj) {
-  summary_track_allsamples(attr(table_obj, "summary_cov"))
-}
-
 mb_mid_plot_shiny <- function(plot_object, plotType) {
   req(plotType == "plotly")
   plot_object$x$source <- "mb_mid"
   plotly::event_register(plot_object, "plotly_relayout")
-}
-
-mb_bottom_plot_shiny <- function(controller, gg_theme) {
-  get_megabrowser_annotation_plot_shiny(controller, gg_theme)
 }
 
 mb_mid_image_shiny <- function(plot_object, session, ns, rel_heights = c(0.15, 0.75, 0.10)) {
@@ -345,7 +337,7 @@ plotly_image_from_plot <- function(plot_fn, width, height, res = 96,
     )
 }
 
-get_megabrowser_annotation_plot_shiny <- function(controller, gg_theme) {
+get_megabrowser_annotation_plot_shiny <- function(controller) {
   p <- get_megabrowser_annotation_plot(controller()$id,
                              controller()$dff, controller()$summary_track,
                              controller()$display_annot,
@@ -354,8 +346,7 @@ get_megabrowser_annotation_plot_shiny <- function(controller, gg_theme) {
                              controller()$display_region,
                              controller()$annotation,
                              controller()$viewMode,
-                             controller()$collapsed_introns_width,
-                             gg_theme
+                             controller()$collapsed_introns_width
   )
   p$x$source <- "mb_bottom"
   p
@@ -388,12 +379,10 @@ get_megabrowser_annotation_plot <- function(id, df,
                                        plotType = "plotly",
                                        tx_annotation, display_region,
                                        cds_annotation, viewMode,
-                                       collapse_intron_flank,
-                                       gg_theme) {
+                                       collapse_intron_flank) {
   time_before <- Sys.time()
   res <- annotation_track_allsamples(df, id, display_region, cds_annotation,
-                                     tx_annotation, viewMode, collapse_intron_flank,
-                                     gg_theme)
+                                     tx_annotation, viewMode, collapse_intron_flank)
 
   timer_done_nice_print("-- Mega browser annotation plot done: ", time_before)
   return(res)
@@ -480,15 +469,11 @@ summary_track_allsamples <- function(mat, summary_track_type = "area") {
 }
 
 annotation_track_allsamples <- function(df, id, display_range, annotation,
-                                        tx_annotation, viewMode, collapse_intron_flank,
-                                        gg_theme) {
+                                        tx_annotation, viewMode, collapse_intron_flank) {
   gene_model_panel <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
                                            custom_regions = NULL,
                                            viewMode = viewMode, collapse_intron_flank)
-
-  # return(geneModelPanelPlot(gene_model_panel[[1]], attr(gg_theme, "gg_template")) +
-  #          theme(plot.margin = margin(l = 23, r = 5)))
   return(geneModelPanelPlotly(gene_model_panel[[1]]))
 }
 

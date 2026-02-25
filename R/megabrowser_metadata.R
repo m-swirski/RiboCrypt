@@ -90,7 +90,8 @@ allsamples_sidebar_plotly <- function(meta) {
         x = xj, y = y,
         type = "scatter", mode = "lines",
         hoverinfo = "text", text = hover_text,
-        line = list(width = 1), showlegend = FALSE
+        line = list(width = 1), showlegend = FALSE,
+        source = "mb_sidebar"
       ) %>%
         layout(
           margin = list(l = 0, r = 0, t = 0, b = 0),
@@ -110,7 +111,8 @@ allsamples_sidebar_plotly <- function(meta) {
         type = "heatmap",
         showscale = FALSE,
         hoverinfo = "text",
-        text = matrix(hover_text, ncol = 1)
+        text = matrix(hover_text, ncol = 1),
+        source = "mb_sidebar"
       ) %>%
         layout(
           margin = list(l = 0, r = 0, t = 0, b = 0),
@@ -138,21 +140,42 @@ allsamples_sidebar_plotly <- function(meta) {
 
     cluster_ann <- lapply(seq_len(nrow(centers)), function(i) {
       list(
-        xref = "paper",   # paper coords for x so it stays at the left edge
-        yref = "y",       # data coords for y so it matches heatmap rows
-        x = -0.02,        # move left of plotting area; tweak as needed
+        xref = "x",
+        yref = "y",
+        x = 0,
         y = centers$y_center[i],
         text = as.character(centers$cluster_idx[i]),
-        hovertext = as.character(centers$cluster[i]),
-        captureevents = TRUE,
         showarrow = FALSE,
-        textangle = -90,  # sideways
+        textangle = -90,
         xanchor = "right",
         yanchor = "middle",
-        font = list(size = 12, color = "black")
+        font = list(size = 12, color = "black"),
+        captureevents = TRUE
       )
     })
-    res <- res %>% layout(margin = list(l = 30), annotations = cluster_ann)
+
+    cluster_labels <- plotly::plot_ly(source = "mb_sidebar") %>%
+      plotly::layout(
+        margin = list(l = 0, r = 0, t = 0, b = 0),
+        paper_bgcolor = "rgba(0,0,0,0)",
+        plot_bgcolor  = "rgba(0,0,0,0)",
+        xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL,
+                     range = c(-1, 1)),
+        yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
+        annotations = cluster_ann,
+        showlegend = FALSE
+      )
+
+    plot_list <- c(list(cluster_labels), plot_list)
+    widths <- c(0.06, rep((0.94 / length(cols)), length(cols)))
+  res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE, widths = widths) %>%
+      plotly::layout(
+        xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
+        yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
+        dragmode = FALSE,
+        margin = list(l = 30)
+      ) %>%
+      plotly::config(displayModeBar = FALSE)
   }
   timer_done_nice_print("-- metabrowser sidebar done: ", time_before)
   res %>% plotly::layout(margin = list(t = 8, b = 8), yaxis = list(

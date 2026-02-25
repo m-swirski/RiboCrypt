@@ -107,6 +107,144 @@ module_additional_browser <- function(input, output, session) {
   })
 }
 
+module_additional_megabrowser <- function(input, output, session) {
+  with(rlang::caller_env(), {
+    selected_enrich_filters <- reactiveVal(NULL)
+    observeEvent(meta_and_clusters(), {
+      selected_enrich_filters(NULL)
+    }, ignoreInit = TRUE)
+
+    observeEvent(plotly::event_data("plotly_click", source = "mb_enrich"), {
+      ed <- plotly::event_data("plotly_click", source = "mb_enrich")
+      req(!is.null(ed))
+
+      category <- as.character(ed$x)
+      cluster <- NULL
+      if (!is.null(ed$customdata) && !identical(ed$customdata, "counts")) {
+        cluster <- as.character(ed$customdata)
+      }
+
+      selected_enrich_filters(list(category = category, cluster = cluster))
+      updateTabsetPanel(session, "mb_tabs", selected = "Result table")
+      shinyjs::runjs(
+        sprintf(
+          "document.getElementById('%s').scrollIntoView({behavior:'smooth'});",
+          ns("result_table")
+        )
+      )
+    })
+
+    observeEvent(plotly::event_data("plotly_clickannotation", source = "mb_sidebar"), {
+      ed <- plotly::event_data("plotly_clickannotation", source = "mb_sidebar")
+      req(!is.null(ed))
+
+      cluster_val <- NULL
+      if (is.list(ed) && !is.null(ed$text)) {
+        cluster_val <- as.character(ed$text)
+      } else if (is.data.frame(ed) && "text" %in% names(ed)) {
+        cluster_val <- as.character(ed$text[[1]])
+      } else if (is.list(ed) && !is.null(ed$annotation) && !is.null(ed$annotation$text)) {
+        cluster_val <- as.character(ed$annotation$text)
+      } else if (is.data.frame(ed) && "annotation.text" %in% names(ed)) {
+        cluster_val <- as.character(ed[["annotation.text"]][[1]])
+      }
+      req(!is.null(cluster_val))
+
+      selected_enrich_filters(list(category = NULL, cluster = cluster_val))
+      updateTabsetPanel(session, "mb_tabs", selected = "Result table")
+      shinyjs::runjs(
+        sprintf(
+          "document.getElementById('%s').scrollIntoView({behavior:'smooth'});",
+          ns("result_table")
+        )
+      )
+    })
+
+    observe({
+      req(input$plotType == "plotly")
+      ed <- suppressWarnings(plotly::event_data("plotly_relayout", source = "mb_mid"))
+      req(!is.null(ed))
+      y_max <- ncol(table()$table)
+      sync_megabrowser_x_shiny(ed, session, y_max = y_max, y_reversed = TRUE)
+    })
+
+    selected_cluster_from_filtered <- reactive({
+      filt <- selected_enrich_filters()
+      if (is.null(filt)) return(NULL)
+      if (!is.null(filt$cluster)) return(as.character(filt$cluster))
+
+      tbl <- filtered_meta_table()
+      if ("cluster" %in% names(tbl)) {
+        vals <- unique(tbl$cluster)
+      } else if ("Cluster" %in% names(tbl)) {
+        vals <- unique(tbl$Cluster)
+      } else {
+        vals <- character(0)
+      }
+      if (length(vals) == 1) return(as.character(vals))
+      NULL
+    })
+
+    output$result_table_controls <- renderUI({
+      filt <- selected_enrich_filters()
+      if (is.null(filt)) return(NULL)
+
+      show_cluster_btn <- FALSE
+      cluster_val <- selected_cluster_from_filtered()
+      if (!is.null(cluster_val)) {
+        already_full_cluster <- is.null(filt$category) && !is.null(filt$cluster)
+        show_cluster_btn <- !already_full_cluster
+      }
+
+      tagList(
+        actionButton(ns("reset_result_table"), "Show full table"),
+        if (show_cluster_btn) actionButton(ns("expand_cluster"), "Show full cluster") else NULL
+      )
+    })
+
+    observeEvent(input$reset_result_table, {
+      selected_enrich_filters(NULL)
+    }, ignoreInit = TRUE)
+
+    observeEvent(input$expand_cluster, {
+      cluster_val <- selected_cluster_from_filtered()
+      req(!is.null(cluster_val))
+      selected_enrich_filters(list(category = NULL, cluster = cluster_val))
+    }, ignoreInit = TRUE)
+
+    filtered_meta_table <- reactive({
+      tbl <- allsamples_meta_table(meta_and_clusters())
+      filt <- selected_enrich_filters()
+      if (is.null(filt)) return(tbl)
+      if (!is.null(filt$category) && "grouping" %in% names(tbl)) {
+        tbl <- tbl[as.character(grouping) %in% filt$category]
+      }
+      if (!is.null(filt$cluster)) {
+        if ("cluster" %in% names(tbl)) {
+          tbl <- tbl[as.character(cluster) %in% filt$cluster]
+        } else if ("Cluster" %in% names(tbl)) {
+          tbl <- tbl[as.character(Cluster) %in% filt$cluster]
+        }
+      }
+      tbl
+    })
+
+    output$result_table <- renderDT(filtered_meta_table(),
+                                    extensions = 'Buttons', filter = "top",
+                                    options = list(dom = 'Bfrtip',
+                                                   buttons = NULL,
+                                                   pageLength = 130)) %>%
+      bindEvent(meta_and_clusters(), selected_enrich_filters(),
+                ignoreInit = FALSE,
+                ignoreNULL = TRUE)
+
+    observeEvent(input$toggle_settings, {
+      # Toggle visibility by adding/removing 'hidden' class
+      shinyjs::toggleClass(id = "floating_settings", class = "hidden")
+    })
+  })
+}
+
 #' This function sets up default backend for genome specific reactives
 #'
 #' It is a rlang module for all submodules.\cr
@@ -343,4 +481,3 @@ meta_motif_files <- function(df) {
   names(motif_files) <- sub("\\.fst$", "", gsub(".*_", "", basename(motif_files)))
   return(motif_files)
 }
-

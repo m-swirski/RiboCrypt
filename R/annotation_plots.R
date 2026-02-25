@@ -135,26 +135,34 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
     overlaps_custom <- subsetByOverlaps(custom_regions, display_range,
                                         type = overlap_type)
   }
-  overlaps <- subsetByOverlaps(annotation, display_range,
-                               type = overlap_type)
+
+  if (all(length(annotation) == 1 & length(display_range) == 1) & identical(names(annotation), names(display_range))) {
+    annotation_shown <- annotation
+  } else annotation_shown <- subsetByOverlaps(annotation, display_range,
+                                      type = overlap_type)
+
   overlaps_tx <- NULL
+
   if (viewMode != "tx") {
-    overlaps_tx <- subsetByOverlaps(tx_annotation, display_range,
-                                    type = overlap_type)
-    if (length(overlaps) > 0) {
-      if (!all(names(overlaps_tx) %in% names(overlaps))) {
-        overlaps_tx <- overlaps_tx[names(overlaps_tx) %in% names(overlaps)]
+    if (all(length(tx_annotation) == 1 & length(display_range) == 1) & identical(names(tx_annotation), names(display_range))) {
+      overlaps_tx <- tx_annotation
+    } else overlaps_tx <- subsetByOverlaps(tx_annotation, display_range,
+                                        type = overlap_type)
+    if (length(annotation_shown) > 0) {
+      if (!all(names(overlaps_tx) %in% names(annotation_shown))) {
+        overlaps_tx <- overlaps_tx[names(overlaps_tx) %in% names(annotation_shown)]
       }
-      overlaps_tx <- groupGRangesBy(unlistGrl(GenomicRanges::psetdiff(unlistGrl(overlaps_tx),
-                                                                      overlaps[names(unlistGrl(overlaps_tx))])))
+      unl_grl <- unlistGrl(overlaps_tx)
+      overlaps_tx <- groupGRangesBy(
+        unlistGrl(GenomicRanges::psetdiff(unl_grl, annotation_shown[names(unl_grl)])))
     }
   }
 
-  if (use_custom_region) overlaps <- c(overlaps, overlaps_custom)
-  if (length(overlaps) > 0) overlaps@unlistData$type <- "cds"
+  if (use_custom_region) annotation_shown <- c(annotation_shown, overlaps_custom)
+  if (length(annotation_shown) > 0) annotation_shown@unlistData$type <- "cds"
   if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <- "utr"
 
-  return(gene_box_fix_overlaps(display_range, c(overlaps, overlaps_tx), custom_regions,
+  return(gene_box_fix_overlaps(display_range, c(annotation_shown, overlaps_tx), custom_regions,
                                collapse_intron_flank, frame_colors))
 }
 
@@ -170,8 +178,7 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
   overlaps <- unlistGrl(overlaps)
   names(overlaps) <- names_grouping
   overlaps$rel_frame_exon <- getRelativeFrames(overlaps)
-  overlaps <- subsetByOverlaps(overlaps, display_range)
-
+  # overlaps <- subsetByOverlaps(overlaps, display_range)
 
   intersections <- trimOverlaps(overlaps, display_range)
   intersections <- groupGRangesBy(intersections, paste0(names(intersections), "___", intersections$type))
@@ -211,22 +218,21 @@ geneBoxFromRanges <- function(locations, plot_width,
   blocks <- sort(blocks)
   lines_locations <- blocks[!(blocks %in% c(1, plot_width))]
 
-
   rect_locations <- locations
-
   locations <- resize(locations, width = 1, fix = "center")
-
   labels_locations <- start(locations)
+  gene_names <- names(locations)
 
-  too_close <- labels_locations < 0.02 * plot_width
+  cap <- 0.00133*nchar(gene_names)
+  too_close <- labels_locations < cap * plot_width
+  too_far <- labels_locations > (1-cap) * plot_width
 
-  too_far <- labels_locations > 0.98 * plot_width
   labels_locations[too_close] <- 1
   labels_locations[too_far] <- plot_width
   hjusts <- rep("center", length(labels_locations))
   hjusts[too_close] <- "left"
   hjusts[too_far] <- "right"
-  gene_names <- names(locations)
+
   custom_region_names <- which(names(lines_locations) %in% names(custom_regions))
   names(lines_locations) <- rep("black", length(lines_locations))
   names(lines_locations)[custom_region_names] <- "orange4"
@@ -307,21 +313,24 @@ geneModelPanelPlot <- function(dt, gg_template = geneModelPanelPlotTemplate()) {
 
   result_plot <- gg_template
 
+  trans <- c("cds", "translon")
   draw_introns <- nrow(seg_dt) > 0
   if (draw_introns)  {
     intron_flank_coords <- seg_dt[type %in% c("intron_collapsed")]
     intron_flank_coords[, tooltip := "Collapsed Intron"]
+    suppressWarnings({
     result_plot <- result_plot +
       geom_segment(data = seg_dt,
                    mapping = aes(x = rect_starts, xend = rect_ends, y = 0.5 - layers, yend = 0.5 - layers, text = gene_names),
                    color = "grey45", alpha = 0.6) +
       geom_text(data = intron_flank_coords, aes(x = (rect_starts + rect_ends) / 2, y = 0.5 - layers, text = tooltip),
                 label = "...", size = 6)
+    })
   }
 
   suppressWarnings({
     result_plot <-  result_plot +
-     geom_rect(data = dt, mapping=aes(ymin=0 - layers + ifelse(type == "cds", 0, 0.33), ymax = 1 - layers - ifelse(type == "cds", 0, 0.33),
+     geom_rect(data = dt, mapping=aes(ymin=0 - layers + ifelse(type %in% trans, 0, 0.33), ymax = 1 - layers - ifelse(type %in% trans, 0, 0.33),
                                       xmin=rect_starts,xmax = rect_ends, text = gene_names),
                fill = dt$cols, color = "grey45") +
       geom_text(data = dt[,.(layers = layers[1], labels_locations = mean(labels_locations)), gene_names],
@@ -346,6 +355,166 @@ geneModelPanelPlotTemplate <- function() {
     theme(panel.background = element_rect(fill= "white"))
 }
 
+# Pure plotly version (no ggplot/ggplotly)
+geneModelPanelPlotly <- function(dt) {
+  # If no annotation given, return blank plotly
+  if (is.null(dt) || nrow(dt) == 0) {
+    return(plotly::plot_ly() %>%
+             plotly::layout(
+               xaxis = list(visible = FALSE),
+               yaxis = list(visible = FALSE),
+               margin = list(l = 0, r = 0, b = 0, t = 0),
+               paper_bgcolor = "white",
+               plot_bgcolor  = "white"
+             ))
+  }
+
+  stopifnot(is(dt, "data.table"))
+
+  # Split introns vs boxes
+  seg_dt <- dt[type %in% c("intron", "intron_collapsed")]
+  box_dt <- dt[!(type %in% c("intron", "intron_collapsed"))]
+
+  trans <- c("cds", "translon")
+
+  # Compute rectangle y coords to match ggplot logic:
+  # ymin = 0 - layers + ifelse(type %in% trans, 0, 0.33)
+  # ymax = 1 - layers - ifelse(type %in% trans, 0, 0.33)
+  box_dt[, `:=`(
+    ymin = 0 - layers + ifelse(type %in% trans, 0, 0.33),
+    ymax = 1 - layers - ifelse(type %in% trans, 0, 0.33)
+  )]
+
+  # Helpful for axis range
+  x_min <- min(dt$rect_starts, dt$rect_ends, na.rm = TRUE)
+  x_max <- max(dt$rect_starts, dt$rect_ends, na.rm = TRUE)
+  y_min <- min(box_dt$ymin, if (nrow(seg_dt)) (0.5 - seg_dt$layers) else Inf, na.rm = TRUE) - 0.05
+  y_max <- max(box_dt$ymax, if (nrow(seg_dt)) (0.5 - seg_dt$layers) else -Inf, na.rm = TRUE) + 0.05
+
+  p <- plotly::plot_ly() %>%
+    plotly::layout(
+      showlegend = FALSE,
+      xaxis = list(
+        visible = FALSE,
+        range = c(x_min, x_max),
+        fixedrange = FALSE,
+        zeroline = FALSE
+      ),
+      yaxis = list(
+        visible = FALSE,
+        range = c(y_min, y_max),
+        fixedrange = TRUE,
+        zeroline = FALSE
+      ),
+      margin = list(l = 0, r = 0, b = 0, t = 0),
+      paper_bgcolor = "white",
+      plot_bgcolor  = "white",
+      hovermode = "closest"
+    )
+
+  # --- Introns as segments (grey lines) ---
+  if (nrow(seg_dt) > 0) {
+    # One trace for all segments
+    seg_x <- c(rbind(seg_dt$rect_starts, seg_dt$rect_ends, NA_real_))
+    seg_y <- c(rbind(0.5 - seg_dt$layers, 0.5 - seg_dt$layers, NA_real_))
+
+    # Hover text per segment: repeat text for start/end, NA for breaks
+    seg_text <- c(rbind(seg_dt$gene_names, seg_dt$gene_names, NA_character_))
+
+    p <- p %>%
+      plotly::add_trace(
+        x = seg_x, y = seg_y,
+        type = "scatter", mode = "lines",
+        line = list(color = "grey45", width = 2),
+        opacity = 0.6,
+        text = seg_text,
+        hoverinfo = "text"
+      )
+
+    # Collapsed intron label "..."
+    intron_flank_coords <- seg_dt[type %in% c("intron_collapsed")]
+    if (nrow(intron_flank_coords) > 0) {
+      intron_flank_coords[, `:=`(
+        xmid = (rect_starts + rect_ends) / 2,
+        ymid = 0.5 - layers,
+        tooltip = "Collapsed Intron"
+      )]
+
+      p <- p %>%
+        plotly::add_text(
+          data = intron_flank_coords,
+          x = ~xmid, y = ~ymid,
+          text = "...",
+          textfont = list(size = 18, color = "black"),
+          hovertext = ~tooltip,
+          hoverinfo = "text"
+        )
+    }
+  }
+
+  # --- Exon/CDS/etc boxes as filled rectangles ---
+  if (nrow(box_dt) > 0) {
+    # Shapes for rectangles (fast render, but shapes don't carry per-shape hover)
+    rect_shapes <- lapply(seq_len(nrow(box_dt)), function(i) {
+      list(
+        type = "rect",
+        layer = "below",
+        xref = "x", yref = "y",
+        x0 = box_dt$rect_starts[i], x1 = box_dt$rect_ends[i],
+        y0 = box_dt$ymin[i],        y1 = box_dt$ymax[i],
+        line = list(color = "grey45", width = 1),
+        fillcolor = box_dt$cols[i],
+        opacity = 1
+      )
+    })
+
+    p <- p %>%
+      plotly::layout(shapes = rect_shapes)
+
+    # Add an invisible scatter trace to provide per-rectangle hover tooltips
+    box_dt[, `:=`(
+      xmid = (rect_starts + rect_ends) / 2,
+      ymid = (ymin + ymax) / 2
+    )]
+
+    p <- p %>%
+      plotly::add_markers(
+        data = box_dt,
+        x = ~xmid, y = ~ymid,
+        marker = list(opacity = 0),
+        hovertext = ~gene_names,
+        hoverinfo = "text"
+      )
+
+    # Gene name labels per (layer, gene_names) at mean(labels_locations)
+    lab_dt <- box_dt[, .(
+      layers = layers[1],
+      labels_locations = mean(labels_locations)
+    ), by = gene_names]
+
+    p <- p %>%
+      plotly::add_text(
+        data = lab_dt,
+        x = ~labels_locations,
+        y = ~(0.50 - layers),
+        text = ~gene_names,
+        textposition = "middle center",
+        textfont = list(color = "black", size = 16),
+        hoverinfo = "skip"
+      )
+  }
+  p %>% plotly::config(displayModeBar = FALSE) %>%
+    plotly::layout(margin = margin_megabrowser())
+}
+
+margin_megabrowser <- function() {
+  list(
+    l = 30,
+    r = 100,
+    t = 0,
+    b = 0
+  )
+}
 
 
 nt_area_template <- function() {

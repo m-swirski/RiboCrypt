@@ -130,7 +130,7 @@ observatory_browser_server <- function(
         input$extendTrailers
       )
       runs <- unlist(library_selections())
-      reads <- load_collection(path, grl = display_region_grl, format = "wide", columns = runs)
+      reads <- load_collection(path, grl = display_region_grl, columns = runs)
       with_frames <- ORFik::libraryTypes(
         experiment_df,
         uniqueTypes = FALSE

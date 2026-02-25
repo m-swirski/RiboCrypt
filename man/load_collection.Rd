@@ -7,13 +7,13 @@
 load_collection(path, grl = attr(path, "range"))
 }
 \arguments{
-\item{path}{the path to gene counts}
+\item{path}{the path to megafst index file}
 
 \item{grl}{a GRangesList, default attr(path, "range"),
 for new fst format, which range to get.}
 }
 \value{
-a data.table in long format
+a data.table in wide format
 }
 \description{
 Load a ORFik collection table

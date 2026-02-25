@@ -131,3 +131,5 @@ render_translon_datatable <- function(data, session, add_links = TRUE) {
     ", ns("translon_id_click")))
   )
 }
+
+translon_name_regex <- function() "^(?:TC|T)\\d+$"

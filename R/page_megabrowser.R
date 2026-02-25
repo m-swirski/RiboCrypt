@@ -7,7 +7,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   enrichment_test_types <- c(`Clusters (Order factor 1)` = "Clusters", `Ratio bins` = "Ratio bins", `Other gene tpm bins` = "Other gene tpm bins")
   columns_to_show <- c("BioProject", "CONDITION", "INHIBITOR",
                        "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION")
-  metadata <- metadata[, colnames(metadata) %in% columns_to_show, with = FALSE]
+  metadata <- metadata[, ..columns_to_show]
   full_annotation <- as.logical(browser_options["full_annotation"])
   if (!is.null(browser_options["default_gene_meta"])) {
     all_isoforms <- subset(gene_names_init, label == browser_options["default_gene_meta"])
@@ -34,9 +34,9 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                         tabsetPanel(
                           tabPanel("MegaBrowser",
                                    fluidRow(
-                                     organism_input_select(c("ALL", genomes), ns),
-                                     experiment_input_select(experiments, ns, browser_options,
-                                                             "default_experiment_meta"),
+                                     column(6, organism_input_select(c("ALL", genomes), ns)),
+                                     column(6, experiment_input_select(experiments, ns, browser_options,
+                                                             "default_experiment_meta")),
                                    ),
                                    fluidRow(column(6, metadata_input_select(ns, metadata, TRUE)),
                                             column(6, metadata_input_select(ns, metadata, FALSE,
@@ -47,7 +47,8 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                    fluidRow(column(6, region_view_select(ns, "region_type", "Select region to view")),
                                             column(6, radioButtons(ns("plotType"), "Choose Plot Type:",
                                                 choices = c("Plotly" = "plotly", "ComplexHeatmap" = "ggplot2"),
-                                                selected = "ggplot2", inline = TRUE))),
+                                                selected = "plotly", inline = TRUE))),
+                                   tags$hr(style = "padding-top: 50px; padding-bottom: 50px;"),
                                    helper_button_redirect_call()
                           ),
                           tabPanel("Settings",
@@ -90,18 +91,37 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
     tags$hr(),
     # ---- Full Width Main Panel ----
     fluidRow(
-      tabsetPanel(type = "tabs",
+      tabsetPanel(id = ns("mb_tabs"), type = "tabs",
                   tabPanel("Heatmap", fluidRow(
                     jqui_resizable(
-                      splitLayout(cellWidths = c("10%", "90%"),
-                                  plotlyOutput(outputId = ns("d"), height = "618px", width = "130px"),
-                                  uiOutput(outputId = ns("c")) %>%
-                                    shinycssloaders::withSpinner(color="#0dc5c1"),
-                                  width=9, cellArgs = list(style = "padding: 0px")))
+                      div(
+                        style = paste(
+                          "display: grid;",
+                          "grid-template-columns: 8% 92%;",
+                          "grid-template-rows: 15% 75% 10%;",
+                          "height: 700px;",
+                          "width: 100%;",
+                          "gap: 0;"
+                        ),
+                        div(
+                          style = "grid-column: 1; grid-row: 2; overflow: visible;",
+                          plotly::plotlyOutput(outputId = ns("d"),
+                                               height = "100%", width = "100%")
+                        ),
+                        div(
+                          style = "grid-column: 2; grid-row: 1 / span 3;",
+                          uiOutput(outputId = ns("c")) %>%
+                            shinycssloaders::withSpinner(color = "#0dc5c1")
+                        )
+                      )
+                    )
                   ),
                   plotlyOutput(outputId = ns("e"))),
                   tabPanel("Statistics", DTOutput(outputId = ns("stats")) %>% shinycssloaders::withSpinner(color="#0dc5c1")),
-                  tabPanel("Result table", DTOutput(outputId = ns("result_table")) %>% shinycssloaders::withSpinner(color="#0dc5c1"))
+                  tabPanel("Result table",
+                           uiOutput(outputId = ns("result_table_controls")),
+                           DTOutput(outputId = ns("result_table")) %>%
+                             shinycssloaders::withSpinner(color="#0dc5c1"))
       )
     )
   )
@@ -117,61 +137,75 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
       allsamples_observer_controller(input, output, session)
       plot_type <- "plotly"
       # Main plot controller, this code is only run if 'plot' is pressed
-      controller <- eventReactive(input$go,
-                                  click_plot_browser_allsamp_controller(input, df, gene_name_list),
-                                  ignoreInit = TRUE,
-                                  ignoreNULL = FALSE)
-      # Main plot, this code is only run if 'plot' is pressed
-      table <- reactive(compute_collection_table_shiny(controller,
-                                                   metadata = metadata)) %>%
+      controller <- reactive(mb_controller_shiny(input, df, gene_name_list)) %>%
+        bindCache(input_to_list(input)) %>%
+        bindEvent(input$go, ignoreInit = TRUE, ignoreNULL = FALSE)
+      # Table
+      table <- reactive(compute_collection_table_shiny(controller, metadata = metadata)) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(controller()$table_hash, ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      plot_object <- reactive(get_meta_browser_plot(table()$table,
-                                                   isolate(input$heatmap_color),
-                                                   isolate(input$clusters),
-                                                   isolate(input$color_mult),
-                                                   isolate(input$plotType))) %>%
+      # Heatmap (middle right)
+      plot_object <- reactive(mb_plot_object_shiny(table()$table, input)) %>%
+        bindCache(controller()$table_plot_hash) %>%
         bindEvent(table(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      # Main plot, either plotly or ggplot
-      output$myPlotlyPlot <- renderPlotly({
-        req(input$plotType == "plotly")
-        get_meta_browser_plot_full_shiny(table, plot_object, controller)}) %>%
-        bindCache(controller()$table_plot) %>%
-        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
-      output$myGgplot <- renderPlot({
-        req(input$plotType == "ggplot2")
-        get_meta_browser_plot_full_shiny(table, plot_object, controller)}) %>%
-        bindCache(controller()$table_plot) %>%
+      mb_top_plot <- reactive(summary_track_allsamples(attr(table()$table, "summary_cov"))) %>%
+        bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      output$c <- renderUI(
-        if (input$plotType == "plotly") {
-          plotlyOutput(
-            outputId = ns("myPlotlyPlot"), # Specific ID for Plotly output
-            height = "700px",
-            width = "100%"
-          ) %>% shinycssloaders::withSpinner(color="#0dc5c1")
-      } else if (input$plotType == "ggplot2") {
-          plotOutput(
-            outputId = ns("myGgplot"), # Specific ID for ggplot2 output
-            height = "700px",
-            width = "100%"
-          ) %>% shinycssloaders::withSpinner(color="#0dc5c1")
+      mb_mid_plot <- reactive(mb_mid_plot_shiny(plot_object(), input$plotType)) %>%
+        bindCache(controller()$table_plot_hash) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      mb_bottom_plot <- reactive(get_megabrowser_annotation_plot_shiny(controller)) %>%
+        bindCache(controller()$table_hash) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      output$myPlotlyPlot <- renderPlotly({
+        req(input$plotType == "plotly")
+        mb_mid_plot()
       }) %>%
-        bindCache(controller()$table_hash, input$heatmap_color,
-                  isolate(input$color_mult)) %>%
+        bindCache(controller()$table_plot_hash) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      mb_mid_image <- reactive(mb_mid_image_shiny(plot_object(), session, ns)) %>%
+        bindCache(controller()$table_plot_hash) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      output$mb_subplot_static <- renderPlotly({
+        req(input$plotType == "ggplot2")
+        mb_static_subplot_shiny(mb_top_plot(), mb_mid_image(), mb_bottom_plot())
+      }) %>%
+        bindCache(controller()$table_plot_hash) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      output$mb_top_summary <- renderPlotly({
+        mb_top_plot()
+      }) %>%
+        bindCache(controller()$table_hash) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      output$mb_bottom_gene <- renderPlotly({
+        mb_bottom_plot()
+      }) %>%
+        bindCache(controller()$table_hash) %>%
+        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      output$c <- renderUI(renderMegabrowser(input$plotType, ns)) %>%
+        bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       # Additional plots and tables
       meta_and_clusters <- reactive(
-          allsamples_metadata_clustering(table()$metadata_field, plot_object(),
-                                         controller()$enrichment_term)) %>%
+        allsamples_metadata_clustering(table(),
+                                       controller()$enrichment_term)) %>%
         bindCache(controller()$table_hash, controller()$enrichment_term) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      output$d <- renderPlotly(allsamples_sidebar(meta_and_clusters()$meta)) %>%
+      output$d <- renderPlotly({
+        allsamples_sidebar_plotly(meta_and_clusters()$meta)
+      }) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
@@ -181,24 +215,13 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
+
       output$stats <- renderDT(allsamples_meta_stats_shiny(meta_and_clusters()$enrich_dt)) %>%
         bindEvent(meta_and_clusters(),
                   ignoreInit = FALSE,
                   ignoreNULL = TRUE)
-      output$result_table <- renderDT(cbind(attr(meta_and_clusters()$meta, "runIDs"),
-                                            meta_and_clusters()$meta)[, c("index", "order") := NULL],
-                                      extensions = 'Buttons',
-                                      filter = "top",
-                                      options = list(dom = 'Bfrtip',
-                                                     buttons = NULL,
-                                                     pageLength = 130)) %>%
-        bindEvent(meta_and_clusters(),
-                  ignoreInit = FALSE,
-                  ignoreNULL = TRUE)
-      observeEvent(input$toggle_settings, {
-        # Toggle visibility by adding/removing 'hidden' class
-        shinyjs::toggleClass(id = "floating_settings", class = "hidden")
-      })
+
+      module_additional_megabrowser(input, output, session)
     }
   )
 }

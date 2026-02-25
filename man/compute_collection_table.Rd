@@ -20,11 +20,13 @@ compute_collection_table(
   group_on_tx_tpm = NULL,
   split_by_frame = FALSE,
   ratio_interval = NULL,
-  decreasing_order = FALSE
+  decreasing_order = FALSE,
+  enrichment_term = metadata_field[1],
+  clusters = 1
 )
 }
 \arguments{
-\item{path}{the path to gene counts}
+\item{path}{the path to megafst index file}
 
 \item{lib_sizes}{named integer vector, default NULL. If given will do a pre tpm normalization
 for full library sizes}

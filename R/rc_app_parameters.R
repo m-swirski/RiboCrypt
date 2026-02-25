@@ -84,6 +84,9 @@ rc_parameter_setup <- function() {
     if (!isTruthy(browser_options["translons"])) {
       browser_options["translons"] <- FALSE
     }
+    if (!isTruthy(browser_options["translons_transcode"])) {
+      browser_options["translons_transcode"] <- FALSE
+    }
 
     if (!isTruthy(browser_options["search_on_init"])) {
       browser_options["search_on_init"] <- ""
@@ -100,7 +103,6 @@ rc_parameter_setup <- function() {
       browser_options["default_gene"] <- names_init$label[1]
     }
     stopifnot(browser_options["default_gene"] %in% names_init$label)
-
 
     tx_init <- loadRegion(exp_init)
     cds_init <- loadRegion(exp_init, "cds")

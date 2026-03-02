@@ -97,7 +97,7 @@ load_data_internal <- function(species) {
 load_data_umap <- function(species, color.by = NULL) {
 
   data <- load_data_umap_internal(species, color.by)
-  reactiveValues(dt_umap = data$dt_umap, df = data$df)
+  reactiveValues(data)
 }
 
 load_data_umap_internal <- function(species, color.by = c("tissue", "cell_line")) {
@@ -115,5 +115,5 @@ load_data_umap_internal <- function(species, color.by = c("tissue", "cell_line")
   } else {
     stop("Species has no computed UMAP, pick another!")
   }
-  return(list(dt_umap = dt_umap, df = df))
+  dt_umap
 }

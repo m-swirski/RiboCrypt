@@ -42,8 +42,8 @@ umap_server <- function(id, all_exp_meta, browser_options) {
       output$c <- renderPlotly({
         req(plot_triggered())
         if (isolate(input$umap_plot_type) == "UMAP") {
-          umap_plot(isolate(md()$dt_umap))
-        } else umap_centroids_plot(isolate(md()$dt_umap))
+          umap_plot(isolate(md()))
+        } else umap_centroids_plot(isolate(md()))
         }) %>%
         bindCache(input$dff, input$umap_col, input$umap_plot_type) %>%
         bindEvent(input$go, ignoreInit = FALSE, ignoreNULL = TRUE)

@@ -5,14 +5,14 @@
 #' for new fst format, which range to get.
 #' @return a data.table in wide format
 #' @importFrom fst read_fst
-load_collection <- function(path, grl = attr(path, "range")) {
+load_collection <- function(path, grl = attr(path, "range"), columns = NULL) {
   stopifnot(length(path) == 1 & is.character(path))
 
   subset_defined <- !is.null(grl)
   index_provided <- basename(path) == "coverage_index.fst"
   if (index_provided) {
     if (!subset_defined) stop("When path is index, grl must be a defined GRangesList")
-    table <- coverageByTranscriptFST(grl, path)[[1]]
+    table <- coverageByTranscriptFST(grl, path, columns)[[1]]
   } else table <- fst::read_fst(path, as.data.table = TRUE)
   if ("position" %in% colnames(table)) warning("Old megafst format not supported downstream anymore!")
 

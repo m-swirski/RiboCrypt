@@ -6,3 +6,5 @@ RiboCrypt.Rproj
 /doc/
 /Meta/
 tutorial.md
+renv.lock
+/renv/

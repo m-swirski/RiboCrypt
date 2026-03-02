@@ -13,12 +13,8 @@ observatory_selector_ui <- function(id, meta_experiment_list, browser_options) {
     shiny::fluidRow(
       shiny::column(
         2,
-        shiny::selectInput(
-          ns("meta_experiment"),
-          "Organism",
-          choices = meta_experiment_list$name,
-          selected = browser_options["default_experiment_meta"]
-        )
+        experiment_input_select(meta_experiment_list$name, ns, browser_options,
+                                "default_experiment_meta", label = "Organism")
       ),
       shiny::column(
         2,
@@ -54,20 +50,15 @@ observatory_selector_ui <- function(id, meta_experiment_list, browser_options) {
 observatory_selector_server <- function(
   id,
   meta_experiment_list,
-  all_libraries_df
+  meta_experiment_df,
+  all_libraries_df, experiments, org, rv, browser_options
 ) {
   shiny::moduleServer(id, function(input, output, session) {
-    meta_experiment_df <- shiny::reactive({
-      req(isTruthy(input$meta_experiment))
-      ORFik::read.experiment(
-        input$meta_experiment,
-        validate = FALSE
-      )
-    }) |> shiny::bindEvent(input$go, ignoreNULL = TRUE)
+    allsamples_observer_controller(input, output, session)
 
     observatory_module <- shiny::reactive({
       create_observatory_module(meta_experiment_df(), all_libraries_df)
-    }) |> shiny::bindEvent(meta_experiment_df())
+    }) |> shiny::bindCache(name(meta_experiment_df()))|> shiny::bindEvent(input$go)
 
     libraries_df <- shiny::reactive({
       observatory_module()$get_libraries_data()
@@ -187,7 +178,8 @@ observatory_selector_server <- function(
     filtered_libraries_df <- shiny::reactive({
       libs <- libraries_df()
       plot_sel <- input$libraries_umap_plot_selection
-      if (is.null(plot_sel)) {
+      message("Plot selection size: ", length(plot_sel))
+      if (is.null(plot_sel) || length(plot_sel) == 0) {
         return(libs)
       }
       libs[Run %in% plot_sel]

@@ -14,8 +14,9 @@ experiment_update_select_isolated <- function(org, all_exp, experiments,
   } else orgs_safe <- unique(all_exp$organism)
 
   picks <- experiments[all_exp$organism %in% orgs_safe]
+
   selected <-
-    if (selected == "AUTO") {
+    if (!isTruthy(selected) || selected == "AUTO") {
       picks[1]
     } else selected
   updateSelectizeInput(

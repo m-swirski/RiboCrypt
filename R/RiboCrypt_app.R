@@ -123,16 +123,29 @@ RiboCrypt_app <- function(
       gg_theme, rv, browser_options
     )
     if (nrow(all_exp_meta) > 0) {
-      browser_allsamp_server(
-        "browser_allsamp", all_exp_meta, df_meta, metadata,
-        names_init_meta, browser_options, exp_init_meta,
-        exps_dir
-      )
-      observatory_server(
-        "observatory",
-        meta_experiment_list = all_exp_meta,
-        all_libraries_df = metadata, names_init_meta
-      )
+      collection_pages <- function(input, output, session, df,
+                                   all_exp, names_init,
+                                   exp_init, exps_dir, metadata,
+                                   browser_options) {
+        org_and_study_changed_checker_collection(input, output, session)
+        rv <- browser_allsamp_server(
+          "browser_allsamp", all_exp, df, experiments,
+          gene_name_list, org, motif_name_list,
+          metadata, browser_options, rv
+        )
+        rv <- observatory_server(
+          "observatory", all_exp, df, experiments,
+          gene_name_list, org,
+          metadata, browser_options, rv
+        )
+      }
+      collection_pages(input, output, session,
+                       df = df_meta,
+                       all_exp = all_exp_meta,
+                       names_init = names_init_meta,
+                       exp_init = exp_init_meta,
+                       exps_dir, metadata, browser_options)
+
     } else {
       print("No collections given, ignoring MegaBrowser and observatory.")
     }

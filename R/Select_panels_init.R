@@ -17,10 +17,11 @@ organism_input_select <- function(genomes, ns) {
 }
 
 experiment_input_select <- function(names, ns, browser_options = NULL,
-                                    option_name = "default_experiment") {
+                                    option_name = "default_experiment",
+                                    label = "Select an experiment") {
   selectizeInput(
     inputId = ns("dff"),
-    label = "Select an experiment",
+    label = label,
     choices = as.character(browser_options[option_name]),
     selected = browser_options[option_name],
     multiple = FALSE,

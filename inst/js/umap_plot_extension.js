@@ -1,16 +1,27 @@
 (elem, _, data) => {
   Plotly.relayout(elem, { dragmode: "select" });
+  const valuesInputId = data;
+  const sendSelection = (selection) => {
+    Shiny.setInputValue(valuesInputId, selection, { priority: "event" });
+  };
+
   const onSelected = (e) => {
-    const selectedPoints = e.points;
-    const valuesInputId = data;
+    const selectedPoints = e && Array.isArray(e.points) ? e.points : [];
     const pointValuesToSet = selectedPoints.map((elem) => {
       return elem.text.split("<br />")[1].split(": ")[1]
     });
-    Shiny.setInputValue(valuesInputId, pointValuesToSet);
+    sendSelection(pointValuesToSet);
     console.log("onSelected fired");
     console.log(pointValuesToSet);
   };
+  const onDeselected = () => {
+    sendSelection([]);
+    console.log("onDeselected fired");
+  };
+
   elem.on("plotly_selected", onSelected);
+  elem.on("plotly_deselect", onDeselected);
+  elem.on("plotly_doubleclick", onDeselected);
 
   onSelectionChanged = (message) => {
     let selected = null

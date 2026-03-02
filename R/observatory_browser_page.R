@@ -6,7 +6,7 @@ observatory_browser_ui <- function(id) {
     shiny::fluidRow(
       shiny::column(
         2,
-        shiny::selectizeInput(ns("gene_input"),
+        shiny::selectizeInput(ns("gene"),
           "Gene",
           choices = list()
         )
@@ -14,7 +14,7 @@ observatory_browser_ui <- function(id) {
       shiny::column(
         2,
         shiny::selectizeInput(
-          ns("tx_input"),
+          ns("tx"),
           "Transcript",
           choices = list()
         )
@@ -55,66 +55,31 @@ observatory_browser_ui <- function(id) {
 # Add settings for kmer, leader and trailer extensions and aggregation method
 observatory_browser_server <- function(
   id,
-  meta_experiment_df,
+  df,
   library_selections,
-  library_selection_labels
+  library_selection_labels,
+  gene_name_list, experiments, org, rv, browser_options
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     # -- Gene / transcript input wiring ------------------------------------
-
-    # Derive gene <-> transcript mapping table from the current experiment.
-    # Returns a data.table with columns: value (tx id), label (gene symbol).
-    gene_name_list <- shiny::reactive({
-      get_gene_name_categories(meta_experiment_df())
-    }) |> shiny::bindEvent(meta_experiment_df(), ignoreNULL = TRUE)
-
-    # When the experiment changes, repopulate the gene dropdown with the new
-    # gene symbols and pre-select the first one.
-    shiny::observe({
-      gene_names <- unique(gene_name_list()[, 2][[1]])
-      shiny::updateSelectizeInput(
-        session,
-        "gene_input",
-        choices = gene_names,
-        selected = gene_names[1],
-        server = TRUE
-      )
-    }) |> shiny::bindEvent(gene_name_list(), ignoreNULL = TRUE)
-
-    # When the selected gene changes, repopulate the transcript dropdown with
-    # only the isoforms that belong to the chosen gene.
-    shiny::observe({
-      shiny::req(input$gene_input != "")
-      isoforms <- gene_name_list()[label == input$gene_input, value]
-      shiny::updateSelectizeInput(
-        session,
-        "tx_input",
-        choices = isoforms,
-        selected = isoforms[1],
-        server = TRUE
-      )
-    }) |> shiny::bindEvent(
-      input$gene_input,
-      ignoreNULL = TRUE, ignoreInit = TRUE
-    )
-
+    allsamples_observer_controller(input, output, session)
     # -- Annotation loading ------------------------------------------------
 
     # Load transcript and CDS annotation once per experiment.
     tx <- shiny::reactive({
-      loadRegion(meta_experiment_df(), "tx")
-    }) |> shiny::bindEvent(meta_experiment_df(), ignoreNULL = TRUE)
+      loadRegion(df(), "tx")
+    }) |> shiny::bindEvent(df(), ignoreNULL = TRUE)
 
     cds <- shiny::reactive({
-      loadRegion(meta_experiment_df(), "cds")
-    }) |> shiny::bindEvent(meta_experiment_df(), ignoreNULL = TRUE)
+      loadRegion(df(), "cds")
+    }) |> shiny::bindEvent(df(), ignoreNULL = TRUE)
 
     # -- Plot controller ---------------------------------------------------
 
     # Build a minimal set of plot controls when "go" is pressed.
     # Uses hardcoded defaults (no advanced settings panel in UI).
     main_plot_controls <- shiny::reactive({
-      selected_tx <- input$tx_input
+      selected_tx <- input$tx
       aggregation_method <- rowMeans
       shiny::req(selected_tx, selected_tx != "")
 
@@ -123,7 +88,7 @@ observatory_browser_server <- function(
       tx_annotation <- observed_cds_annotation(selected_tx, cds)
 
       # Subset experiment to selected libraries (if any)
-      experiment_df <- meta_experiment_df()
+      experiment_df <- df()
 
       path <- collection_path_from_exp(experiment_df, selected_tx)
       display_region_grl <- ORFik::extendTrailers(
@@ -133,7 +98,6 @@ observatory_browser_server <- function(
 
       runs <- unlist(library_selections())
 
-      message("!!!!!!!Number of runs used are init: ", length(runs))
       reads <- load_collection(path, grl = display_region_grl, columns = runs)
       with_frames <- ORFik::libraryTypes(
         experiment_df,
@@ -160,7 +124,7 @@ observatory_browser_server <- function(
         names(lib_sel) <- display_labels
       }
       if (is.null(runs)) lib_sel  <- list("All merged" = colnames(reads))
-      message("!!!!!!!Number of runs used are init: ", length(unlist(lib_sel)))
+      message("Number of runs used: ", length(unlist(lib_sel)))
       profiles <- lapply(lib_sel, function(selection) {
         count <- aggregation_method(
           reads[, selection, with = FALSE],

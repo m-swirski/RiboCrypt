@@ -127,12 +127,13 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   )
 }
 
-browser_allsamp_server <- function(id, all_experiments, df, metadata,
-                                   names_init, browser_options, exp_init,
-                                   exps_dir, experiments = all_experiments$name) {
+browser_allsamp_server <- function(id, all_exp, df, experiments,
+                                   gene_name_list, org, motif_name_list,
+                                   metadata, browser_options, rv
+) {
   moduleServer(
     id,
-    function(input, output, session, all_exp = all_experiments) {
+    function(input, output, session) {
       ns <- NS(id)
       allsamples_observer_controller(input, output, session)
       plot_type <- "plotly"
@@ -222,6 +223,7 @@ browser_allsamp_server <- function(id, all_experiments, df, metadata,
                   ignoreNULL = TRUE)
 
       module_additional_megabrowser(input, output, session)
+      return(rv)
     }
   )
 }

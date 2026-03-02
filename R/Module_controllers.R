@@ -254,40 +254,43 @@ study_and_gene_observers <- function(input, output, session) {
   with(rlang::caller_env(), {
     # Checks for which flags to set from parent function
     if (!exists("all_is_gene", mode = "logical")) all_is_gene <- FALSE
+    if (!exists("uses_exps", mode = "logical")) uses_exps <- TRUE
     if (!exists("uses_gene", mode = "logical")) uses_gene <- TRUE
     if (!exists("uses_libs", mode = "logical")) uses_libs <- TRUE
     if (!exists("env")) env <- new.env()
-    collection_ids <- c("browser_allsamp", "observatory")
+    collection_ids <- c("browser_allsamp", "browser_obs", "selector")
+    if (uses_exps) {
+      observe(if (isTRUE(!identical(rv$genome, input$genome) && isTruthy(input$genome))) {
+        message("Changing org from org switch in other page")
+        rv$genome <- input$genome},
+        priority = 2) %>%
+        bindEvent(input$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
+      observe(if (isTRUE(!identical(rv$exp, input$dff) && isTruthy(input$dff))) {
+        message("Setting rv from page: ", id)
+        rv$exp <- input$dff}) %>%
+        bindEvent(input$dff, ignoreInit = TRUE, ignoreNULL = TRUE)
 
-    observe(if (rv$genome != input$genome & isTruthy(input$genome)) {
-      message("Changing org from org switch in other page")
-      rv$genome <- input$genome},
-      priority = 2) %>%
-      bindEvent(input$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
-    observe(if (rv$exp != input$dff && input$dff != "") {
-      message("Setting rv from page: ", id)
-      rv$exp <- input$dff}) %>%
-      bindEvent(input$dff, ignoreInit = TRUE, ignoreNULL = TRUE)
+      observeEvent(rv$exp, if (isTRUE(!identical(rv$exp, input$dff) && isTruthy(input$dff))) {
+        experiment_update_select(org, all_exp, experiments, rv$exp)},
+        ignoreInit = TRUE, ignoreNULL = TRUE)
 
-    observeEvent(rv$exp, if (rv$exp != input$dff) {
-      experiment_update_select(org, all_exp, experiments, rv$exp)},
-      ignoreInit = TRUE, ignoreNULL = TRUE)
+      observe(if (isTRUE(!identical(rv$genome, input$genome))) {
+        updateSelectizeInput(
+          inputId = "genome",
+          choices = c("ALL", unique(all_exp$organism)),
+          selected = rv$genome,
+          server = TRUE
+        )}, priority = 1) %>%
+        bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
+      experiment_update_select_isolated(isolate(org()), all_exp, experiments,
+                                        isolate(rv$exp))
 
-    observe(if (rv$genome != input$genome) {
-      updateSelectizeInput(
-        inputId = "genome",
-        choices = c("ALL", unique(all_exp$organism)),
-        selected = rv$genome,
-        server = TRUE
-      )}, priority = 1) %>%
-      bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
-    experiment_update_select_isolated(isolate(org()), all_exp, experiments,
-                                      isolate(rv$exp))
+      observeEvent(org(), if (isTRUE(!identical(org(), input$genome) && isTruthy(input$genome))) {
+        message("Changing exp from org switch")
+        experiment_update_select(org, all_exp, experiments)},
+        ignoreInit = TRUE, ignoreNULL = TRUE)
+    }
 
-    observeEvent(org(), if (org() != input$genome & isTruthy(input$genome)) {
-      message("Changing exp from org switch")
-      experiment_update_select(org, all_exp, experiments)},
-      ignoreInit = TRUE, ignoreNULL = TRUE)
     # Gene & tx updaters
     if (all_is_gene) {
       updateSelectizeInput(
@@ -308,13 +311,15 @@ study_and_gene_observers <- function(input, output, session) {
       choices <- unique(isolate(gene_name_list())[,2][[1]])
       # Init round gene
       if (id %in% collection_ids) {
-        print("Updating metabrowser gene set")
+        print("Updating collection gene set")
         gene_update_select_internal(isolate(gene_name_list()), selected = browser_options["default_gene_meta"])
-        gene_update_select_internal(NULL, choices = c("", choices),
-                                    id = "other_gene")
-        observeEvent(gene_name_list(), gene_update_select(gene_name_list, "",
-                                                          id = "other_gene"),
-                     ignoreNULL = TRUE, ignoreInit = FALSE, priority = 6)
+        if (id == collection_ids[1]) {
+          gene_update_select_internal(NULL, choices = c("", choices),
+                                      id = "other_gene")
+          observeEvent(gene_name_list(), gene_update_select(gene_name_list, "",
+                                                            id = "other_gene"),
+                       ignoreNULL = TRUE, ignoreInit = FALSE, priority = 6)
+        }
       } else {
         gene_update_select_internal(isolate(gene_name_list()), selected = browser_options["default_gene"])
       }
@@ -336,7 +341,7 @@ study_and_gene_observers <- function(input, output, session) {
       # Non int rounds
       observeEvent(input$gene, {
         req(input$gene != "")
-        if (id != "browser_allsamp") {
+        if (!(id %in% collection_ids)) {
           req(!(input$tx %in% c("",
                 isolate(gene_name_list())[label == input$gene,]$value)))
         }
@@ -380,16 +385,6 @@ org_and_study_changed_checker <- function(input, output, session) {
                               experiments, without_readlengths_env, exps_dir))
     df_with <- reactiveVal(get_exp(browser_options["default_experiment"],
                               experiments, with_readlengths_env, exps_dir))
-    if (nrow(all_exp_meta) > 0) {
-      df_meta <- reactiveVal({
-        if(name(exp_init_meta) == browser_options["default_experiment_meta"]) {
-          print(paste("Loading exp:", name(exp_init_meta)))
-          print("- Init experiment loaded")
-          exp_init_meta
-        } else {get_exp(browser_options["default_experiment_meta"],
-                        all_exp_meta$name, .GlobalEnv, exps_dir)}
-      })
-    } else print("No MegaBrowser exps given, ignoring MegaBrowser exp.")
 
     libs <- reactive(bamVarName(df()))
     # The shared reactive values (rv)
@@ -438,37 +433,55 @@ org_and_study_changed_checker <- function(input, output, session) {
   }
   )
 }
-
-allsamples_observer_controller <- function(input, output, session) {
+org_and_study_changed_checker_collection <- function(input, output, session) {
   with(rlang::caller_env(), {
-  org <- reactiveVal("ALL")
+    # Init values
+    org <- reactiveVal("ALL")
+    experiments <- all_exp$name
 
-  rv <- reactiveValues(lstval=isolate(df())@txdb,
-                       curval=isolate(df())@txdb,
-                       genome = "ALL",
-                       exp = name(isolate(df())),
-                       changed=isolate(df())@txdb != exp_init@txdb)
-  observe(update_rv_changed(rv), priority = 1) %>%
-    bindEvent(rv$curval, ignoreInit = TRUE)
-  observe({update_rv(rv, df)}) %>%
-    bindEvent(df(), ignoreInit = TRUE)
+    df <- reactiveVal({
+      if(name(exp_init) == browser_options["default_experiment_meta"]) {
+        print(paste("Loading exp:", name(exp_init)))
+        print("- Init experiment loaded")
+        exp_init
+      } else {get_exp(browser_options["default_experiment_meta"],
+                      experiments, .GlobalEnv, exps_dir)}
+    })
 
-  observe(if (org() != rv$genome) org(rv$genome)) %>%
-    bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
-  observe({df(get_exp(rv$exp, experiments, envExp(df()), exps_dir))}) %>%
-    bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
 
-  gene_name_list <- reactive({
-    if(rv$changed == FALSE) {names_init}
-    else {get_gene_name_categories(df())}}) %>%
-    bindCache(rv$curval) %>%
-    bindEvent(rv$changed)
-  if (id == "browser_allsamp") {
+    rv <- reactiveValues(lstval=isolate(df())@txdb,
+                         curval=isolate(df())@txdb,
+                         genome = "ALL",
+                         exp = name(isolate(df())),
+                         changed=isolate(df())@txdb != exp_init@txdb)
+    observe(update_rv_changed(rv), priority = 1) %>%
+      bindEvent(rv$curval, ignoreInit = TRUE)
+    observe({update_rv(rv, df)}) %>%
+      bindEvent(df(), ignoreInit = TRUE)
+
+    observe(if (org() != rv$genome) org(rv$genome)) %>%
+      bindEvent(rv$genome, ignoreInit = TRUE, ignoreNULL = TRUE)
+    observe({df(get_exp(rv$exp, experiments, envExp(df()), exps_dir))}) %>%
+      bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
+
+    gene_name_list <- reactive({
+      if(rv$changed == FALSE) {names_init}
+      else {get_gene_name_categories(df())}}) %>%
+      bindCache(rv$curval) %>%
+      bindEvent(rv$changed)
+
     motif_name_list <- reactive({
       names(meta_motif_files(df()))}) %>%
       bindCache(rv$curval) %>%
       bindEvent(rv$changed)
+  }
+  )
+}
 
+
+allsamples_observer_controller <- function(input, output, session) {
+  with(rlang::caller_env(), {
+  if (id == "browser_allsamp") {
     init_motfis <- names(meta_motif_files(isolate(df())))
     motif_update_select(init_motfis)
     observeEvent(motif_name_list(), motif_update_select(motif_name_list()),
@@ -476,6 +489,8 @@ allsamples_observer_controller <- function(input, output, session) {
   }
 
   uses_libs <- FALSE # Assign for line below
+  if (id == "selector") uses_gene <- FALSE
+  if (id == "browser_obs")  uses_exps <- FALSE
   study_and_gene_observers(input, output, session)
   })
 }

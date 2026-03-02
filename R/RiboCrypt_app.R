@@ -104,7 +104,7 @@ RiboCrypt_app <- function(
         "browser_allsamp", all_exp_meta, browser_options, metadata,
         names_init_meta
       ),
-      observatory_ui("observatory", all_exp_meta),
+      observatory_ui("observatory", all_exp_meta, browser_options),
       analysis_ui("Analysis", all_exp, browser_options, libs, metadata),
       metadata_ui("metadata", all_exp, all_exp_meta),
       tutorial_ui("tutorial")

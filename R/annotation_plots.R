@@ -250,7 +250,7 @@ geneBoxFromRanges <- function(locations, plot_width,
   draw_introns <- nrow(dt[no_ex > 1]) > 0
   if (draw_introns) {
     seg_dt <- dt[no_ex > 1]
-    ranges <- reduce(GRanges(seg_dt$gene_names, ranges = IRanges(seg_dt$rect_starts, seg_dt$rect_ends)))
+    ranges <- GenomicRanges::reduce(GRanges(seg_dt$gene_names, ranges = IRanges(seg_dt$rect_starts, seg_dt$rect_ends)))
     did_collapse_introns <- (nrow(seg_dt) > 1 & length(ranges) != 1) & collapse_intron_flank > 0
     if (did_collapse_introns ) {
       seg_dt <- data.table(gene_names = as.character(seqnames(ranges)), rect_starts = start(ranges), rect_ends = end(ranges))

@@ -1,4 +1,4 @@
-observatory_selector_ui <- function(id, meta_experiment_list) {
+observatory_selector_ui <- function(id, meta_experiment_list, browser_options) {
   umap_column_names <- c(
     "Tissue" = "tissue",
     "Cell line" = "cell_line",
@@ -16,7 +16,8 @@ observatory_selector_ui <- function(id, meta_experiment_list) {
         shiny::selectInput(
           ns("meta_experiment"),
           "Organism",
-          meta_experiment_list$name
+          choices = meta_experiment_list$name,
+          selected = browser_options["default_experiment_meta"]
         )
       ),
       shiny::column(
@@ -57,11 +58,12 @@ observatory_selector_server <- function(
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     meta_experiment_df <- shiny::reactive({
+      req(isTruthy(input$meta_experiment))
       ORFik::read.experiment(
-        meta_experiment_list[name == input$meta_experiment][[1]],
+        input$meta_experiment,
         validate = FALSE
       )
-    }) |> shiny::bindEvent(input$go)
+    }) |> shiny::bindEvent(input$go, ignoreNULL = TRUE)
 
     observatory_module <- shiny::reactive({
       create_observatory_module(meta_experiment_df(), all_libraries_df)

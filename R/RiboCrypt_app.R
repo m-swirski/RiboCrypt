@@ -128,8 +128,13 @@ RiboCrypt_app <- function(
         names_init_meta, browser_options, exp_init_meta,
         exps_dir
       )
+      observatory_server(
+        "observatory",
+        meta_experiment_list = all_exp_meta,
+        all_libraries_df = metadata, names_init_meta
+      )
     } else {
-      print("No MegaBrowser exps given, ignoring MegaBrowser server.")
+      print("No collections given, ignoring MegaBrowser and observatory.")
     }
     rv <- analysis_server(
       "Analysis", all_exp, without_readlengths_env,
@@ -141,11 +146,6 @@ RiboCrypt_app <- function(
       all_exp, metadata,
       all_exp_meta,
       browser_options
-    )
-    observatory_server(
-      "observatory",
-      meta_experiment_list = all_exp_meta,
-      all_libraries_df = metadata
     )
 
     cat("Server this: ")

@@ -1,4 +1,5 @@
 (elem, _, data) => {
+  Plotly.relayout(elem, { dragmode: "select" });
   const onSelected = (e) => {
     const selectedPoints = e.points;
     const valuesInputId = data;

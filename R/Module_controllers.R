@@ -257,6 +257,7 @@ study_and_gene_observers <- function(input, output, session) {
     if (!exists("uses_gene", mode = "logical")) uses_gene <- TRUE
     if (!exists("uses_libs", mode = "logical")) uses_libs <- TRUE
     if (!exists("env")) env <- new.env()
+    collection_ids <- c("browser_allsamp", "observatory")
 
     observe(if (rv$genome != input$genome & isTruthy(input$genome)) {
       message("Changing org from org switch in other page")
@@ -306,7 +307,7 @@ study_and_gene_observers <- function(input, output, session) {
       print(id)
       choices <- unique(isolate(gene_name_list())[,2][[1]])
       # Init round gene
-      if (id == "browser_allsamp") {
+      if (id %in% collection_ids) {
         print("Updating metabrowser gene set")
         gene_update_select_internal(isolate(gene_name_list()), selected = browser_options["default_gene_meta"])
         gene_update_select_internal(NULL, choices = c("", choices),
@@ -325,7 +326,7 @@ study_and_gene_observers <- function(input, output, session) {
 
       # Tx id update
       # Init round
-      if (id == "browser_allsamp") {
+      if (id %in% collection_ids) {
         tx_update_select_isolated(browser_options["default_gene_meta"], isolate(gene_name_list()),
                                   selected = browser_options["default_isoform_meta"], page = id)
       } else {
@@ -462,15 +463,18 @@ allsamples_observer_controller <- function(input, output, session) {
     else {get_gene_name_categories(df())}}) %>%
     bindCache(rv$curval) %>%
     bindEvent(rv$changed)
-  motif_name_list <- reactive({
-    names(meta_motif_files(df()))}) %>%
-    bindCache(rv$curval) %>%
-    bindEvent(rv$changed)
+  if (id == "browser_allsamp") {
+    motif_name_list <- reactive({
+      names(meta_motif_files(df()))}) %>%
+      bindCache(rv$curval) %>%
+      bindEvent(rv$changed)
 
-  init_motfis <- names(meta_motif_files(isolate(df())))
-  motif_update_select(init_motfis)
-  observeEvent(motif_name_list(), motif_update_select(motif_name_list()),
-               ignoreInit = TRUE)
+    init_motfis <- names(meta_motif_files(isolate(df())))
+    motif_update_select(init_motfis)
+    observeEvent(motif_name_list(), motif_update_select(motif_name_list()),
+                 ignoreInit = TRUE)
+  }
+
   uses_libs <- FALSE # Assign for line below
   study_and_gene_observers(input, output, session)
   })

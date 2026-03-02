@@ -56,7 +56,8 @@ observatory_browser_ui <- function(id) {
 observatory_browser_server <- function(
   id,
   meta_experiment_df,
-  library_selections
+  library_selections,
+  library_selection_labels
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     # -- Gene / transcript input wiring ------------------------------------
@@ -129,7 +130,10 @@ observatory_browser_server <- function(
         ORFik::extendLeaders(attr(path, "range"), input$extendLeaders),
         input$extendTrailers
       )
+
       runs <- unlist(library_selections())
+
+      message("!!!!!!!Number of runs used are init: ", length(runs))
       reads <- load_collection(path, grl = display_region_grl, columns = runs)
       with_frames <- ORFik::libraryTypes(
         experiment_df,
@@ -137,7 +141,27 @@ observatory_browser_server <- function(
       ) %in%
         c("RFP", "RPF", "LSU", "TI")
 
-      profiles <- lapply(library_selections(), function(selection) {
+      lib_sel <- library_selections()
+      if (!is.null(lib_sel) && !is.null(library_selection_labels)) {
+        labels <- library_selection_labels()
+        selection_ids <- names(lib_sel)
+        display_labels <- vapply(
+          selection_ids,
+          function(selection_id) {
+            label <- labels[[selection_id]]
+            if (is.null(label) || label == "" || label == selection_id) {
+              selection_id
+            } else {
+              paste(selection_id, label, sep = " - ")
+            }
+          },
+          character(1)
+        )
+        names(lib_sel) <- display_labels
+      }
+      if (is.null(runs)) lib_sel  <- list("All merged" = colnames(reads))
+      message("!!!!!!!Number of runs used are init: ", length(unlist(lib_sel)))
+      profiles <- lapply(lib_sel, function(selection) {
         count <- aggregation_method(
           reads[, selection, with = FALSE],
           na.rm = TRUE
@@ -181,6 +205,7 @@ observatory_browser_server <- function(
         mapability = FALSE,
         frame_colors = "R",
         colors = NULL,
+        library_selections = lib_sel,
         gg_theme = gg_theme_template(),
         is_cellphone = FALSE,
         user_browser_width = NULL,
@@ -204,10 +229,10 @@ observatory_browser_server <- function(
     browser_plot <- shiny::reactive({
       browser_track_panel_shiny(
         main_plot_controls, bottom_panel(), session,
-        ylabels = names(library_selections()),
+        ylabels = names(main_plot_controls()$library_selections),
         profiles = main_plot_controls()$profiles,
         use_fst = TRUE,
-        selected_libraries = library_selections()
+        selected_libraries = main_plot_controls()$library_selections
       )
     }) |> shiny::bindEvent(bottom_panel(), ignoreNULL = TRUE)
 

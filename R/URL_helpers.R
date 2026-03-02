@@ -221,10 +221,8 @@ browser_specific_url_checker <- function() {
           }
         }
       }
-    }
 
-    # User info is checked through browser
-    if (id == "browser") {
+      # User info is checked through browser
       kickoff <- reactiveVal(FALSE)
       fired <- reactiveVal(FALSE)
       observeEvent(list(input$gene, input$tx, input$library),
@@ -249,6 +247,8 @@ browser_specific_url_checker <- function() {
         str(user_info())
       })
     }
+
+
   })
 }
 

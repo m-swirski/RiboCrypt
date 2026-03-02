@@ -1,9 +1,17 @@
 library_selection_picker <- function(id) {
   ns <- shiny::NS(id)
-  shiny::selectizeInput(
-    ns("active_selection_id"),
-    "Selection",
-    choices = list()
+
+  shiny::tagList(
+    shiny::selectizeInput(
+      ns("active_selection_id"),
+      "Selection",
+      choices = list()
+    ),
+    shiny::textInput(
+      ns("active_selection_label"),
+      "Selection name",
+      value = ""
+    )
   )
 }
 
@@ -34,10 +42,13 @@ library_selection_server <- function(
       plot_selections[[as.character(1)]] <- NULL
       data_table_selections <- list()
       data_table_selections[[as.character(1)]] <- NULL
+      labels <- list()
+      labels[[as.character(1)]] <- ""
       list(
         index = shiny::reactiveVal(c(as.character(1))),
         plot_selections = shiny::reactiveVal(plot_selections),
-        data_table_selections = shiny::reactiveVal(data_table_selections)
+        data_table_selections = shiny::reactiveVal(data_table_selections),
+        labels = shiny::reactiveVal(labels)
       )
     }
 
@@ -64,13 +75,61 @@ library_selection_server <- function(
 
     # Observer to keep input in sync with selection store
     shiny::observe({
+      labels <- selection_store$labels()
+      selection_ids <- selection_store$index()
+      display_labels <- vapply(
+        selection_ids,
+        function(selection_id) {
+          label <- labels[[selection_id]]
+          if (is.null(label) || label == "" || label == selection_id) {
+            selection_id
+          } else {
+            paste(selection_id, label, sep = " - ")
+          }
+        },
+        character(1)
+      )
+      display_choices <- stats::setNames(selection_ids, display_labels)
       shiny::updateSelectizeInput(
         session,
         "active_selection_id",
-        choices = c(selection_store$index(), new_selection_choice),
+        choices = c(display_choices, new_selection_choice),
         selected = active_selection_id()
       )
-    }) |> shiny::bindEvent(selection_store$index())
+    }) |> shiny::bindEvent(selection_store$index(), selection_store$labels())
+
+    # Keep selection name input in sync with active selection
+    shiny::observe({
+      label <- selection_store$labels()[[active_selection_id()]]
+      shiny::updateTextInput(
+        session,
+        "active_selection_label",
+        value = if (is.null(label)) "" else label
+      )
+    }) |> shiny::bindEvent(
+      active_selection_id(),
+      selection_store$labels()
+    )
+
+    # Store updated label for active selection
+    shiny::observe({
+      shiny::req(!is.null(active_selection_id()) && active_selection_id() != "")
+      labels <- selection_store$labels()
+      labels[[active_selection_id()]] <- input$active_selection_label
+      selection_store$labels(labels)
+    }) |> shiny::bindEvent(input$active_selection_label, ignoreInit = TRUE)
+
+    set_active_label <- function(label, selection_id = active_selection_id()) {
+      if (is.null(selection_id) || selection_id == "") return(invisible(NULL))
+      if (is.null(label)) label <- ""
+      labels <- selection_store$labels()
+      labels[[selection_id]] <- label
+      selection_store$labels(labels)
+      if (selection_id == active_selection_id()) {
+        shiny::updateTextInput(session, "active_selection_label", value = label)
+      }
+      invisible(NULL)
+    }
 
     # Observer for creating a new selection
     shiny::observe({
@@ -86,11 +145,14 @@ library_selection_server <- function(
 
       data_table_selections <- selection_store$data_table_selections()
       data_table_selections[[as.character(new_selection_id)]] <- NULL
+      labels <- selection_store$labels()
+      labels[[as.character(new_selection_id)]] <- ""
 
       # update the store
       selection_store$index(index)
       selection_store$plot_selections(plot_selections)
       selection_store$data_table_selections(data_table_selections)
+      selection_store$labels(labels)
 
       # set new selection as active
       active_selection_id(as.character(new_selection_id))
@@ -134,8 +196,6 @@ library_selection_server <- function(
     # Observer to keep active_data_table_selection
     # in sync with incoming values of reactive_data_table_selection
     shiny::observe({
-      shiny::req(!is.null(active_plot_selection()))
-
       data_table_selections <- selection_store$data_table_selections()
       data_table_selections[[active_selection_id()]] <-
         reactive_data_table_selection_input()
@@ -145,23 +205,11 @@ library_selection_server <- function(
       ignoreNULL = FALSE
     )
 
-    # Observer to update active_data_table_selection
-    # when active_plot_selection changes
-    shiny::observe({
-      data_table_selections <- selection_store$data_table_selections()
-
-      data_table_selections[[active_selection_id()]] <-
-        active_plot_selection()
-
-      selection_store$data_table_selections(data_table_selections)
-    }) |> shiny::bindEvent(
-      active_plot_selection(),
-      ignoreNULL = FALSE
-    )
-
     list(
+      active_selection_id = active_selection_id,
       active_plot_selection = active_plot_selection,
       active_data_table_selection = active_data_table_selection,
+      set_active_label = set_active_label,
       all_selections = selection_store
     )
   })

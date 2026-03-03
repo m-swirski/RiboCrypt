@@ -109,13 +109,27 @@ module_additional_browser <- function(input, output, session) {
 
 module_additional_megabrowser <- function(input, output, session) {
   with(rlang::caller_env(), {
+    get_plotly_event <- function(event, source) {
+      event_id <- paste(event, source, sep = "-")
+      raw <- session$rootScope()$input[[event_id]]
+      if (is.null(raw)) return(NULL)
+      if (is.character(raw) && length(raw) == 1) {
+        parsed <- tryCatch(
+          jsonlite::parse_json(raw, simplifyVector = TRUE),
+          error = function(e) NULL
+        )
+        return(parsed)
+      }
+      raw
+    }
+
     selected_enrich_filters <- reactiveVal(NULL)
     observeEvent(meta_and_clusters(), {
       selected_enrich_filters(NULL)
     }, ignoreInit = TRUE)
 
-    observeEvent(plotly::event_data("plotly_click", source = "mb_enrich"), {
-      ed <- plotly::event_data("plotly_click", source = "mb_enrich")
+    observeEvent(get_plotly_event("plotly_click", "mb_enrich"), {
+      ed <- get_plotly_event("plotly_click", "mb_enrich")
       req(!is.null(ed))
 
       category <- as.character(ed$x)
@@ -134,8 +148,8 @@ module_additional_megabrowser <- function(input, output, session) {
       )
     })
 
-    observeEvent(plotly::event_data("plotly_clickannotation", source = "mb_sidebar"), {
-      ed <- plotly::event_data("plotly_clickannotation", source = "mb_sidebar")
+    observeEvent(get_plotly_event("plotly_clickannotation", "mb_sidebar"), {
+      ed <- get_plotly_event("plotly_clickannotation", "mb_sidebar")
       req(!is.null(ed))
 
       cluster_val <- NULL
@@ -160,13 +174,13 @@ module_additional_megabrowser <- function(input, output, session) {
       )
     })
 
-    observe({
+    observeEvent(get_plotly_event("plotly_relayout", "mb_mid"), {
       req(input$plotType == "plotly")
-      ed <- suppressWarnings(plotly::event_data("plotly_relayout", source = "mb_mid"))
+      ed <- get_plotly_event("plotly_relayout", "mb_mid")
       req(!is.null(ed))
       y_max <- ncol(table()$table)
       sync_megabrowser_x_shiny(ed, session, y_max = y_max, y_reversed = TRUE)
-    })
+    }, ignoreInit = TRUE)
 
     selected_cluster_from_filtered <- reactive({
       filt <- selected_enrich_filters()

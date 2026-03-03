@@ -1,4 +1,4 @@
-observatory_browser_ui <- function(id) {
+observatory_browser_ui <- function(id, browser_options) {
   ns <- shiny::NS(id)
 
   shiny::tabPanel(
@@ -22,19 +22,22 @@ observatory_browser_ui <- function(id) {
       shiny::column(1, plot_button(ns("go"))),
       shiny::column(5,
         shiny::fluidRow(
+
           shiny::column(
-            4,
-            shiny::sliderInput(
-              ns("kmer"), "K-mer length",
-              min = 1, max = 20, value = 9
-            )
+            3,
+            frame_type_select(ns, selected = browser_options["default_frame_type"])
           ),
           shiny::column(
-            4,
+            3,
+            sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
+                        value = as.numeric(browser_options["default_kmer"]))
+          ),
+          shiny::column(
+            3,
             shiny::numericInput(ns("extendLeaders"), "5' extension", 0)
           ),
           shiny::column(
-            4,
+            3,
             shiny::numericInput(ns("extendTrailers"), "3' extension", 0)
           )
         ),
@@ -44,7 +47,7 @@ observatory_browser_ui <- function(id) {
     shiny::fluidRow(
       shiny::column(
         12,
-        plotly::plotlyOutput(ns("browser_plot"), height = "550px") |>
+        jqui_resizable(plotly::plotlyOutput(ns("browser_plot"), height = "700px")) |>
           shinycssloaders::withSpinner(color = "#0dc5c1")
       )
     )
@@ -89,6 +92,7 @@ observatory_browser_server <- function(
 
       # Subset experiment to selected libraries (if any)
       experiment_df <- df()
+      frames_type <- input$frames_type
 
       path <- collection_path_from_exp(experiment_df, selected_tx)
       display_region_grl <- ORFik::extendTrailers(
@@ -123,8 +127,13 @@ observatory_browser_server <- function(
         )
         names(lib_sel) <- display_labels
       }
-      if (is.null(runs)) lib_sel  <- list("All merged" = colnames(reads))
-      message("Number of runs used: ", length(unlist(lib_sel)))
+
+      megafst_samples <- length(fst::metadata_fst((fst::read_fst(path)[1,]$file_forward))$columnNames)
+      group_is_all <- lengths(lib_sel) == megafst_samples
+      if (any(group_is_all)) names(lib_sel)[group_is_all] <- "All merged"
+      message("Number of runs used: ", length(unlist(lib_sel)),
+              " (", paste(lengths(lib_sel), collapse = ", "), ")")
+
       profiles <- lapply(lib_sel, function(selection) {
         count <- aggregation_method(
           reads[, selection, with = FALSE],
@@ -156,7 +165,7 @@ observatory_browser_server <- function(
         viewMode = FALSE,
         collapsed_introns_width = 0,
         kmerLength = input$kmer,
-        frames_type = "area",
+        frames_type = frames_type,
         annotation = cds_annotation,
         tx_annotation = tx_annotation,
         reads = reads,
@@ -175,7 +184,7 @@ observatory_browser_server <- function(
         user_browser_width = NULL,
         hash_bottom = paste(selected_tx, collapse = "|"),
         hash_browser = paste(
-          selected_tx,
+          selected_tx, frames_type,
           paste(experiment_df$Run, collapse = ","),
           collapse = "|"
         ),

@@ -154,39 +154,53 @@ allsamples_sidebar_plotly <- function(meta) {
       )
     })
 
-    cluster_labels <- plotly::plot_ly(source = "mb_sidebar") %>%
+    cluster_labels <- plotly::plot_ly(
+      source = "mb_sidebar",
+      x = numeric(0),
+      y = numeric(0),
+      type = "scatter",
+      mode = "markers",
+      hoverinfo = "skip",
+      showlegend = FALSE
+    ) %>%
       plotly::layout(
         margin = list(l = 0, r = 0, t = 0, b = 0),
         paper_bgcolor = "rgba(0,0,0,0)",
-        plot_bgcolor  = "rgba(0,0,0,0)",
-        xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL,
-                     range = c(-1, 1)),
-        yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
+        plot_bgcolor = "rgba(0,0,0,0)",
+        xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE,
+                     zeroline = FALSE, title = NULL, range = c(-1, 1)),
+        yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE,
+                     zeroline = FALSE, title = NULL),
         annotations = cluster_ann,
         showlegend = FALSE
       )
 
+
     plot_list <- c(list(cluster_labels), plot_list)
     widths <- c(0.06, rep((0.94 / length(cols)), length(cols)))
-  res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE, widths = widths) %>%
-      plotly::layout(
-        xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
-        yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
-        dragmode = FALSE,
-        margin = list(l = 30)
-      ) %>%
-      plotly::config(displayModeBar = FALSE)
+
+    res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE, widths = widths) %>%
+        plotly::layout(
+          xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
+          yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
+          dragmode = FALSE,
+          margin = list(l = 30)
+        ) %>%
+        plotly::config(displayModeBar = FALSE)
   }
   timer_done_nice_print("-- metabrowser sidebar done: ", time_before)
-  res %>% plotly::layout(margin = list(t = 8, b = 8), yaxis = list(
-        autorange = "reversed",
-        showticklabels = FALSE,
-        ticks = "",
-        showgrid = FALSE,
-        zeroline = FALSE,
-        title = NULL
-      )
+  res <- res %>% plotly::layout(
+    margin = list(t = 8, b = 8),
+    yaxis = list(
+      autorange = "reversed",
+      showticklabels = FALSE,
+      ticks = "",
+      showgrid = FALSE,
+      zeroline = FALSE,
+      title = NULL
     )
+  )
+  plotly::event_register(res, "plotly_clickannotation")
 }
 
 
@@ -331,7 +345,7 @@ allsamples_enrich_bar_plotly <- function(enrich) {
       )
   }
   timer_done_nice_print("-- metabrowser enrichment plot done: ", time_before)
-  p
+  plotly::event_register(p, "plotly_click")
 }
 
 

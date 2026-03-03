@@ -1,16 +1,22 @@
 library_selection_picker <- function(id) {
   ns <- shiny::NS(id)
 
-  shiny::tagList(
-    shiny::selectizeInput(
-      ns("active_selection_id"),
-      "Selection",
-      choices = list()
+  shiny::fluidRow(
+    shiny::column(
+      6,
+      shiny::selectizeInput(
+        ns("active_selection_id"),
+        "Selection",
+        choices = list()
+      )
     ),
-    shiny::textInput(
-      ns("active_selection_label"),
-      "Selection name",
-      value = ""
+    shiny::column(
+      6,
+      shiny::textInput(
+        ns("active_selection_label"),
+        "Selection name",
+        value = ""
+      )
     )
   )
 }

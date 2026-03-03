@@ -97,6 +97,14 @@ mb_static_subplot_shiny <- function(top_plot, mid_image, bottom_plot, rel_height
 }
 
 mb_read_axis_event <- function(ed, axes) {
+  if (!is.list(ed) && !is.environment(ed)) {
+    return(list(r0 = NULL, r1 = NULL, r = NULL, auto = FALSE))
+  }
+  nms <- names(ed)
+  if (is.null(nms) || length(nms) == 0) {
+    return(list(r0 = NULL, r1 = NULL, r = NULL, auto = FALSE))
+  }
+
   for (ax in axes) {
     k0 <- paste0(ax, ".range[0]")
     k1 <- paste0(ax, ".range[1]")

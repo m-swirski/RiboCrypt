@@ -36,7 +36,7 @@ observatory_selector_ui <- function(id, meta_experiment_list, browser_options) {
     ),
     shiny::fluidRow(
       shiny::fluidRow(
-        plotly::plotlyOutput(ns("libraries_umap_plot")) |>
+        plotly::plotlyOutput(ns("libraries_umap_plot"), height = "600px") |>
           shinycssloaders::withSpinner(color = "#0dc5c1")
       ),
       shiny::fluidRow(
@@ -65,17 +65,15 @@ observatory_selector_server <- function(
     })
 
     output$libraries_umap_plot <- plotly::renderPlotly({
-      observatory_module()$get_umap_data(input$color_by) |>
+      time_before <- Sys.time()
+      p <- observatory_module()$get_umap_data(input$color_by) |>
         umap_plot(color.by = input$color_by) |>
-        plotly::layout(dragmode = "select") |>
-        plotly::config(
-          displaylogo = FALSE,
-          modeBarButtons = list(list("select2d", "lasso2d"))
-        ) |>
         htmlwidgets::onRender(
           fetchJS("umap_plot_extension.js"),
           session$ns("libraries_umap_plot_selection")
         )
+      timer_done_nice_print("-- UMAP obs plotly done: ", time_before)
+      p
     }) |> shiny::bindEvent(observatory_module())
 
     plot_selection <- shiny::reactive({
@@ -178,7 +176,6 @@ observatory_selector_server <- function(
     filtered_libraries_df <- shiny::reactive({
       libs <- libraries_df()
       plot_sel <- input$libraries_umap_plot_selection
-      message("Plot selection size: ", length(plot_sel))
       if (is.null(plot_sel) || length(plot_sel) == 0) {
         return(libs)
       }
@@ -190,7 +187,6 @@ observatory_selector_server <- function(
     )
 
     data_table_selection <- shiny::reactive({
-      message("DT selection debug: entered data_table_selection()")
       base_df <- filtered_libraries_df()
       manual_global <- input$libraries_data_table_manual_search
       manual_columns <- input$libraries_data_table_manual_search_columns
@@ -203,14 +199,6 @@ observatory_selector_server <- function(
         manual_global,
         manual_columns
       )
-      message(
-        sprintf(
-          "DT filter debug: base rows=%s, filtered rows=%s, global_search='%s'",
-          nrow(base_df),
-          nrow(filtered_df),
-          if (is.null(manual_global)) "" else manual_global
-        )
-      )
       selection_is_defined <-
         !is.null(input$libraries_data_table_rows_selected)
 
@@ -220,65 +208,26 @@ observatory_selector_server <- function(
         input$libraries_data_table_rows_selected
       }
 
-      runs <- filtered_df[selected_indexes]$Run
-      message(
-        sprintf(
-          "DT selection debug: selected rows=%s, runs_count=%s",
-          length(selected_indexes),
-          length(runs)
-        )
-      )
-      if (length(runs) > 0) {
-        message(
-          sprintf(
-            "DT selection debug: runs (first 20)=%s",
-            paste(head(runs, 20), collapse = ", ")
-          )
-        )
-      }
-      runs
+      filtered_df[selected_indexes]$Run
     })
 
-    shiny::observe({
-      message("DT debug: observer tick (no bindEvent)")
-      message(
-        sprintf(
-          "DT debug: search='%s', search_columns=%s",
-          if (is.null(input$libraries_data_table_search)) "" else input$libraries_data_table_search,
-          if (is.null(input$libraries_data_table_search_columns)) {
-            "NULL"
-          } else {
-            paste(input$libraries_data_table_search_columns, collapse = " | ")
-          }
-        )
-      )
-      message(
-        sprintf(
-          "DT debug: manual_search='%s', manual_search_columns=%s",
-          if (is.null(input$libraries_data_table_manual_search)) "" else input$libraries_data_table_manual_search,
-          if (is.null(input$libraries_data_table_manual_search_columns)) {
-            "NULL"
-          } else {
-            paste(input$libraries_data_table_manual_search_columns, collapse = " | ")
-          }
-        )
-      )
-      message(
-        sprintf(
-          "DT debug: rows_all=%s, rows_filtered=%s, rows_selected=%s",
-          if (is.null(input$libraries_data_table_rows_all)) "NULL" else length(input$libraries_data_table_rows_all),
-          if (is.null(input$libraries_data_table_rows_filtered)) "NULL" else length(input$libraries_data_table_rows_filtered),
-          if (is.null(input$libraries_data_table_rows_selected)) "NULL" else length(input$libraries_data_table_rows_selected)
-        )
-      )
-      selection_value <- tryCatch(data_table_selection(), error = function(e) e)
-      if (inherits(selection_value, "error")) {
-        message(sprintf("DT debug: data_table_selection error: %s", conditionMessage(selection_value)))
-      } else {
-        message(sprintf("DT debug: data_table_selection runs=%s", length(selection_value)))
-        data_table_selection_val(selection_value)
-      }
-    })
+    shiny::observeEvent(
+      list(
+        filtered_libraries_df(),
+        input$libraries_data_table_rows_selected,
+        input$libraries_data_table_manual_search,
+        input$libraries_data_table_manual_search_columns,
+        input$libraries_data_table_search,
+        input$libraries_data_table_search_columns
+      ),
+      {
+        selection_value <- tryCatch(data_table_selection(), error = function(e) NULL)
+        if (!is.null(selection_value)) {
+          data_table_selection_val(selection_value)
+        }
+      },
+      ignoreInit = FALSE
+    )
 
     data_table_filters <- shiny::reactiveVal(list())
     last_active_selection_id <- shiny::reactiveVal(NULL)
@@ -296,13 +245,41 @@ observatory_selector_server <- function(
       session$sendCustomMessage(
         "librariesApplyTableFilters",
         list(
-          table_id = "libraries_data_table",
+          table_id = session$ns("libraries_data_table"),
           global = filters$global %||% "",
           columns = filters$columns
         )
       )
       invisible(NULL)
     }
+
+    shiny::observe({
+      shiny::req(selected_libraries$active_selection_id())
+      plot_sel <- input$libraries_umap_plot_selection
+      if (is.null(plot_sel) || length(plot_sel) != 0) {
+        return()
+      }
+
+      selection_id <- selected_libraries$active_selection_id()
+      filters <- data_table_filters()
+      filters[[selection_id]] <- list(
+        global = "",
+        columns = rep("", ncol(libraries_df()))
+      )
+      data_table_filters(filters)
+      DT::updateSearch(
+        libraries_data_table_proxy(),
+        keywords = list(
+          global = "",
+          columns = rep("", ncol(libraries_df()))
+        )
+      )
+      apply_data_table_filters(selection_id)
+    }) |> shiny::bindEvent(
+      input$libraries_umap_plot_selection,
+      ignoreInit = TRUE,
+      ignoreNULL = FALSE
+    )
 
     shiny::observe({
       shiny::req(selected_libraries$active_selection_id())
@@ -327,7 +304,10 @@ observatory_selector_server <- function(
         columns <- input$libraries_data_table_search_columns
         global <- input$libraries_data_table_search
       }
-      if (is.null(columns) && is.null(global)) return()
+      if (is.null(columns) && is.null(global)) {
+        selected_libraries$set_active_label("")
+        return()
+      }
 
       terms <- character(0)
       if (!is.null(columns)) {
@@ -340,10 +320,12 @@ observatory_selector_server <- function(
 
       terms <- trimws(terms)
       terms <- terms[nzchar(terms)]
-      if (length(terms) == 0) return()
+      if (length(terms) == 0) {
+        selected_libraries$set_active_label("")
+        return()
+      }
 
       label <- paste(tolower(unique(terms)), collapse = "|")
-      message(sprintf("DT label debug: updating selection label to '%s'", label))
       selected_libraries$set_active_label(label)
     }) |> shiny::bindEvent(
       input$libraries_data_table_manual_search_columns,

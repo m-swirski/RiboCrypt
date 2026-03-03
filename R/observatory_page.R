@@ -5,7 +5,7 @@ observatory_ui <- function(id, meta_experiment_list, browser_options) {
     "Observatory",
     shiny::tabsetPanel(
       observatory_selector_ui(ns("selector"), meta_experiment_list, browser_options),
-      observatory_browser_ui(ns("browser_obs"))
+      observatory_browser_ui(ns("browser_obs"), browser_options)
     )
   )
 }

@@ -55,18 +55,51 @@ umap_plot <- function(dt_umap, color.by = attr(dt_umap, "color.by")) {
   color.by.temp <- "color_column"
   names(color.by.temp) <- stringr::str_to_title(paste(color.by, collapse = " | "))
   color.by <- color.by.temp
+  groups_n <- data.table::uniqueN(dt_umap$color_column)
+  custom_palette <- grDevices::colorRampPalette(c(
+    "#7A0403", # lava red
+    "#FF6A00", # orange
+    "#8B4513", # brown
+    "#5E8C31", # olive green
+    "#2E8B57", # sea green
+    "#007FFF", # azure blue
+    "#1F4FB2", # deep blue
+    "#6A0DAD", # purple
+    "#D65DB1", # pink
+    "#F6B1B1"  # light red
+  ))(max(groups_n, 3))
 
-  gg <- ggplot(dt_umap, aes(x = `UMAP 1`, y = `UMAP 2`, color = color_column)) +
-    geom_point() + cowplot::theme_cowplot() + scale_fill_viridis_b() +
-    labs(color = names(color.by))
-  text_aes <- aes(text = paste0(
-    "Bioproject ", dt_umap$BioProject, "\n",
-    "Run ID: ",dt_umap$sample, "\n",
-    "Author: ", dt_umap$author, "\n",
-    "Inhibitor: ", dt_umap$inhibitors, "\n",
-    "Tissue | CellLine: ", dt_umap$tissues_cell_lines
-  ))
-  plotly::ggplotly(gg + text_aes, tooltip = "text")
+  dt_umap[, hover_text := paste0(
+    "Bioproject ", BioProject, "<br />",
+    "Run ID: ", sample, "<br />",
+    "Author: ", author, "<br />",
+    "Inhibitor: ", inhibitors, "<br />",
+    "Tissue | CellLine: ", tissues_cell_lines
+  )]
+
+  plotly::plot_ly(
+    data = dt_umap,
+    x = ~`UMAP 1`,
+    y = ~`UMAP 2`,
+    type = "scatter",
+    mode = "markers",
+    color = ~color_column,
+    colors = custom_palette,
+    marker = list(size = 9, opacity = 0.75),
+    text = ~hover_text,
+    hovertemplate = "%{text}<extra></extra>"
+  ) %>%
+    plotly::layout(
+      xaxis = list(title = "UMAP 1", zeroline = FALSE),
+      yaxis = list(title = "UMAP 2", zeroline = FALSE),
+      legend = list(title = list(text = names(color.by))),
+      template = "plotly_white",
+      dragmode = "select"
+    ) |>
+    plotly::config(
+      displaylogo = FALSE,
+      modeBarButtons = list(list("select2d", "lasso2d"))
+    )
 }
 
 umap_centroids_plot <- function(dt_umap) {

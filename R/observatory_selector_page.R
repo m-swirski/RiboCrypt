@@ -28,11 +28,11 @@ observatory_selector_ui <- function(id, meta_experiment_list, browser_options) {
       ),
       shiny::column(1, plot_button(ns("go"))),
       shiny::column(
-        2,
+        3,
         library_selection_picker(ns("library_selection")),
         offset = 4
-      ),
-      shiny::column(1, library_selection_reset_button(ns("library_selection")))
+      )#,
+      # shiny::column(1, library_selection_reset_button(ns("library_selection")))
     ),
     shiny::fluidRow(
       shiny::fluidRow(

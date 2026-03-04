@@ -95,9 +95,7 @@ load_data_internal <- function(species) {
 
 # Function to load data
 load_data_umap <- function(species, color.by = NULL) {
-
   data <- load_data_umap_internal(species, color.by)
-  reactiveValues(data)
 }
 
 load_data_umap_internal <- function(species, color.by = c("tissue", "cell_line")) {

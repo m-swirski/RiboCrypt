@@ -127,8 +127,10 @@ observatory_browser_server <- function(
         )
         names(lib_sel) <- display_labels
       }
-
-      megafst_samples <- length(fst::metadata_fst((fst::read_fst(path)[1,]$file_forward))$columnNames)
+      fst_index <- path
+      file_forward <- fst::read_fst(path)[1,]$file_forward
+      file_forward <- file.path(dirname(fst_index), basename(file_forward))
+      megafst_samples <- length(fst::metadata_fst(file_forward)$columnNames)
       group_is_all <- lengths(lib_sel) == megafst_samples
       if (any(group_is_all)) names(lib_sel)[group_is_all] <- "All merged"
       message("Number of runs used: ", length(unlist(lib_sel)),

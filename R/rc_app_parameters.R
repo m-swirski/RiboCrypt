@@ -24,9 +24,11 @@ rc_parameter_setup <- function() {
       if (is.character(metadata)) metadata <- fread(metadata)
       stopifnot(is(metadata, "data.table"))
       columns_to_show <- c("study_accession", "Run", "ScientificName", "sample_title", "BioProject",
-                           "LIBRARYTYPE", "REPLICATE", "CONDITION", "INHIBITOR",
-                           "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION")
-      metadata <- metadata[, colnames(metadata) %in% columns_to_show, with = FALSE]
+                           "YEAR", "LIBRARYTYPE", "REPLICATE", "CONDITION", "INHIBITOR",
+                           "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION",
+                           "Cancer_type", "Cell_model", "Cell_type")
+      columns_to_show <- columns_to_show[columns_to_show %in% colnames(metadata)]
+      metadata <- metadata[, ..columns_to_show]
       print(paste("Running with", nrow(metadata), "metadata rows"))
     }
     # Set environments

@@ -135,7 +135,7 @@ RiboCrypt_app <- function(
         )
         rv <- observatory_server(
           "observatory", all_exp, df, experiments,
-          gene_name_list, org,
+          gene_name_list, org, gg_theme,
           metadata, browser_options, rv
         )
       }

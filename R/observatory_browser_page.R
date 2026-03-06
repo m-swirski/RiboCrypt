@@ -61,7 +61,8 @@ observatory_browser_server <- function(
   df,
   library_selections,
   library_selection_labels,
-  gene_name_list, experiments, org, rv, browser_options
+  gene_name_list, experiments, org, gg_theme,
+  rv, browser_options
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     # -- Gene / transcript input wiring ------------------------------------
@@ -71,11 +72,15 @@ observatory_browser_server <- function(
     # Load transcript and CDS annotation once per experiment.
     tx <- shiny::reactive({
       loadRegion(df(), "tx")
-    }) |> shiny::bindEvent(df(), ignoreNULL = TRUE)
+    }) |>
+      shiny::bindCache(name(df()), input$color_by) |>
+      shiny::bindEvent(df(), ignoreNULL = TRUE)
 
     cds <- shiny::reactive({
       loadRegion(df(), "cds")
-    }) |> shiny::bindEvent(df(), ignoreNULL = TRUE)
+    }) |>
+      shiny::bindCache(name(df()), input$color_by) |>
+      shiny::bindEvent(df(), ignoreNULL = TRUE)
 
     # -- Plot controller ---------------------------------------------------
 
@@ -181,7 +186,7 @@ observatory_browser_server <- function(
         frame_colors = "R",
         colors = NULL,
         library_selections = lib_sel,
-        gg_theme = gg_theme_template(),
+        gg_theme = gg_theme,
         is_cellphone = FALSE,
         user_browser_width = NULL,
         hash_bottom = paste(selected_tx, collapse = "|"),
@@ -199,7 +204,9 @@ observatory_browser_server <- function(
 
     bottom_panel <- shiny::reactive({
       bottom_panel_shiny(main_plot_controls)
-    }) |> shiny::bindEvent(main_plot_controls(), ignoreNULL = TRUE)
+    }) |>
+      shiny::bindCache(main_plot_controls()$hash_bottom) |>
+      shiny::bindEvent(main_plot_controls(), ignoreNULL = TRUE)
 
     browser_plot <- shiny::reactive({
       browser_track_panel_shiny(

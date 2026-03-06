@@ -74,7 +74,7 @@ observatory_selector_server <- function(
         )
       timer_done_nice_print("-- UMAP obs plotly done: ", time_before)
       p
-    }) |> shiny::bindEvent(observatory_module())
+    }) |> shiny::bindCache(name(meta_experiment_df()), input$color_by) |> shiny::bindEvent(observatory_module())
 
     plot_selection <- shiny::reactive({
       shiny::req(!is.null(input$libraries_umap_plot_selection))

@@ -26,7 +26,8 @@ rc_parameter_setup <- function() {
       columns_to_show <- c("study_accession", "Run", "ScientificName", "sample_title", "BioProject",
                            "YEAR", "LIBRARYTYPE", "REPLICATE", "CONDITION", "INHIBITOR",
                            "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION",
-                           "Cancer_type", "Cell_model", "Cell_type")
+                           "Cancer_type", "Cell_model", "Cell_type",
+                           "Organ_system", "Sex", "Life_stage")
       columns_to_show <- columns_to_show[columns_to_show %in% colnames(metadata)]
       metadata <- metadata[, ..columns_to_show]
       print(paste("Running with", nrow(metadata), "metadata rows"))

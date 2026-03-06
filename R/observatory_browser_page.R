@@ -99,14 +99,13 @@ observatory_browser_server <- function(
       experiment_df <- df()
       frames_type <- input$frames_type
 
-      path <- collection_path_from_exp(experiment_df, selected_tx)
+      path <- collection_path_from_exp(experiment_df, selected_tx, grl_all = tx)
       display_region_grl <- ORFik::extendTrailers(
         ORFik::extendLeaders(attr(path, "range"), input$extendLeaders),
         input$extendTrailers
       )
 
       runs <- unlist(library_selections())
-
       reads <- load_collection(path, grl = display_region_grl, columns = runs)
       with_frames <- ORFik::libraryTypes(
         experiment_df,

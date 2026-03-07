@@ -68,18 +68,17 @@ observatory_browser_server <- function(
     # -- Gene / transcript input wiring ------------------------------------
     allsamples_observer_controller(input, output, session)
     # -- Annotation loading ------------------------------------------------
-
     # Load transcript and CDS annotation once per experiment.
     tx <- shiny::reactive({
       loadRegion(df(), "tx")
     }) |>
-      shiny::bindCache(name(df()), input$color_by) |>
+      shiny::bindCache(name(df())) |>
       shiny::bindEvent(df(), ignoreNULL = TRUE)
 
     cds <- shiny::reactive({
       loadRegion(df(), "cds")
     }) |>
-      shiny::bindCache(name(df()), input$color_by) |>
+      shiny::bindCache(name(df())) |>
       shiny::bindEvent(df(), ignoreNULL = TRUE)
 
     # -- Plot controller ---------------------------------------------------
@@ -90,6 +89,8 @@ observatory_browser_server <- function(
       selected_tx <- input$tx
       aggregation_method <- rowMeans
       shiny::req(selected_tx, selected_tx != "")
+      time_before <- Sys.time()
+      message("- Obs browser controller")
 
       display_region <- observed_tx_annotation(selected_tx, tx)
       cds_annotation <- observed_cds_annotation(selected_tx, cds)
@@ -99,7 +100,7 @@ observatory_browser_server <- function(
       experiment_df <- df()
       frames_type <- input$frames_type
 
-      path <- collection_path_from_exp(experiment_df, selected_tx, grl_all = tx)
+      path <- collection_path_from_exp(experiment_df, selected_tx, grl_all = tx())
       display_region_grl <- ORFik::extendTrailers(
         ORFik::extendLeaders(attr(path, "range"), input$extendLeaders),
         input$extendTrailers
@@ -157,8 +158,7 @@ observatory_browser_server <- function(
             split_by_frame = TRUE
           )
       })
-
-
+      timer_done_nice_print("- Obs browser controller done: ", time_before)
       shiny::reactiveValues(
         dff = experiment_df,
         display_region = display_region,

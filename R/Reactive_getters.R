@@ -74,8 +74,7 @@ bottom_panel_shiny <- function(mainPlotControls) {
 
   bottom_panel$bottom_plots <- bottom_plots_to_plotly(bottom_panel, is_cellphone)
 
-  cat("Done (bottom panel):")
-  print(round(Sys.time() - time_before, 2))
+  timer_done_nice_print("Done (bottom panel):", time_before)
   return(bottom_panel)
 }
 
@@ -195,8 +194,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
     summary_track, summary_track_type,
     BPPARAM
   )
-  cat("Done (track panel):")
-  print(round(Sys.time() - time_before, 2))
+  timer_done_nice_print("Done (track panel):", time_before)
   plot <- multiOmicsPlot_complete_plot(track_panel, bottom_panel,
     bottom_panel$display_range,
     proportions, seq_render_dist,
@@ -205,8 +203,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
     plot_name, plot_title, width, height,
     export.format, zoom_range, frame_colors
   )
-  cat("Done (Final panel):")
-  print(round(Sys.time() - time_before, 2))
+  timer_done_nice_print("Done (Final panel):", time_before)
   return(plot)
 }
 

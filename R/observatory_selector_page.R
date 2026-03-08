@@ -51,10 +51,26 @@ observatory_selector_server <- function(
   id,
   meta_experiment_list,
   meta_experiment_df,
-  all_libraries_df, experiments, org, rv, browser_options
+  all_libraries_df, experiments, org, rv, browser_options,
+  observatory_url_state = shiny::reactiveVal(NULL)
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     allsamples_observer_controller(input, output, session)
+
+    obs_state <- shiny::reactive({
+      observatory_url_state()
+    }) |> shiny::bindEvent(observatory_url_state())
+
+    shiny::observe({
+      st <- obs_state()
+      if (is.null(st)) return()
+      if (!is.null(st$exp) && st$exp %in% meta_experiment_list$name) {
+        shiny::updateSelectizeInput(session, "dff", selected = st$exp)
+      }
+      if (!is.null(st$color_by) && length(st$color_by) > 0) {
+        shiny::updateSelectInput(session, "color_by", selected = st$color_by)
+      }
+    }) |> shiny::bindEvent(obs_state(), ignoreInit = FALSE, once = TRUE)
 
     observatory_module <- shiny::reactive({
       create_observatory_module(meta_experiment_df(), all_libraries_df)
@@ -170,7 +186,12 @@ observatory_selector_server <- function(
     selected_libraries <- library_selection_server(
       "library_selection",
       plot_selection,
-      data_table_selection_val
+      data_table_selection_val,
+      initial_state = shiny::reactive({
+        st <- obs_state()
+        if (is.null(st) || is.null(st$selections)) return(NULL)
+        st$selections
+      })
     )
 
     filtered_libraries_df <- shiny::reactive({
@@ -376,7 +397,10 @@ observatory_selector_server <- function(
 
     list(
       meta_experiment_df = meta_experiment_df,
-      selected_libraries = selected_libraries$all_selections
+      selected_libraries = selected_libraries$all_selections,
+      selected_experiment = shiny::reactive(input$dff),
+      color_by = shiny::reactive(input$color_by),
+      active_selection_id = selected_libraries$active_selection_id
     )
   })
 }

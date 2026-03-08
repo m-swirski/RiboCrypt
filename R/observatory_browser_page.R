@@ -20,6 +20,7 @@ observatory_browser_ui <- function(id, browser_options) {
         )
       ),
       shiny::column(1, plot_button(ns("go"))),
+      shiny::column(1, shiny::uiOutput(ns("clip"))),
       shiny::column(5,
         shiny::fluidRow(
 
@@ -62,11 +63,75 @@ observatory_browser_server <- function(
   library_selections,
   library_selection_labels,
   gene_name_list, experiments, org, gg_theme,
-  rv, browser_options
+  rv, browser_options,
+  selection_index = shiny::reactive(NULL),
+  active_selection_id = shiny::reactive(NULL),
+  selected_experiment = shiny::reactive(NULL),
+  color_by = shiny::reactive(NULL),
+  observatory_url_state = shiny::reactiveVal(NULL)
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     # -- Gene / transcript input wiring ------------------------------------
     allsamples_observer_controller(input, output, session)
+    kickoff <- shiny::reactiveVal(FALSE)
+
+    output$clip <- shiny::renderUI({
+      state <- observatory_state_from_inputs(
+        selected_experiment = selected_experiment(),
+        color_by = color_by(),
+        view = "browser",
+        browser = list(
+          gene = input$gene,
+          tx = input$tx,
+          frames_type = input$frames_type,
+          kmer = input$kmer,
+          extendLeaders = input$extendLeaders,
+          extendTrailers = input$extendTrailers,
+          go = TRUE
+        ),
+        selections = list(
+          index = selection_index(),
+          plot_selections = library_selections(),
+          data_table_selections = library_selections(),
+          labels = library_selection_labels(),
+          active_selection_id = active_selection_id()
+        )
+      )
+      observatory_clipboard_url_button(state, session)
+    })
+
+    shiny::observe({
+      st <- observatory_url_state()
+      if (is.null(st)) return()
+      br <- st$browser
+      if (is.null(br)) return()
+
+      if (!is.null(br$gene)) shiny::updateSelectizeInput(session, "gene", selected = br$gene)
+      if (!is.null(br$tx)) shiny::updateSelectizeInput(session, "tx", selected = br$tx)
+      if (!is.null(br$frames_type)) shiny::updateSelectizeInput(session, "frames_type", selected = br$frames_type)
+      if (!is.null(br$kmer) && !is.na(as.numeric(br$kmer))) shiny::updateSliderInput(session, "kmer", value = as.numeric(br$kmer))
+      if (!is.null(br$extendLeaders) && !is.na(as.numeric(br$extendLeaders))) {
+        shiny::updateNumericInput(session, "extendLeaders", value = as.numeric(br$extendLeaders))
+      }
+      if (!is.null(br$extendTrailers) && !is.na(as.numeric(br$extendTrailers))) {
+        shiny::updateNumericInput(session, "extendTrailers", value = as.numeric(br$extendTrailers))
+      }
+    }) |> shiny::bindEvent(observatory_url_state(), ignoreInit = FALSE, once = TRUE)
+
+    shiny::observe({
+      st <- observatory_url_state()
+      if (is.null(st) || !identical(st$view, "browser")) return()
+      if (!isTRUE(st$browser$go)) return()
+      req(nzchar(input$gene), nzchar(input$tx))
+      sel <- library_selections()
+      if (is.null(sel) || !any(lengths(sel) > 0)) return()
+      kickoff(TRUE)
+    }) |> shiny::bindEvent(
+      input$gene, input$tx,
+      library_selections(),
+      observatory_url_state(),
+      ignoreInit = TRUE
+    )
     # -- Annotation loading ------------------------------------------------
     # Load transcript and CDS annotation once per experiment.
     tx <- shiny::reactive({
@@ -106,15 +171,31 @@ observatory_browser_server <- function(
         input$extendTrailers
       )
 
-      runs <- unlist(library_selections())
+      lib_sel <- library_selections()
+      if (is.null(lib_sel)) lib_sel <- list()
+      lib_sel <- lapply(lib_sel, function(selection) {
+        selection <- as.character(selection)
+        unique(selection[!is.na(selection) & nzchar(selection)])
+      })
+      lib_sel <- lib_sel[lengths(lib_sel) > 0]
+      if (length(lib_sel) == 0) {
+        stop("No non-empty library selection groups available for observatory browse.")
+      }
+
+      runs <- unique(unlist(lib_sel, use.names = FALSE))
       reads <- load_collection(path, grl = display_region_grl, columns = runs)
+      available_runs <- colnames(reads)
+      lib_sel <- lapply(lib_sel, intersect, y = available_runs)
+      lib_sel <- lib_sel[lengths(lib_sel) > 0]
+      if (length(lib_sel) == 0) {
+        stop("No selected runs are available for the chosen transcript in observatory browse.")
+      }
       with_frames <- ORFik::libraryTypes(
         experiment_df,
         uniqueTypes = FALSE
       ) %in%
         c("RFP", "RPF", "LSU", "TI")
 
-      lib_sel <- library_selections()
       if (!is.null(lib_sel) && !is.null(library_selection_labels)) {
         labels <- library_selection_labels()
         selection_ids <- names(lib_sel)
@@ -197,7 +278,7 @@ observatory_browser_server <- function(
         hash_expression = paste(selected_tx, collapse = "|"),
         profiles = profiles
       )
-    }) |> shiny::bindEvent(input$go, ignoreNULL = TRUE, ignoreInit = TRUE)
+    }) |> shiny::bindEvent(list(input$go, kickoff()), ignoreNULL = TRUE, ignoreInit = TRUE)
 
     # -- Plot rendering ----------------------------------------------------
 

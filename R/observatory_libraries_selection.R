@@ -34,7 +34,8 @@ library_selection_reset_button <- function(id) {
 library_selection_server <- function(
   id,
   reactive_plot_selection_input,
-  reactive_data_table_selection_input
+  reactive_data_table_selection_input,
+  initial_state = NULL
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     # label for a choice that will result in creating a new selection
@@ -60,6 +61,37 @@ library_selection_server <- function(
 
     # reactive value to keep track of which selection is active at the moment
     active_selection_id <- shiny::reactiveVal(as.character(1))
+    `%||%` <- function(x, y) if (is.null(x)) y else x
+
+    initialize_from_state <- function(state) {
+      if (is.null(state) || !is.list(state)) return(invisible(FALSE))
+      ids <- as.character(state$index %||% character())
+      if (length(ids) == 0) return(invisible(FALSE))
+
+      plot_selections <- selection_store$plot_selections()
+      data_table_selections <- selection_store$data_table_selections()
+      labels <- selection_store$labels()
+
+      for (selection_id in ids) {
+        plot_selections[[selection_id]] <- state$plot_selections[[selection_id]]
+        data_table_selections[[selection_id]] <- state$data_table_selections[[selection_id]]
+        labels[[selection_id]] <- state$labels[[selection_id]] %||% ""
+      }
+
+      selection_store$index(ids)
+      selection_store$plot_selections(plot_selections)
+      selection_store$data_table_selections(data_table_selections)
+      selection_store$labels(labels)
+
+      ids_num <- suppressWarnings(as.integer(ids))
+      ids_num <- ids_num[!is.na(ids_num)]
+      counter(if (length(ids_num) == 0) 2L else (max(ids_num) + 1L))
+
+      active_id <- as.character(state$active_selection_id %||% ids[1])
+      if (!(active_id %in% ids)) active_id <- ids[1]
+      active_selection_id(active_id)
+      invisible(TRUE)
+    }
 
     # reactive value to keep track of the current plot selection
     active_plot_selection <- shiny::reactive({
@@ -210,6 +242,10 @@ library_selection_server <- function(
       reactive_data_table_selection_input(),
       ignoreNULL = FALSE
     )
+
+    shiny::observe({
+      initialize_from_state(initial_state())
+    }) |> shiny::bindEvent(initial_state(), ignoreInit = FALSE, once = TRUE)
 
     list(
       active_selection_id = active_selection_id,

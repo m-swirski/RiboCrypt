@@ -381,7 +381,13 @@ study_and_gene_observers <- function(input, output, session) {
                      ignoreNULL = TRUE, ignoreInit = TRUE)
       }
     }
-    browser_specific_url_checker()
+    browser_specific_url_checker(
+      target = if (id %in% c("browser_obs", "selector", "browser_allsamp")) {
+        "observatory"
+      } else {
+        "browser"
+      }
+    )
 
     init_round <- FALSE
   }

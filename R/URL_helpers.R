@@ -76,6 +76,141 @@ clipboard_url_button <- function(input, session) {
   )
 }
 
+observatory_compact_selections <- function(selections) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+  if (is.null(selections) || !is.list(selections)) {
+    return(list(active = "1", order = "1", labels = list("1" = ""), runs = character(),
+                p = list("1" = integer()), d = list("1" = integer())))
+  }
+
+  ids <- as.character(selections$index %||% names(selections$plot_selections %||% list("1" = NULL)))
+  if (length(ids) == 0) ids <- "1"
+  plot_sel <- selections$plot_selections %||% list()
+  data_sel <- selections$data_table_selections %||% list()
+  labels <- selections$labels %||% list()
+  active <- as.character(selections$active_selection_id %||% ids[1])
+  if (!(active %in% ids)) active <- ids[1]
+
+  all_runs <- unique(unlist(c(plot_sel[ids], data_sel[ids]), use.names = FALSE))
+  all_runs <- all_runs[!is.na(all_runs) & nzchar(all_runs)]
+  run_to_idx <- stats::setNames(seq_along(all_runs), all_runs)
+
+  encode_idx <- function(x) {
+    if (is.null(x) || length(x) == 0) return(integer())
+    as.integer(run_to_idx[as.character(x)])
+  }
+
+  p <- setNames(lapply(ids, function(selection_id) encode_idx(plot_sel[[selection_id]])), ids)
+  d <- setNames(lapply(ids, function(selection_id) encode_idx(data_sel[[selection_id]])), ids)
+  lb <- setNames(lapply(ids, function(selection_id) as.character(labels[[selection_id]] %||% "")), ids)
+
+  list(active = active, order = ids, labels = lb, runs = all_runs, p = p, d = d)
+}
+
+observatory_expand_selections <- function(compact) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+  if (is.null(compact) || !is.list(compact)) return(NULL)
+  ids <- as.character(compact$order %||% character())
+  if (length(ids) == 0) ids <- "1"
+  runs <- as.character(compact$runs %||% character())
+  labels <- compact$labels %||% list()
+  p <- compact$p %||% list()
+  d <- compact$d %||% list()
+
+  decode_idx <- function(idx) {
+    idx <- suppressWarnings(as.integer(idx))
+    idx <- idx[!is.na(idx) & idx > 0 & idx <= length(runs)]
+    runs[idx]
+  }
+
+  plot_sel <- setNames(lapply(ids, function(selection_id) decode_idx(p[[selection_id]])), ids)
+  data_sel <- setNames(lapply(ids, function(selection_id) decode_idx(d[[selection_id]])), ids)
+  labels_out <- setNames(lapply(ids, function(selection_id) as.character(labels[[selection_id]] %||% "")), ids)
+  active <- as.character(compact$active %||% ids[1])
+  if (!(active %in% ids)) active <- ids[1]
+
+  list(
+    index = ids,
+    plot_selections = plot_sel,
+    data_table_selections = data_sel,
+    labels = labels_out,
+    active_selection_id = active
+  )
+}
+
+observatory_state_from_inputs <- function(
+  selected_experiment,
+  color_by,
+  view = c("umap", "browser")[1],
+  browser = list(),
+  selections = list()
+) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+  view <- tolower(as.character(view)[1])
+  if (!view %in% c("umap", "browser")) view <- "umap"
+  state <- list(
+    v = 1L,
+    exp = as.character(selected_experiment %||% ""),
+    color_by = as.character(color_by %||% character()),
+    view = view,
+    browser = browser,
+    selections = observatory_compact_selections(selections)
+  )
+  state
+}
+
+make_observatory_url_state_param <- function(state) {
+  json <- jsonlite::toJSON(state, auto_unbox = TRUE, null = "null")
+  jsonlite::base64_enc(json)
+}
+
+parse_observatory_url_state_param <- function(x) {
+  if (is.null(x) || !nzchar(x)) return(NULL)
+  decoded <- tryCatch(jsonlite::base64_dec(x), error = function(e) NULL)
+  if (is.null(decoded)) return(NULL)
+  decoded_chr <- if (is.raw(decoded)) rawToChar(decoded) else as.character(decoded)
+  obj <- tryCatch(jsonlite::fromJSON(decoded_chr, simplifyVector = FALSE), error = function(e) NULL)
+  if (is.null(obj) || !is.list(obj)) return(NULL)
+  obj
+}
+
+parse_observatory_url_query <- function(query) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+  if (is.null(query) || length(query) == 0) return(NULL)
+  raw <- query[["obs_state"]]
+  if (length(raw) == 0) return(NULL)
+  state <- parse_observatory_url_state_param(raw[[1]])
+  if (is.null(state)) return(NULL)
+
+  out <- list(
+    exp = as.character(state$exp %||% ""),
+    color_by = as.character(state$color_by %||% character()),
+    view = tolower(as.character(state$view %||% "umap")),
+    browser = state$browser %||% list(),
+    selections = observatory_expand_selections(state$selections)
+  )
+  if (!out$view %in% c("umap", "browser")) out$view <- "umap"
+  out
+}
+
+make_observatory_url <- function(state, session) {
+  host <- getHostFromURL(session)
+  obs_state <- make_observatory_url_state_param(state)
+  paste0(host, "/?obs_state=", utils::URLencode(obs_state, reserved = TRUE), "#Observatory")
+}
+
+observatory_clipboard_url_button <- function(state, session) {
+  rclipButton(
+    inputId = "clip",
+    label = "Get URL",
+    clipText = make_observatory_url(state, session),
+    icon = icon("clipboard"),
+    tooltip = "Get URL to share observatory state. Copied to clipboard (ctrl+v to paste)",
+    placement = "top",
+    options = list(delay = list(show = 600, hide = 100), trigger = "hover")
+  )
+}
+
 #' Make the URL field reactive to page given
 #'
 #' Currently does not support update of input fields other than selected page
@@ -103,11 +238,13 @@ reactive_url <- function() {
       }
     }, priority = 0, ignoreInit = TRUE)
     # Argument API
-    check_url_for_basic_parameters()
+    check_url_for_basic_parameters(mode = "browser")
   })
 }
 
-check_url_for_basic_parameters <- function() {
+check_url_for_basic_parameters <- function(mode = c("both", "browser", "observatory")) {
+  mode_local <- match.arg(mode)
+  if (mode_local == "observatory") return(invisible(NULL))
   with(rlang::caller_env(), {
 
   url_args <- isolate(getQueryString())
@@ -167,7 +304,9 @@ check_url_for_basic_parameters <- function() {
   })
 }
 
-browser_specific_url_checker <- function() {
+browser_specific_url_checker <- function(target = c("auto", "browser", "observatory")) {
+  target_local <- match.arg(target)
+  if (target_local == "observatory") return(invisible(NULL))
   with(rlang::caller_env(), {
     # url tags
     if (id == "browser") {

@@ -180,6 +180,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
   # Input controller
   multiOmicsControllerView(use_fst, selected_libraries)
   # Get NGS data track panels
+
   if (is.null(profiles)) {
     profiles <- multiOmicsPlot_all_profiles(
       bottom_panel$display_range, reads, kmers,
@@ -187,6 +188,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
       withFrames, log_scale, BPPARAM
     )
   }
+
   track_panel <- multiOmicsPlot_all_track_plots(
     profiles, withFrames, frame_colors,
     colors, ylabels, ylabels_full_name,

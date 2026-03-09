@@ -26,17 +26,20 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 250,
   fr_colors <- frame_color_themes(frame_colors)
   nt_yaxis <- paste0("y", nplots + 1)
   aa_yaxis <- paste0("y", nplots + 3)
-  nts <- lapply(1:3, function(x) seq(x, display_dist, 3))
+
   rendered_seq <- strsplit(as.character(target_seq),"")[[1]]
   translate_fuzzy_logic <- ifelse(all(rendered_seq %in% DNA_BASES), "error", "X")
-  aas <- lapply(1:3, function(x) suppressWarnings(
-    strsplit(as.character(translate(target_seq[[1]][x:display_dist],
-                                    if.fuzzy.codon = translate_fuzzy_logic)), "")[[1]]))
+
+  ir <- IRanges(seq(3), display_dist) # 3 AA frames
+  aas <- suppressWarnings(translate(extractAt(target_seq[[1]], ir), if.fuzzy.codon = translate_fuzzy_logic))
+  aas <- strsplit(as.character(aas), "")
   if (aa_letter_code == "three_letters") {
     aa_code <- AMINO_ACID_CODE
     aa_code["*"] <- "*"
     aas <- lapply(aas, function(x) aa_code[match(x, names(aa_code))] )
   }
+
+  nts <- lapply(seq(3), function(x) seq(x, display_dist, 3))
   nts_js_data <- lapply(1:3, function(fr) list(x = nts[[fr]],
                                                text = rendered_seq[nts[[fr]]],
                                                y = rep(0.5, length(nts[[fr]])),

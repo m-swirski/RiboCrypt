@@ -9,7 +9,7 @@ getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
                                     else {footprints},
                                     as.data.table = TRUE,
                                     withFrames=TRUE, is.sorted = TRUE)
-    footprints$frame <- as.factor(footprints$frame)
+    footprints[, frame := as.factor(frame)]
   } else{
     extended_range <- grl %>% extendLeaders(kmers * 3) %>% extendTrailers(kmers * 3)
     footprints <- coveragePerTiling(extended_range,

@@ -19,7 +19,10 @@ observatory_server <- function(
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     observatory_url_state <- shiny::reactiveVal(
-      parse_observatory_url_query(shiny::isolate(shiny::getQueryString()))
+      parse_observatory_url(
+        query = shiny::isolate(shiny::getQueryString()),
+        hash = shiny::isolate(session$clientData$url_hash)
+      )
     )
 
     shiny::observe({

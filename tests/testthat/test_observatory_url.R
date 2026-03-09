@@ -28,7 +28,7 @@ test_that("observatory selection compaction and expansion roundtrip", {
   expect_equal(sort(expanded$data_table_selections[["2"]]), "SRR4")
 })
 
-test_that("observatory state roundtrip via obs_state query parameter", {
+test_that("observatory state roundtrip via obs_state hash parameter", {
   state <- RiboCrypt:::observatory_state_from_inputs(
     selected_experiment = "all_samples-Homo_sapiens",
     color_by = c("tissue", "cell_line"),
@@ -52,7 +52,7 @@ test_that("observatory state roundtrip via obs_state query parameter", {
   )
 
   encoded <- RiboCrypt:::make_observatory_url_state_param(state)
-  parsed <- RiboCrypt:::parse_observatory_url_query(list(obs_state = encoded))
+  parsed <- RiboCrypt:::parse_observatory_url_hash(paste0("#Observatory?obs_state=", encoded))
 
   expect_equal(parsed$exp, "all_samples-Homo_sapiens")
   expect_equal(parsed$color_by, c("tissue", "cell_line"))
@@ -65,10 +65,22 @@ test_that("observatory state roundtrip via obs_state query parameter", {
   expect_equal(sort(parsed$selections$plot_selections[["1"]]), c("SRR1", "SRR2"))
 })
 
+test_that("observatory parser supports legacy base64 json payload in query", {
+  state <- list(exp = "legacy-exp", color_by = c("study"), view = "umap")
+  legacy_encoded <- jsonlite::base64_enc(jsonlite::toJSON(state, auto_unbox = TRUE, null = "null"))
+  parsed <- RiboCrypt:::parse_observatory_url_query(list(obs_state = legacy_encoded))
+
+  expect_equal(parsed$exp, "legacy-exp")
+  expect_equal(parsed$color_by, "study")
+  expect_equal(parsed$view, "umap")
+})
+
 test_that("observatory query parsing is resilient to invalid payload", {
   expect_null(RiboCrypt:::parse_observatory_url_query(NULL))
   expect_null(RiboCrypt:::parse_observatory_url_query(list()))
   expect_null(RiboCrypt:::parse_observatory_url_query(list(obs_state = "not-valid-base64")))
+  expect_null(RiboCrypt:::parse_observatory_url_hash("#Observatory"))
+  expect_null(RiboCrypt:::parse_observatory_url_hash("#Observatory?obs_state=not-valid-base64"))
 })
 
 test_that("URL helpers can be explicitly targeted for observatory", {

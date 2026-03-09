@@ -13,7 +13,15 @@ make_url_from_inputs <- function(input, session) {
 
 getPageFromURL <- function(session = NULL, url = session$clientData$url_hash,
                            with_hash = FALSE) {
-  page <- utils::URLdecode(sub("#", "", session$clientData$url_hash))
+  hash_raw <- session$clientData$url_hash
+  if (is.null(hash_raw) || length(hash_raw) == 0 || is.na(hash_raw)) {
+    hash <- ""
+  } else {
+    hash <- utils::URLdecode(sub("^#", "", hash_raw))
+    if (is.na(hash) || length(hash) == 0) hash <- ""
+  }
+  page <- strsplit(hash, "\\?", fixed = FALSE)[[1]][1]
+  if (is.null(page) || length(page) == 0 || is.na(page)) page <- ""
   if (with_hash) page <- ifelse(page == "", "", paste0("#", page))
   return(page)
 }
@@ -161,14 +169,30 @@ observatory_state_from_inputs <- function(
 
 make_observatory_url_state_param <- function(state) {
   json <- jsonlite::toJSON(state, auto_unbox = TRUE, null = "null")
-  jsonlite::base64_enc(json)
+  raw <- charToRaw(json)
+  compressed <- memCompress(raw, type = "gzip")
+  encoded <- jsonlite::base64_enc(compressed)
+  # URL-safe base64 without padding to keep payload short and fragment-safe.
+  encoded <- chartr("+/", "-_", encoded)
+  sub("=+$", "", encoded)
 }
 
 parse_observatory_url_state_param <- function(x) {
   if (is.null(x) || !nzchar(x)) return(NULL)
-  decoded <- tryCatch(jsonlite::base64_dec(x), error = function(e) NULL)
+  # Support both legacy base64(JSON) and current base64url(gzip(JSON)).
+  x_std <- chartr("-_", "+/", x)
+  pad <- (4 - (nchar(x_std) %% 4)) %% 4
+  if (pad > 0) x_std <- paste0(x_std, paste(rep("=", pad), collapse = ""))
+
+  decoded <- tryCatch(jsonlite::base64_dec(x_std), error = function(e) NULL)
   if (is.null(decoded)) return(NULL)
-  decoded_chr <- if (is.raw(decoded)) rawToChar(decoded) else as.character(decoded)
+
+  decoded_raw <- if (is.raw(decoded)) decoded else charToRaw(as.character(decoded))
+  decoded_json_raw <- tryCatch(memDecompress(decoded_raw, type = "gzip"),
+                               error = function(e) decoded_raw)
+  decoded_chr <- tryCatch(rawToChar(decoded_json_raw), error = function(e) NULL)
+  if (is.null(decoded_chr)) return(NULL)
+
   obj <- tryCatch(jsonlite::fromJSON(decoded_chr, simplifyVector = FALSE), error = function(e) NULL)
   if (is.null(obj) || !is.list(obj)) return(NULL)
   obj
@@ -193,10 +217,27 @@ parse_observatory_url_query <- function(query) {
   out
 }
 
+parse_observatory_url_hash <- function(hash) {
+  if (is.null(hash) || !nzchar(hash)) return(NULL)
+  clean_hash <- utils::URLdecode(sub("^#", "", hash))
+  parts <- strsplit(clean_hash, "\\?", fixed = FALSE)[[1]]
+  if (length(parts) < 2) return(NULL)
+
+  hash_query <- tryCatch(shiny::parseQueryString(parts[2]), error = function(e) NULL)
+  if (is.null(hash_query)) return(NULL)
+  parse_observatory_url_query(hash_query)
+}
+
+parse_observatory_url <- function(query, hash = NULL) {
+  parsed <- parse_observatory_url_query(query)
+  if (!is.null(parsed)) return(parsed)
+  parse_observatory_url_hash(hash)
+}
+
 make_observatory_url <- function(state, session) {
   host <- getHostFromURL(session)
   obs_state <- make_observatory_url_state_param(state)
-  paste0(host, "/?obs_state=", utils::URLencode(obs_state, reserved = TRUE), "#Observatory")
+  paste0(host, "/#Observatory?obs_state=", obs_state)
 }
 
 observatory_clipboard_url_button <- function(state, session) {
@@ -223,7 +264,7 @@ reactive_url <- function() {
     # Page routing API
     observeEvent(session$clientData$url_hash, {
       currentHash <- getPageFromURL(session)
-      if (is.null(input$navbarID) || !is.null(currentHash) && currentHash != input$navbarID){
+      if (is.null(input$navbarID) || (!is.null(currentHash) && !identical(currentHash, input$navbarID))){
         freezeReactiveValue(input, "navbarID")
         updateNavbarPage(session, "navbarID", selected = currentHash)
       }
@@ -231,7 +272,7 @@ reactive_url <- function() {
     observeEvent(input$navbarID, {
       currentHash <- getPageFromURL(session)
       pushQueryString <- paste0("#", input$navbarID)
-      if(is.null(currentHash) || currentHash != input$navbarID){
+      if (is.null(currentHash) || !identical(currentHash, input$navbarID)) {
         freezeReactiveValue(input, "navbarID")
         updateQueryString("?", mode = "replace", session)
         updateQueryString(pushQueryString, mode = "push", session)

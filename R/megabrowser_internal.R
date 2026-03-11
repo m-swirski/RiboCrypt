@@ -498,11 +498,16 @@ validate_enrichment_term <- function(enrichment_term, clusters, ratio_interval, 
   enrichment_test_types <- c("Clusters", "Ratio bins", "Other gene tpm bins")[valid_enrichment_clusterings]
 
   valid_enrichment_terms <- c(metadata_field, enrichment_test_types)
-  if (!(enrichment_term %in% valid_enrichment_terms)) {
-    stop("Enrichment term is not valid, valid options:\n",
-         paste(valid_enrichment_terms, collapse = ", "))
-  }
-  return(invisible(NULL))
+  shiny::validate(
+    shiny::need(
+      enrichment_term %in% valid_enrichment_terms,
+      paste0(
+        "Enrichment term is not valid. Valid options: ",
+        paste(valid_enrichment_terms, collapse = ", ")
+      )
+    )
+  )
+  invisible(NULL)
 }
 
 #' Given ratio interval user input, format correctly

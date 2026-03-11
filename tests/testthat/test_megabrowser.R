@@ -5,6 +5,36 @@ test_that("get_ratio_interval parses and validates inputs", {
   expect_error(suppressWarnings(RiboCrypt:::get_ratio_interval("a:b")))
 })
 
+test_that("validate_enrichment_term uses Shiny validation for invalid inputs", {
+  expect_no_error(
+    RiboCrypt:::validate_enrichment_term(
+      enrichment_term = "TISSUE",
+      clusters = 1,
+      ratio_interval = NULL,
+      other_gene = NULL,
+      metadata_field = c("TISSUE", "CELL_LINE")
+    )
+  )
+
+  err <- tryCatch(
+    {
+      RiboCrypt:::validate_enrichment_term(
+        enrichment_term = "not-valid",
+        clusters = 1,
+        ratio_interval = NULL,
+        other_gene = NULL,
+        metadata_field = c("TISSUE", "CELL_LINE")
+      )
+      NULL
+    },
+    error = function(e) e
+  )
+
+  expect_s3_class(err, "shiny.silent.error")
+  expect_match(conditionMessage(err), "Enrichment term is not valid")
+  expect_match(conditionMessage(err), "TISSUE")
+})
+
 test_that("multiSampleBinRows bins rows as expected", {
   mat <- matrix(1:20, nrow = 10, ncol = 2)
   binned <- RiboCrypt:::multiSampleBinRows(mat, ratio = 3)

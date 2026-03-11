@@ -424,3 +424,29 @@ test_that("browser_plot_final_layout_polish keeps x ticks only on bottom shared 
   expect_identical(polished$x$layout$legend$y, 0.93)
   expect_identical(polished$x$layout$legend$yanchor, "top")
 })
+
+test_that("lineDeSimplify keeps one legend item per shared frame", {
+  profile <- data.table::data.table(
+    position = 1:6,
+    count = c(1, 2, 3, 2, 1, 0),
+    frame = factor(c(0, 1, 2, 0, 1, 2))
+  )
+
+  p1 <- RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "lines", lib_index = 1, total_libs = 2
+  )
+  p2 <- RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "b", "b", numeric(),
+    type = "lines", lib_index = 2, total_libs = 2
+  )
+
+  polished <- RiboCrypt:::lineDeSimplify(
+    plotly::subplot(list(p1, p2), nrows = 2, shareX = TRUE, titleY = TRUE, titleX = TRUE)
+  )
+
+  legend_traces <- Filter(function(tr) isTRUE(tr$showlegend), polished$x$data)
+  legend_names <- vapply(legend_traces, function(tr) as.character(if (is.null(tr$name)) "" else tr$name), character(1))
+
+  expect_equal(sort(legend_names[nzchar(legend_names)]), c("0", "1", "2"))
+})

@@ -382,3 +382,43 @@ test_that("lineDeSimplify only updates pure line traces", {
   expect_identical(built$x$data[[1]]$line$simplify, FALSE)
   expect_null(built$x$data[[2]]$line$simplify)
 })
+
+test_that("plotAASeqPanelPlotly hides frame tick labels", {
+  hits <- data.table::data.table(
+    col = "white",
+    pos = c(3L, 9L),
+    frames = c(0L, 1L)
+  )
+
+  p <- RiboCrypt:::plotAASeqPanelPlotly(hits, Biostrings::DNAString("ATGATGATGATG"))
+
+  expect_false(isTRUE(p$x$layout$yaxis$showticklabels))
+})
+
+test_that("browser_plot_final_layout_polish keeps x ticks only on bottom shared axis", {
+  p <- plotly::subplot(
+    plotly::plot_ly(x = 1:3, y = 1:3, type = "scatter", mode = "lines"),
+    plotly::plot_ly(x = 1:3, y = 3:1, type = "scatter", mode = "lines"),
+    nrows = 2,
+    shareX = TRUE,
+    titleX = TRUE
+  )
+
+  polished <- RiboCrypt:::browser_plot_final_layout_polish(
+    p,
+    plot_name = "default",
+    display_range = GenomicRanges::GRangesList(
+      tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(1, 10), "+")
+    ),
+    width = NULL,
+    height = NULL,
+    export.format = "svg",
+    plot_title = NULL,
+    zoom_range = NULL,
+    proportions = c(0.5, 0.5)
+  )
+
+  expect_true(isTRUE(polished$x$layout$xaxis$visible))
+  expect_true(isTRUE(polished$x$layout$xaxis$showticklabels))
+  expect_identical(polished$x$layout$xaxis$title$text, "position [nt]")
+})

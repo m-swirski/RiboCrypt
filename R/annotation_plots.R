@@ -118,10 +118,9 @@ plotAASeqPanelPlotly <- function(hits, sequence, frame_colors = "R") {
         range = c(-1, 2),
         zeroline = TRUE,
         showgrid = FALSE,
-        tickmode = "array",
-        tickvals = c(-0.5, 0.5, 1.5),
-        ticktext = c("2", "1", "0"),
-        title = list(text = "frame")
+        showticklabels = FALSE,
+        ticks = "",
+        title = "frame"
       ),
       xaxis = list(
         autorange = FALSE,

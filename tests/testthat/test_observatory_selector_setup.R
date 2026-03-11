@@ -7,8 +7,8 @@ make_observatory_selector_fixture <- function() {
   libraries_df <- data.table::data.table(
     Run = c("SRR1", "SRR2", "SRR3", "SRR4", "SRR5"),
     LIBRARYTYPE = c("RFP", "RFP", "RFP", "RFP", "RFP"),
-    tissue = c("Cervix", "Cervix", "Lung", "Cervix", "Cervix"),
-    cell_line = c("HeLa", "HeLa", "A549", "SiHa", "HeLa"),
+    TISSUE = c("Cervix", "Cervix", "Lung", "Cervix", "Cervix"),
+    CELL_LINE = c("HeLa", "HeLa", "A549", "SiHa", "HeLa"),
     BioProject = c("PRJ1", "PRJ1", "PRJ2", "PRJ3", "PRJ4"),
     author = c("Auth1", "Auth1", "Auth2", "Auth3", "Auth4"),
     inhibitors = c("none", "none", "drug", "none", "drug"),
@@ -23,7 +23,7 @@ make_observatory_selector_fixture <- function() {
 
   umap_df <- data.table::copy(libraries_df)[, `:=`(
     sample = Run,
-    color_column = tissue,
+    color_column = TISSUE,
     `UMAP 1` = c(0, 1, 2, 3, 4),
     `UMAP 2` = c(4, 3, 2, 1, 0)
   )]

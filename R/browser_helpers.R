@@ -375,8 +375,35 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
                                              proportions) {
   multiomics_plot <- remove_y_axis_zero_tick_js(multiomics_plot)
 
-  multiomics_plot <- multiomics_plot %>% layout(xaxis = list(title = list(font = list(size = 22)),
-                      tickfont = list(size = 16)))
+  xaxis_names <- names(multiomics_plot$x$layout)[grepl("^xaxis[0-9]*$", names(multiomics_plot$x$layout))]
+  if (length(xaxis_names) > 0) {
+    `%||%` <- function(x, y) if (is.null(x)) y else x
+
+    axis_bottom <- function(axis_name) {
+      axis <- multiomics_plot$x$layout[[axis_name]]
+      anchor <- axis$anchor %||% "y"
+      yaxis_name <- if (identical(anchor, "y")) "yaxis" else paste0("yaxis", sub("^y", "", anchor))
+      yaxis <- multiomics_plot$x$layout[[yaxis_name]]
+      domain <- yaxis$domain %||% c(0, 1)
+      domain[[1]]
+    }
+
+    bottom_xaxis <- xaxis_names[[which.min(vapply(xaxis_names, axis_bottom, numeric(1)))]]
+
+    for (axis_name in xaxis_names) {
+      axis <- multiomics_plot$x$layout[[axis_name]]
+      if (is.null(axis)) axis <- list()
+      axis$visible <- identical(axis_name, bottom_xaxis)
+      axis$showticklabels <- identical(axis_name, bottom_xaxis)
+      axis$tickfont <- list(size = 16)
+      axis$title <- if (identical(axis_name, bottom_xaxis)) {
+        list(text = "position [nt]", font = list(size = 22))
+      } else {
+        list(text = "")
+      }
+      multiomics_plot$x$layout[[axis_name]] <- axis
+    }
+  }
 
   filename <- ifelse(plot_name == "default", names(display_range), plot_name)
   multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,

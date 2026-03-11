@@ -1,3 +1,24 @@
+df <- ORFik::ORFik.template.experiment()[9:10, ]
+tx <- ORFik::loadRegion(df, "mrna")
+cds <- ORFik::loadRegion(df, "cds")
+
+tx_unlisted <- unlist(tx[1])
+cds_unlisted <- unlist(cds[1])
+# Overlapping uORF
+T1 <- GenomicRanges::GRanges(
+  seqnames = GenomicRanges::seqnames(tx_unlisted)[1],
+  ranges = IRanges::IRanges(start = c(start(cds_unlisted) - 16, start(cds_unlisted)),
+                            end = c(end(tx_unlisted[1]), start(cds_unlisted) + 13)),
+  strand = BiocGenerics::strand(tx_unlisted)[1]
+)
+# Non overlapping uORF
+T2 <- GenomicRanges::GRanges(
+  seqnames = GenomicRanges::seqnames(tx_unlisted)[1],
+  ranges = IRanges::IRanges(start = c(start(tx_unlisted[1]) + 30),
+                            end = c(start(tx_unlisted[1]) + 60)),
+  strand = BiocGenerics::strand(tx_unlisted)[1]
+)
+
 test_that("input_to_list drops ignored inputs and adds user info", {
   input <- shiny::reactiveValues(
     gene = "GENE1",
@@ -88,4 +109,276 @@ test_that("browser_ui returns a shiny tag object", {
 
   ui <- shiny::isolate(RiboCrypt:::browser_ui("test", all_exp, browser_options, gene_names_init, libs))
   expect_true(inherits(ui, "shiny.tag") || inherits(ui, "shiny.tag.list"))
+})
+
+make_bottom_panel_test_controls <- function(viewMode = FALSE,
+                                            df, tx, cds,
+                                            tx_id = names(tx)[1],
+                                            collapsed_introns_width = 0,
+                                            genomic_string = NULL) {
+
+  display_region <- RiboCrypt:::observed_tx_annotation(tx_id, function() tx)
+  annotation <- RiboCrypt:::observed_cds_annotation_internal(tx_id, cds, TRUE)
+  tx_annotation <- RiboCrypt:::observed_cds_annotation_internal(tx_id, tx, TRUE)
+
+  if (isTRUE(viewMode) && collapsed_introns_width > 0) {
+    tx_annotation <- tx_annotation[tx_annotation %over% ORFik::flankPerGroup(display_region)]
+    display_region_gr <- GenomicRanges::reduce(ORFik::unlistGrl(tx_annotation))
+    display_region <- ORFik::groupGRangesBy(
+      display_region_gr,
+      rep(names(display_region), length(display_region_gr))
+    )
+  }
+  display_region <- genomic_string_to_grl(genomic_string, display_region,
+                        max_size = 1e6, viewMode,
+                        0,
+                        0,
+                        collapsed_introns_width)
+
+  controls <- list(
+    dff = df,
+    display_region = display_region,
+    annotation = annotation,
+    extendLeaders = 0,
+    extendTrailers = 0,
+    viewMode = viewMode,
+    custom_sequence = "",
+    customRegions = GenomicRanges::GRangesList(),
+    tx_annotation = tx_annotation,
+    collapsed_introns_width = collapsed_introns_width,
+    frame_colors = "R",
+    gg_theme = RiboCrypt:::gg_theme_template(),
+    phyloP = FALSE,
+    mapability = FALSE,
+    is_cellphone = FALSE
+  )
+  list(
+    controls = function() controls,
+    session = list(ns = function(x) x)
+  )
+}
+
+make_browser_track_test_fixture <- function(frames_type, kmers, df, tx, cds) {
+  df <- df[1,] # 1 is 9
+  tx_id <- names(tx)[1]
+  reads <- filepath(df, "bigwig")
+
+  controls <- list(
+    dff = df,
+    display_region = RiboCrypt:::observed_tx_annotation(tx_id, function() tx),
+    annotation = RiboCrypt:::observed_cds_annotation_internal(tx_id, cds, TRUE),
+    extendLeaders = 0,
+    extendTrailers = 0,
+    viewMode = FALSE,
+    custom_sequence = "",
+    customRegions = GenomicRanges::GRangesList(),
+    tx_annotation = RiboCrypt:::observed_cds_annotation_internal(tx_id, tx, TRUE),
+    collapsed_introns_width = 0,
+    frame_colors = "R",
+    gg_theme = RiboCrypt:::gg_theme_template(),
+    phyloP = FALSE,
+    mapability = FALSE,
+    is_cellphone = FALSE,
+    reads = reads,
+    withFrames = TRUE,
+    frames_type = frames_type,
+    colors = NULL,
+    kmerLength = kmers,
+    log_scale = FALSE,
+    summary_track = FALSE,
+    summary_track_type = frames_type,
+    export_format = "svg",
+    zoom_range = numeric(0),
+    frames_subset = "all"
+  )
+
+  list(
+    controls = function() controls,
+    session = list(ns = function(x) x)
+  )
+}
+
+test_that("bottom_panel_shiny handles transcript view", {
+  controls <- make_bottom_panel_test_controls(viewMode = FALSE, df, tx, cds)
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(controls$controls)
+
+  expect_equal(ORFik::widthPerGroup(bottom_panel$display_range, FALSE), 551)
+  expect_equal(unname(bottom_panel$lines), c(141, 446))
+  expect_equal(length(bottom_panel$bottom_plots), 3)
+  expect_equal(bottom_panel$annotation_layers, 1)
+})
+
+test_that("bottom_panel_shiny handles transcript view with custom region overlapping CDS", {
+  controls <- make_bottom_panel_test_controls(viewMode = FALSE, df, tx, cds)
+  controls_with_custom <- controls$controls()
+  tx_unlisted <- unlist(controls_with_custom$display_region[1])
+  cds_unlisted <- unlist(controls_with_custom$annotation[1])
+  controls_with_custom$customRegions <- GenomicRanges::GRangesList(
+    T1 = T1
+  )
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(function() controls_with_custom)
+
+  expect_equal(ORFik::widthPerGroup(bottom_panel$display_range, FALSE), 551)
+  expect_equal(length(bottom_panel$bottom_plots), 3)
+  expect_equal(bottom_panel$annotation_layers, 2)
+})
+
+test_that("bottom_panel_shiny handles transcript view with custom region overlapping CDS
+          and one not overlapping any", {
+  controls <- make_bottom_panel_test_controls(viewMode = FALSE, df, tx, cds)
+  controls_with_custom <- controls$controls()
+
+  controls_with_custom$customRegions <- GenomicRanges::GRangesList(
+    T1 = T1,
+    T2 = T2
+  )
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(function() controls_with_custom)
+
+  expect_equal(ORFik::widthPerGroup(bottom_panel$display_range, FALSE), 551)
+  expect_equal(length(bottom_panel$bottom_plots), 3)
+  expect_equal(bottom_panel$annotation_layers, 2)
+})
+
+test_that("bottom_panel_shiny handles genomic view (non-spliced)", {
+  controls <- make_bottom_panel_test_controls(viewMode = TRUE, df, tx, cds)
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(controls$controls)
+
+  expect_equal(ORFik::widthPerGroup(bottom_panel$display_range, FALSE), 551)
+  expect_length(unlist(bottom_panel$display_range), 1)
+  expect_equal(as.numeric(width(unlist(bottom_panel$display_range))), c(551))
+  expect_equal(length(bottom_panel$bottom_plots), 3)
+  expect_equal(bottom_panel$annotation_layers, 1)
+})
+
+test_that("bottom_panel_shiny handles genomic view (non-spliced)
+          with custom region overlapping CDS", {
+  controls <- make_bottom_panel_test_controls(viewMode = TRUE, df, tx, cds)
+  controls_with_custom <- controls$controls()
+
+  controls_with_custom$customRegions <- GenomicRanges::GRangesList(
+    T1 = T1
+  )
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(function() controls_with_custom)
+  dt <- bottom_panel$gene_model_panel_dt # Layer box
+  expect_equal(ORFik::widthPerGroup(bottom_panel$display_range, FALSE), 551)
+  expect_length(unlist(bottom_panel$display_range), 1)
+  expect_equal(as.numeric(width(unlist(bottom_panel$display_range))), c(551))
+  expect_equal(length(bottom_panel$bottom_plots), 3)
+  expect_equal(bottom_panel$annotation_layers, 2)
+  expect_equal(unique(dt[gene_names == "ENSTTEST10001"]$layers), 1)
+  expect_equal(unique(dt[gene_names == "T1"]$layers), 2)
+})
+
+test_that("bottom_panel_shiny handles genomic view (spliced) with collapsed introns", {
+  tx_spliced <- tx[1]
+  end(tx_spliced[1])[[1]][1] <- 350
+  controls <- make_bottom_panel_test_controls(
+    viewMode = TRUE, df, tx_spliced, cds,
+    collapsed_introns_width = 30
+  )
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(controls$controls)
+
+  expect_equal(ORFik::widthPerGroup(bottom_panel$display_range, FALSE), 516)
+  expect_length(unlist(bottom_panel$display_range), 2)
+  expect_equal(as.numeric(width(unlist(bottom_panel$display_range))), c(75, 441))
+  expect_equal(length(bottom_panel$bottom_plots), 3)
+  expect_equal(bottom_panel$annotation_layers, 1)
+})
+
+test_that("bottom_panel_shiny handles genomic string input on non tx region", {
+  genomic_string <- "chr1:1-300:+"
+  # Tx is ignored when genomic string is given
+  controls <- make_bottom_panel_test_controls(
+    viewMode = TRUE, df, tx, cds,
+    genomic_string = genomic_string
+  )
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(controls$controls)
+
+  expect_equal(ORFik::widthPerGroup(bottom_panel$display_range, FALSE), 300)
+  expect_length(unlist(bottom_panel$display_range), 1)
+  expect_equal(as.numeric(width(unlist(bottom_panel$display_range))), c(300))
+  expect_equal(length(bottom_panel$bottom_plots), 3)
+  expect_equal(bottom_panel$annotation_layers, 1)
+})
+
+
+test_that("browser_track_panel_shiny handles area tracks with 9-mers", {
+  fixture <- make_browser_track_test_fixture(frames_type = "area", kmers = 9,
+                                             df, tx, cds)
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(fixture$controls)
+  plot <- RiboCrypt:::browser_track_panel_shiny(
+    fixture$controls,
+    bottom_panel,
+    fixture$session
+  )
+
+  expect_s3_class(plot, "plotly")
+  expect_true(inherits(plot, "htmlwidget"))
+  expect_gt(length(plot$x$data), 0)
+})
+
+test_that("browser_track_panel_shiny handles column tracks with single-nucleotide bins", {
+  fixture <- make_browser_track_test_fixture(frames_type = "columns", kmers = 1,
+                                             df, tx, cds)
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(fixture$controls)
+  plot <- RiboCrypt:::browser_track_panel_shiny(
+    fixture$controls,
+    bottom_panel,
+    fixture$session
+  )
+
+  expect_s3_class(plot, "plotly")
+  expect_true(inherits(plot, "htmlwidget"))
+  expect_gt(length(plot$x$data), 0)
+})
+
+test_that("browser_track_panel_shiny handles overlapping ranges", {
+  fixture <- make_browser_track_test_fixture(frames_type = "columns", kmers = 1,
+                                             df, tx, cds)
+  controls <- make_bottom_panel_test_controls(viewMode = FALSE, df, tx, cds)
+  controls_with_custom <- controls$controls()
+
+  controls_with_custom$customRegions <- GenomicRanges::GRangesList(
+    T1 = T1,
+    T2 = T2
+  )
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(function() controls_with_custom)
+  plot <- RiboCrypt:::browser_track_panel_shiny(
+    fixture$controls,
+    bottom_panel,
+    fixture$session
+  )
+
+  expect_s3_class(plot, "plotly")
+  expect_true(inherits(plot, "htmlwidget"))
+  expect_gt(length(plot$x$data), 0)
+})
+
+test_that("lineDeSimplify only updates pure line traces", {
+  p <- plotly::plot_ly() %>%
+    plotly::add_lines(x = 1:3, y = c(1, 2, 3), line = list(color = "red")) %>%
+    plotly::add_trace(
+      x = c(1, 1, NA, 2, 2),
+      y = c(0, 1, NA, 0, 1),
+      type = "scatter",
+      mode = "lines+markers",
+      line = list(color = "white", width = 2),
+      marker = list(opacity = 0),
+      showlegend = FALSE
+    )
+
+  built <- RiboCrypt:::lineDeSimplify(p)
+
+  expect_false(is.null(built$x$data[[1]]$line$simplify))
+  expect_identical(built$x$data[[1]]$line$simplify, FALSE)
+  expect_null(built$x$data[[2]]$line$simplify)
 })

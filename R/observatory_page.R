@@ -14,7 +14,7 @@ observatory_ui <- function(id, meta_experiment_list, browser_options) {
 observatory_server <- function(
   id,
   all_exp, df, experiments,
-  gene_name_list, org, gg_theme,
+  gene_name_list, tx, cds, org, gg_theme,
   metadata, browser_options, rv
 ) {
   shiny::moduleServer(id, function(input, output, session) {
@@ -43,7 +43,7 @@ observatory_server <- function(
       selections$meta_experiment_df,
       selections$selected_libraries$data_table_selections,
       selections$selected_libraries$labels, gene_name_list,
-      experiments, org, gg_theme, rv, browser_options,
+      tx, cds, experiments, org, gg_theme, rv, browser_options,
       selection_index = selections$selected_libraries$index,
       active_selection_id = selections$active_selection_id,
       selected_experiment = selections$selected_experiment,

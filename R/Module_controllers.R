@@ -471,6 +471,7 @@ org_and_study_changed_checker_collection <- function(input, output, session) {
 
     rv <- reactiveValues(lstval=isolate(df())@txdb,
                          curval=isolate(df())@txdb,
+                         initval=isolate(df())@txdb,
                          genome = "ALL",
                          exp = name(isolate(df())),
                          changed=isolate(df())@txdb != exp_init@txdb)
@@ -484,8 +485,21 @@ org_and_study_changed_checker_collection <- function(input, output, session) {
     observe({df(get_exp(rv$exp, experiments, envExp(df()), exps_dir))}) %>%
       bindEvent(rv$exp, ignoreInit = TRUE, ignoreNULL = TRUE)
 
+    tx <- reactive({
+      if(rv$curval == rv$initval) {message("Settings tx to init:"); tx_init}
+      else {loadRegion(isolate(df()))}}) %>%
+      bindCache(rv$curval) %>%
+      bindEvent(rv$changed, ignoreNULL = TRUE)
+    cds <- reactive({
+      if(rv$curval == rv$initval) {
+        message("Settings cds to init:"); cds_init}
+      else {loadRegion(isolate(df()), "cds")}}) %>%
+      bindCache(rv$curval) %>%
+      bindEvent(rv$changed, ignoreNULL = TRUE)
+
     gene_name_list <- reactive({
-      if(rv$changed == FALSE) {names_init}
+      if(rv$curval == rv$initval) {
+        message("Settings gene_list to init:"); names_init}
       else {get_gene_name_categories(df())}}) %>%
       bindCache(rv$curval) %>%
       bindEvent(rv$changed)

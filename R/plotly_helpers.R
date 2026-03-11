@@ -1,7 +1,12 @@
 lineDeSimplify <- function(plot) {
   plot <- plotly_build(plot)
   for (i in 1:length(plot$x$data)) {
-    if (!is.null(plot$x$data[[i]]$line)) plot$x$data[[i]]$line$simplify <- FALSE
+    trace <- plot$x$data[[i]]
+    is_line_trace <- identical(trace$type, "scatter") &&
+      identical(trace$mode, "lines")
+    if (is_line_trace && !is.null(trace$line)) {
+      plot$x$data[[i]]$line$simplify <- FALSE
+    }
   }
   return(plot)
 }
@@ -21,6 +26,12 @@ automateTicksLetters <- function(plot) {
 }
 
 automateTicksGMP <- function(plot) {
+  if (inherits(plot, "plotly")) {
+    return(plot %>%
+      plotly::layout(yaxis = list(autorange = FALSE),
+                     xaxis = list(autorange = FALSE)) %>%
+      style(hoverinfo = "text"))
+  }
   suppressWarnings(
     plot %>% ggplotly(dynamicTicks = TRUE, tooltip = "gene_names") %>%
       plotly::layout(yaxis=list(autorange = FALSE), xaxis=list(autorange=FALSE)) %>%
@@ -28,10 +39,22 @@ automateTicksGMP <- function(plot) {
 }
 
 automateTicksAA <- function(plot, is_cellphone = FALSE) {
-  p <- plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
-    plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
-                              title = list(font = list(size = 22))),
-                   xaxis=list(autorange=FALSE))
+  if (inherits(plot, "plotly")) {
+    p <- plot %>%
+      plotly::layout(
+        yaxis = list(
+          autorange = FALSE,
+          fixedrange = TRUE,
+          title = list(font = list(size = 22))
+        ),
+        xaxis = list(autorange = FALSE)
+      )
+  } else {
+    p <- plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
+      plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
+                                title = list(font = list(size = 22))),
+                     xaxis=list(autorange=FALSE))
+  }
   if (!is_cellphone) p <- suppressWarnings(p %>% toWebGL())
   return(p)
 }
@@ -123,4 +146,3 @@ addToImageButtonOptions <- function(multiomics_plot, filename, width, height,
     modeBarButtonsToRemove = modeBarButtonsToRemove
   )
 }
-

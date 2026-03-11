@@ -8,20 +8,20 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
                                           stop_codons = stop_codons, custom_motif = custom_motif)
-  seq_aa_panel <- plotAASeqPanel(seq_panel_hits, target_seq[[1]], frame_colors, gg_theme)
+  seq_aa_panel <- plotAASeqPanelPlotly(seq_panel_hits, target_seq[[1]], frame_colors)
   # Get the panel for the annotation track
-  gene_model_panel <- createGeneModelPanel(display_range, annotation,
+  gene_model_panel_dt <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
                                            custom_regions = custom_regions,
                                            viewMode = viewMode, collapse_intron_flank,
                                            frame_colors = frame_colors)
-  lines <- gene_model_panel[[2]]
-  layers <- max(gene_model_panel[[1]]$layers)
+  lines <- gene_model_panel_dt[[2]]
+  layers <- if (nrow(gene_model_panel_dt[[1]]) == 0) 1L else max(gene_model_panel_dt[[1]]$layers)
 
-  gene_model_panel <- geneModelPanelPlot(gene_model_panel[[1]],
-                                         gg_template = attr(gg_theme, "gg_template"))
+  gene_model_panel <- geneModelPanelPlotly(gene_model_panel_dt[[1]])
   seq_nt_panel <- attr(gg_theme, "seq_panel_nt_template_plotly")
   return(list(seq_panel = seq_aa_panel, seq_nt_panel = seq_nt_panel,
+              gene_model_panel_dt = gene_model_panel_dt[[1]],
               gene_model_panel = gene_model_panel, frame_colors = frame_colors,
               lines = lines, target_seq = target_seq, annotation_layers = layers))
 }
@@ -392,4 +392,3 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
   }
   return(lineDeSimplify(multiomics_plot))
 }
-

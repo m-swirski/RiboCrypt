@@ -159,10 +159,11 @@ test_that("compute_collection_table_grouping groups metadata with fallback enric
   expect_equal(attr(meta_and_clusters$meta, "ylab"), "Enrichment")
   expect_true(is.data.frame(meta_and_clusters$enrich_dt))
   expect_equal(rownames(meta_and_clusters$enrich_dt), c("GENE1", "GENE2"))
+  expect_equal(meta_and_clusters$meta$cluster, rep(seq(4, 1), each = 2))
 
   meta_tbl <- RiboCrypt:::allsamples_meta_table(meta_and_clusters)
   expect_equal(nrow(meta_tbl), 8)
-  expect_equal(meta_tbl$cluster, rep(seq(4), each = 2))
+  expect_equal(meta_tbl$cluster, as.character(rep(seq(4), each = 2)))
   expect_true(all(c("Run", "BioProject", "grouping", "cluster", "TISSUE", "CELL_LINE", "CONDITION") %in%
                     colnames(meta_tbl)))
   expect_false(any(c("index", "order") %in% colnames(meta_tbl)))

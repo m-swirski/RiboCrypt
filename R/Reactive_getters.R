@@ -41,7 +41,6 @@ bottom_panel_shiny <- function(mainPlotControls) {
   viewMode <- ifelse(mainPlotControls()$viewMode, "genomic", "tx")
   df <- mainPlotControls()$dff
   is_cellphone <- mainPlotControls()$is_cellphone
-
   annotation_list <- annotation_controller(
     df = df,
     display_range = mainPlotControls()$display_region,
@@ -197,6 +196,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
     BPPARAM
   )
   timer_done_nice_print("Done (track panel):", time_before)
+  time_before <- Sys.time()
   plot <- multiOmicsPlot_complete_plot(track_panel, bottom_panel,
     bottom_panel$display_range,
     proportions, seq_render_dist,

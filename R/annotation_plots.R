@@ -51,6 +51,87 @@ plotAASeqPanel <- function(hits, sequence, frame_colors = "R", gg_theme = theme_
   return(fig)
 }
 
+plotAASeqPanelPlotly <- function(hits, sequence, frame_colors = "R") {
+  seq_length <- nchar(as.character(sequence))
+  frame_colors <- frame_color_themes(frame_colors, FALSE)
+
+  shapes <- lapply(seq_len(3), function(i) {
+    list(
+      type = "rect",
+      x0 = 1,
+      x1 = seq_length,
+      y0 = 2 - i,
+      y1 = 3 - i,
+      fillcolor = frame_colors[i],
+      line = list(color = frame_colors[i], width = 0),
+      layer = "below"
+    )
+  })
+
+  p <- plotly::plot_ly(
+    x = c(1, seq_length),
+    y = c(-1, 2),
+    type = "scatter",
+    mode = "markers",
+    hoverinfo = "none",
+    showlegend = FALSE,
+    marker = list(opacity = 0)
+  )
+
+  if (nrow(hits) > 0) {
+    hits <- data.table::copy(hits)
+    hits[, Type := fifelse(col == "white", "Start codon",
+                           fifelse(col == "black", "Stop codon", "User Motif"))]
+    hits[, `:=`(
+      y = 1 - frames,
+      yend = 2 - frames,
+      hover_text = paste0("Pos: ", pos, "\nType: ", Type)
+    )]
+
+    for (hit_col in unique(hits$col)) {
+      hit_dt <- hits[col == hit_col]
+      p <- plotly::add_segments(
+        p,
+        inherit = FALSE,
+        data = hit_dt,
+        x = ~pos,
+        xend = ~pos,
+        y = ~y,
+        yend = ~yend,
+        type = "scatter",
+        mode = "lines",
+        text = ~hover_text,
+        hoverinfo = "text",
+        line = list(color = hit_col, width = 2),
+        showlegend = FALSE
+      )
+    }
+  }
+
+  p %>%
+    plotly::layout(
+      margin = list(t = 0, r = 0, b = 40, l = 40, pad = 0),
+      shapes = shapes,
+      yaxis = list(
+        autorange = FALSE,
+        fixedrange = TRUE,
+        range = c(-1, 2),
+        zeroline = TRUE,
+        showgrid = FALSE,
+        tickmode = "array",
+        tickvals = c(-0.5, 0.5, 1.5),
+        ticktext = c("2", "1", "0"),
+        title = list(text = "frame")
+      ),
+      xaxis = list(
+        autorange = FALSE,
+        range = c(1, seq_length),
+        showgrid = FALSE,
+        title = list(text = "position [nt]")
+      )
+    )
+}
+
 gg_theme_template <- function() {
   gg_theme <- theme_bw()
   attr(gg_theme, "seq_panel_template") <- seqPanelPlotTemplate(gg_theme)
@@ -136,7 +217,12 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
                                         type = overlap_type)
   }
 
-  if (all(length(annotation) == 1 & length(display_range) == 1) & identical(names(annotation), names(display_range))) {
+  display_names <- names(display_range)
+  has_single_annotation <- length(annotation) == 1L &&
+    length(display_range) == 1L &&
+    identical(names(annotation), display_names)
+
+  if (has_single_annotation) {
     annotation_shown <- annotation
   } else annotation_shown <- subsetByOverlaps(annotation, display_range,
                                       type = overlap_type)
@@ -144,7 +230,11 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
   overlaps_tx <- NULL
 
   if (viewMode != "tx") {
-    if (all(length(tx_annotation) == 1 & length(display_range) == 1) & identical(names(tx_annotation), names(display_range))) {
+    has_single_tx <- length(tx_annotation) == 1L &&
+      length(display_range) == 1L &&
+      identical(names(tx_annotation), display_names)
+
+    if (has_single_tx) {
       overlaps_tx <- tx_annotation
     } else overlaps_tx <- subsetByOverlaps(tx_annotation, display_range,
                                         type = overlap_type)
@@ -174,7 +264,8 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
     return(list(result_dt, lines_locations))
   }
 
-  names_grouping <- rep(names(overlaps), lengths(overlaps))
+  overlap_lengths <- lengths(overlaps)
+  names_grouping <- rep.int(names(overlaps), overlap_lengths)
   overlaps <- unlistGrl(overlaps)
   names(overlaps) <- names_grouping
   overlaps$rel_frame_exon <- getRelativeFrames(overlaps)
@@ -184,15 +275,22 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
   intersections <- groupGRangesBy(intersections, paste0(names(intersections), "___", intersections$type))
   names(intersections) <- sub("___.*", "", names(intersections))
 
-  locations <- pmapToTranscriptF(intersections, display_range)
-  type_per_grl <- unlist(lapply(intersections, function(x) unique(x$type)))
-  locations@unlistData$type <- rep(type_per_grl, times = lengths(locations))
-  locations <- unlistGrl(locations)
+  locations_grl <- pmapToTranscriptF(intersections, display_range)
+  intersection_lengths <- lengths(intersections)
+  first_index <- cumsum(c(1L, head(intersection_lengths, -1L)))
+  type_per_grl <- intersections@unlistData$type[first_index]
+  locations_grl@unlistData$type <- rep.int(type_per_grl, times = lengths(locations_grl))
+  locations <- unlistGrl(locations_grl)
   locations$rel_frame_orf <- getRelativeFrames(locations)
-  locations <- unlistGrl(groupGRangesBy(locations))
 
   cols <- colour_bars(locations, overlaps, display_range, frame_colors)
-  layers <- geneTrackLayer(groupGRangesBy(locations))
+  locations_by_name <- groupGRangesBy(locations, names(locations))
+  group_layers_full <- geneTrackLayer(locations_by_name)
+  group_lengths <- lengths(locations_by_name)
+  group_first <- cumsum(c(1L, head(group_lengths, -1L)))
+  layer_by_group <- group_layers_full[group_first]
+  names(layer_by_group) <- names(locations_by_name)
+  layers <- unname(layer_by_group[names(locations)])
   plot_width <- widthPerGroup(display_range)
   geneBox <- geneBoxFromRanges(locations, plot_width, layers, cols,
                                custom_regions, collapse_intron_flank)
@@ -359,7 +457,15 @@ geneModelPanelPlotTemplate <- function() {
 geneModelPanelPlotly <- function(dt) {
   # If no annotation given, return blank plotly
   if (is.null(dt) || nrow(dt) == 0) {
-    return(plotly::plot_ly() %>%
+    return(plotly::plot_ly(
+             x = 0,
+             y = 0,
+             type = "scatter",
+             mode = "markers",
+             marker = list(opacity = 0),
+             hoverinfo = "skip",
+             showlegend = FALSE
+           ) %>%
              plotly::layout(
                xaxis = list(visible = FALSE),
                yaxis = list(visible = FALSE),
@@ -391,6 +497,7 @@ geneModelPanelPlotly <- function(dt) {
   y_min <- min(box_dt$ymin, if (nrow(seg_dt)) (0.5 - seg_dt$layers) else Inf, na.rm = TRUE) - 0.05
   y_max <- max(box_dt$ymax, if (nrow(seg_dt)) (0.5 - seg_dt$layers) else -Inf, na.rm = TRUE) + 0.05
 
+  all_shapes <- list()
   p <- plotly::plot_ly() %>%
     plotly::layout(
       showlegend = FALSE,
@@ -412,23 +519,33 @@ geneModelPanelPlotly <- function(dt) {
       hovermode = "closest"
     )
 
-  # --- Introns as segments (grey lines) ---
+  # --- Introns as line shapes rendered behind boxes ---
   if (nrow(seg_dt) > 0) {
-    # One trace for all segments
-    seg_x <- c(rbind(seg_dt$rect_starts, seg_dt$rect_ends, NA_real_))
-    seg_y <- c(rbind(0.5 - seg_dt$layers, 0.5 - seg_dt$layers, NA_real_))
-
-    # Hover text per segment: repeat text for start/end, NA for breaks
-    seg_text <- c(rbind(seg_dt$gene_names, seg_dt$gene_names, NA_character_))
+    seg_shapes <- lapply(seq_len(nrow(seg_dt)), function(i) {
+      list(
+        type = "line",
+        layer = "below",
+        xref = "x", yref = "y",
+        x0 = seg_dt$rect_starts[i],
+        x1 = seg_dt$rect_ends[i],
+        y0 = 0.5 - seg_dt$layers[i],
+        y1 = 0.5 - seg_dt$layers[i],
+        line = list(color = "grey45", width = 2),
+        opacity = 0.6
+      )
+    })
+    all_shapes <- c(all_shapes, seg_shapes)
 
     p <- p %>%
-      plotly::add_trace(
-        x = seg_x, y = seg_y,
-        type = "scatter", mode = "lines",
-        line = list(color = "grey45", width = 2),
-        opacity = 0.6,
-        text = seg_text,
-        hoverinfo = "text"
+      plotly::add_markers(
+        data = seg_dt,
+        x = ~(rect_starts + rect_ends) / 2,
+        y = ~(0.5 - layers),
+        marker = list(opacity = 0, size = 10),
+        text = ~gene_names,
+        hovertext = ~gene_names,
+        hoverinfo = "text",
+        showlegend = FALSE
       )
 
     # Collapsed intron label "..."
@@ -439,12 +556,12 @@ geneModelPanelPlotly <- function(dt) {
         ymid = 0.5 - layers,
         tooltip = "Collapsed Intron"
       )]
-
       p <- p %>%
         plotly::add_text(
           data = intron_flank_coords,
           x = ~xmid, y = ~ymid,
           text = "...",
+          textposition = "middle center",
           textfont = list(size = 18, color = "black"),
           hovertext = ~tooltip,
           hoverinfo = "text"
@@ -467,9 +584,7 @@ geneModelPanelPlotly <- function(dt) {
         opacity = 1
       )
     })
-
-    p <- p %>%
-      plotly::layout(shapes = rect_shapes)
+    all_shapes <- c(all_shapes, rect_shapes)
 
     # Add an invisible scatter trace to provide per-rectangle hover tooltips
     box_dt[, `:=`(
@@ -481,7 +596,8 @@ geneModelPanelPlotly <- function(dt) {
       plotly::add_markers(
         data = box_dt,
         x = ~xmid, y = ~ymid,
-        marker = list(opacity = 0),
+        marker = list(opacity = 0, size = 12),
+        text = ~gene_names,
         hovertext = ~gene_names,
         hoverinfo = "text"
       )
@@ -502,6 +618,9 @@ geneModelPanelPlotly <- function(dt) {
         textfont = list(color = "black", size = 16),
         hoverinfo = "skip"
       )
+  }
+  if (length(all_shapes) > 0) {
+    p <- p %>% plotly::layout(shapes = all_shapes)
   }
   p %>% plotly::config(displayModeBar = FALSE) %>%
     plotly::layout(margin = margin_megabrowser())

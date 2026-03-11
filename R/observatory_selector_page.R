@@ -61,6 +61,9 @@ observatory_selector_server <- function(
       observatory_url_state()
     }) |> shiny::bindEvent(observatory_url_state())
 
+    url_state_pending_autogo <- shiny::reactiveVal(NULL)
+    url_state_autogo_counter <- shiny::reactiveVal(0L)
+
     shiny::observe({
       st <- obs_state()
       if (is.null(st)) return()
@@ -70,11 +73,32 @@ observatory_selector_server <- function(
       if (!is.null(st$color_by) && length(st$color_by) > 0) {
         shiny::updateSelectInput(session, "color_by", selected = st$color_by)
       }
+      url_state_pending_autogo(st)
     }) |> shiny::bindEvent(obs_state(), ignoreInit = FALSE, once = TRUE)
+
+    shiny::observe({
+      st <- url_state_pending_autogo()
+      if (is.null(st)) return()
+
+      exp_ready <- is.null(st$exp) || identical(as.character(input$dff), as.character(st$exp))
+      color_ready <- is.null(st$color_by) || setequal(as.character(input$color_by), as.character(st$color_by))
+      if (!exp_ready || !color_ready) return()
+
+      url_state_autogo_counter(url_state_autogo_counter() + 1L)
+      url_state_pending_autogo(NULL)
+    }) |> shiny::bindEvent(
+      url_state_pending_autogo(),
+      input$dff,
+      input$color_by,
+      ignoreInit = TRUE
+    )
 
     observatory_module <- shiny::reactive({
       create_observatory_module(meta_experiment_df(), all_libraries_df)
-    }) |> shiny::bindCache(name(meta_experiment_df()))|> shiny::bindEvent(input$go)
+    }) |> shiny::bindCache(name(meta_experiment_df())) |> shiny::bindEvent(
+      input$go,
+      url_state_autogo_counter()
+    )
 
     libraries_df <- shiny::reactive({
       observatory_module()$get_libraries_data()

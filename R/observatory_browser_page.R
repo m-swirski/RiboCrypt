@@ -62,7 +62,7 @@ observatory_browser_server <- function(
   df,
   library_selections,
   library_selection_labels,
-  gene_name_list, experiments, org, gg_theme,
+  gene_name_list, tx, cds, experiments, org, gg_theme,
   rv, browser_options,
   selection_index = shiny::reactive(NULL),
   active_selection_id = shiny::reactive(NULL),
@@ -132,19 +132,7 @@ observatory_browser_server <- function(
       observatory_url_state(),
       ignoreInit = TRUE
     )
-    # -- Annotation loading ------------------------------------------------
-    # Load transcript and CDS annotation once per experiment.
-    tx <- shiny::reactive({
-      loadRegion(df(), "tx")
-    }) |>
-      shiny::bindCache(name(df())) |>
-      shiny::bindEvent(df(), ignoreNULL = TRUE)
 
-    cds <- shiny::reactive({
-      loadRegion(df(), "cds")
-    }) |>
-      shiny::bindCache(name(df())) |>
-      shiny::bindEvent(df(), ignoreNULL = TRUE)
 
     # -- Plot controller ---------------------------------------------------
 

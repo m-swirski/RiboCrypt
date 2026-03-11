@@ -124,7 +124,7 @@ RiboCrypt_app <- function(
     )
     if (nrow(all_exp_meta) > 0) {
       collection_pages <- function(input, output, session, df,
-                                   all_exp, names_init,
+                                   all_exp, names_init, tx_init, cds_init,
                                    exp_init, exps_dir, metadata,
                                    browser_options) {
         org_and_study_changed_checker_collection(input, output, session)
@@ -135,7 +135,7 @@ RiboCrypt_app <- function(
         )
         rv <- observatory_server(
           "observatory", all_exp, df, experiments,
-          gene_name_list, org, gg_theme,
+          gene_name_list, tx, cds, org, gg_theme,
           metadata, browser_options, rv
         )
       }
@@ -143,6 +143,8 @@ RiboCrypt_app <- function(
                        df = df_meta,
                        all_exp = all_exp_meta,
                        names_init = names_init_meta,
+                       tx_init = tx_init_meta,
+                       cds_init = cds_init_meta,
                        exp_init = exp_init_meta,
                        exps_dir, metadata, browser_options)
 

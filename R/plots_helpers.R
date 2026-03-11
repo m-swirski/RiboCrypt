@@ -11,14 +11,14 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
   if (!withFrames) {
     profile_plot <- profile_plot +
       geom_area(aes(y = count, x = position), fill = colors, col = "black",
-                size = 0.1, alpha = 0.8, position = "identity")
+                linewidth = 0.1, alpha = 0.8, position = "identity")
   } else if (type == "lines") {
     profile_plot <- profile_plot +
       geom_line(aes(y = count, x = position, color = frame), linewidth = 0.5) +
       scale_color_manual(values = frame_colors)
   } else if (type == "stacks") {
     profile_plot <- profile_plot +
-      geom_area(aes(y = count, x = position, fill = frame), size = 0.1,
+      geom_area(aes(y = count, x = position, fill = frame), linewidth = 0.1,
                 alpha = 0.8, col = "black") +
       scale_fill_manual(values = frame_colors)
   } else if (type == "columns") {
@@ -27,7 +27,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
       scale_fill_manual(values = frame_colors)
   } else if (type == "area") {
     profile_plot <- profile_plot +
-      geom_area(aes(y = count, x = position, fill = frame), size = 0.1,
+      geom_area(aes(y = count, x = position, fill = frame), linewidth = 0.1,
                 alpha = 0.8, col = "black", position = 'identity') +
       geom_point(aes(x = position, y = count, group = frame),
                  fill = NA,  # Make points invisible (no fill)

@@ -170,12 +170,19 @@ colour_bars <- function(locations, overlaps, display_range, frame_colors = "R") 
 #'
 #' @keywords internal
 getRelativeFrames <- function(overlaps) {
-  dt <- data.table(names = names(overlaps),
-                   width = width(overlaps),
-                   type = overlaps$type)
-  dt[, cum_width := cumsum(width), .(names, type)]
-  dt[, rel_frame := c(0,-cum_width %% 3)[1:length(width)], .(names, type)]
-  return(dt$rel_frame)
+  widths <- width(overlaps)
+  if (length(widths) == 0) return(integer())
+
+  groups <- interaction(names(overlaps), overlaps$type, drop = TRUE, lex.order = TRUE)
+  split_index <- split(seq_along(widths), groups)
+  rel_frame <- integer(length(widths))
+
+  for (idx in split_index) {
+    cum_width <- cumsum(widths[idx])
+    rel_frame[idx] <- c(0L, -(cum_width %% 3L))[seq_along(idx)]
+  }
+
+  rel_frame
 }
 
 
@@ -187,4 +194,3 @@ realA <- function(y,z,Ea,Eb,Ec) {
   sol <- c(Ea, Eb, Ec)
   solve(eq,sol)
 }
-

@@ -110,7 +110,7 @@ rc_parameter_setup <- function() {
     tx_init <- loadRegion(exp_init)
     cds_init <- loadRegion(exp_init, "cds")
 
-    exp_init_meta <- names_init_meta <- NULL
+    exp_init_meta <- names_init_meta <- tx_init_meta <- cds_init_meta <- NULL
 
     if (nrow(all_exp_meta) > 0) {
       meta_org <- all_exp_meta[name == browser_options["default_experiment_meta"]]$organism[1]
@@ -121,7 +121,19 @@ rc_parameter_setup <- function() {
         copy(names_init)
         } else {
         get_gene_name_categories(exp_init_meta)
+        }
+      tx_init_meta <- if (meta_org == browser_org) {
+        tx_init
+      } else {
+        loadRegion(exp_init_meta)
       }
+      cds_init_meta <- if (meta_org == browser_org) {
+        cds_init
+      } else {
+        loadRegion(exp_init_meta, "cds")
+      }
+
+
       if (!isTruthy(browser_options["default_gene_meta"])) {
         browser_options["default_gene_meta"] <- names_init_meta$label[1]
       }

@@ -47,6 +47,29 @@ observatory_selector_ui <- function(id, meta_experiment_list, browser_options) {
   )
 }
 
+observatory_selection_subset_label <- function(selected_runs, libraries_df) {
+  if (is.null(selected_runs) || length(selected_runs) == 0 || is.null(libraries_df) || nrow(libraries_df) == 0) {
+    return("")
+  }
+
+  selected_dt <- libraries_df[Run %in% as.character(selected_runs)]
+  if (nrow(selected_dt) == 0) return("")
+
+  first_unique_value <- function(column) {
+    if (!(column %in% colnames(selected_dt))) return(NULL)
+    values <- unique(as.character(selected_dt[[column]]))
+    values <- values[!is.na(values) & nzchar(values)]
+    if (length(values) == 1) values[[1]] else NULL
+  }
+
+  label_base <- first_unique_value("BioProject")
+  if (is.null(label_base)) label_base <- first_unique_value("CELL_LINE")
+  if (is.null(label_base)) label_base <- first_unique_value("TISSUE")
+  if (is.null(label_base)) return("")
+
+  paste(label_base, "subset")
+}
+
 observatory_selector_server <- function(
   id,
   meta_experiment_list,
@@ -123,15 +146,28 @@ observatory_selector_server <- function(
 
     output$libraries_data_table <- DT::renderDT({
       DT::datatable(
-        libraries_df(),
+        filtered_libraries_df(),
         filter = "top",
         options = list(
           searching = TRUE,
+          pageLength = 25,
           initComplete = DT::JS(
             "function(settings, json) {",
             "  var table = this.api();",
             "  var $container = $(table.table().container());",
             "  var baseId = table.table().node().id || 'libraries_data_table';",
+            "  var selectedRuns = new Set();",
+            "  var syncingSelection = false;",
+            "  function runColumnIndex() {",
+            "    var columns = table.settings()[0].aoColumns || [];",
+            "    for (var i = 0; i < columns.length; i++) {",
+            "      if (columns[i] && columns[i].sTitle === 'Run') return i;",
+            "    }",
+            "    return 0;",
+            "  }",
+            "  function sendSelectedRuns() {",
+            "    Shiny.setInputValue(baseId + '_selected_runs', Array.from(selectedRuns), {priority: 'event'});",
+            "  }",
             "  function sendFilters() {",
             "    var global = $container.find('div.dataTables_filter input').val() || '';",
             "    var columnFilters = [];",
@@ -141,8 +177,44 @@ observatory_selector_server <- function(
             "    Shiny.setInputValue(baseId + '_manual_search', global, {priority: 'event'});",
             "    Shiny.setInputValue(baseId + '_manual_search_columns', columnFilters, {priority: 'event'});",
             "  }",
+            "  function applySelectionToCurrentPage() {",
+            "    var runCol = runColumnIndex();",
+            "    syncingSelection = true;",
+            "    table.rows({page: 'current'}).every(function() {",
+            "      var data = this.data();",
+            "      var run = Array.isArray(data) ? data[runCol] : data.Run;",
+            "      if (selectedRuns.has(run)) {",
+            "        this.select();",
+            "      } else {",
+            "        this.deselect();",
+            "      }",
+            "    });",
+            "    syncingSelection = false;",
+            "  }",
+            "  function syncSetFromSelection(type, indexes) {",
+            "    if (syncingSelection) return;",
+            "    var runCol = runColumnIndex();",
+            "    (indexes || []).forEach(function(idx) {",
+            "      var data = table.row(idx).data();",
+            "      var run = Array.isArray(data) ? data[runCol] : data.Run;",
+            "      if (!run) return;",
+            "      if (type === 'select') selectedRuns.add(run);",
+            "      if (type === 'deselect') selectedRuns.delete(run);",
+            "    });",
+            "    sendSelectedRuns();",
+            "  }",
             "  $container.on('keyup change', 'div.dataTables_filter input', sendFilters);",
             "  $container.on('keyup change', 'thead tr input', sendFilters);",
+            "  table.on('select.dt', function(e, dt, type, indexes) {",
+            "    if (type === 'row') syncSetFromSelection('select', indexes);",
+            "  });",
+            "  table.on('deselect.dt', function(e, dt, type, indexes) {",
+            "    if (type === 'row') syncSetFromSelection('deselect', indexes);",
+            "  });",
+            "  table.on('draw.dt', function() {",
+            "    applySelectionToCurrentPage();",
+            "    sendFilters();",
+            "  });",
             "  sendFilters();",
             "  Shiny.addCustomMessageHandler('librariesApplyTableFilters', function(message) {",
             "    if (!message || message.table_id !== baseId) return;",
@@ -156,12 +228,18 @@ observatory_selector_server <- function(
             "    table.draw();",
             "    sendFilters();",
             "  });",
+            "  Shiny.addCustomMessageHandler('librariesApplyTableSelection', function(message) {",
+            "    if (!message || message.table_id !== baseId) return;",
+            "    selectedRuns = new Set(message.selected_runs || []);",
+            "    applySelectionToCurrentPage();",
+            "    sendSelectedRuns();",
+            "  });",
             "}"
           )
         ),
         selection = "multiple"
       )
-    })
+    }, server = TRUE)
 
     libraries_data_table_proxy <- shiny::reactive({
       DT::dataTableProxy("libraries_data_table")
@@ -231,40 +309,63 @@ observatory_selector_server <- function(
       ignoreNULL = FALSE
     )
 
-    data_table_selection <- shiny::reactive({
-      base_df <- filtered_libraries_df()
+    current_table_filters <- shiny::reactive({
       manual_global <- input$libraries_data_table_manual_search
       manual_columns <- input$libraries_data_table_manual_search_columns
       if (is.null(manual_global) && is.null(manual_columns)) {
         manual_global <- input$libraries_data_table_search
         manual_columns <- input$libraries_data_table_search_columns
       }
-      filtered_df <- apply_dt_filters(
-        base_df,
-        manual_global,
-        manual_columns
+      list(
+        global = manual_global %||% "",
+        columns = manual_columns %||% rep("", ncol(libraries_df()))
       )
-      selection_is_defined <-
-        !is.null(input$libraries_data_table_rows_selected)
+    })
 
-      selected_indexes <- if (!selection_is_defined) {
-        seq_len(nrow(filtered_df))
-      } else {
-        input$libraries_data_table_rows_selected
+    data_table_filtered_df <- shiny::reactive({
+      filters <- current_table_filters()
+      apply_dt_filters(
+        filtered_libraries_df(),
+        filters$global,
+        filters$columns
+      )
+    })
+
+    data_table_selection <- shiny::reactive({
+      filtered_df <- data_table_filtered_df()
+      selected_runs <- input$libraries_data_table_selected_runs
+
+      if (is.null(selected_runs) || length(selected_runs) == 0) {
+        return(filtered_df$Run)
       }
 
-      filtered_df[selected_indexes]$Run
+      intersect(filtered_df$Run, as.character(selected_runs))
     })
 
     shiny::observeEvent(
-      list(
-        filtered_libraries_df(),
-        input$libraries_data_table_rows_selected,
-        input$libraries_data_table_manual_search,
-        input$libraries_data_table_manual_search_columns,
-        input$libraries_data_table_search,
-        input$libraries_data_table_search_columns
-      ),
+      current_table_filters(),
+      {
+        selection_value <- tryCatch(data_table_selection(), error = function(e) NULL)
+        if (!is.null(selection_value)) {
+          data_table_selection_val(selection_value)
+        }
+      },
+      ignoreInit = FALSE
+    )
+
+    shiny::observeEvent(
+      filtered_libraries_df(),
+      {
+        selection_value <- tryCatch(data_table_selection(), error = function(e) NULL)
+        if (!is.null(selection_value)) {
+          data_table_selection_val(selection_value)
+        }
+      },
+      ignoreInit = FALSE
+    )
+
+    shiny::observeEvent(
+      input$libraries_data_table_selected_runs,
       {
         selection_value <- tryCatch(data_table_selection(), error = function(e) NULL)
         if (!is.null(selection_value)) {
@@ -293,6 +394,19 @@ observatory_selector_server <- function(
           table_id = session$ns("libraries_data_table"),
           global = filters$global %||% "",
           columns = filters$columns
+        )
+      )
+      invisible(NULL)
+    }
+
+    apply_data_table_selection <- function(selection_id) {
+      selected_runs <- selected_libraries$all_selections$data_table_selections()[[selection_id]]
+      if (is.null(selected_runs)) selected_runs <- character()
+      session$sendCustomMessage(
+        "librariesApplyTableSelection",
+        list(
+          table_id = session$ns("libraries_data_table"),
+          selected_runs = as.character(selected_runs)
         )
       )
       invisible(NULL)
@@ -328,6 +442,20 @@ observatory_selector_server <- function(
 
     shiny::observe({
       shiny::req(selected_libraries$active_selection_id())
+      plot_sel <- input$libraries_umap_plot_selection
+      if (is.null(plot_sel) || length(plot_sel) == 0) return()
+
+      selected_libraries$set_active_label(
+        observatory_selection_subset_label(plot_sel, libraries_df())
+      )
+    }) |> shiny::bindEvent(
+      input$libraries_umap_plot_selection,
+      ignoreInit = TRUE,
+      ignoreNULL = FALSE
+    )
+
+    shiny::observe({
+      shiny::req(selected_libraries$active_selection_id())
       selection_id <- selected_libraries$active_selection_id()
       previous_id <- last_active_selection_id()
       if (!is.null(previous_id) && previous_id != selection_id) {
@@ -340,6 +468,7 @@ observatory_selector_server <- function(
       }
       last_active_selection_id(selection_id)
       apply_data_table_filters(selection_id)
+      apply_data_table_selection(selection_id)
     }) |> shiny::bindEvent(selected_libraries$active_selection_id())
 
     shiny::observe({
@@ -394,12 +523,22 @@ observatory_selector_server <- function(
     )
 
     shiny::observe({
+      shiny::req(selected_libraries$active_selection_id())
+      filters <- current_table_filters()
       DT::replaceData(
         libraries_data_table_proxy(),
         filtered_libraries_df(),
-        resetPaging = FALSE
+        resetPaging = FALSE,
+        clearSelection = "none"
       )
-      apply_data_table_filters(selected_libraries$active_selection_id())
+      DT::updateSearch(
+        libraries_data_table_proxy(),
+        keywords = list(
+          global = filters$global,
+          columns = filters$columns
+        )
+      )
+      apply_data_table_selection(selected_libraries$active_selection_id())
     }) |> shiny::bindEvent(filtered_libraries_df())
 
     shiny::observe({

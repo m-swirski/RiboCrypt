@@ -421,4 +421,6 @@ test_that("browser_plot_final_layout_polish keeps x ticks only on bottom shared 
   expect_true(isTRUE(polished$x$layout$xaxis$visible))
   expect_true(isTRUE(polished$x$layout$xaxis$showticklabels))
   expect_identical(polished$x$layout$xaxis$title$text, "position [nt]")
+  expect_identical(polished$x$layout$legend$y, 0.93)
+  expect_identical(polished$x$layout$legend$yanchor, "top")
 })

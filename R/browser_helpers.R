@@ -405,6 +405,14 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
     }
   }
 
+  multiomics_plot <- multiomics_plot %>%
+    plotly::layout(
+      legend = list(
+        y = 0.93,
+        yanchor = "top"
+      )
+    )
+
   filename <- ifelse(plot_name == "default", names(display_range), plot_name)
   multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
                                              width, height, format = export.format)

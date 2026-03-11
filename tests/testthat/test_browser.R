@@ -24,7 +24,10 @@ make_bottom_panel_test_controls <- function(viewMode = FALSE,
                                             df, tx, cds,
                                             tx_id = names(tx)[1],
                                             collapsed_introns_width = 0,
-                                            genomic_string = NULL) {
+                                            genomic_string = NULL,
+                                            extendLeaders = 0,
+                                            extendTrailers = 0,
+                                            frame_colors = "R") {
 
   display_region <- RiboCrypt:::observed_tx_annotation(tx_id, function() tx)
   annotation <- RiboCrypt:::observed_cds_annotation_internal(tx_id, cds, TRUE)
@@ -48,14 +51,14 @@ make_bottom_panel_test_controls <- function(viewMode = FALSE,
     dff = df,
     display_region = display_region,
     annotation = annotation,
-    extendLeaders = 0,
-    extendTrailers = 0,
+    extendLeaders = extendLeaders,
+    extendTrailers = extendTrailers,
     viewMode = viewMode,
     custom_sequence = "",
     customRegions = GenomicRanges::GRangesList(),
     tx_annotation = tx_annotation,
     collapsed_introns_width = collapsed_introns_width,
-    frame_colors = "R",
+    frame_colors = frame_colors,
     gg_theme = RiboCrypt:::gg_theme_template(),
     phyloP = FALSE,
     mapability = FALSE,
@@ -250,6 +253,34 @@ test_that("bottom_panel_shiny handles transcript view", {
   expect_equal(bottom_panel$annotation_layers, 1)
 })
 
+test_that("bottom_panel_shiny applies 5' and 3' extensions", {
+  original_size <- widthPerGroup(tx[1], FALSE)
+  extendLeaders <- 10
+  extendTrailers <- 20
+  new_size <- original_size + extendLeaders + extendTrailers
+  controls <- make_bottom_panel_test_controls(
+    viewMode = FALSE, df, tx, cds,
+    extendLeaders = extendLeaders,
+    extendTrailers = extendTrailers
+  )
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(controls$controls)
+  expect_equal(ORFik::widthPerGroup(bottom_panel$display_range, FALSE), new_size)
+
+
+})
+
+test_that("bottom_panel_shiny supports Color_blind frame theme", {
+  controls <- make_bottom_panel_test_controls(
+    viewMode = FALSE, df, tx, cds,
+    frame_colors = "Color_blind"
+  )
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(controls$controls)
+  cds_cols <- unique(bottom_panel$gene_model_panel_dt[type == "cds"]$cols)
+
+  expect_true(all(cds_cols %in% RiboCrypt:::frame_color_themes("Color_blind", TRUE)))
+})
+
 test_that("bottom_panel_shiny handles transcript view with custom region overlapping CDS", {
   controls <- make_bottom_panel_test_controls(viewMode = FALSE, df, tx, cds)
   controls_with_custom <- controls$controls()
@@ -433,6 +464,22 @@ test_that("browser_track_panel_shiny handles overlapping ranges", {
   expect_s3_class(plot, "plotly")
   expect_true(inherits(plot, "htmlwidget"))
   expect_gt(length(plot$x$data), 0)
+})
+
+test_that("browser_track_panel_shiny applies zoom_range to the shared x axis", {
+  fixture <- make_browser_track_test_fixture(frames_type = "columns", kmers = 1,
+                                             df, tx, cds)
+  controls_with_zoom <- fixture$controls()
+  controls_with_zoom$zoom_range <- c(20, 60)
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(function() controls_with_zoom)
+  plot <- RiboCrypt:::browser_track_panel_shiny(
+    function() controls_with_zoom,
+    bottom_panel,
+    fixture$session
+  )
+
+  expect_equal(unname(plot$x$layout$xaxis$range), c(20, 60))
 })
 
 test_that("lineDeSimplify only updates pure line traces", {

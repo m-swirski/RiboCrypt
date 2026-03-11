@@ -58,7 +58,7 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
   } else if (normalization == "tpm") {
     valid_libs <- if(!is.null(attr$valid_libs)){
       attr$valid_libs} else colnames(mat)
-    mat <- ppm_calc_megabrowser(mat, valid_libs)
+    mat <- tpm_calc_megabrowser(mat, valid_libs, lib_sizes)
   } else stop("Invalid normalization for collection!")
   mat[is.na(mat)] <- 0L
 

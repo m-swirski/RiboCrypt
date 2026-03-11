@@ -208,7 +208,7 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
   # TODO: Explain sections of this function, or split in sub functions
   # It is too complicated right now.
   use_custom_region <- !is.null(custom_regions) & length(custom_regions) > 0
-  overlap_type <- ifelse(viewMode == "tx", "within", "any")
+  overlap_type <- ifelse(viewMode == "tx" | collapse_intron_flank > 0, "within", "any")
   if (use_custom_region) {
     same_names <- names(custom_regions) %in% names(annotation)
     names(custom_regions)[same_names] <- paste(names(custom_regions)[same_names], "_1", sep="")
@@ -248,8 +248,10 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
   }
 
   if (use_custom_region) annotation_shown <- c(annotation_shown, overlaps_custom)
-  if (length(annotation_shown) > 0) annotation_shown@unlistData$type <- "cds"
-  if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <- "utr"
+  if (length(annotation_shown) > 0) annotation_shown@unlistData$type <-
+    rep("cds", length(annotation_shown@unlistData))
+  if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <-
+    rep("utr", length(overlaps_tx@unlistData))
 
   return(gene_box_fix_overlaps(display_range, c(annotation_shown, overlaps_tx), custom_regions,
                                collapse_intron_flank, frame_colors))
@@ -270,7 +272,7 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
   overlaps$rel_frame_exon <- getRelativeFrames(overlaps)
   # overlaps <- subsetByOverlaps(overlaps, display_range)
 
-  intersections <- trimOverlaps(overlaps, display_range)
+  intersections <-  trimOverlaps(overlaps, display_range)
   intersections <- groupGRangesBy(intersections, paste0(names(intersections), "___", intersections$type))
   names(intersections) <- sub("___.*", "", names(intersections))
 
@@ -358,6 +360,7 @@ geneBoxFromRanges <- function(locations, plot_width,
     seg_dt <- seg_dt[ , .(layers = layers[1], rect_starts = rect_ends[1:(.N - 1)], rect_ends = rect_starts[2:.N],
                           cols = "grey45", labels_locations = 0, hjusts = "center",
                           type = "intron", no_ex = "1"), by = gene_names]
+    seg_dt <- seg_dt[which(rect_starts < rect_ends),]
     if (did_collapse_introns) {
       dt_unique <- dt[!duplicated(dt[, .(rect_starts, rect_ends)]), ][, .(rect_starts, rect_ends)]
       dt_unique_all_pos <- unique(unlist(lapply(as.data.table(t(as.matrix(dt_unique))), function(x) {seq.int(x[1], x[2])}), use.names = FALSE))

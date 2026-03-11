@@ -19,6 +19,133 @@ T2 <- GenomicRanges::GRanges(
   strand = BiocGenerics::strand(tx_unlisted)[1]
 )
 
+# Helper functions
+make_bottom_panel_test_controls <- function(viewMode = FALSE,
+                                            df, tx, cds,
+                                            tx_id = names(tx)[1],
+                                            collapsed_introns_width = 0,
+                                            genomic_string = NULL) {
+
+  display_region <- RiboCrypt:::observed_tx_annotation(tx_id, function() tx)
+  annotation <- RiboCrypt:::observed_cds_annotation_internal(tx_id, cds, TRUE)
+  tx_annotation <- RiboCrypt:::observed_cds_annotation_internal(tx_id, tx, TRUE)
+
+  if (isTRUE(viewMode) && collapsed_introns_width > 0) {
+    tx_annotation <- tx_annotation[tx_annotation %over% ORFik::flankPerGroup(display_region)]
+    display_region_gr <- GenomicRanges::reduce(ORFik::unlistGrl(tx_annotation))
+    display_region <- ORFik::groupGRangesBy(
+      display_region_gr,
+      rep(names(display_region), length(display_region_gr))
+    )
+  }
+  display_region <- genomic_string_to_grl(genomic_string, display_region,
+                                          max_size = 1e6, viewMode,
+                                          0,
+                                          0,
+                                          collapsed_introns_width)
+
+  controls <- list(
+    dff = df,
+    display_region = display_region,
+    annotation = annotation,
+    extendLeaders = 0,
+    extendTrailers = 0,
+    viewMode = viewMode,
+    custom_sequence = "",
+    customRegions = GenomicRanges::GRangesList(),
+    tx_annotation = tx_annotation,
+    collapsed_introns_width = collapsed_introns_width,
+    frame_colors = "R",
+    gg_theme = RiboCrypt:::gg_theme_template(),
+    phyloP = FALSE,
+    mapability = FALSE,
+    is_cellphone = FALSE
+  )
+  list(
+    controls = function() controls,
+    session = list(ns = function(x) x)
+  )
+}
+
+make_browser_track_test_fixture <- function(frames_type, kmers, df, tx, cds) {
+  df <- df[1,] # 1 is 9
+  tx_id <- names(tx)[1]
+  reads <- filepath(df, "bigwig")
+
+  controls <- list(
+    dff = df,
+    display_region = RiboCrypt:::observed_tx_annotation(tx_id, function() tx),
+    annotation = RiboCrypt:::observed_cds_annotation_internal(tx_id, cds, TRUE),
+    extendLeaders = 0,
+    extendTrailers = 0,
+    viewMode = FALSE,
+    custom_sequence = "",
+    customRegions = GenomicRanges::GRangesList(),
+    tx_annotation = RiboCrypt:::observed_cds_annotation_internal(tx_id, tx, TRUE),
+    collapsed_introns_width = 0,
+    frame_colors = "R",
+    gg_theme = RiboCrypt:::gg_theme_template(),
+    phyloP = FALSE,
+    mapability = FALSE,
+    is_cellphone = FALSE,
+    reads = reads,
+    withFrames = TRUE,
+    frames_type = frames_type,
+    colors = NULL,
+    kmerLength = kmers,
+    log_scale = FALSE,
+    summary_track = FALSE,
+    summary_track_type = frames_type,
+    export_format = "svg",
+    zoom_range = numeric(0),
+    frames_subset = "all"
+  )
+
+  list(
+    controls = function() controls,
+    session = list(ns = function(x) x)
+  )
+}
+
+make_collapsed_overlap_fixture <- function() {
+  display_tx <- GenomicRanges::GRangesList(
+    txA = GenomicRanges::GRanges(
+      "chr1",
+      IRanges::IRanges(c(100, 500, 900), c(199, 599, 999)),
+      "+"
+    )
+  )
+
+  cds_overlap <- GenomicRanges::GRangesList(
+    txA = GenomicRanges::GRanges(
+      "chr1",
+      IRanges::IRanges(c(100, 500, 900), c(199, 599, 999)),
+      "+"
+    ),
+    txB = GenomicRanges::GRanges(
+      "chr1",
+      IRanges::IRanges(c(450, 900), c(520, 950)),
+      "+"
+    )
+  )
+
+  tx_overlap <- GenomicRanges::GRangesList(
+    txA = display_tx[[1]],
+    txB = GenomicRanges::GRanges(
+      "chr1",
+      IRanges::IRanges(c(450, 520, 900, 980), c(520, 560, 950, 999)),
+      "+"
+    )
+  )
+
+  list(
+    display_range = ORFik::exonsWithPseudoIntronsPerGroup(display_tx, 30),
+    annotation = cds_overlap,
+    tx_annotation = tx_overlap
+  )
+}
+
+
 test_that("input_to_list drops ignored inputs and adds user info", {
   input <- shiny::reactiveValues(
     gene = "GENE1",
@@ -111,92 +238,6 @@ test_that("browser_ui returns a shiny tag object", {
   expect_true(inherits(ui, "shiny.tag") || inherits(ui, "shiny.tag.list"))
 })
 
-make_bottom_panel_test_controls <- function(viewMode = FALSE,
-                                            df, tx, cds,
-                                            tx_id = names(tx)[1],
-                                            collapsed_introns_width = 0,
-                                            genomic_string = NULL) {
-
-  display_region <- RiboCrypt:::observed_tx_annotation(tx_id, function() tx)
-  annotation <- RiboCrypt:::observed_cds_annotation_internal(tx_id, cds, TRUE)
-  tx_annotation <- RiboCrypt:::observed_cds_annotation_internal(tx_id, tx, TRUE)
-
-  if (isTRUE(viewMode) && collapsed_introns_width > 0) {
-    tx_annotation <- tx_annotation[tx_annotation %over% ORFik::flankPerGroup(display_region)]
-    display_region_gr <- GenomicRanges::reduce(ORFik::unlistGrl(tx_annotation))
-    display_region <- ORFik::groupGRangesBy(
-      display_region_gr,
-      rep(names(display_region), length(display_region_gr))
-    )
-  }
-  display_region <- genomic_string_to_grl(genomic_string, display_region,
-                        max_size = 1e6, viewMode,
-                        0,
-                        0,
-                        collapsed_introns_width)
-
-  controls <- list(
-    dff = df,
-    display_region = display_region,
-    annotation = annotation,
-    extendLeaders = 0,
-    extendTrailers = 0,
-    viewMode = viewMode,
-    custom_sequence = "",
-    customRegions = GenomicRanges::GRangesList(),
-    tx_annotation = tx_annotation,
-    collapsed_introns_width = collapsed_introns_width,
-    frame_colors = "R",
-    gg_theme = RiboCrypt:::gg_theme_template(),
-    phyloP = FALSE,
-    mapability = FALSE,
-    is_cellphone = FALSE
-  )
-  list(
-    controls = function() controls,
-    session = list(ns = function(x) x)
-  )
-}
-
-make_browser_track_test_fixture <- function(frames_type, kmers, df, tx, cds) {
-  df <- df[1,] # 1 is 9
-  tx_id <- names(tx)[1]
-  reads <- filepath(df, "bigwig")
-
-  controls <- list(
-    dff = df,
-    display_region = RiboCrypt:::observed_tx_annotation(tx_id, function() tx),
-    annotation = RiboCrypt:::observed_cds_annotation_internal(tx_id, cds, TRUE),
-    extendLeaders = 0,
-    extendTrailers = 0,
-    viewMode = FALSE,
-    custom_sequence = "",
-    customRegions = GenomicRanges::GRangesList(),
-    tx_annotation = RiboCrypt:::observed_cds_annotation_internal(tx_id, tx, TRUE),
-    collapsed_introns_width = 0,
-    frame_colors = "R",
-    gg_theme = RiboCrypt:::gg_theme_template(),
-    phyloP = FALSE,
-    mapability = FALSE,
-    is_cellphone = FALSE,
-    reads = reads,
-    withFrames = TRUE,
-    frames_type = frames_type,
-    colors = NULL,
-    kmerLength = kmers,
-    log_scale = FALSE,
-    summary_track = FALSE,
-    summary_track_type = frames_type,
-    export_format = "svg",
-    zoom_range = numeric(0),
-    frames_subset = "all"
-  )
-
-  list(
-    controls = function() controls,
-    session = list(ns = function(x) x)
-  )
-}
 
 test_that("bottom_panel_shiny handles transcript view", {
   controls <- make_bottom_panel_test_controls(viewMode = FALSE, df, tx, cds)
@@ -288,6 +329,37 @@ test_that("bottom_panel_shiny handles genomic view (spliced) with collapsed intr
   expect_equal(as.numeric(width(unlist(bottom_panel$display_range))), c(75, 441))
   expect_equal(length(bottom_panel$bottom_plots), 3)
   expect_equal(bottom_panel$annotation_layers, 1)
+})
+
+test_that("bottom_panel_shiny keeps overlapping CDS exons in collapsed genomic view", {
+  fixture <- make_collapsed_overlap_fixture()
+  controls <- list(
+    dff = df,
+    display_region = fixture$display_range,
+    annotation = fixture$annotation,
+    extendLeaders = 0,
+    extendTrailers = 0,
+    viewMode = TRUE,
+    custom_sequence = "",
+    customRegions = GenomicRanges::GRangesList(),
+    tx_annotation = fixture$tx_annotation,
+    collapsed_introns_width = 30,
+    frame_colors = "R",
+    gg_theme = RiboCrypt:::gg_theme_template(),
+    phyloP = FALSE,
+    mapability = FALSE,
+    is_cellphone = FALSE
+  )
+
+  bottom_panel <- suppressWarnings(RiboCrypt:::bottom_panel_shiny(function() controls))
+  main_cds <- bottom_panel$gene_model_panel_dt[gene_names == "txA" & type == "cds"]
+  overlapping_cds <- bottom_panel$gene_model_panel_dt[gene_names == "txB" & type == "cds"]
+
+  # TODO: Decide if this is smart or not that RIboCrypt just removes txB here.
+  expect_true("rect_starts" %in% colnames(overlapping_cds))
+  expect_equal(nrow(overlapping_cds), 0)
+  expect_equal(main_cds$rect_starts, c(1, 161, 321))
+  expect_equal(main_cds$rect_ends, c(100,260,420))
 })
 
 test_that("bottom_panel_shiny handles genomic string input on non tx region", {

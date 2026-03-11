@@ -92,22 +92,38 @@ antisense <- function(grl) {
 
 #' Trim overlaps
 #'
+#' Input ranges must be already given to be on the same chromosome, no check
+#' is done to ensure this for speed reasons.
 #' @param overlaps GRanges
 #' @param display_range GRanges
 #' @return GRanges
 #' @importFrom BiocGenerics start<- end<-
 #' @keywords internal
 trimOverlaps <- function(overlaps, display_range) {
-  flanks <- unlistGrl(display_range)
+  flanks <- display_range@unlistData
+  flank_starts <- flanks@ranges@start
+  flank_start_min <- min(flank_starts)
+  flank_ends <- flank_starts + flanks@ranges@width - 1L
+  flank_end_max <- max(flank_ends)
 
-  start_out_of_bounds <- start(overlaps) < min(start(flanks))
-  end_out_of_bounds <- end(overlaps) > max(end(flanks))
+  overlaps_starts <- overlaps@ranges@start
+  overlaps_ends <- overlaps_starts + overlaps@ranges@width - 1L
+
+  whole_exon_out_of_bounds <- overlaps_starts > flank_end_max |
+    overlaps_ends < flank_start_min
+  if (any(whole_exon_out_of_bounds)) {
+    overlaps <- overlaps[!whole_exon_out_of_bounds]
+  }
+
+  start_out_of_bounds <- overlaps@ranges@start < flank_start_min
+  end_out_of_bounds <- end(overlaps) > flank_end_max
   if (any(start_out_of_bounds)) {
-    start(overlaps)[start_out_of_bounds] <- min(start(flanks))
+    overlaps@ranges@start[start_out_of_bounds] <- flank_start_min
   }
   if (any(end_out_of_bounds)) {
-    end(overlaps)[end_out_of_bounds] <- max(end(flanks))
+    end(overlaps)[end_out_of_bounds] <- flank_end_max
   }
+
   return(overlaps)
 }
 

@@ -105,6 +105,19 @@ automateTicksX <- function(plot) {
 }
 
 automateTicksCustomTrack <- function(plot) {
+  if (inherits(plot, "plotly")) {
+    return(plot %>%
+      plotly::layout(
+        xaxis = list(autorange = FALSE),
+        yaxis = list(
+          autorange = TRUE,
+          fixedrange = TRUE,
+          title = list(font = list(size = 22))
+        )
+      ) %>%
+      style(hoverinfo = "none"))
+  }
+
   plot %>% ggplotly(dynamicTicks = TRUE) %>%
     plotly::layout(yaxis=list(autorange = TRUE, fixedrange = TRUE,
                               title = list(font = list(size = 22)))

@@ -376,6 +376,7 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
   multiomics_plot <- remove_y_axis_zero_tick_js(multiomics_plot)
 
   xaxis_names <- names(multiomics_plot$x$layout)[grepl("^xaxis[0-9]*$", names(multiomics_plot$x$layout))]
+  bottom_xaxis <- "xaxis"
   if (length(xaxis_names) > 0) {
     `%||%` <- function(x, y) if (is.null(x)) y else x
 
@@ -421,9 +422,14 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
   # Lock proportions on zoom out
   # multiomics_plot <- lock_yaxis_domains_by_proportions(multiomics_plot, proportions, gap = 0)
   if (!is.null(zoom_range) && length(zoom_range) == 2) {
-    # Zoom in on init
-    multiomics_plot <- multiomics_plot %>%
-      plotly::layout(xaxis = list(range = zoom_range))
+    # Apply the initial zoom to every shared x-axis so added tracks do not
+    # reset the visible axis back to the full range.
+    for (axis_name in unique(c(bottom_xaxis, xaxis_names))) {
+      axis <- multiomics_plot$x$layout[[axis_name]]
+      if (is.null(axis)) axis <- list()
+      axis$range <- zoom_range
+      multiomics_plot$x$layout[[axis_name]] <- axis
+    }
   }
   return(lineDeSimplify(multiomics_plot))
 }

@@ -130,20 +130,37 @@ mapability_custom_seq_track_panel <- function(df, display_range) {
 custom_seq_track_panel_bigwig <- function(grl, bigwig_path, ylab) {
   seqlevelsStyle(grl) <- seqlevelsStyle(rtracklayer::BigWigFile(bigwig_path))[1]
   dt <- coveragePerTiling(grl, bigwig_path)
-  p <- ggplot(data = dt) +
-    geom_bar(aes(y = count, x = position), stat = "identity") +
-    theme_classic() +
-    theme(
-      axis.title.x = element_blank(),
-      axis.ticks.x = element_blank(),
-      axis.text.x = element_blank(),
-      axis.title.y = element_text(size = rel(0.5)),
-      axis.ticks.y = element_blank(),
-      axis.text.y = element_blank(),
-      plot.margin = unit(c(0, 0, 0, 0), "pt")
-    ) +
-    scale_x_continuous(expand = c(0, 0)) +
-    ylab(ylab)
+  p <- plotly::plot_ly(
+    data = dt,
+    x = ~position,
+    y = ~count,
+    type = "bar",
+    hoverinfo = "none",
+    showlegend = FALSE,
+    marker = list(color = "black")
+  ) %>%
+    plotly::layout(
+      bargap = 0,
+      margin = list(t = 0, r = 0, b = 0, l = 0, pad = 0),
+      xaxis = list(
+        title = list(text = ""),
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        showline = FALSE,
+        fixedrange = FALSE
+      ),
+      yaxis = list(
+        title = list(text = ylab, font = list(size = 8)),
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        showline = FALSE,
+        fixedrange = TRUE
+      )
+    )
   return(p)
 }
 

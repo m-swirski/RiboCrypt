@@ -482,6 +482,32 @@ test_that("browser_track_panel_shiny applies zoom_range to the shared x axis", {
   expect_equal(unname(plot$x$layout$xaxis$range), c(20, 60))
 })
 
+test_that("custom_seq_track_panel_bigwig builds a native plotly bar track", {
+  grl <- GenomicRanges::GRangesList(
+    tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(1, 4), "+")
+  )
+
+  testthat::local_mocked_bindings(
+    coveragePerTiling = function(grl, bigwig_path) {
+      data.frame(position = 1:4, count = c(0, 2, 1, 3))
+    },
+    .package = "RiboCrypt"
+  )
+  testthat::local_mocked_bindings(
+    BigWigFile = function(path) grl,
+    .package = "rtracklayer"
+  )
+
+  plot <- RiboCrypt:::custom_seq_track_panel_bigwig(grl, "dummy.bw", "P")
+  built <- plotly::plotly_build(plot)
+
+  expect_s3_class(plot, "plotly")
+  expect_true(inherits(plot, "htmlwidget"))
+  expect_identical(built$x$data[[1]]$type, "bar")
+  expect_identical(built$x$layout$yaxis$title$text, "P")
+  expect_false(isTRUE(built$x$data[[1]]$showlegend))
+})
+
 test_that("lineDeSimplify only updates pure line traces", {
   p <- plotly::plot_ly() %>%
     plotly::add_lines(x = 1:3, y = c(1, 2, 3), line = list(color = "red")) %>%
@@ -542,6 +568,39 @@ test_that("browser_plot_final_layout_polish keeps x ticks only on bottom shared 
   expect_identical(polished$x$layout$xaxis$title$text, "position [nt]")
   expect_identical(polished$x$layout$legend$y, 0.93)
   expect_identical(polished$x$layout$legend$yanchor, "top")
+})
+
+test_that("browser_plot_final_layout_polish applies zoom_range to non-default shared axes", {
+  testthat::local_mocked_bindings(
+    lineDeSimplify = function(plot) plot,
+    .package = "RiboCrypt"
+  )
+
+  p <- plotly::plot_ly(x = 1:100, y = 1:100, type = "scatter", mode = "lines")
+  p$x$layout$xaxis <- list(anchor = "y", domain = c(0, 1))
+  p$x$layout$xaxis2 <- list(anchor = "y2", domain = c(0, 1))
+  p$x$layout$yaxis <- list(domain = c(0.4, 1))
+  p$x$layout$yaxis2 <- list(domain = c(0, 0.3))
+
+  polished <- RiboCrypt:::browser_plot_final_layout_polish(
+    p,
+    plot_name = "default",
+    display_range = GenomicRanges::GRangesList(
+      tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(1, 100), "+")
+    ),
+    width = NULL,
+    height = NULL,
+    export.format = "svg",
+    plot_title = NULL,
+    zoom_range = c(20, 60),
+    proportions = c(0.7, 0.3)
+  )
+
+  expect_equal(unname(polished$x$layout$xaxis$range), c(20, 60))
+  expect_equal(unname(polished$x$layout$xaxis2$range), c(20, 60))
+  expect_false(isTRUE(polished$x$layout$xaxis$visible))
+  expect_true(isTRUE(polished$x$layout$xaxis2$visible))
+  expect_identical(polished$x$layout$xaxis2$title$text, "position [nt]")
 })
 
 test_that("lineDeSimplify keeps one legend item per shared frame", {

@@ -1,6 +1,15 @@
 lineDeSimplify <- function(plot) {
   `%||%` <- function(x, y) if (is.null(x)) y else x
-  plot <- plotly_build(plot)
+  plot <- withCallingHandlers(
+    plotly_build(plot),
+    warning = function(w) {
+      msg <- conditionMessage(w)
+      if (grepl("number of items to replace is not a multiple of replacement length",
+                msg, fixed = TRUE)) {
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
   seen_legends <- character()
   for (i in 1:length(plot$x$data)) {
     trace <- plot$x$data[[i]]
@@ -30,10 +39,10 @@ automateTicks <- function(plot) {
 automateTicksLetters <- function(plot) {
   suppressWarnings(
     plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
-                     plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
-                                               zeroline = TRUE),
-                                    xaxis=list(autorange=FALSE)) %>%
-                     toWebGL())
+      plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
+                                zeroline = TRUE),
+                     xaxis=list(autorange=FALSE)) %>%
+      toWebGL())
 }
 
 automateTicksGMP <- function(plot) {

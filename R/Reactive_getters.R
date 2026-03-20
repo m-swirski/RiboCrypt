@@ -196,7 +196,6 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
   # Input controller
   multiOmicsControllerView(use_fst, selected_libraries)
   # Get NGS data track panels
-
   if (is.null(profiles)) {
     profiles <- multiOmicsPlot_all_profiles(
       bottom_panel$display_range, reads, kmers,
@@ -214,6 +213,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
   )
   timer_done_nice_print("Done (track panel):", time_before)
   time_before <- Sys.time()
+
   plot <- multiOmicsPlot_complete_plot(track_panel, bottom_panel,
     bottom_panel$display_range,
     proportions, seq_render_dist,

@@ -287,7 +287,7 @@ test_that("bottom_panel_shiny supports Color_blind frame theme", {
   bottom_panel <- RiboCrypt:::bottom_panel_shiny(controls$controls)
   cds_cols <- unique(bottom_panel$gene_model_panel_dt[type == "cds"]$cols)
 
-  expect_true(all(cds_cols %in% RiboCrypt:::frame_color_themes("Color_blind", TRUE)))
+  expect_true(all(cds_cols %in% RiboCrypt:::frame_color_themes("Color_blind", FALSE)))
 })
 
 test_that("bottom_panel_shiny handles transcript view with custom region overlapping CDS", {
@@ -625,8 +625,11 @@ test_that("browser_plot_final_layout_polish keeps x ticks only on bottom shared 
   expect_true(isTRUE(polished$x$layout$xaxis$visible))
   expect_true(isTRUE(polished$x$layout$xaxis$showticklabels))
   expect_identical(polished$x$layout$xaxis$title$text, "position [nt]")
-  expect_identical(polished$x$layout$legend$y, 0.93)
+  expect_identical(polished$x$layout$legend$x, 1.02)
+  expect_identical(polished$x$layout$legend$xanchor, "left")
+  expect_identical(polished$x$layout$legend$y, 0.92)
   expect_identical(polished$x$layout$legend$yanchor, "top")
+  expect_identical(polished$x$layout$legend$orientation, "v")
 })
 
 test_that("browser_plot_final_layout_polish applies zoom_range to non-default shared axes", {
@@ -686,4 +689,99 @@ test_that("lineDeSimplify keeps one legend item per shared frame", {
   legend_names <- vapply(legend_traces, function(tr) as.character(if (is.null(tr$name)) "" else tr$name), character(1))
 
   expect_equal(sort(legend_names[nzchar(legend_names)]), c("0", "1", "2"))
+})
+
+test_that("createSinglePlot uses native plotly traces for supported track types", {
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+
+  line_plot <- plotly::plotly_build(RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "lines", lib_index = 1, total_libs = 2
+  ))
+  line_traces <- Filter(function(tr) isTRUE(tr$showlegend), line_plot$x$data)
+  expect_true(length(line_traces) >= 3)
+  expect_true(all(vapply(line_traces, function(tr) identical(tr$type, "scatter"), logical(1))))
+  expect_true(all(vapply(line_traces, function(tr) identical(tr$mode, "lines"), logical(1))))
+  expect_true(all(vapply(line_traces, function(tr) any(grepl("%\\{x:\\.0f\\}", tr$hovertemplate)), logical(1))))
+
+  column_plot <- plotly::plotly_build(RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "columns", lib_index = 1, total_libs = 2
+  ))
+  column_traces <- Filter(function(tr) isTRUE(tr$showlegend), column_plot$x$data)
+  expect_true(all(vapply(column_traces, function(tr) identical(tr$type, "bar"), logical(1))))
+  expect_identical(column_plot$x$layout$barmode, "stack")
+  expect_identical(column_plot$x$layout$bargap, 0.12)
+
+  area_plot <- plotly::plotly_build(RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "area", lib_index = 1, total_libs = 2
+  ))
+  area_traces <- Filter(function(tr) isTRUE(tr$showlegend), area_plot$x$data)
+  expect_true(all(vapply(area_traces, function(tr) identical(tr$type, "scatter"), logical(1))))
+  expect_true(all(vapply(area_traces, function(tr) identical(tr$fill, "tozeroy"), logical(1))))
+  expect_true(all(vapply(area_traces, function(tr) {
+    if (!grepl("^#[0-9A-Fa-f]{8}$", tr$fillcolor)) return(FALSE)
+    alpha_hex <- substr(tr$fillcolor, 8, 9)
+    alpha <- strtoi(alpha_hex, base = 16) / 255
+    alpha >= 0.58 && alpha <= 0.62
+  }, logical(1))))
+
+  stack_plot <- plotly::plotly_build(RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "stacks", lib_index = 1, total_libs = 2
+  ))
+  stack_traces <- Filter(function(tr) isTRUE(tr$showlegend), stack_plot$x$data)
+  expect_true(all(vapply(stack_traces, function(tr) identical(tr$type, "scatter"), logical(1))))
+  expect_true(all(vapply(stack_traces, function(tr) identical(tr$stackgroup, "coverage"), logical(1))))
+
+  heatmap_plot <- plotly::plotly_build(RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "heatmap", lib_index = 1, total_libs = 2
+  ))
+  expect_identical(heatmap_plot$x$data[[1]]$type, "heatmap")
+  expect_false(isTRUE(heatmap_plot$x$data[[1]]$showscale))
+})
+
+test_that("getPlotAnimate produces native plotly animation frames", {
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+  profile_anim <- data.table::rbindlist(list(
+    a = profile,
+    b = data.table::copy(profile)[, count := count + 1L]
+  ), idcol = "file")
+
+  animate_plot <- suppressWarnings(plotly::plotly_build(
+    RiboCrypt:::getPlotAnimate(profile_anim, TRUE, NULL, "R", "anim", numeric())
+  ))
+
+  expect_s3_class(animate_plot, "plotly")
+  expect_equal(length(animate_plot$x$frames), 2)
+  expect_true(all(vapply(animate_plot$x$frames[[1]]$data, function(tr) identical(tr$type, "scatter"), logical(1))))
+  expect_true(all(vapply(animate_plot$x$frames[[1]]$data, function(tr) any(grepl("%\\{x:\\.0f\\}", tr$hovertemplate)), logical(1))))
+})
+
+test_that("lineDeSimplify does not warn on animated plotly tracks", {
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+  profile_anim <- data.table::rbindlist(list(
+    a = profile,
+    b = data.table::copy(profile)[, count := count + 1L]
+  ), idcol = "file")
+
+  expect_no_warning(
+    RiboCrypt:::lineDeSimplify(
+      RiboCrypt:::getPlotAnimate(profile_anim, TRUE, NULL, "R", "anim", numeric())
+    )
+  )
 })

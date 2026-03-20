@@ -157,7 +157,7 @@ colour_bars <- function(locations, overlaps, display_range, frame_colors = "R") 
   overlaps <- overlaps[overlaps$type == "cds"]
   frames <- start(locations) - 1
   frames <- frames + locations$rel_frame_orf
-  frame_colors <- frame_color_themes(frame_colors, TRUE)
+  frame_colors <- frame_color_themes(frame_colors, FALSE)
   colors <- frame_colors[frames %% 3 + 1]
   tx_mode <- 1 %in% start(locations)
   if (tx_mode) {

@@ -452,8 +452,11 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
   multiomics_plot <- multiomics_plot %>%
     plotly::layout(
       legend = list(
-        y = 0.93,
-        yanchor = "top"
+        x = 1.02,
+        xanchor = "left",
+        y = 0.92,
+        yanchor = "top",
+        orientation = "v"
       )
     )
 

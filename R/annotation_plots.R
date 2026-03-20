@@ -387,21 +387,32 @@ move_utrs_touching_cds <- function(locations, type, plot_width) {
   return(locations)
 }
 
+alpha_normalize_colors <- function(colors, alpha = track_area_fill_alpha(), strength = 0.35) {
+  color_matrix <- grDevices::col2rgb(colors)
+  target <- round((color_matrix - (1 - alpha) * 255) / alpha)
+  target[target < 0] <- 0
+  target[target > 255] <- 255
+  normalized <- round(color_matrix + strength * (target - color_matrix))
+  apply(normalized, 2, function(v) {
+    sprintf("#%02X%02X%02X", v[[1]], v[[2]], v[[3]])
+  })
+}
+
 frame_color_themes <- function(theme, with_alpha = FALSE) {
   if (theme == "R") {
-    colors <- rc_rgb(with_alpha)
+    colors <- rc_rgb(FALSE)
   } else if (theme == "Color_blind") {
-    colors <- if (with_alpha) {
-      c("#8B90BA", "#FBCF79", "#C6E0EE")
-    } else c("#5056A0", "#F9AA2A", "#AED5EB")
+    colors <- c("#5056A0", "#F9AA2A", "#AED5EB")
   } else stop("theme must be either R or Color blind")
+
+  if (with_alpha) colors <- alpha_normalize_colors(colors)
+  colors
 }
 
 rc_rgb <- function(with_alpha = TRUE) {
-  rgb_colors <- if (with_alpha) {
-    c("#fbbab5","#7fdc9b","#afcdff")
-  } else c("#F8766D","#00BA38","#619CFF")
-  return(rgb_colors)
+  rgb_colors <- c("#F8766D", "#00BA38", "#619CFF")
+  if (with_alpha) rgb_colors <- alpha_normalize_colors(rgb_colors)
+  rgb_colors
 }
 
 geneModelPanelPlot <- function(dt, gg_template = geneModelPanelPlotTemplate()) {

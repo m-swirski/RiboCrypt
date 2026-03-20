@@ -5,7 +5,6 @@ browser_collection_controller_data <- function(input, selected_tx, display_regio
                                                experiment_df, tx,
                                                library_selections,
                                                library_selection_labels = NULL) {
-  aggregation_method <- rowMeans
   path <- collection_path_from_exp(experiment_df, selected_tx, grl_all = tx())
   profile_display_range <- display_region
   if (!is.null(input$extendLeaders) && is.numeric(input$extendLeaders) && input$extendLeaders != 0) {
@@ -34,6 +33,13 @@ browser_collection_controller_data <- function(input, selected_tx, display_regio
   if (length(lib_sel) == 0) {
     stop("No selected runs are available for the chosen transcript in observatory browse.")
   }
+  reads_mat <- as.matrix(reads)
+  lib_sel_idx <- lapply(lib_sel, function(selection) match(selection, available_runs))
+  profile_template <- data.table::data.table(
+    position = seq_len(nrow(reads_mat)),
+    library = as.factor(rep_len(1, length.out = nrow(reads_mat))),
+    frame = as.factor(rep_len(1:3, length.out = nrow(reads_mat)))
+  )
 
   if (!is.null(library_selection_labels)) {
     selection_ids <- names(lib_sel)
@@ -59,16 +65,16 @@ browser_collection_controller_data <- function(input, selected_tx, display_regio
   group_is_all <- lengths(lib_sel) == megafst_samples
   if (any(group_is_all)) names(lib_sel)[group_is_all] <- "All merged"
 
-  profiles <- lapply(lib_sel, function(selection) {
-    count <- aggregation_method(
-      reads[, selection, with = FALSE],
-      na.rm = TRUE
-    )
-    data.table::data.table(
-      count = count,
-      position = seq_along(count),
-      library = as.factor(rep_len(1, length.out = length(count))),
-      frame = as.factor(rep_len(1:3, length.out = length(count)))
+  profiles <- lapply(lib_sel_idx, function(selection_idx) {
+    cbind(
+      data.table::data.table(
+        count = matrixStats::rowSums2(
+          reads_mat,
+          cols = selection_idx,
+          na.rm = TRUE
+        )
+      ),
+      profile_template
     ) |>
       smoothenMultiSampCoverage(
         input$kmer,

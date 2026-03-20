@@ -281,8 +281,31 @@ browser_input_or_default <- function(input, name, default = NULL) {
   if (is.null(value) || length(value) == 0) default else value
 }
 
+observatory_selection_cache_key <- function(library_selections,
+                                            library_selection_labels = NULL) {
+  if (is.null(library_selections) || length(library_selections) == 0) return("")
+
+  selection_ids <- names(library_selections)
+  if (is.null(selection_ids)) selection_ids <- as.character(seq_along(library_selections))
+
+  parts <- vapply(seq_along(library_selections), function(i) {
+    selection_id <- selection_ids[[i]]
+    label <- ""
+    if (!is.null(library_selection_labels) && !is.null(library_selection_labels[[selection_id]])) {
+      label <- as.character(library_selection_labels[[selection_id]])
+    }
+    runs <- as.character(library_selections[[i]])
+    runs <- sort(unique(runs[!is.na(runs) & nzchar(runs)]))
+    paste(selection_id, label, paste(runs, collapse = ","), sep = ":")
+  }, character(1))
+
+  paste(parts, collapse = "|group|")
+}
+
 hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width) {
-  full_names <- ORFik:::name_decider(dff, naming = "full")
+  full_names <- runIDs(dff)
+  if (all(full_names == "")) full_names <- ORFik:::name_decider(dff, naming = "full")
+
   hash_bottom <- paste(browser_input_or_default(input, "tx", ""),
                        browser_input_or_default(input, "other_tx", FALSE),
                        browser_input_or_default(input, "add_uorfs", FALSE),

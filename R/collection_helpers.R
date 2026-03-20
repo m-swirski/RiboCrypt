@@ -12,7 +12,10 @@ load_collection <- function(path, grl = attr(path, "range"), columns = NULL) {
   index_provided <- basename(path) == "coverage_index.fst"
   if (index_provided) {
     if (!subset_defined) stop("When path is index, grl must be a defined GRangesList")
-    table <- coverageByTranscriptFST(grl, path, columns)[[1]]
+    avoid_lapply_speedup <- length(columns) > 3000
+    if (avoid_lapply_speedup) {
+      table <- coverageByTranscriptFST(grl, path, NULL)[[1]][, ..columns]
+    } else table <- coverageByTranscriptFST(grl, path, columns)[[1]]
   } else table <- fst::read_fst(path, as.data.table = TRUE)
   if ("position" %in% colnames(table)) warning("Old megafst format not supported downstream anymore!")
 

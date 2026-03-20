@@ -10,6 +10,11 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
                               include_aux_outputs = TRUE,
                               main_plot_output_id = "c",
                               main_plot_height = "550px") {
+  browser_option <- function(name, default = "") {
+    value <- browser_options[name]
+    if (is.null(value) || length(value) == 0 || is.na(value)) default else value[[1]]
+  }
+
   ns <- NS(id)
   genomes <- if (include_browser_sources) unique(all_exp$organism) else character()
   experiments <- if (include_browser_sources) all_exp$name else character()
@@ -19,16 +24,17 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
     subset(gene_names_init, label == browser_options["default_gene"])
   }
   init_libs <- if (include_library_controls) {
-    unlist(strsplit(browser_options["default_libs"], "\\|"))
+    unlist(strsplit(browser_option("default_libs"), "\\|"))
   } else {
     character()
   }
-  viewMode <- browser_options["default_view_mode"] == "genomic"
-  introns_width <- as.numeric(browser_options["collapsed_introns_width"])
-  full_annotation <- as.logical(browser_options["full_annotation"])
-  translons <- as.logical(browser_options["translons"])
-  translons_transcode <- as.logical(browser_options["translons_transcode"])
-  panel_hidden_or_not_class <- ifelse(browser_options["hide_settings"] == "TRUE",
+  viewMode <- identical(browser_option("default_view_mode", "tx"), "genomic")
+  introns_width <- suppressWarnings(as.numeric(browser_option("collapsed_introns_width", "100")))
+  if (is.na(introns_width)) introns_width <- 100
+  full_annotation <- isTRUE(as.logical(browser_option("full_annotation", "FALSE")))
+  translons <- isTRUE(as.logical(browser_option("translons", "FALSE")))
+  translons_transcode <- isTRUE(as.logical(browser_option("translons_transcode", "FALSE")))
+  panel_hidden_or_not_class <- ifelse(browser_option("hide_settings", "TRUE") == "TRUE",
                                       "floating_settings_panel hidden",
                                       "floating_settings_panel")
   browser_tab_children <- list(
@@ -72,9 +78,9 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
                                       status = "success", fill = TRUE, bigger = TRUE))
                        },
                        fluidRow(
-                         column(6, frame_type_select(ns, selected = browser_options["default_frame_type"])),
+                         column(6, frame_type_select(ns, selected = browser_option("default_frame_type", "columns"))),
                          column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
-                                               value = as.numeric(browser_options["default_kmer"])))
+                                               value = as.numeric(browser_option("default_kmer", "1"))))
                        ),
                        tags$hr(style = "padding-top: 50px; padding-bottom: 50px;")
               ),
@@ -237,10 +243,10 @@ go_when_input_is_ready <- function(input, browser_options, fired, kickoff, libs)
 input_to_list <- function(input, user_info = NULL) {
 
   a <- reactiveValuesToList(input, TRUE)
-  to_ignore <- c("go", "toggle_settings", "select_all_btn",
-                 "c__shinyjquiBookmarkState__resizable", "c_is_resizing", "c_size")
+  to_ignore <- c("go", "toggle_settings", "select_all_btn")
+  resize_input_pattern <- "(__shinyjquiBookmarkState__resizable|_is_resizing|_size)$"
 
-  a <- a[-which(names(a) %in% to_ignore)]
+  a <- a[-which(names(a) %in% to_ignore | grepl(resize_input_pattern, names(a)))]
   a <- c(a, user.info = user_info[-1])
   return(a)
 }

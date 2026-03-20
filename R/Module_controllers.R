@@ -83,8 +83,69 @@ module_browser_shared_ui <- function(input, output, session, clip_ui) {
   })
 }
 
-module_additional_browser <- function(input, output, session) {
-  with(rlang::caller_env(), {
+module_additional_browser <- function(input, output, session,
+                                      mode = c("default", "observatory"),
+                                      observatory = NULL) {
+  evalq({
+    if (is.null(observatory)) observatory <- list()
+
+    if (mode == "observatory") {
+      module_browser_shared_ui(input, output, session, function() {
+        clipboard_url_button(
+          input = input,
+          session = session,
+          mode = "observatory",
+          observatory = observatory
+        )
+      })
+
+      observe({
+        st <- observatory$observatory_url_state()
+        if (is.null(st)) return()
+        br <- st$browser
+        if (is.null(br)) return()
+
+        if (!is.null(br$gene)) shiny::updateSelectizeInput(session, "gene", selected = br$gene)
+        if (!is.null(br$tx)) shiny::updateSelectizeInput(session, "tx", selected = br$tx)
+        if (!is.null(br$frames_type)) shiny::updateSelectizeInput(session, "frames_type", selected = br$frames_type)
+        if (!is.null(br$kmer) && !is.na(as.numeric(br$kmer))) shiny::updateSliderInput(session, "kmer", value = as.numeric(br$kmer))
+        if (!is.null(br$extendLeaders) && !is.na(as.numeric(br$extendLeaders))) {
+          shiny::updateNumericInput(session, "extendLeaders", value = as.numeric(br$extendLeaders))
+        }
+        if (!is.null(br$extendTrailers) && !is.na(as.numeric(br$extendTrailers))) {
+          shiny::updateNumericInput(session, "extendTrailers", value = as.numeric(br$extendTrailers))
+        }
+        if (!is.null(br$viewMode)) shinyWidgets::updatePrettySwitch(session, "viewMode", value = isTRUE(br$viewMode))
+        if (!is.null(br$other_tx)) shinyWidgets::updatePrettySwitch(session, "other_tx", value = isTRUE(br$other_tx))
+        if (!is.null(br$collapsed_introns)) {
+          shinyWidgets::updatePrettySwitch(session, "collapsed_introns", value = isTRUE(br$collapsed_introns))
+        }
+        if (!is.null(br$collapsed_introns_width) && !is.na(as.numeric(br$collapsed_introns_width))) {
+          shiny::updateNumericInput(session, "collapsed_introns_width", value = as.numeric(br$collapsed_introns_width))
+        }
+        if (!is.null(br$genomic_region)) shiny::updateTextInput(session, "genomic_region", value = br$genomic_region)
+        if (!is.null(br$zoom_range)) shiny::updateTextInput(session, "zoom_range", value = br$zoom_range)
+        if (!is.null(br$customSequence)) shiny::updateTextInput(session, "customSequence", value = br$customSequence)
+      }) |> bindEvent(observatory$observatory_url_state(), ignoreInit = FALSE, once = TRUE)
+
+      observe({
+        st <- observatory$observatory_url_state()
+        if (is.null(st) || !identical(st$view, "browser")) return()
+        if (!isTRUE(st$browser$go)) return()
+        req(nzchar(input$gene), nzchar(input$tx))
+        sel <- observatory$library_selections()
+        if (is.null(sel) || !any(lengths(sel) > 0)) return()
+        observatory$kickoff(TRUE)
+      }) |> bindEvent(
+        input$gene, input$tx,
+        observatory$library_selections(),
+        observatory$observatory_url_state(),
+        ignoreInit = TRUE
+      )
+
+      return(invisible(NULL))
+    }
+
     # Protein display
     module_protein(input, output, gene_name_list, session)
 
@@ -113,7 +174,13 @@ module_additional_browser <- function(input, output, session) {
       req(input$expression_plot == TRUE)
       click_plot_boxplot(mainPlotControls, session)}) %>%
       bindCache(mainPlotControls()$hash_expression)
-  })
+  }, envir = list2env(
+    list(
+      mode = match.arg(mode),
+      observatory = observatory
+    ),
+    parent = rlang::caller_env()
+  ))
 }
 
 module_additional_megabrowser <- function(input, output, session) {
@@ -533,7 +600,10 @@ allsamples_observer_controller <- function(input, output, session) {
 
   uses_libs <- FALSE # Assign for line below
   if (id == "selector") uses_gene <- FALSE
-  if (id == "browser_obs")  uses_exps <- FALSE
+  if (id == "browser_obs")  {
+    uses_exps <- FALSE
+    kickoff <- shiny::reactiveVal(FALSE)
+  }
   study_and_gene_observers(input, output, session)
   })
 }

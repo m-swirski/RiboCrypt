@@ -158,7 +158,10 @@ test_that("input_to_list drops ignored inputs and adds user info", {
     select_all_btn = 0,
     c__shinyjquiBookmarkState__resizable = NULL,
     c_is_resizing = FALSE,
-    c_size = NULL
+    c_size = NULL,
+    browser_plot__shinyjquiBookmarkState__resizable = NULL,
+    browser_plot_is_resizing = FALSE,
+    browser_plot_size = NULL
   )
   res <- shiny::isolate(RiboCrypt:::input_to_list(
     input,
@@ -169,6 +172,12 @@ test_that("input_to_list drops ignored inputs and adds user info", {
   expect_false("go" %in% names(res))
   expect_false("toggle_settings" %in% names(res))
   expect_false("select_all_btn" %in% names(res))
+  expect_false("c__shinyjquiBookmarkState__resizable" %in% names(res))
+  expect_false("c_is_resizing" %in% names(res))
+  expect_false("c_size" %in% names(res))
+  expect_false("browser_plot__shinyjquiBookmarkState__resizable" %in% names(res))
+  expect_false("browser_plot_is_resizing" %in% names(res))
+  expect_false("browser_plot_size" %in% names(res))
   expect_true("user.info.browser" %in% names(res))
   expect_equal(res[["user.info.browser"]], "firefox")
 })

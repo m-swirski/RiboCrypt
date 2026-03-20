@@ -1,8 +1,8 @@
 #' Make URL from shiny reactive input
 #' @noRd
-make_url_from_inputs <- function(input, session) {
+make_url_from_inputs <- function(input, session, library = input$library) {
   host <- getHostFromURL(session)
-  parameters <- make_url_from_inputs_parameters(input)
+  parameters <- make_url_from_inputs_parameters(input, library = library)
   page <- getPageFromURL(session, with_hash = TRUE)
 
   # Now combine
@@ -40,12 +40,15 @@ getHostFromURL <- function(session) {
   return(host)
 }
 
-make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
+make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?",
+                                           library = input$library) {
+  library <- as.character(library)
+  library <- library[!is.na(library) & nzchar(library)]
   paste0(settings,
   paste(paste("dff", input$dff, sep = "="),
         paste("gene", input$gene, sep = "="),
         paste("tx", input$tx, sep = "="),
-        paste("library", paste(input$library, collapse = ","), sep = "="),
+        paste("library", paste(library, collapse = ","), sep = "="),
         paste("unique_align", paste(input$unique_align, collapse = ","), sep = "="),
         paste("frames_type", input$frames_type, sep = "="),
         paste("kmer", input$kmer, sep = "="),
@@ -72,13 +75,78 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?") {
         sep = "&"))
 }
 
-clipboard_url_button <- function(input, session) {
+clipboard_url_text <- function(input, session,
+                               mode = c("browser", "observatory"),
+                               libraries = NULL,
+                               observatory = NULL) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+  resolve <- function(x) {
+    if (is.function(x)) x() else x
+  }
+
+  mode <- match.arg(mode)
+  if (mode == "browser") {
+    selected_libraries <- libraries %||% input$library
+    return(make_url_from_inputs(input, session, library = selected_libraries))
+  }
+
+  observatory <- observatory %||% list()
+  state <- resolve(observatory$state)
+  if (is.null(state)) {
+    state <- observatory_state_from_inputs(
+      selected_experiment = resolve(observatory$selected_experiment),
+      color_by = resolve(observatory$color_by),
+      view = "browser",
+      browser = list(
+        gene = input$gene,
+        tx = input$tx,
+        frames_type = input$frames_type,
+        kmer = input$kmer,
+        extendLeaders = input$extendLeaders,
+        extendTrailers = input$extendTrailers,
+        viewMode = input$viewMode,
+        other_tx = input$other_tx,
+        collapsed_introns = input$collapsed_introns,
+        collapsed_introns_width = input$collapsed_introns_width,
+        genomic_region = input$genomic_region,
+        zoom_range = input$zoom_range,
+        customSequence = input$customSequence,
+        go = TRUE
+      ),
+      selections = list(
+        index = resolve(observatory$selection_index),
+        plot_selections = resolve(observatory$library_selections),
+        data_table_selections = resolve(observatory$data_table_selections %||% observatory$library_selections),
+        labels = resolve(observatory$library_selection_labels),
+        active_selection_id = resolve(observatory$active_selection_id)
+      )
+    )
+  }
+
+  make_observatory_url(state, session)
+}
+
+clipboard_url_button <- function(input, session,
+                                 mode = c("browser", "observatory"),
+                                 libraries = NULL,
+                                 observatory = NULL) {
+  mode <- match.arg(mode)
   rclipButton(
     inputId = "clip",
     label = "Get URL",
-    clipText = make_url_from_inputs(input, session),
+    clipText = clipboard_url_text(
+      input = input,
+      session = session,
+      mode = mode,
+      libraries = libraries,
+      observatory = observatory
+    ),
     icon = icon("clipboard"),
-    tooltip = "Get URL to share for this plot. Copied to clipboard (ctrl+v to paste)",
+    tooltip = if (mode == "observatory") {
+      "Get URL to share observatory state. Copied to clipboard (ctrl+v to paste)"
+    } else {
+      "Get URL to share for this plot. Copied to clipboard (ctrl+v to paste)"
+    },
     placement = "top",
     options = list(delay = list(show = 600, hide = 100), trigger = "hover")
   )
@@ -238,18 +306,6 @@ make_observatory_url <- function(state, session) {
   host <- getHostFromURL(session)
   obs_state <- make_observatory_url_state_param(state)
   paste0(host, "/#Observatory?obs_state=", obs_state)
-}
-
-observatory_clipboard_url_button <- function(state, session) {
-  rclipButton(
-    inputId = "clip",
-    label = "Get URL",
-    clipText = make_observatory_url(state, session),
-    icon = icon("clipboard"),
-    tooltip = "Get URL to share observatory state. Copied to clipboard (ctrl+v to paste)",
-    placement = "top",
-    options = list(delay = list(show = 600, hide = 100), trigger = "hover")
-  )
 }
 
 #' Make the URL field reactive to page given

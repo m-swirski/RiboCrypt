@@ -87,3 +87,135 @@ test_that("URL helpers can be explicitly targeted for observatory", {
   expect_no_error(RiboCrypt:::check_url_for_basic_parameters(mode = "observatory"))
   expect_no_error(RiboCrypt:::browser_specific_url_checker(target = "observatory"))
 })
+
+test_that("clipboard_url_text supports browser libraries and observatory run selections", {
+  input <- list(
+    dff = "exp-a",
+    gene = "GENE1",
+    tx = "TX1",
+    library = c("lib-a", "lib-b"),
+    unique_align = FALSE,
+    frames_type = "columns",
+    kmer = 1,
+    log_scale = FALSE,
+    log_scale_protein = FALSE,
+    extendLeaders = 0,
+    extendTrailers = 0,
+    viewMode = FALSE,
+    other_tx = FALSE,
+    add_uorfs = FALSE,
+    add_translon = FALSE,
+    add_translons_transcode = FALSE,
+    genomic_region = "",
+    zoom_range = "",
+    customSequence = "",
+    phyloP = FALSE,
+    mapability = FALSE,
+    colors = "R",
+    summary_track = FALSE,
+    summary_track_type = "columns",
+    collapsed_introns_width = 100,
+    collapsed_introns = FALSE
+  )
+  session <- list(
+    clientData = list(
+      url_hostname = "localhost",
+      url_port = "1234",
+      url_pathname = "/app",
+      url_hash = "#browser"
+    )
+  )
+
+  browser_url <- RiboCrypt:::clipboard_url_text(
+    input = input,
+    session = session,
+    mode = "browser",
+    libraries = c("SRR100", "SRR200")
+  )
+  expect_match(browser_url, "library=SRR100,SRR200", fixed = TRUE)
+  expect_match(browser_url, "#browser", fixed = TRUE)
+
+  expected_state <- RiboCrypt:::observatory_state_from_inputs(
+    selected_experiment = "obs-exp",
+    color_by = c("study"),
+    view = "browser",
+    browser = list(
+      gene = "GENE1",
+      tx = "TX1",
+      frames_type = "columns",
+      kmer = 1,
+      extendLeaders = 0,
+      extendTrailers = 0,
+      viewMode = FALSE,
+      other_tx = FALSE,
+      collapsed_introns = FALSE,
+      collapsed_introns_width = 100,
+      genomic_region = "",
+      zoom_range = "",
+      customSequence = "",
+      go = TRUE
+    ),
+    selections = list(
+      index = c("1"),
+      plot_selections = list("1" = c("SRR100", "SRR200")),
+      data_table_selections = list("1" = c("SRR100", "SRR200")),
+      labels = list("1" = "brain"),
+      active_selection_id = "1"
+    )
+  )
+
+  observatory_url <- RiboCrypt:::clipboard_url_text(
+    input = input,
+    session = session,
+    mode = "observatory",
+    observatory = list(
+      selected_experiment = function() "obs-exp",
+      color_by = function() c("study"),
+      selection_index = function() c("1"),
+      library_selections = function() list("1" = c("SRR100", "SRR200")),
+      library_selection_labels = function() list("1" = "brain"),
+      active_selection_id = function() "1"
+    )
+  )
+  expect_match(observatory_url, "/#Observatory\\?obs_state=")
+  expect_equal(observatory_url, RiboCrypt:::make_observatory_url(expected_state, session))
+})
+
+test_that("observatory selection cache key is stable and sensitive to group membership", {
+  selections <- list(
+    "2" = c("SRR4", "SRR2", "SRR2"),
+    "1" = c("SRR3", "SRR1")
+  )
+  labels <- list(
+    "1" = "ctrl",
+    "2" = "treated"
+  )
+
+  key <- RiboCrypt:::observatory_selection_cache_key(selections, labels)
+  expect_equal(
+    key,
+    "2:treated:SRR2,SRR4|group|1:ctrl:SRR1,SRR3"
+  )
+
+  expect_equal(
+    key,
+    RiboCrypt:::observatory_selection_cache_key(
+      list(
+        "2" = c("SRR2", "SRR4"),
+        "1" = c("SRR1", "SRR3")
+      ),
+      labels
+    )
+  )
+
+  expect_false(identical(
+    key,
+    RiboCrypt:::observatory_selection_cache_key(
+      list(
+        "2" = c("SRR2", "SRR5"),
+        "1" = c("SRR1", "SRR3")
+      ),
+      labels
+    )
+  ))
+})

@@ -1,57 +1,16 @@
 observatory_browser_ui <- function(id, browser_options) {
-  ns <- shiny::NS(id)
-
-  shiny::tabPanel(
-    "Browse",
-    shiny::fluidRow(
-      shiny::column(
-        2,
-        shiny::selectizeInput(ns("gene"),
-          "Gene",
-          choices = list()
-        )
-      ),
-      shiny::column(
-        2,
-        shiny::selectizeInput(
-          ns("tx"),
-          "Transcript",
-          choices = list()
-        )
-      ),
-      shiny::column(1, plot_button(ns("go"))),
-      shiny::column(1, shiny::uiOutput(ns("clip"))),
-      shiny::column(5,
-        shiny::fluidRow(
-
-          shiny::column(
-            3,
-            frame_type_select(ns, selected = browser_options["default_frame_type"])
-          ),
-          shiny::column(
-            3,
-            sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
-                        value = as.numeric(browser_options["default_kmer"]))
-          ),
-          shiny::column(
-            3,
-            shiny::numericInput(ns("extendLeaders"), "5' extension", 0)
-          ),
-          shiny::column(
-            3,
-            shiny::numericInput(ns("extendTrailers"), "3' extension", 0)
-          )
-        ),
-        offset = 2
-      )
-    ),
-    shiny::fluidRow(
-      shiny::column(
-        12,
-        jqui_resizable(plotly::plotlyOutput(ns("browser_plot"), height = "700px")) |>
-          shinycssloaders::withSpinner(color = "#0dc5c1")
-      )
-    )
+  browser_ui_shared(
+    id = id,
+    browser_options = browser_options,
+    title = "Browse",
+    icon_name = "chart-line",
+    include_global_init = FALSE,
+    include_browser_sources = FALSE,
+    include_library_controls = FALSE,
+    include_download_button = FALSE,
+    include_aux_outputs = FALSE,
+    main_plot_output_id = "browser_plot",
+    main_plot_height = "700px"
   )
 }
 
@@ -74,8 +33,7 @@ observatory_browser_server <- function(
     # -- Gene / transcript input wiring ------------------------------------
     allsamples_observer_controller(input, output, session)
     kickoff <- shiny::reactiveVal(FALSE)
-
-    output$clip <- shiny::renderUI({
+    module_browser_shared_ui(input, output, session, function() {
       state <- observatory_state_from_inputs(
         selected_experiment = selected_experiment(),
         color_by = color_by(),
@@ -87,6 +45,13 @@ observatory_browser_server <- function(
           kmer = input$kmer,
           extendLeaders = input$extendLeaders,
           extendTrailers = input$extendTrailers,
+          viewMode = input$viewMode,
+          other_tx = input$other_tx,
+          collapsed_introns = input$collapsed_introns,
+          collapsed_introns_width = input$collapsed_introns_width,
+          genomic_region = input$genomic_region,
+          zoom_range = input$zoom_range,
+          customSequence = input$customSequence,
           go = TRUE
         ),
         selections = list(
@@ -116,6 +81,17 @@ observatory_browser_server <- function(
       if (!is.null(br$extendTrailers) && !is.na(as.numeric(br$extendTrailers))) {
         shiny::updateNumericInput(session, "extendTrailers", value = as.numeric(br$extendTrailers))
       }
+      if (!is.null(br$viewMode)) shinyWidgets::updatePrettySwitch(session, "viewMode", value = isTRUE(br$viewMode))
+      if (!is.null(br$other_tx)) shinyWidgets::updatePrettySwitch(session, "other_tx", value = isTRUE(br$other_tx))
+      if (!is.null(br$collapsed_introns)) {
+        shinyWidgets::updatePrettySwitch(session, "collapsed_introns", value = isTRUE(br$collapsed_introns))
+      }
+      if (!is.null(br$collapsed_introns_width) && !is.na(as.numeric(br$collapsed_introns_width))) {
+        shiny::updateNumericInput(session, "collapsed_introns_width", value = as.numeric(br$collapsed_introns_width))
+      }
+      if (!is.null(br$genomic_region)) shiny::updateTextInput(session, "genomic_region", value = br$genomic_region)
+      if (!is.null(br$zoom_range)) shiny::updateTextInput(session, "zoom_range", value = br$zoom_range)
+      if (!is.null(br$customSequence)) shiny::updateTextInput(session, "customSequence", value = br$customSequence)
     }) |> shiny::bindEvent(observatory_url_state(), ignoreInit = FALSE, once = TRUE)
 
     shiny::observe({
@@ -134,137 +110,17 @@ observatory_browser_server <- function(
     )
 
 
-    # -- Plot controller ---------------------------------------------------
-
-    # Build a minimal set of plot controls when "go" is pressed.
-    # Uses hardcoded defaults (no advanced settings panel in UI).
     main_plot_controls <- shiny::reactive({
-      selected_tx <- input$tx
-      aggregation_method <- rowMeans
-      shiny::req(selected_tx, selected_tx != "")
-      time_before <- Sys.time()
-      message("- Obs browser controller")
-
-      display_region <- observed_tx_annotation(selected_tx, tx)
-      cds_annotation <- observed_cds_annotation(selected_tx, cds)
-      tx_annotation <- observed_cds_annotation(selected_tx, cds)
-
-      # Subset experiment to selected libraries (if any)
-      experiment_df <- df()
-      frames_type <- input$frames_type
-
-      path <- collection_path_from_exp(experiment_df, selected_tx, grl_all = tx())
-      display_region_grl <- ORFik::extendTrailers(
-        ORFik::extendLeaders(attr(path, "range"), input$extendLeaders),
-        input$extendTrailers
-      )
-
-      lib_sel <- library_selections()
-      if (is.null(lib_sel)) lib_sel <- list()
-      lib_sel <- lapply(lib_sel, function(selection) {
-        selection <- as.character(selection)
-        unique(selection[!is.na(selection) & nzchar(selection)])
-      })
-      lib_sel <- lib_sel[lengths(lib_sel) > 0]
-      if (length(lib_sel) == 0) {
-        stop("No non-empty library selection groups available for observatory browse.")
-      }
-
-      runs <- unique(unlist(lib_sel, use.names = FALSE))
-      reads <- load_collection(path, grl = display_region_grl, columns = runs)
-      available_runs <- colnames(reads)
-      lib_sel <- lapply(lib_sel, intersect, y = available_runs)
-      lib_sel <- lib_sel[lengths(lib_sel) > 0]
-      if (length(lib_sel) == 0) {
-        stop("No selected runs are available for the chosen transcript in observatory browse.")
-      }
-      with_frames <- ORFik::libraryTypes(
-        experiment_df,
-        uniqueTypes = FALSE
-      ) %in%
-        c("RFP", "RPF", "LSU", "TI")
-
-      if (!is.null(lib_sel) && !is.null(library_selection_labels)) {
-        labels <- library_selection_labels()
-        selection_ids <- names(lib_sel)
-        display_labels <- vapply(
-          selection_ids,
-          function(selection_id) {
-            label <- labels[[selection_id]]
-            if (is.null(label) || label == "" || label == selection_id) {
-              selection_id
-            } else {
-              paste(selection_id, label, sep = " - ")
-            }
-          },
-          character(1)
-        )
-        names(lib_sel) <- display_labels
-      }
-      fst_index <- path
-      file_forward <- fst::read_fst(path)[1,]$file_forward
-      file_forward <- file.path(dirname(fst_index), basename(file_forward))
-      megafst_samples <- length(fst::metadata_fst(file_forward)$columnNames)
-      group_is_all <- lengths(lib_sel) == megafst_samples
-      if (any(group_is_all)) names(lib_sel)[group_is_all] <- "All merged"
-      message("Number of runs used: ", length(unlist(lib_sel)),
-              " (", paste(lengths(lib_sel), collapse = ", "), ")")
-
-      profiles <- lapply(lib_sel, function(selection) {
-        count <- aggregation_method(
-          reads[, selection, with = FALSE],
-          na.rm = TRUE
-        )
-        data.table::data.table(
-          count = count,
-          position = seq_along(count),
-          library = as.factor(rep_len(1, length.out = length(count))),
-          frame = as.factor(rep_len(1:3, length.out = length(count)))
-        ) |>
-          smoothenMultiSampCoverage(
-            input$kmer,
-            kmers_type = "mean",
-            split_by_frame = TRUE
-          )
-      })
-      timer_done_nice_print("- Obs browser controller done: ", time_before)
-      shiny::reactiveValues(
-        dff = experiment_df,
-        display_region = display_region,
-        customRegions = NULL,
-        extendTrailers = input$extendTrailers,
-        extendLeaders = input$extendLeaders,
-        export_format = "svg",
-        summary_track = FALSE,
-        summary_track_type = "lines",
-        viewMode = FALSE,
-        collapsed_introns_width = 0,
-        kmerLength = input$kmer,
-        frames_type = frames_type,
-        annotation = cds_annotation,
-        tx_annotation = tx_annotation,
-        reads = reads,
-        custom_sequence = NULL,
-        log_scale = FALSE,
-        phyloP = FALSE,
-        withFrames = TRUE,
-        zoom_range = numeric(0),
-        frames_subset = "all",
-        mapability = FALSE,
-        frame_colors = "R",
-        colors = NULL,
-        library_selections = lib_sel,
+      click_plot_browser_main_controller(
+        input = input,
+        tx = tx,
+        cds = cds,
+        libs = NULL,
+        df = df,
         gg_theme = gg_theme,
-        is_cellphone = FALSE,
-        user_browser_width = NULL,
-        hash_bottom = paste(selected_tx, collapse = "|"),
-        hash_browser = paste(
-          selected_tx, frames_type,
-          paste(experiment_df$Run, collapse = ","),
-          collapse = "|"
-        ),
-        hash_expression = paste(selected_tx, collapse = "|"),
-        profiles = profiles
+        user_info = function() list(is_cellphone = FALSE, width = NULL),
+        library_selections = library_selections,
+        library_selection_labels = library_selection_labels
       )
     }) |> shiny::bindEvent(list(input$go, kickoff()), ignoreNULL = TRUE, ignoreInit = TRUE)
 

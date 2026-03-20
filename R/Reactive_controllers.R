@@ -1,15 +1,115 @@
 #' Main controller for browser settings
 #' Takes shiny input and converts to a proper list of settings
 #' @noRd
-click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_theme, user_info) {
+browser_collection_controller_data <- function(input, selected_tx, display_region,
+                                               experiment_df, tx,
+                                               library_selections,
+                                               library_selection_labels = NULL) {
+  aggregation_method <- rowMeans
+  path <- collection_path_from_exp(experiment_df, selected_tx, grl_all = tx())
+  profile_display_range <- display_region
+  if (!is.null(input$extendLeaders) && is.numeric(input$extendLeaders) && input$extendLeaders != 0) {
+    profile_display_range <- ORFik::extendLeaders(profile_display_range, input$extendLeaders)
+  }
+  if (!is.null(input$extendTrailers) && is.numeric(input$extendTrailers) && input$extendTrailers != 0) {
+    profile_display_range <- ORFik::extendTrailers(profile_display_range, input$extendTrailers)
+  }
+
+  lib_sel <- library_selections
+  if (is.null(lib_sel)) lib_sel <- list()
+  lib_sel <- lapply(lib_sel, function(selection) {
+    selection <- as.character(selection)
+    unique(selection[!is.na(selection) & nzchar(selection)])
+  })
+  lib_sel <- lib_sel[lengths(lib_sel) > 0]
+  if (length(lib_sel) == 0) {
+    stop("No non-empty library selection groups available for observatory browse.")
+  }
+
+  runs <- unique(unlist(lib_sel, use.names = FALSE))
+  reads <- load_collection(path, grl = profile_display_range, columns = runs)
+  available_runs <- colnames(reads)
+  lib_sel <- lapply(lib_sel, intersect, y = available_runs)
+  lib_sel <- lib_sel[lengths(lib_sel) > 0]
+  if (length(lib_sel) == 0) {
+    stop("No selected runs are available for the chosen transcript in observatory browse.")
+  }
+
+  if (!is.null(library_selection_labels)) {
+    selection_ids <- names(lib_sel)
+    display_labels <- vapply(
+      selection_ids,
+      function(selection_id) {
+        label <- library_selection_labels[[selection_id]]
+        if (is.null(label) || label == "" || label == selection_id) {
+          selection_id
+        } else {
+          paste(selection_id, label, sep = " - ")
+        }
+      },
+      character(1)
+    )
+    names(lib_sel) <- display_labels
+  }
+
+  fst_index <- path
+  file_forward <- fst::read_fst(path)[1, ]$file_forward
+  file_forward <- file.path(dirname(fst_index), basename(file_forward))
+  megafst_samples <- length(fst::metadata_fst(file_forward)$columnNames)
+  group_is_all <- lengths(lib_sel) == megafst_samples
+  if (any(group_is_all)) names(lib_sel)[group_is_all] <- "All merged"
+
+  profiles <- lapply(lib_sel, function(selection) {
+    count <- aggregation_method(
+      reads[, selection, with = FALSE],
+      na.rm = TRUE
+    )
+    data.table::data.table(
+      count = count,
+      position = seq_along(count),
+      library = as.factor(rep_len(1, length.out = length(count))),
+      frame = as.factor(rep_len(1:3, length.out = length(count)))
+    ) |>
+      smoothenMultiSampCoverage(
+        input$kmer,
+        kmers_type = "mean",
+        split_by_frame = TRUE
+      )
+  })
+
+  message("Number of runs used: ", length(unlist(lib_sel)),
+          " (", paste(lengths(lib_sel), collapse = ", "), ")")
+
+  list(
+    dff = experiment_df,
+    reads = reads,
+    profiles = profiles,
+    library_selections = lib_sel,
+    hash_suffix = paste(
+      vapply(names(lib_sel), function(selection_id) {
+        paste(selection_id, paste(lib_sel[[selection_id]], collapse = ","), sep = ":")
+      }, character(1)),
+      collapse = "|group|"
+    )
+  )
+}
+
+click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_theme, user_info,
+                                               library_selections = NULL,
+                                               library_selection_labels = NULL) {
   {
     time_before <- controller_init(input, id = "Browser")
+    is_observatory <- !is.null(library_selections)
+    if (is.null(user_info)) {
+      user_info <- function() list(is_cellphone = FALSE, width = NULL)
+    }
+
     # Annotation
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
     tx_annotation <- observed_cds_annotation(isolate(input$tx), tx,
                                              isolate(input$other_tx))
     cds_annotation <- observed_cds_annotation(isolate(input$tx), cds,
-                                              isolate(input$other_tx))
+                                             isolate(input$other_tx))
     uorf_annotation <- observed_uorf_annotation(isolate(input$tx), df,
                                                 isolate(input$other_tx), isolate(input$add_uorfs))
     translon_annotation <- observed_translon_annotation(isolate(input$tx), df(),
@@ -42,17 +142,41 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_them
       ))
     }
 
-    dff <- observed_exp_subset(isolate(input$library), libs, df)
-    if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
-    if (isolate(input$withFrames)) {
-      withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
-    } else withFrames <- rep(FALSE, nrow(dff))
+    profiles <- NULL
+    selected_library_groups <- NULL
+    if (is_observatory) {
+      collection_data <- browser_collection_controller_data(
+        input = input,
+        selected_tx = isolate(input$tx),
+        display_region = display_region,
+        experiment_df = df(),
+        tx = tx,
+        library_selections = library_selections(),
+        library_selection_labels = if (is.null(library_selection_labels)) NULL else library_selection_labels()
+      )
+      dff <- collection_data$dff
+      reads <- collection_data$reads
+      profiles <- collection_data$profiles
+      selected_library_groups <- collection_data$library_selections
+      withFrames <- rep(isTRUE(isolate(input$withFrames)), length(profiles))
+    } else {
+      dff <- observed_exp_subset(isolate(input$library), libs, df)
+      if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
+      reads <- get_track_paths(dff)
+      if (isolate(input$withFrames)) {
+        withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
+      } else withFrames <- rep(FALSE, nrow(dff))
+    }
 
     # Hash strings for cache
     hash_strings <- hash_strings_browser(input, dff, collapsed_introns_width)
+    if (is_observatory) {
+      hash_strings <- lapply(hash_strings, paste,
+                             paste(selected_library_groups, collapse = "|sel|"),
+                             sep = "|obs|")
+    }
 
-    if (input$unique_align) uniqueMappers(dff) <- TRUE
-    reads <- get_track_paths(dff)
+    if (!is_observatory && input$unique_align) uniqueMappers(dff) <- TRUE
     frames_subset <- input$frames_subset
     use_all_frames <- length(frames_subset) == 0 || any(c("","all") %in% frames_subset)
     if (use_all_frames) frames_subset <- "all"
@@ -85,6 +209,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_them
                    mapability = input$mapability,
                    frame_colors = frame_colors,
                    colors = colors,
+                   library_selections = selected_library_groups,
+                   profiles = profiles,
                    gg_theme = gg_theme,
                    is_cellphone = user_info()$is_cellphone,
                    user_browser_width = user_info()$width,

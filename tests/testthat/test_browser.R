@@ -482,6 +482,39 @@ test_that("browser_track_panel_shiny applies zoom_range to the shared x axis", {
   expect_equal(unname(plot$x$layout$xaxis$range), c(20, 60))
 })
 
+test_that("browser_track_panel_shiny keeps zoom_range when a custom bottom track is present", {
+  fixture <- make_browser_track_test_fixture(frames_type = "columns", kmers = 1,
+                                             df, tx, cds)
+  controls_with_zoom <- fixture$controls()
+  controls_with_zoom$zoom_range <- c(20, 60)
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(function() controls_with_zoom)
+  custom_track <- plotly::plot_ly(
+    x = 1:100,
+    y = rep(1, 100),
+    type = "bar",
+    showlegend = FALSE
+  ) %>%
+    plotly::layout(
+      xaxis = list(showticklabels = FALSE),
+      yaxis = list(title = list(text = "P"), showticklabels = FALSE)
+    )
+  bottom_panel$custom_bigwig_panels <- list(custom_track)
+  bottom_panel$bottom_plots <- RiboCrypt:::bottom_plots_to_plotly(bottom_panel)
+  bottom_panel$ncustom <- 1L
+
+  plot <- RiboCrypt:::browser_track_panel_shiny(
+    function() controls_with_zoom,
+    bottom_panel,
+    fixture$session
+  )
+
+  xaxis_names <- names(plot$x$layout)[grepl("^xaxis[0-9]*$", names(plot$x$layout))]
+  ranges <- lapply(xaxis_names, function(axis_name) plot$x$layout[[axis_name]]$range)
+
+  expect_true(all(vapply(ranges, function(r) identical(unname(r), c(20, 60)), logical(1))))
+})
+
 test_that("custom_seq_track_panel_bigwig builds a native plotly bar track", {
   grl <- GenomicRanges::GRangesList(
     tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(1, 4), "+")
@@ -505,6 +538,23 @@ test_that("custom_seq_track_panel_bigwig builds a native plotly bar track", {
   expect_true(inherits(plot, "htmlwidget"))
   expect_identical(built$x$data[[1]]$type, "bar")
   expect_identical(built$x$layout$yaxis$title$text, "P")
+  expect_false(isTRUE(built$x$data[[1]]$showlegend))
+  expect_null(built$x$layout$width)
+})
+
+test_that("automateTicksCustomTrack supports native plotly inputs", {
+  plot <- plotly::plot_ly(
+    x = 1:4,
+    y = c(0, 2, 1, 3),
+    type = "bar",
+    showlegend = FALSE
+  )
+
+  styled <- RiboCrypt:::automateTicksCustomTrack(plot)
+  built <- plotly::plotly_build(styled)
+
+  expect_s3_class(styled, "plotly")
+  expect_true(isTRUE(built$x$layout$yaxis$fixedrange))
   expect_false(isTRUE(built$x$data[[1]]$showlegend))
 })
 

@@ -69,10 +69,28 @@ module_protein <- function(input, output, gene_name_list, session) {
   })
 }
 
+module_browser_shared_ui <- function(input, output, session, clip_ui) {
+  observeEvent(input$toggle_settings, {
+    shinyjs::toggleClass(id = "floating_settings", class = "hidden")
+  })
+
+  output$clip <- renderUI({
+    clip_ui()
+  })
+
+  observeEvent(input$myInput_copy, {
+    showNotification(paste("Copied", nchar(input$myInput_copy), "nt to clipboard"), type = "message")
+  })
+}
+
 module_additional_browser <- function(input, output, session) {
   with(rlang::caller_env(), {
     # Protein display
     module_protein(input, output, gene_name_list, session)
+
+    module_browser_shared_ui(input, output, session, function() {
+      clipboard_url_button(input, session)
+    })
 
     output$download_plot_html <- downloadHandler(
       filename = function() {
@@ -82,15 +100,6 @@ module_additional_browser <- function(input, output, session) {
         htmlwidgets::saveWidget(as_widget(browser_plot()), file)
       }
     )
-
-    observeEvent(input$toggle_settings, {
-      # Toggle visibility by adding/removing 'hidden' class
-      shinyjs::toggleClass(id = "floating_settings", class = "hidden")
-    })
-
-    observeEvent(input$myInput_copy, {
-      showNotification(paste("Copied", nchar(input$myInput_copy), "nt to clipboard"), type = "message")
-    })
 
     observe({
       if(!isTruthy(input$go)) {

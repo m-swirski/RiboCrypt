@@ -276,28 +276,48 @@ browser_plots_highlighted <- function(plots, zoom_range, color = "rgba(255, 255,
   return(plots)
 }
 
+browser_input_or_default <- function(input, name, default = NULL) {
+  value <- tryCatch(input[[name]], error = function(e) NULL)
+  if (is.null(value) || length(value) == 0) default else value
+}
+
 hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width) {
   full_names <- ORFik:::name_decider(dff, naming = "full")
-  hash_bottom <- paste(input$tx, input$other_tx,
-                       input$add_uorfs,  input$add_translon,
-                       input$add_translons_transcode,
-                       input$extendTrailers, input$extendLeaders,
-                       input$genomic_region, input$viewMode,
-                       ciw, input$colors,
-                       input$customSequence, input$phyloP, input$mapability,
+  hash_bottom <- paste(browser_input_or_default(input, "tx", ""),
+                       browser_input_or_default(input, "other_tx", FALSE),
+                       browser_input_or_default(input, "add_uorfs", FALSE),
+                       browser_input_or_default(input, "add_translon", FALSE),
+                       browser_input_or_default(input, "add_translons_transcode", FALSE),
+                       browser_input_or_default(input, "extendTrailers", 0),
+                       browser_input_or_default(input, "extendLeaders", 0),
+                       browser_input_or_default(input, "genomic_region", ""),
+                       browser_input_or_default(input, "viewMode", FALSE),
+                       ciw,
+                       browser_input_or_default(input, "colors", ""),
+                       browser_input_or_default(input, "customSequence", ""),
+                       browser_input_or_default(input, "phyloP", FALSE),
+                       browser_input_or_default(input, "mapability", FALSE),
                        collapse = "|_|")
   # Until plot and coverage is split (bottom must be part of browser hash)
   hash_browser <- paste(hash_bottom,
                         full_names,
-                        input$plot_export_format,
-                        input$summary_track, input$summary_track_type,
-                        input$kmer, input$frames_type, input$withFrames,
-                        input$log_scale, input$zoom_range, input$frames_subset,
-                        input$unique_align,
+                        browser_input_or_default(input, "plot_export_format", "svg"),
+                        browser_input_or_default(input, "summary_track", FALSE),
+                        browser_input_or_default(input, "summary_track_type", "lines"),
+                        browser_input_or_default(input, "kmer", 1),
+                        browser_input_or_default(input, "frames_type", "lines"),
+                        browser_input_or_default(input, "withFrames", TRUE),
+                        browser_input_or_default(input, "log_scale", FALSE),
+                        browser_input_or_default(input, "zoom_range", ""),
+                        browser_input_or_default(input, "frames_subset", "all"),
+                        browser_input_or_default(input, "unique_align", FALSE),
                         collapse = "|_|")
-  hash_expression <- paste(full_names, input$tx,
-                           input$expression_plot, input$extendTrailers,
-                           input$extendLeaders, collapse = "|_|")
+  hash_expression <- paste(full_names,
+                           browser_input_or_default(input, "tx", ""),
+                           browser_input_or_default(input, "expression_plot", FALSE),
+                           browser_input_or_default(input, "extendTrailers", 0),
+                           browser_input_or_default(input, "extendLeaders", 0),
+                           collapse = "|_|")
   hash_strings <- list(hash_bottom = hash_bottom, hash_browser = hash_browser,
                        hash_expression = hash_expression)
   stopifnot(all(lengths(hash_strings) == 1))

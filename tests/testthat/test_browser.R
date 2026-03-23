@@ -59,7 +59,6 @@ make_bottom_panel_test_controls <- function(viewMode = FALSE,
     tx_annotation = tx_annotation,
     collapsed_introns_width = collapsed_introns_width,
     frame_colors = frame_colors,
-    gg_theme = RiboCrypt:::gg_theme_template(),
     phyloP = FALSE,
     mapability = FALSE,
     is_cellphone = FALSE
@@ -87,7 +86,6 @@ make_browser_track_test_fixture <- function(frames_type, kmers, df, tx, cds) {
     tx_annotation = RiboCrypt:::observed_cds_annotation_internal(tx_id, tx, TRUE),
     collapsed_introns_width = 0,
     frame_colors = "R",
-    gg_theme = RiboCrypt:::gg_theme_template(),
     phyloP = FALSE,
     mapability = FALSE,
     is_cellphone = FALSE,
@@ -224,6 +222,34 @@ test_that("go_when_input_is_ready does not trigger when plot_on_start is FALSE",
   expect_false(shiny::isolate(isTRUE(kickoff())))
 })
 
+test_that("multiOmicsControllerView supports default selected_libraries", {
+  env <- rlang::env(
+    reads = list(1, 2),
+    withFrames = logical(),
+    colors = NULL,
+    kmers = NULL,
+    ylabels = NULL,
+    lib_proportions = NULL,
+    annotation_proportions = NULL,
+    frames_type = "lines",
+    display_sequence = "none",
+    viewMode = "tx",
+    bottom_panel = list(annotation_layers = 1, ncustom = 0),
+    lib_to_annotation_proportions = c(0.8, 0.2),
+    summary_track = FALSE
+  )
+
+  expect_no_error(evalq(RiboCrypt:::multiOmicsControllerView(), env))
+  expect_equal(env$withFrames, c(FALSE, FALSE))
+  expect_equal(env$colors, c(1L, 2L))
+  expect_equal(env$kmers, c(1, 1))
+  expect_equal(env$ylabels, c("1", "2"))
+  expect_equal(env$ylabels_full_name, c("1", "2"))
+  expect_equal(env$lib_proportions, c(0.5, 0.5))
+  expect_equal(env$annotation_proportions, c(0.35, 0.65))
+  expect_equal(env$proportions, c(0.4, 0.4, 0.07, 0.13))
+})
+
 test_that("browser_ui returns a shiny tag object", {
   all_exp <- data.frame(
     organism = c("org1", "org2"),
@@ -260,6 +286,13 @@ test_that("bottom_panel_shiny handles transcript view", {
   expect_equal(unname(bottom_panel$lines), c(141, 446))
   expect_equal(length(bottom_panel$bottom_plots), 3)
   expect_equal(bottom_panel$annotation_layers, 1)
+  expect_s3_class(bottom_panel$seq_nt_panel, "plotly")
+  expect_equal(bottom_panel$seq_nt_panel$x$attrs[[1]]$x, c(1, 551))
+  expect_equal(bottom_panel$seq_nt_panel$x$attrs[[1]]$y, c(0, 1))
+  expect_equal(bottom_panel$seq_nt_panel$x$layoutAttrs[[1]]$xaxis$range, c(1, 551))
+  expect_equal(bottom_panel$seq_nt_panel$x$layoutAttrs[[1]]$yaxis$range, c(0, 1))
+  expect_false(isTRUE(bottom_panel$seq_nt_panel$x$layoutAttrs[[1]]$xaxis$showticklabels))
+  expect_false(isTRUE(bottom_panel$seq_nt_panel$x$layoutAttrs[[1]]$yaxis$showticklabels))
 })
 
 test_that("bottom_panel_shiny applies 5' and 3' extensions", {
@@ -385,7 +418,6 @@ test_that("bottom_panel_shiny keeps overlapping CDS exons in collapsed genomic v
     tx_annotation = fixture$tx_annotation,
     collapsed_introns_width = 30,
     frame_colors = "R",
-    gg_theme = RiboCrypt:::gg_theme_template(),
     phyloP = FALSE,
     mapability = FALSE,
     is_cellphone = FALSE

@@ -2,7 +2,7 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
                                          start_codons, stop_codons, custom_motif,
                                          custom_regions, viewMode,
                                          tx_annotation = NULL, collapse_intron_flank = 100,
-                                         frame_colors = "R", gg_theme = gg_theme_template()) {
+                                         frame_colors = "R") {
   force(display_range)
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
@@ -19,7 +19,7 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
   layers <- if (nrow(gene_model_panel_dt[[1]]) == 0) 1L else max(gene_model_panel_dt[[1]]$layers)
 
   gene_model_panel <- geneModelPanelPlotly(gene_model_panel_dt[[1]])
-  seq_nt_panel <- attr(gg_theme, "seq_panel_nt_template_plotly")
+  seq_nt_panel <- ntSeqPanelPlotly(target_seq[[1]])
   return(list(seq_panel = seq_aa_panel, seq_nt_panel = seq_nt_panel,
               gene_model_panel_dt = gene_model_panel_dt[[1]],
               gene_model_panel = gene_model_panel, frame_colors = frame_colors,
@@ -92,7 +92,7 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
                                          aa_letter_code, input_id, plot_name,
                                          plot_title,  width, height, export.format,
                                          zoom_range = NULL, frame_colors = "R") {
-  print("Merging bottom and coverage tracks")
+  print("Merging coverage tracks and bottom")
   track_plots <- browser_plots_highlighted(track_panel$plots, zoom_range)
   bottom_plots <- bottom_panel$bottom_plots
   plots <- c(track_plots, bottom_plots)
@@ -113,7 +113,8 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
 
   return(browser_plot_final_layout_polish(multiomics_plot, plot_name, display_range,
                                           width, height, export.format, plot_title,
-                                          zoom_range, proportions))
+                                          zoom_range, proportions,
+                                          apply_line_desimplify = identical(track_panel$track_type, "animate")))
 }
 
 #' @importFrom Biostrings nchar translate
@@ -415,7 +416,8 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
                                              export.format,
                                              plot_title,
                                              zoom_range,
-                                             proportions) {
+                                             proportions,
+                                             apply_line_desimplify = FALSE) {
   multiomics_plot <- remove_y_axis_zero_tick_js(multiomics_plot)
 
   xaxis_names <- names(multiomics_plot$x$layout)[grepl("^xaxis[0-9]*$", names(multiomics_plot$x$layout))]
@@ -477,5 +479,8 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
       multiomics_plot$x$layout[[axis_name]] <- axis
     }
   }
-  return(lineDeSimplify(multiomics_plot))
+  if (isTRUE(apply_line_desimplify)) {
+    return(lineDeSimplify(multiomics_plot))
+  }
+  return(multiomics_plot)
 }

@@ -21,7 +21,7 @@ observatory_browser_server <- function(
   df,
   library_selections,
   library_selection_labels,
-  gene_name_list, tx, cds, experiments, org, gg_theme,
+  gene_name_list, tx, cds, experiments, org,
   rv, browser_options,
   selection_index = shiny::reactive(NULL),
   active_selection_id = shiny::reactive(NULL),
@@ -42,7 +42,6 @@ observatory_browser_server <- function(
         cds = cds,
         libs = NULL,
         df = df,
-        gg_theme = gg_theme,
         user_info = function() list(is_cellphone = FALSE, width = NULL),
         library_selections = library_selections,
         library_selection_labels = library_selection_labels

@@ -100,7 +100,7 @@ browser_collection_controller_data <- function(input, selected_tx, display_regio
   )
 }
 
-click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_theme, user_info,
+click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_info,
                                                library_selections = NULL,
                                                library_selection_labels = NULL) {
   {
@@ -217,7 +217,6 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, gg_them
                    colors = colors,
                    library_selections = selected_library_groups,
                    profiles = profiles,
-                   gg_theme = gg_theme,
                    is_cellphone = user_info()$is_cellphone,
                    user_browser_width = user_info()$width,
                    hash_bottom = hash_strings[["hash_bottom"]],

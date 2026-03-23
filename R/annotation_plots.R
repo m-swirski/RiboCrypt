@@ -29,15 +29,15 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
 
 }
 
-plotAASeqPanel <- function(hits, sequence, frame_colors = "R", gg_theme = theme_bw()) {
-  stopifnot(is(gg_theme, "theme"))
+plotAASeqPanel <- function(hits, sequence, frame_colors = "R", theme_template = theme_bw()) {
+  stopifnot(is(theme_template, "theme"))
   frame_colors <- frame_color_themes(frame_colors, FALSE)
   pos <- NULL # avoid dt warning
   # New red: #FFA8A3 ?
   hits[, Type := fifelse(col == "white", "Start codon", fifelse(col == "black", "Stop codon", "User Motif"))]
-  seq_panel_template <- attr(gg_theme, "seq_panel_template")
+  seq_panel_template <- attr(theme_template, "seq_panel_template")
 
-  if (is.null(seq_panel_template)) seq_panel_template <- seqPanelPlotTemplate()
+  if (is.null(seq_panel_template)) seq_panel_template <- seqPanelPlotTemplate(theme_template)
   # theme_bw propogates to all subplots
   fig <- seq_panel_template +
     geom_rect(aes(ymin = c(1,0,-1), ymax = c(2,1,0), xmin = rep(1,3), xmax = rep(length(sequence),3)),
@@ -131,21 +131,47 @@ plotAASeqPanelPlotly <- function(hits, sequence, frame_colors = "R") {
     )
 }
 
-gg_theme_template <- function() {
-  gg_theme <- theme_bw()
-  attr(gg_theme, "seq_panel_template") <- seqPanelPlotTemplate(gg_theme)
-  attr(gg_theme, "gg_template") <- geneModelPanelPlotTemplate()
-  attr(gg_theme, "seq_panel_nt_template_ggplot") <- nt_area_template()
-  attr(gg_theme, "seq_panel_nt_template_plotly") <-
-    automateTicksLetters(attr(gg_theme, "seq_panel_nt_template_ggplot"))
-  return(gg_theme)
+ntSeqPanelPlotly <- function(sequence) {
+  seq_length <- nchar(as.character(sequence))
+
+  plotly::plot_ly(
+    x = c(1, seq_length),
+    y = c(0, 1),
+    type = "scatter",
+    mode = "markers",
+    hoverinfo = "none",
+    showlegend = FALSE,
+    marker = list(opacity = 0)
+  ) %>%
+    plotly::layout(
+      margin = list(t = 0, r = 0, b = 0, l = 0, pad = 0),
+      yaxis = list(
+        autorange = FALSE,
+        fixedrange = TRUE,
+        range = c(0, 1),
+        showgrid = FALSE,
+        showticklabels = FALSE,
+        ticks = "",
+        zeroline = FALSE,
+        title = list(text = "")
+      ),
+      xaxis = list(
+        autorange = FALSE,
+        range = c(1, seq_length),
+        showgrid = FALSE,
+        showticklabels = FALSE,
+        ticks = "",
+        zeroline = FALSE,
+        title = list(text = "")
+      )
+    )
 }
 
-seqPanelPlotTemplate <- function(gg_theme) {
+seqPanelPlotTemplate <- function(theme_template) {
   suppressWarnings(ggplot(frame = "static")) +
     ylab("frame") +
     xlab("position [nt]") +
-    gg_theme +
+    theme_template +
     theme(plot.margin = unit(c(0,0,0,0), "pt"), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
     scale_y_continuous(breaks = c(-0.5,0.5, 1.5), labels = c("2","1", "0"), expand = c(0,0)) +
     scale_x_continuous(expand = c(0,0))
@@ -648,12 +674,3 @@ margin_megabrowser <- function() {
   )
 }
 
-
-nt_area_template <- function() {
-  ggplot() +
-    theme(axis.title = element_blank(),
-          axis.ticks = element_blank(),
-          axis.text = element_blank()) +
-    theme(plot.margin = unit(c(0,0,0,0), "pt"))+
-    scale_x_continuous(expand = c(0,0))
-}

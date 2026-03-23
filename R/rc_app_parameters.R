@@ -178,8 +178,6 @@ rc_parameter_setup <- function() {
       default_libs <- libraries_string_split(browser_options["default_libs"], libs)
     }
 
-    gg_theme <- gg_theme_template()
-
     cat("Done (Parameter setup):"); print(round(Sys.time() - time_before, 2))
   }
   )

@@ -265,7 +265,7 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
   return(plot)
 }
 
-get_meta_browser_plot_full_shiny <- function(table, plot_object, controller, gg_theme) {
+get_meta_browser_plot_full_shiny <- function(table, plot_object, controller, theme_template) {
   get_meta_browser_plot_full(table()$table,
                              plot_object(), controller()$id,
                              controller()$dff, controller()$summary_track,
@@ -276,7 +276,7 @@ get_meta_browser_plot_full_shiny <- function(table, plot_object, controller, gg_
                              controller()$annotation,
                              controller()$viewMode,
                              controller()$collapsed_introns_width,
-                             gg_theme
+                             theme_template
   )
 }
 

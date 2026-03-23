@@ -15,73 +15,102 @@ multiOmicsController <- function() {
 multiOmicsControllerView <- function(
   use_fst = FALSE, selected_libraries = list()
 ) {
-  with(rlang::caller_env(), {
-    if (!is(reads, "list")) reads <- list(reads)
+  caller <- rlang::caller_env()
+  reads <- rlang::env_get(caller, "reads")
+  withFrames <- rlang::env_get(caller, "withFrames")
+  colors <- rlang::env_get(caller, "colors")
+  kmers <- rlang::env_get(caller, "kmers")
+  ylabels <- rlang::env_get(caller, "ylabels")
+  lib_proportions <- rlang::env_get(caller, "lib_proportions")
+  frames_type <- rlang::env_get(caller, "frames_type")
+  annotation_proportions <- rlang::env_get(caller, "annotation_proportions")
+  display_sequence <- rlang::env_get(caller, "display_sequence")
+  viewMode <- rlang::env_get(caller, "viewMode")
+  bottom_panel <- rlang::env_get(caller, "bottom_panel")
+  lib_to_annotation_proportions <- rlang::env_get(caller, "lib_to_annotation_proportions")
+  summary_track <- rlang::env_get(caller, "summary_track")
 
-    if (length(withFrames) == 0) withFrames <- FALSE
-    if (!(length(withFrames) %in% c(1, length(reads), length(selected_libraries)))) stop("length of withFrames must be 0, 1 or the same as reads list")
-    if (length(withFrames) == 1) withFrames <- rep(withFrames, length(reads))
+  if (!is(reads, "list")) reads <- list(reads)
 
-    if (length(colors) == 0 && !use_fst) colors <- 1:length(reads)
-    if (length(colors) == 0 && use_fst) colors <- length(selected_libraries)
+  selection_count <- length(selected_libraries)
 
-    if (!(length(colors) %in% c(1, length(reads), length(selected_libraries)))) stop("length of colors must be 0, 1 or the same as reads list")
+  if (length(withFrames) == 0) withFrames <- FALSE
+  if (!(length(withFrames) %in% c(1, length(reads), selection_count))) stop("length of withFrames must be 0, 1 or the same as reads list")
+  if (length(withFrames) == 1) withFrames <- rep(withFrames, length(reads))
 
-    if (length(colors) == 1 && !use_fst) colors <- rep(colors, length(reads))
-    if (length(colors) == 1 && use_fst) colors <- rep(colors, length(selected_libraries))
+  if (length(colors) == 0 && !use_fst) colors <- 1:length(reads)
+  if (length(colors) == 0 && use_fst) colors <- selection_count
 
-    if (length(kmers) == 0) kmers <- 1
-    if (!(length(kmers) %in% c(1, length(reads), length(selected_libraries)))) stop("length of kmers must be 0, 1 or the same as reads list")
+  if (!(length(colors) %in% c(1, length(reads), selection_count))) stop("length of colors must be 0, 1 or the same as reads list")
 
-    if (length(kmers) == 1 && !use_fst) kmers <- rep(kmers, length(reads))
-    if (length(kmers) == 1 && use_fst) kmers <- rep(kmers, length(selected_libraries))
+  if (length(colors) == 1 && !use_fst) colors <- rep(colors, length(reads))
+  if (length(colors) == 1 && use_fst) colors <- rep(colors, selection_count)
 
-    if (length(ylabels) == 0 && !use_fst) ylabels <- as.character(1:length(reads))
-    if (length(ylabels) == 0 && use_fst) ylabels <- as.character(1:length(selected_libraries))
+  if (length(kmers) == 0) kmers <- 1
+  if (!(length(kmers) %in% c(1, length(reads), selection_count))) stop("length of kmers must be 0, 1 or the same as reads list")
 
-    if (!(length(ylabels) %in% c(1, length(reads), length(selected_libraries)))) stop("length of ylabels must be 0, 1 or the same as reads list")
+  if (length(kmers) == 1 && !use_fst) kmers <- rep(kmers, length(reads))
+  if (length(kmers) == 1 && use_fst) kmers <- rep(kmers, selection_count)
 
-    if (length(ylabels) == 1 && !use_fst) ylabels <- rep(ylabels, length(reads))
-    if (length(ylabels) == 1 && use_fst) ylabels <- rep(ylabels, length(selected_libraries))
+  if (length(ylabels) == 0 && !use_fst) ylabels <- as.character(1:length(reads))
+  if (length(ylabels) == 0 && use_fst) ylabels <- as.character(1:selection_count)
 
-    ylabels_full_name <- ylabels
+  if (!(length(ylabels) %in% c(1, length(reads), selection_count))) stop("length of ylabels must be 0, 1 or the same as reads list")
 
-    if (length(ylabels) > 5 && !use_fst) ylabels <- 1:length(reads)
-    if (length(ylabels) > 5 && use_fst) ylabels <- 1:length(selected_libraries)
+  if (length(ylabels) == 1 && !use_fst) ylabels <- rep(ylabels, length(reads))
+  if (length(ylabels) == 1 && use_fst) ylabels <- rep(ylabels, selection_count)
 
-    if (length(lib_proportions) == 0) lib_proportions <- 1
-    if (!(length(lib_proportions) %in% c(1, length(reads), length(selected_libraries)))) stop("length of lib_proportions must be 0, 1 or the same as reads list")
-    if (length(lib_proportions) == 1) {
-      lib_proportions <- if (frames_type == "animate") {
-        lib_proportions
-      } else {
-        if (!use_fst) rep(lib_proportions, length(reads)) else rep(lib_proportions, length(selected_libraries))
-      }
-    }
-    lib_proportions <- lib_proportions / sum(lib_proportions)
-    if (length(annotation_proportions) == 0) {
-      if (display_sequence %in% c("none", FALSE)) {
-        annotation_proportions <- c(0.35, 0.65)
-      } else if (viewMode == "genomic") {
-        lib_to_annotation_proportions <- c(0.6, 0.4)
-        annotation_proportions <- c(0.2, 0.5, 0.3)
-      } else { # tx coordinates
-        annotation_proportions <- c(0.2, 0.2, 0.6)
-        if (bottom_panel$annotation_layers > 1) {
-          annotation_proportions[2] <- annotation_proportions[2] * sqrt(bottom_panel$annotation_layers)
-        }
-      }
+  ylabels_full_name <- ylabels
+
+  if (length(ylabels) > 5 && !use_fst) ylabels <- 1:length(reads)
+  if (length(ylabels) > 5 && use_fst) ylabels <- 1:selection_count
+
+  if (length(lib_proportions) == 0) lib_proportions <- 1
+  if (!(length(lib_proportions) %in% c(1, length(reads), selection_count))) stop("length of lib_proportions must be 0, 1 or the same as reads list")
+  if (length(lib_proportions) == 1) {
+    lib_proportions <- if (frames_type == "animate") {
+      lib_proportions
     } else {
-      annotation_proportions <- annotation_proportions / sum(annotation_proportions)
+      if (!use_fst) rep(lib_proportions, length(reads)) else rep(lib_proportions, selection_count)
     }
-    proportions <- c(lib_proportions * lib_to_annotation_proportions[1], annotation_proportions * lib_to_annotation_proportions[2])
-    if (summary_track) proportions <- c(0.2, proportions * 0.8)
+  }
+  lib_proportions <- lib_proportions / sum(lib_proportions)
+  if (length(annotation_proportions) == 0) {
+    if (display_sequence %in% c("none", FALSE)) {
+      annotation_proportions <- c(0.35, 0.65)
+    } else if (viewMode == "genomic") {
+      lib_to_annotation_proportions <- c(0.6, 0.4)
+      annotation_proportions <- c(0.2, 0.5, 0.3)
+    } else { # tx coordinates
+      annotation_proportions <- c(0.2, 0.2, 0.6)
+      if (bottom_panel$annotation_layers > 1) {
+        annotation_proportions[2] <- annotation_proportions[2] * sqrt(bottom_panel$annotation_layers)
+      }
+    }
+  } else {
+    annotation_proportions <- annotation_proportions / sum(annotation_proportions)
+  }
+  proportions <- c(lib_proportions * lib_to_annotation_proportions[1], annotation_proportions * lib_to_annotation_proportions[2])
+  if (summary_track) proportions <- c(0.2, proportions * 0.8)
 
-    if (bottom_panel$ncustom > 0) {
-      proportions <- c(proportions, rep(0.12, bottom_panel$ncustom))
-    }
-    proportions <- proportions / sum(proportions)
-  })
+  if (bottom_panel$ncustom > 0) {
+    proportions <- c(proportions, rep(0.12, bottom_panel$ncustom))
+  }
+  proportions <- proportions / sum(proportions)
+
+  rlang::env_bind(
+    caller,
+    reads = reads,
+    withFrames = withFrames,
+    colors = colors,
+    kmers = kmers,
+    ylabels = ylabels,
+    ylabels_full_name = ylabels_full_name,
+    lib_proportions = lib_proportions,
+    annotation_proportions = annotation_proportions,
+    lib_to_annotation_proportions = lib_to_annotation_proportions,
+    proportions = proportions
+  )
 }
 
 # Controller for correct annotation definition

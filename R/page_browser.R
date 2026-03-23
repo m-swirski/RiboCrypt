@@ -181,7 +181,7 @@ browser_ui <- function(id, all_exp, browser_options, gene_names_init,
 }
 
 browser_server <- function(id, all_experiments, env, df, experiments,
-                           tx, cds, libs, org, gene_name_list, gg_theme, rv,
+                           tx, cds, libs, org, gene_name_list, rv,
                            browser_options) {
   moduleServer(
     id,
@@ -190,7 +190,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
 
       # Main plot controller, this code is only run if 'plot' is pressed
       i <- 1
-      mainPlotControls <- reactive(click_plot_browser_main_controller(input, tx, cds, libs, df, gg_theme, user_info)) %>%
+      mainPlotControls <- reactive(click_plot_browser_main_controller(input, tx, cds, libs, df, user_info)) %>%
         bindCache(input_to_list(input, user_info())) %>%
         bindEvent(list(input$go, kickoff()), ignoreInit = TRUE, ignoreNULL = FALSE)
 

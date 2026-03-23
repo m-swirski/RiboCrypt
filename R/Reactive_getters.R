@@ -60,8 +60,7 @@ bottom_panel_shiny <- function(mainPlotControls) {
     viewMode,
     tx_annotation = mainPlotControls()$tx_annotation,
     mainPlotControls()$collapsed_introns_width,
-    mainPlotControls()$frame_colors,
-    mainPlotControls()$gg_theme
+    mainPlotControls()$frame_colors
   )
   custom_bigwig_panels <- custom_seq_track_panels(
     df, annotation_list$display_range,

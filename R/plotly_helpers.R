@@ -36,15 +36,6 @@ automateTicks <- function(plot) {
     plotly::layout(yaxis=list(autorange = FALSE), xaxis=list(autorange=FALSE))
 }
 
-automateTicksLetters <- function(plot) {
-  suppressWarnings(
-    plot %>% ggplotlyHover(dynamicTicks = TRUE) %>%
-      plotly::layout(yaxis=list(autorange = FALSE, fixedrange = TRUE,
-                                zeroline = TRUE),
-                     xaxis=list(autorange=FALSE)) %>%
-      toWebGL())
-}
-
 automateTicksGMP <- function(plot) {
   if (inherits(plot, "plotly")) {
     return(plot %>%

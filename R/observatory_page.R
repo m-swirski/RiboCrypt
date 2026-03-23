@@ -15,7 +15,8 @@ observatory_server <- function(
   id,
   all_exp, df, experiments,
   gene_name_list, tx, cds, org,
-  metadata, browser_options, rv
+  metadata, browser_options, rv,
+  templates = NULL
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     observatory_url_state <- shiny::reactiveVal(
@@ -44,6 +45,7 @@ observatory_server <- function(
       selections$selected_libraries$data_table_selections,
       selections$selected_libraries$labels, gene_name_list,
       tx, cds, experiments, org, rv, browser_options,
+      templates = templates,
       selection_index = selections$selected_libraries$index,
       active_selection_id = selections$active_selection_id,
       selected_experiment = selections$selected_experiment,

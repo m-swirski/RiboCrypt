@@ -2,13 +2,19 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
                                          start_codons, stop_codons, custom_motif,
                                          custom_regions, viewMode,
                                          tx_annotation = NULL, collapse_intron_flank = 100,
-                                         frame_colors = "R") {
+                                         frame_colors = "R",
+                                         templates = NULL) {
   force(display_range)
   # Get sequence and create basic seq panel
   target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
   seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
                                           stop_codons = stop_codons, custom_motif = custom_motif)
-  seq_aa_panel <- plotAASeqPanelPlotly(seq_panel_hits, target_seq[[1]], frame_colors)
+  seq_aa_panel <- plotAASeqPanelPlotly(
+    seq_panel_hits,
+    target_seq[[1]],
+    frame_colors = frame_colors,
+    template = templates$aa_seq_panel_plotly
+  )
   # Get the panel for the annotation track
   gene_model_panel_dt <- createGeneModelPanel(display_range, annotation,
                                            tx_annotation = tx_annotation,
@@ -19,7 +25,10 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
   layers <- if (nrow(gene_model_panel_dt[[1]]) == 0) 1L else max(gene_model_panel_dt[[1]]$layers)
 
   gene_model_panel <- geneModelPanelPlotly(gene_model_panel_dt[[1]])
-  seq_nt_panel <- ntSeqPanelPlotly(target_seq[[1]])
+  seq_nt_panel <- ntSeqPanelPlotly(
+    target_seq[[1]],
+    template = templates$nt_seq_panel_plotly
+  )
   return(list(seq_panel = seq_aa_panel, seq_nt_panel = seq_nt_panel,
               gene_model_panel_dt = gene_model_panel_dt[[1]],
               gene_model_panel = gene_model_panel, frame_colors = frame_colors,
@@ -29,7 +38,7 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
 multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, colors,
                                            ylabels, ylabels_full_name, lines,
                                            frames_type, summary_track, summary_track_type,
-                                           BPPARAM) {
+                                           BPPARAM, templates = NULL) {
   force(colors)
   force(lines)
   force(ylabels)
@@ -42,12 +51,14 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, c
     total_libs <- length(profiles)
     if (is(BPPARAM, "SerialParam")) {
       plots <- mapply(function(p,w,fc,c,yl,ylf, lib_index) {
-          createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
+          createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs,
+                           templates = templates)},
         profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_along(total_libs),
         SIMPLIFY = FALSE)
     } else {
       plots <- bpmapply(function(p,w,fc,c,yl,ylf, lib_index) {
-          createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs)},
+          createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs,
+                           templates = templates)},
         profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_along(total_libs),
         SIMPLIFY = FALSE, BPPARAM = BPPARAM)
     }
@@ -57,7 +68,7 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, c
   if (summary_track) {
     nplots <- nplots + 1
     plots <- make_summary_track(profiles, plots, withFrames, frame_colors, colors,
-                                lines, summary_track_type, nplots)
+                                lines, summary_track_type, nplots, templates = templates)
   }
   return(list(plots = plots, nplots = nplots, track_type = frames_type))
 }
@@ -282,6 +293,26 @@ browser_input_or_default <- function(input, name, default = NULL) {
   if (is.null(value) || length(value) == 0) default else value
 }
 
+browser_legend_cleanup <- function(plot) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+  seen_legends <- character()
+
+  for (i in seq_along(plot$x$data)) {
+    trace <- plot$x$data[[i]]
+    legend_key <- trace$legendgroup %||% trace$name
+
+    if (isTRUE(trace$showlegend) && !is.null(legend_key) && nzchar(legend_key)) {
+      if (legend_key %in% seen_legends) {
+        plot$x$data[[i]]$showlegend <- FALSE
+      } else {
+        seen_legends <- c(seen_legends, legend_key)
+      }
+    }
+  }
+
+  plot
+}
+
 observatory_selection_cache_key <- function(library_selections,
                                             library_selection_labels = NULL) {
   if (is.null(library_selections) || length(library_selections) == 0) return("")
@@ -461,6 +492,13 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
         orientation = "v"
       )
     )
+  multiomics_plot$x$layout$legend <- list(
+    x = 1.02,
+    xanchor = "left",
+    y = 0.92,
+    yanchor = "top",
+    orientation = "v"
+  )
 
   filename <- ifelse(plot_name == "default", names(display_range), plot_name)
   multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
@@ -479,6 +517,7 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
       multiomics_plot$x$layout[[axis_name]] <- axis
     }
   }
+  multiomics_plot <- browser_legend_cleanup(multiomics_plot)
   if (isTRUE(apply_line_desimplify)) {
     return(lineDeSimplify(multiomics_plot))
   }

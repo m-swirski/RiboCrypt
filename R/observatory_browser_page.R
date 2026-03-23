@@ -23,6 +23,7 @@ observatory_browser_server <- function(
   library_selection_labels,
   gene_name_list, tx, cds, experiments, org,
   rv, browser_options,
+  templates = NULL,
   selection_index = shiny::reactive(NULL),
   active_selection_id = shiny::reactive(NULL),
   selected_experiment = shiny::reactive(NULL),
@@ -60,7 +61,7 @@ observatory_browser_server <- function(
     # -- Plot rendering ----------------------------------------------------
 
     bottom_panel <- shiny::reactive({
-      bottom_panel_shiny(main_plot_controls)
+      bottom_panel_shiny(main_plot_controls, templates = templates)
     }) |>
       shiny::bindCache(main_plot_controls()$hash_bottom) |>
       shiny::bindEvent(main_plot_controls(), ignoreNULL = TRUE)
@@ -71,7 +72,8 @@ observatory_browser_server <- function(
         ylabels = names(main_plot_controls()$library_selections),
         profiles = main_plot_controls()$profiles,
         use_fst = TRUE,
-        selected_libraries = main_plot_controls()$library_selections
+        selected_libraries = main_plot_controls()$library_selections,
+        templates = templates
       )
     }) |>
       shiny::bindCache(main_plot_controls()$hash_browser) |>

@@ -2,10 +2,11 @@ createSinglePlot <- function(profile, withFrames, frame_colors, colors, ylabels,
                              ylabels_full_name = ylabels, lines, type = "lines",
                              lib_index, total_libs = 1,
                              flip_ylabel = type == "heatmap",
-                             as_plotly = TRUE) {
+                             as_plotly = TRUE,
+                             templates = NULL) {
   profile_plot <- singlePlot_select_plot_type(
     profile, withFrames, frame_colors, colors,
-    lines, type, lib_index
+    lines, type, lib_index, templates = templates
   )
   singlePlot_add_theme(
     profile_plot, ylabels, type, flip_ylabel,
@@ -82,7 +83,7 @@ getPlotAnimate <- function(profile, withFrames, colors, frame_colors,
 }
 
 make_summary_track <- function(profiles, plots, withFrames, frame_colors, colors,
-                               lines, summary_track_type, nplots) {
+                               lines, summary_track_type, nplots, templates = NULL) {
   count <- NULL # avoid bioccheck error
   summary_profile <- data.table::rbindlist(profiles)
   summary_profile <- summary_profile[, .(count = sum(count)), by = position]
@@ -90,7 +91,7 @@ make_summary_track <- function(profiles, plots, withFrames, frame_colors, colors
   summary_plot <- createSinglePlot(
     summary_profile, all(withFrames), frame_colors, colors[1], "summary",
     FALSE, lines, type = summary_track_type, flip_ylabel = FALSE,
-    lib_index = nplots, total_libs = nplots
+    lib_index = nplots, total_libs = nplots, templates = templates
   )
   plots[[nplots]] <- summary_plot
   rev(plots)

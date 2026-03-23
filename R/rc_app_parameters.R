@@ -109,6 +109,15 @@ rc_parameter_setup <- function() {
 
     tx_init <- loadRegion(exp_init)
     cds_init <- loadRegion(exp_init, "cds")
+    templates <- list(
+      nt_seq_panel_plotly = ntSeqPanelPlotlyTemplate(),
+      aa_seq_panel_plotly = aaSeqPanelPlotlyTemplate(),
+      cov_panel_with_frames_plotly = covPanelWithFramesPlotlyTemplate(),
+      cov_panel_without_frames_plotly = covPanelWithoutFramesPlotlyTemplate(),
+      cov_panel_columns_plotly = covPanelColumnsPlotlyTemplate(),
+      cov_panel_area_plotly = covPanelAreaPlotlyTemplate(),
+      cov_panel_heatmap_plotly = covPanelHeatmapPlotlyTemplate()
+    )
 
     exp_init_meta <- names_init_meta <- tx_init_meta <- cds_init_meta <- NULL
 

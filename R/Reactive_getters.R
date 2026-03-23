@@ -35,7 +35,7 @@ get_exp <- function(exp_name, experiments, env,
   return(exp)
 }
 
-bottom_panel_shiny <- function(mainPlotControls) {
+bottom_panel_shiny <- function(mainPlotControls, templates = NULL) {
   time_before <- Sys.time()
   print("Creating bottom panel..")
   viewMode <- ifelse(mainPlotControls()$viewMode, "genomic", "tx")
@@ -60,7 +60,8 @@ bottom_panel_shiny <- function(mainPlotControls) {
     viewMode,
     tx_annotation = mainPlotControls()$tx_annotation,
     mainPlotControls()$collapsed_introns_width,
-    mainPlotControls()$frame_colors
+    mainPlotControls()$frame_colors,
+    templates = templates
   )
   custom_bigwig_panels <- custom_seq_track_panels(
     df, annotation_list$display_range,
@@ -189,7 +190,8 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       frames_subset = mainPlotControls()$frames_subset,
                                       profiles = NULL,
                                       use_fst = FALSE,
-                                      selected_libraries = list()) {
+                                      selected_libraries = list(),
+                                      templates = NULL) {
   time_before <- Sys.time()
   print("Creating track panel..")
   # Input controller
@@ -208,11 +210,11 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
     colors, ylabels, ylabels_full_name,
     bottom_panel$lines, frames_type,
     summary_track, summary_track_type,
-    BPPARAM
+    BPPARAM,
+    templates = templates
   )
   timer_done_nice_print("Done (track panel):", time_before)
   time_before <- Sys.time()
-
   plot <- multiOmicsPlot_complete_plot(track_panel, bottom_panel,
     bottom_panel$display_range,
     proportions, seq_render_dist,

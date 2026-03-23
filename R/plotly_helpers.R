@@ -1,5 +1,4 @@
 lineDeSimplify <- function(plot) {
-  `%||%` <- function(x, y) if (is.null(x)) y else x
   plot <- withCallingHandlers(
     plotly_build(plot),
     warning = function(w) {
@@ -10,22 +9,12 @@ lineDeSimplify <- function(plot) {
       }
     }
   )
-  seen_legends <- character()
   for (i in 1:length(plot$x$data)) {
     trace <- plot$x$data[[i]]
     is_line_trace <- identical(trace$type, "scatter") &&
       identical(trace$mode, "lines")
     if (is_line_trace && !is.null(trace$line)) {
       plot$x$data[[i]]$line$simplify <- FALSE
-    }
-
-    legend_key <- trace$legendgroup %||% trace$name
-    if (isTRUE(trace$showlegend) && !is.null(legend_key) && nzchar(legend_key)) {
-      if (legend_key %in% seen_legends) {
-        plot$x$data[[i]]$showlegend <- FALSE
-      } else {
-        seen_legends <- c(seen_legends, legend_key)
-      }
     }
   }
   return(plot)

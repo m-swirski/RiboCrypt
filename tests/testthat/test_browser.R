@@ -631,6 +631,71 @@ test_that("plotAASeqPanelPlotly hides frame tick labels", {
   expect_false(isTRUE(p$x$layout$yaxis$showticklabels))
 })
 
+test_that("plotAASeqPanelPlotly reuses template shapes without mutating template", {
+  hits <- data.table::data.table(
+    col = "white",
+    pos = c(3L, 9L),
+    frames = c(0L, 1L)
+  )
+  template <- RiboCrypt:::aaSeqPanelPlotlyTemplate()
+
+  p <- RiboCrypt:::plotAASeqPanelPlotly(
+    hits,
+    Biostrings::DNAString("ATGATGATGATG"),
+    template = template
+  )
+  built <- plotly::plotly_build(p)
+
+  expect_equal(unname(p$x$layout$xaxis$range), c(1, 12))
+  expect_equal(vapply(p$x$layout$shapes, function(shape) shape$x1, numeric(1)), rep(12, 3))
+  expect_equal(vapply(template$x$layout$shapes, function(shape) shape$x1, numeric(1)), rep(1, 3))
+  expect_true(length(built$x$data) > length(template$x$data))
+})
+
+test_that("ntSeqPanelPlotly reuses template x-axis layout without mutating template", {
+  template <- RiboCrypt:::ntSeqPanelPlotlyTemplate()
+
+  p <- RiboCrypt:::ntSeqPanelPlotly(Biostrings::DNAString("ATGATG"), template = template)
+
+  expect_equal(unname(p$x$layout$xaxis$range), c(1, 6))
+  expect_equal(unname(template$x$layout$xaxis$range), c(1, 1))
+})
+
+test_that("multiOmicsPlot_bottom_panels uses nt sequence plotly template", {
+  display_range <- tx[1]
+  template <- RiboCrypt:::ntSeqPanelPlotlyTemplate()
+  aa_template <- RiboCrypt:::aaSeqPanelPlotlyTemplate()
+
+  panels <- RiboCrypt:::multiOmicsPlot_bottom_panels(
+    reference_sequence = ORFik::findFa(df),
+    display_range = display_range,
+    annotation = cds,
+    start_codons = "ATG",
+    stop_codons = c("TAA", "TAG", "TGA"),
+    custom_motif = NULL,
+    custom_regions = NULL,
+    viewMode = "tx",
+    tx_annotation = tx[1],
+    collapse_intron_flank = 100,
+    frame_colors = "R",
+    templates = list(
+      nt_seq_panel_plotly = template,
+      aa_seq_panel_plotly = aa_template
+    )
+  )
+
+  expect_equal(
+    unname(panels$seq_nt_panel$x$layout$xaxis$range),
+    c(1, Biostrings::nchar(panels$target_seq[[1]]))
+  )
+  expect_equal(unname(template$x$layout$xaxis$range), c(1, 1))
+  expect_equal(
+    vapply(panels$seq_panel$x$layout$shapes, function(shape) shape$x1, numeric(1)),
+    rep(Biostrings::nchar(panels$target_seq[[1]]), 3)
+  )
+  expect_equal(vapply(aa_template$x$layout$shapes, function(shape) shape$x1, numeric(1)), rep(1, 3))
+})
+
 test_that("browser_plot_final_layout_polish keeps x ticks only on bottom shared axis", {
   p <- plotly::subplot(
     plotly::plot_ly(x = 1:3, y = 1:3, type = "scatter", mode = "lines"),
@@ -697,7 +762,7 @@ test_that("browser_plot_final_layout_polish applies zoom_range to non-default sh
   expect_identical(polished$x$layout$xaxis2$title$text, "position [nt]")
 })
 
-test_that("lineDeSimplify keeps one legend item per shared frame", {
+test_that("browser_legend_cleanup keeps one legend item per shared frame", {
   profile <- data.table::data.table(
     position = 1:6,
     count = c(1, 2, 3, 2, 1, 0),
@@ -713,7 +778,7 @@ test_that("lineDeSimplify keeps one legend item per shared frame", {
     type = "lines", lib_index = 2, total_libs = 2
   )
 
-  polished <- RiboCrypt:::lineDeSimplify(
+  polished <- RiboCrypt:::browser_legend_cleanup(
     plotly::subplot(list(p1, p2), nrows = 2, shareX = TRUE, titleY = TRUE, titleX = TRUE)
   )
 
@@ -777,6 +842,107 @@ test_that("createSinglePlot uses native plotly traces for supported track types"
   ))
   expect_identical(heatmap_plot$x$data[[1]]$type, "heatmap")
   expect_false(isTRUE(heatmap_plot$x$data[[1]]$showscale))
+})
+
+test_that("createSinglePlot reuses framed coverage template for line tracks", {
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+  template <- RiboCrypt:::covPanelWithFramesPlotlyTemplate()
+
+  p <- RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "lines", lib_index = 1, total_libs = 2,
+    templates = list(cov_panel_with_frames_plotly = template)
+  )
+  built <- plotly::plotly_build(p)
+
+  expect_equal(length(built$x$data), 4)
+  expect_equal(vapply(built$x$data[1:3], function(tr) length(tr$x), integer(1)), c(4L, 4L, 4L))
+  expect_equal(vapply(template$x$data, function(tr) length(tr$x), integer(1)), c(1L, 1L, 1L))
+})
+
+test_that("createSinglePlot reuses non-framed coverage template for line tracks", {
+  profile <- data.table::data.table(
+    position = 1:4,
+    count = c(1, 2, 3, 2)
+  )
+  template <- RiboCrypt:::covPanelWithoutFramesPlotlyTemplate()
+
+  p <- RiboCrypt:::createSinglePlot(
+    profile, FALSE, "R", "#4C78A8", "a", "a", numeric(),
+    type = "lines", lib_index = 1, total_libs = 2,
+    templates = list(cov_panel_without_frames_plotly = template)
+  )
+  built <- plotly::plotly_build(p)
+
+  expect_true(length(built$x$data) >= 2)
+  expect_equal(as.numeric(built$x$data[[1]]$x), 1:4)
+  expect_equal(as.numeric(built$x$data[[1]]$y), c(1, 2, 3, 2))
+  expect_identical(length(template$x$data[[1]]$x), 1L)
+})
+
+test_that("createSinglePlot reuses column coverage template", {
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+  template <- RiboCrypt:::covPanelColumnsPlotlyTemplate()
+
+  p <- RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "columns", lib_index = 1, total_libs = 2,
+    templates = list(cov_panel_columns_plotly = template)
+  )
+  built <- plotly::plotly_build(p)
+
+  expect_true(all(vapply(built$x$data[1:3], function(tr) identical(tr$type, "bar"), logical(1))))
+  expect_equal(vapply(built$x$data[1:3], function(tr) length(tr$x), integer(1)), c(4L, 4L, 4L))
+  expect_equal(vapply(template$x$data, function(tr) length(tr$x), integer(1)), c(1L, 1L, 1L))
+})
+
+test_that("createSinglePlot reuses area coverage template", {
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+  template <- RiboCrypt:::covPanelAreaPlotlyTemplate()
+
+  p <- RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "area", lib_index = 1, total_libs = 2,
+    templates = list(cov_panel_area_plotly = template)
+  )
+  built <- plotly::plotly_build(p)
+
+  expect_true(all(vapply(built$x$data[1:3], function(tr) identical(tr$fill, "tozeroy"), logical(1))))
+  expect_equal(vapply(built$x$data[1:3], function(tr) length(tr$x), integer(1)), c(4L, 4L, 4L))
+  expect_equal(vapply(template$x$data, function(tr) length(tr$x), integer(1)), c(1L, 1L, 1L))
+})
+
+test_that("createSinglePlot reuses heatmap coverage template", {
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+  template <- RiboCrypt:::covPanelHeatmapPlotlyTemplate()
+
+  p <- RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "heatmap", lib_index = 1, total_libs = 2,
+    templates = list(cov_panel_heatmap_plotly = template)
+  )
+  built <- plotly::plotly_build(p)
+
+  expect_identical(built$x$data[[1]]$type, "heatmap")
+  expect_equal(as.numeric(built$x$data[[1]]$x), rep(1:4, each = 3))
+  expect_identical(dim(built$x$data[[1]]$z), c(1L, 12L))
+  expect_identical(length(template$x$data[[1]]$x), 1L)
 })
 
 test_that("getPlotAnimate produces native plotly animation frames", {

@@ -9,6 +9,101 @@ resolve_track_color <- function(color) {
   as.character(color)
 }
 
+covPanelWithFramesPlotlyTemplate <- function() {
+  frame_names <- c("0", "1", "2")
+  p <- plotly::plot_ly()
+  for (frame_name in frame_names) {
+    p <- plotly::add_trace(
+      p,
+      x = numeric(),
+      y = numeric(),
+      type = "scatter",
+      mode = "lines",
+      name = frame_name,
+      legendgroup = frame_name,
+      line = list(color = "#000000", width = 0.8),
+      hovertemplate = track_hover_template(include_frame = TRUE),
+      showlegend = TRUE,
+      inherit = FALSE
+    )
+  }
+  plotly::plotly_build(p)
+}
+
+covPanelWithoutFramesPlotlyTemplate <- function() {
+  plotly::plotly_build(
+    plotly::plot_ly(
+      x = numeric(),
+      y = numeric(),
+      type = "scatter",
+      mode = "lines",
+      line = list(color = "black", width = 0.5),
+      fill = "tozeroy",
+      fillcolor = resolve_track_fill_color(NULL),
+      hovertemplate = track_hover_template(),
+      showlegend = FALSE
+    )
+  )
+}
+
+covPanelColumnsPlotlyTemplate <- function() {
+  p <- plotly::plot_ly()
+  for (frame_name in c("0", "1", "2")) {
+    p <- plotly::add_trace(
+      p,
+      x = numeric(),
+      y = numeric(),
+      type = "bar",
+      name = frame_name,
+      legendgroup = frame_name,
+      marker = list(color = "#000000"),
+      hovertemplate = track_hover_template(include_frame = TRUE),
+      showlegend = TRUE,
+      inherit = FALSE
+    )
+  }
+  plotly::plotly_build(p)
+}
+
+covPanelAreaPlotlyTemplate <- function() {
+  p <- plotly::plot_ly()
+  for (frame_name in c("0", "1", "2")) {
+    p <- plotly::add_trace(
+      p,
+      x = numeric(),
+      y = numeric(),
+      type = "scatter",
+      mode = "lines",
+      name = frame_name,
+      legendgroup = frame_name,
+      line = list(color = "black", width = 0.4),
+      fill = "tozeroy",
+      fillcolor = "#00000099",
+      hovertemplate = track_hover_template(include_frame = TRUE),
+      showlegend = TRUE,
+      inherit = FALSE
+    )
+  }
+  plotly::plotly_build(p)
+}
+
+covPanelHeatmapPlotlyTemplate <- function() {
+  hm_colors <- c("white", "yellow1", "yellow2", "yellow3",
+                 "lightblue", "blue", "navy")
+  plotly::plotly_build(
+    plotly::plot_ly(
+      x = 1,
+      y = 1,
+      z = matrix(0, nrow = 1),
+      type = "heatmap",
+      colors = hm_colors,
+      showscale = FALSE,
+      hovertemplate = track_hover_template(type = "heatmap"),
+      showlegend = FALSE
+    )
+  )
+}
+
 track_frame_levels <- function(profile) {
   frame <- profile$frame
   if (is.factor(frame)) {
@@ -77,7 +172,8 @@ track_guides <- function(plot, x_range, y_max, lines = numeric(), add_zero = TRU
 }
 
 singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, colors,
-                                        lines, type, lib_index, line_size = 0.2) {
+                                        lines, type, lib_index, line_size = 0.2,
+                                        templates = NULL) {
   count <- NULL # Avoid data.table warning
   profile <- data.table::as.data.table(profile)
   frame_theme <- frame_colors
@@ -90,11 +186,28 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
   }
 
   if (type == "heatmap") {
-    hm_colors <- c("white", "yellow1", "yellow2", "yellow3",
-                   "lightblue", "blue", "navy")
     pro <- data.table::copy(profile)
     pro[, count := log2(count + 1)]
+    if (inherits(templates$cov_panel_heatmap_plotly, "plotly")) {
+      plot <- templates$cov_panel_heatmap_plotly
+      plot$x$data[[1]]$x <- pro$position
+      plot$x$data[[1]]$y <- lib_index
+      plot$x$data[[1]]$z <- matrix(pro$count, nrow = 1)
+      plot$x$data[[1]]$colorscale <- NULL
+      plot$x$data[[1]]$zmin <- NULL
+      plot$x$data[[1]]$zmax <- NULL
+      plot$x$data[[1]]$zauto <- NULL
+      plot$x$data[[1]]$autocolorscale <- NULL
+      if (length(plot$x$attrs) >= 1) {
+        plot$x$attrs[[1]]$x <- pro$position
+        plot$x$attrs[[1]]$y <- lib_index
+        plot$x$attrs[[1]]$z <- matrix(pro$count, nrow = 1)
+      }
+      return(plot)
+    }
 
+    hm_colors <- c("white", "yellow1", "yellow2", "yellow3",
+                   "lightblue", "blue", "navy")
     return(plotly::plot_ly(
       x = pro$position,
       y = lib_index,
@@ -113,75 +226,137 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
   if (!is.finite(guide_y_max) || guide_y_max <= 0) guide_y_max <- 1
 
   if (!withFrames) {
-    fill_color <- resolve_track_fill_color(colors)
-    plot <- plotly::add_trace(
-      plot,
-      data = profile,
-      x = ~position,
-      y = ~count,
-      type = "scatter",
-      mode = "lines",
-      line = list(color = "black", width = 0.5),
-      fill = "tozeroy",
-      fillcolor = grDevices::adjustcolor(fill_color, alpha.f = track_area_fill_alpha()),
-      hovertemplate = track_hover_template(),
-      showlegend = FALSE
-    )
-  } else if (type == "lines") {
-    for (frame_name in frame_levels) {
-      frame_dt <- profile[as.character(frame) == frame_name]
+    if (type == "lines" && inherits(templates$cov_panel_without_frames_plotly, "plotly")) {
+      plot <- templates$cov_panel_without_frames_plotly
+      fill_color <- resolve_track_fill_color(colors)
+      plot$x$data[[1]]$x <- profile$position
+      plot$x$data[[1]]$y <- profile$count
+      plot$x$data[[1]]$fillcolor <- grDevices::adjustcolor(
+        fill_color,
+        alpha.f = track_area_fill_alpha()
+      )
+    } else {
+      fill_color <- resolve_track_fill_color(colors)
       plot <- plotly::add_trace(
         plot,
-        data = frame_dt,
+        data = profile,
         x = ~position,
         y = ~count,
         type = "scatter",
         mode = "lines",
-        name = frame_name,
-        legendgroup = frame_name,
-        line = list(color = frame_colors[[frame_name]], width = 0.8),
-        hovertemplate = track_hover_template(include_frame = TRUE),
-        showlegend = TRUE
+        line = list(color = "black", width = 0.5),
+        fill = "tozeroy",
+        fillcolor = grDevices::adjustcolor(fill_color, alpha.f = track_area_fill_alpha()),
+        hovertemplate = track_hover_template(),
+        showlegend = FALSE
       )
     }
+  } else if (type == "lines") {
+    if (inherits(templates$cov_panel_with_frames_plotly, "plotly")) {
+      plot <- templates$cov_panel_with_frames_plotly
+      for (i in seq_along(frame_levels)) {
+        frame_name <- frame_levels[[i]]
+        frame_dt <- profile[as.character(frame) == frame_name]
+        plot$x$data[[i]]$x <- frame_dt$position
+        plot$x$data[[i]]$y <- frame_dt$count
+        plot$x$data[[i]]$name <- frame_name
+        plot$x$data[[i]]$legendgroup <- frame_name
+        plot$x$data[[i]]$line$color <- frame_colors[[frame_name]]
+      }
+      if (length(plot$x$data) > length(frame_levels)) {
+        plot$x$data <- plot$x$data[seq_along(frame_levels)]
+      }
+    } else {
+      for (frame_name in frame_levels) {
+        frame_dt <- profile[as.character(frame) == frame_name]
+        plot <- plotly::add_trace(
+          plot,
+          data = frame_dt,
+          x = ~position,
+          y = ~count,
+          type = "scatter",
+          mode = "lines",
+          name = frame_name,
+          legendgroup = frame_name,
+          line = list(color = frame_colors[[frame_name]], width = 0.8),
+          hovertemplate = track_hover_template(include_frame = TRUE),
+          showlegend = TRUE
+        )
+      }
+    }
   } else if (type == "columns") {
-    for (frame_name in frame_levels) {
-      frame_dt <- profile[as.character(frame) == frame_name]
-      plot <- plotly::add_trace(
-        plot,
-        data = frame_dt,
-        x = ~position,
-        y = ~count,
-        type = "bar",
-        name = frame_name,
-        legendgroup = frame_name,
-        marker = list(color = frame_colors[[frame_name]]),
-        hovertemplate = track_hover_template(include_frame = TRUE),
-        showlegend = TRUE
-      )
+    if (inherits(templates$cov_panel_columns_plotly, "plotly")) {
+      plot <- templates$cov_panel_columns_plotly
+      for (i in seq_along(frame_levels)) {
+        frame_name <- frame_levels[[i]]
+        frame_dt <- profile[as.character(frame) == frame_name]
+        plot$x$data[[i]]$x <- frame_dt$position
+        plot$x$data[[i]]$y <- frame_dt$count
+        plot$x$data[[i]]$name <- frame_name
+        plot$x$data[[i]]$legendgroup <- frame_name
+        plot$x$data[[i]]$marker$color <- frame_colors[[frame_name]]
+      }
+      if (length(plot$x$data) > length(frame_levels)) {
+        plot$x$data <- plot$x$data[seq_along(frame_levels)]
+      }
+    } else {
+      for (frame_name in frame_levels) {
+        frame_dt <- profile[as.character(frame) == frame_name]
+        plot <- plotly::add_trace(
+          plot,
+          data = frame_dt,
+          x = ~position,
+          y = ~count,
+          type = "bar",
+          name = frame_name,
+          legendgroup = frame_name,
+          marker = list(color = frame_colors[[frame_name]]),
+          hovertemplate = track_hover_template(include_frame = TRUE),
+          showlegend = TRUE
+        )
+      }
     }
   } else if (type == "area") {
     frame_fill_colors <- track_frame_colors(frame_levels, frame_theme, with_alpha = TRUE)
-    for (frame_name in frame_levels) {
-      frame_dt <- profile[as.character(frame) == frame_name]
-      plot <- plotly::add_trace(
-        plot,
-        data = frame_dt,
-        x = ~position,
-        y = ~count,
-        type = "scatter",
-        mode = "lines",
-        name = frame_name,
-        legendgroup = frame_name,
-        line = list(color = "black", width = 0.4),
-        fill = "tozeroy",
-        fillcolor = grDevices::adjustcolor(
+    if (inherits(templates$cov_panel_area_plotly, "plotly")) {
+      plot <- templates$cov_panel_area_plotly
+      for (i in seq_along(frame_levels)) {
+        frame_name <- frame_levels[[i]]
+        frame_dt <- profile[as.character(frame) == frame_name]
+        plot$x$data[[i]]$x <- frame_dt$position
+        plot$x$data[[i]]$y <- frame_dt$count
+        plot$x$data[[i]]$name <- frame_name
+        plot$x$data[[i]]$legendgroup <- frame_name
+        plot$x$data[[i]]$fillcolor <- grDevices::adjustcolor(
           frame_fill_colors[[frame_name]],
           alpha.f = track_area_fill_alpha()
-        ),
-        hovertemplate = track_hover_template(include_frame = TRUE),
-        showlegend = TRUE
-      )
+        )
+      }
+      if (length(plot$x$data) > length(frame_levels)) {
+        plot$x$data <- plot$x$data[seq_along(frame_levels)]
+      }
+    } else {
+      for (frame_name in frame_levels) {
+        frame_dt <- profile[as.character(frame) == frame_name]
+        plot <- plotly::add_trace(
+          plot,
+          data = frame_dt,
+          x = ~position,
+          y = ~count,
+          type = "scatter",
+          mode = "lines",
+          name = frame_name,
+          legendgroup = frame_name,
+          line = list(color = "black", width = 0.4),
+          fill = "tozeroy",
+          fillcolor = grDevices::adjustcolor(
+            frame_fill_colors[[frame_name]],
+            alpha.f = track_area_fill_alpha()
+          ),
+          hovertemplate = track_hover_template(include_frame = TRUE),
+          showlegend = TRUE
+        )
+      }
     }
   } else if (type == "stacks") {
     for (frame_name in frame_levels) {

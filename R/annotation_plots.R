@@ -51,32 +51,14 @@ plotAASeqPanel <- function(hits, sequence, frame_colors = "R", theme_template = 
   return(fig)
 }
 
-plotAASeqPanelPlotly <- function(hits, sequence, frame_colors = "R") {
+plotAASeqPanelPlotly <- function(hits, sequence, frame_colors = "R", template = NULL) {
   seq_length <- nchar(as.character(sequence))
-  frame_colors <- frame_color_themes(frame_colors, FALSE)
-
-  shapes <- lapply(seq_len(3), function(i) {
-    list(
-      type = "rect",
-      x0 = 1,
-      x1 = seq_length,
-      y0 = 2 - i,
-      y1 = 3 - i,
-      fillcolor = frame_colors[i],
-      line = list(color = frame_colors[i], width = 0),
-      layer = "below"
-    )
-  })
-
-  p <- plotly::plot_ly(
-    x = c(1, seq_length),
-    y = c(-1, 2),
-    type = "scatter",
-    mode = "markers",
-    hoverinfo = "none",
-    showlegend = FALSE,
-    marker = list(opacity = 0)
-  )
+  if (inherits(template, "plotly")) {
+    p <- template
+  } else {
+    p <- aaSeqPanelPlotlyTemplate(frame_colors = frame_colors)
+  }
+  p <- aaSeqPanelPlotlySetRange(p, seq_length)
 
   if (nrow(hits) > 0) {
     hits <- data.table::copy(hits)
@@ -108,63 +90,157 @@ plotAASeqPanelPlotly <- function(hits, sequence, frame_colors = "R") {
     }
   }
 
-  p %>%
-    plotly::layout(
-      margin = list(t = 0, r = 0, b = 40, l = 40, pad = 0),
-      shapes = shapes,
-      yaxis = list(
-        autorange = FALSE,
-        fixedrange = TRUE,
-        range = c(-1, 2),
-        zeroline = TRUE,
-        showgrid = FALSE,
-        showticklabels = FALSE,
-        ticks = "",
-        title = "frame"
-      ),
-      xaxis = list(
-        autorange = FALSE,
-        range = c(1, seq_length),
-        showgrid = FALSE,
-        title = list(text = "position [nt]")
-      )
-    )
+  p
 }
 
-ntSeqPanelPlotly <- function(sequence) {
+aaSeqPanelPlotlySetRange <- function(plot, seq_length) {
+  plot$x$data[[1]]$x <- c(1, seq_length)
+  plot$x$data[[1]]$y <- c(-1, 2)
+
+  if (length(plot$x$attrs) >= 1) {
+    plot$x$attrs[[1]]$x <- c(1, seq_length)
+    plot$x$attrs[[1]]$y <- c(-1, 2)
+  }
+
+  if (length(plot$x$layoutAttrs) == 0) {
+    plot$x$layoutAttrs <- list(list())
+  }
+  if (is.null(plot$x$layoutAttrs[[1]]$xaxis)) plot$x$layoutAttrs[[1]]$xaxis <- list()
+  if (is.null(plot$x$layoutAttrs[[1]]$yaxis)) plot$x$layoutAttrs[[1]]$yaxis <- list()
+  plot$x$layoutAttrs[[1]]$xaxis$range <- c(1, seq_length)
+  plot$x$layoutAttrs[[1]]$yaxis$range <- c(-1, 2)
+
+  plot$x$layout$xaxis$range <- c(1, seq_length)
+  plot$x$layout$yaxis$range <- c(-1, 2)
+
+  if (!is.null(plot$x$layout$shapes)) {
+    for (i in seq_along(plot$x$layout$shapes)) {
+      plot$x$layout$shapes[[i]]$x1 <- seq_length
+    }
+  }
+
+  plot
+}
+
+aaSeqPanelPlotlyTemplate <- function(frame_colors = "R") {
+  frame_colors <- frame_color_themes(frame_colors, FALSE)
+  shapes <- lapply(seq_len(3), function(i) {
+    list(
+      type = "rect",
+      x0 = 1,
+      x1 = 1,
+      y0 = 2 - i,
+      y1 = 3 - i,
+      fillcolor = frame_colors[i],
+      line = list(color = frame_colors[i], width = 0),
+      layer = "below"
+    )
+  })
+
+  p <- plotly::plotly_build(
+    plotly::plot_ly(
+      x = c(1, 1),
+      y = c(-1, 2),
+      type = "scatter",
+      mode = "markers",
+      hoverinfo = "none",
+      showlegend = FALSE,
+      marker = list(opacity = 0)
+    ) %>%
+      plotly::layout(
+        margin = list(t = 0, r = 0, b = 40, l = 40, pad = 0),
+        shapes = shapes,
+        yaxis = list(
+          autorange = FALSE,
+          fixedrange = TRUE,
+          range = c(-1, 2),
+          zeroline = TRUE,
+          showgrid = FALSE,
+          showticklabels = FALSE,
+          ticks = "",
+          title = "frame"
+        ),
+        xaxis = list(
+          autorange = FALSE,
+          range = c(1, 1),
+          showgrid = FALSE,
+          title = list(text = "position [nt]")
+        )
+      )
+  )
+
+  aaSeqPanelPlotlySetRange(p, 1)
+}
+
+ntSeqPanelPlotlySetRange <- function(plot, seq_length) {
+  plot$x$data[[1]]$x <- c(1, seq_length)
+  plot$x$data[[1]]$y <- c(0, 1)
+
+  if (length(plot$x$attrs) >= 1) {
+    plot$x$attrs[[1]]$x <- c(1, seq_length)
+    plot$x$attrs[[1]]$y <- c(0, 1)
+  }
+
+  if (length(plot$x$layoutAttrs) == 0) {
+    plot$x$layoutAttrs <- list(list())
+  }
+  if (is.null(plot$x$layoutAttrs[[1]]$xaxis)) plot$x$layoutAttrs[[1]]$xaxis <- list()
+  if (is.null(plot$x$layoutAttrs[[1]]$yaxis)) plot$x$layoutAttrs[[1]]$yaxis <- list()
+  plot$x$layoutAttrs[[1]]$xaxis$range <- c(1, seq_length)
+  plot$x$layoutAttrs[[1]]$yaxis$range <- c(0, 1)
+
+  plot$x$layout$xaxis$range <- c(1, seq_length)
+  plot$x$layout$yaxis$range <- c(0, 1)
+  plot
+}
+
+ntSeqPanelPlotlyTemplate <- function() {
+  p <- plotly::plotly_build(
+    plotly::plot_ly(
+      x = c(1, 1),
+      y = c(0, 1),
+      type = "scatter",
+      mode = "markers",
+      hoverinfo = "none",
+      showlegend = FALSE,
+      marker = list(opacity = 0)
+    ) %>%
+      plotly::layout(
+        margin = list(t = 0, r = 0, b = 0, l = 0, pad = 0),
+        yaxis = list(
+          autorange = FALSE,
+          fixedrange = TRUE,
+          range = c(0, 1),
+          showgrid = FALSE,
+          showticklabels = FALSE,
+          ticks = "",
+          zeroline = FALSE,
+          title = list(text = "")
+        ),
+        xaxis = list(
+          autorange = FALSE,
+          range = c(1, 1),
+          showgrid = FALSE,
+          showticklabels = FALSE,
+          ticks = "",
+          zeroline = FALSE,
+          title = list(text = "")
+        )
+      )
+  )
+  ntSeqPanelPlotlySetRange(p, 1)
+}
+
+ntSeqPanelPlotly <- function(sequence, template = NULL) {
   seq_length <- nchar(as.character(sequence))
 
-  plotly::plot_ly(
-    x = c(1, seq_length),
-    y = c(0, 1),
-    type = "scatter",
-    mode = "markers",
-    hoverinfo = "none",
-    showlegend = FALSE,
-    marker = list(opacity = 0)
-  ) %>%
-    plotly::layout(
-      margin = list(t = 0, r = 0, b = 0, l = 0, pad = 0),
-      yaxis = list(
-        autorange = FALSE,
-        fixedrange = TRUE,
-        range = c(0, 1),
-        showgrid = FALSE,
-        showticklabels = FALSE,
-        ticks = "",
-        zeroline = FALSE,
-        title = list(text = "")
-      ),
-      xaxis = list(
-        autorange = FALSE,
-        range = c(1, seq_length),
-        showgrid = FALSE,
-        showticklabels = FALSE,
-        ticks = "",
-        zeroline = FALSE,
-        title = list(text = "")
-      )
-    )
+  if (inherits(template, "plotly")) {
+    p <- template
+    return(ntSeqPanelPlotlySetRange(p, seq_length))
+  }
+
+  p <- ntSeqPanelPlotlyTemplate()
+  ntSeqPanelPlotlySetRange(p, seq_length)
 }
 
 seqPanelPlotTemplate <- function(theme_template) {
@@ -673,4 +749,3 @@ margin_megabrowser <- function() {
     b = 0
   )
 }
-

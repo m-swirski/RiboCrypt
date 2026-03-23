@@ -120,7 +120,7 @@ RiboCrypt_app <- function(
     rv <- browser_server(
       "browser", all_exp, without_readlengths_env, df,
       experiments, tx, cds, libs, org, gene_name_list,
-      rv, browser_options
+      rv, browser_options, templates = templates
     )
     if (nrow(all_exp_meta) > 0) {
       collection_pages <- function(input, output, session, df,
@@ -136,7 +136,8 @@ RiboCrypt_app <- function(
         rv <- observatory_server(
           "observatory", all_exp, df, experiments,
           gene_name_list, tx, cds, org,
-          metadata, browser_options, rv
+          metadata, browser_options, rv,
+          templates = templates
         )
       }
       collection_pages(input, output, session,

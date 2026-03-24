@@ -403,7 +403,8 @@ add_alpha <- function(cols, alpha = 0.7) {
 }
 
 profile_plotly_gl <- function(dt, frame_colors = frame_color_themes("R"),
-                              bar_px = 6, alpha = 0.7) {
+                              bar_px = 6, alpha = 0.7,
+                              template = covPanelColumnsGLPlotlyTemplate(bar_px = bar_px)) {
   # dt needs: position, count, frame
   stopifnot(is.data.table(dt) || is.data.frame(dt))
   dt <- as.data.table(dt)
@@ -413,8 +414,10 @@ profile_plotly_gl <- function(dt, frame_colors = frame_color_themes("R"),
   dt[, frame := as.character(frame)]
   frame_colors <- add_alpha(frame_colors, alpha)
 
-  p <- plot_ly()
-  for (fr in unique(dt$frame)) {
+  p <- template
+  frame_levels <- sort(unique(dt$frame))
+  for (i in seq_along(frame_levels)) {
+    fr <- frame_levels[[i]]
     d <- dt[frame == fr]
     if (nrow(d) == 0L) next
 
@@ -423,24 +426,20 @@ profile_plotly_gl <- function(dt, frame_colors = frame_color_themes("R"),
       "<br>pos: ", d$position,
       "<br>count: ", d$count
     )
-    # Build vertical segments: (x,0)->(x,count), separated by NA
-    xseg <- c(rbind(d$position, d$position, NA_real_))
-    yseg <- c(rbind(rep(0, nrow(d)), d$count,   NA_real_))
-    textseg <- c(rbind(tt, tt, NA_character_))
+    seg <- track_vertical_segments(d$position, d$count, tt)
 
     col <- frame_colors[as.integer(fr) + 1L]
     if (is.null(col)) col <- "grey50"
 
-    p <- p %>%
-      add_trace(
-        x = xseg, y = yseg,
-        type = "scattergl", mode = "lines",
-        name = fr,
-        line = list(color = col, width = bar_px),
-        hoverinfo = "text",
-        text = textseg,
-        showlegend = TRUE
-      )
+    p$x$data[[i]]$x <- seg$x
+    p$x$data[[i]]$y <- seg$y
+    p$x$data[[i]]$text <- seg$text
+    p$x$data[[i]]$name <- fr
+    p$x$data[[i]]$legendgroup <- fr
+    p$x$data[[i]]$line$color <- col
+  }
+  if (length(p$x$data) > length(frame_levels)) {
+    p$x$data <- p$x$data[seq_along(frame_levels)]
   }
 
   p %>%

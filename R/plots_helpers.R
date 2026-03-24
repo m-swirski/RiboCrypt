@@ -9,6 +9,18 @@ resolve_track_color <- function(color) {
   as.character(color)
 }
 
+track_vertical_segments <- function(x, y, text = NULL) {
+  xseg <- c(rbind(x, x, NA_real_))
+  yseg <- c(rbind(rep(0, length(y)), y, NA_real_))
+  textseg <- NULL
+  if (!is.null(text)) {
+    textseg <- c(rbind(text, text, NA_character_))
+  }
+  list(x = xseg, y = yseg, text = textseg)
+}
+
+columns_zoom_switch_threshold <- function() 5000
+
 covPanelWithFramesPlotlyTemplate <- function() {
   frame_names <- c("0", "1", "2")
   p <- plotly::plot_ly()
@@ -51,13 +63,55 @@ covPanelColumnsPlotlyTemplate <- function() {
   for (frame_name in c("0", "1", "2")) {
     p <- plotly::add_trace(
       p,
-      x = numeric(),
-      y = numeric(),
-      type = "bar",
+      x = c(NA_real_),
+      y = c(NA_real_),
+      type = "scattergl",
+      mode = "lines",
       name = frame_name,
       legendgroup = frame_name,
-      marker = list(color = "#000000"),
+      line = list(color = "#000000", width = 6, simplify = FALSE),
+      hovertemplate = "%{text}<extra></extra>",
+      text = NA_character_,
+      meta = list(rc_columns_switch = "gl_subset"),
+      showlegend = TRUE,
+      visible = "legendonly",
+      inherit = FALSE
+    )
+  }
+  for (frame_name in c("0", "1", "2")) {
+    p <- plotly::add_trace(
+      p,
+      x = numeric(),
+      y = numeric(),
+      type = "scatter",
+      mode = "lines",
+      name = frame_name,
+      legendgroup = frame_name,
+      line = list(color = "#000000", width = 0.8, simplify = FALSE),
       hovertemplate = track_hover_template(include_frame = TRUE),
+      meta = list(rc_columns_switch = "line"),
+      showlegend = FALSE,
+      visible = TRUE,
+      inherit = FALSE
+    )
+  }
+  plotly::plotly_build(p)
+}
+
+covPanelColumnsGLPlotlyTemplate <- function(bar_px = 6) {
+  p <- plotly::plot_ly()
+  for (frame_name in c("0", "1", "2")) {
+    p <- plotly::add_trace(
+      p,
+      x = c(NA_real_),
+      y = c(NA_real_),
+      type = "scattergl",
+      mode = "lines",
+      name = frame_name,
+      legendgroup = frame_name,
+      line = list(color = "#000000", width = bar_px, simplify = FALSE),
+      hovertemplate = "%{text}<extra></extra>",
+      text = NA_character_,
       showlegend = TRUE,
       inherit = FALSE
     )
@@ -221,6 +275,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
   }
 
   plot <- plotly::plot_ly()
+  columns_trace_group <- paste0("track_", lib_index)
   guide_y_max <- max(profile$count, na.rm = TRUE)
   x_range <- range(profile$position, na.rm = TRUE)
   if (!is.finite(guide_y_max) || guide_y_max <= 0) guide_y_max <- 1
@@ -287,19 +342,92 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
   } else if (type == "columns") {
     if (inherits(templates$cov_panel_columns_plotly, "plotly")) {
       plot <- templates$cov_panel_columns_plotly
+      is_gl_template <- identical(plot$x$data[[1]]$type, "scattergl")
+      has_switch_lines <- length(plot$x$data) > length(frame_levels)
       for (i in seq_along(frame_levels)) {
         frame_name <- frame_levels[[i]]
         frame_dt <- profile[as.character(frame) == frame_name]
-        plot$x$data[[i]]$x <- frame_dt$position
-        plot$x$data[[i]]$y <- frame_dt$count
         plot$x$data[[i]]$name <- frame_name
         plot$x$data[[i]]$legendgroup <- frame_name
-        plot$x$data[[i]]$marker$color <- frame_colors[[frame_name]]
+        if (is_gl_template) {
+          plot$x$data[[i]]$line$color <- frame_colors[[frame_name]]
+          plot$x$data[[i]]$meta <- c(
+            plot$x$data[[i]]$meta,
+            list(
+              rc_columns_group = columns_trace_group,
+              rc_columns_frame = frame_name
+            )
+          )
+          if (has_switch_lines) {
+            plot$x$data[[i]]$x <- c(NA_real_)
+            plot$x$data[[i]]$y <- c(NA_real_)
+            plot$x$data[[i]]$text <- NA_character_
+            plot$x$data[[i]]$visible <- "legendonly"
+            line_index <- i + length(frame_levels)
+            plot$x$data[[line_index]]$x <- frame_dt$position
+            plot$x$data[[line_index]]$y <- frame_dt$count
+            plot$x$data[[line_index]]$line$color <- frame_colors[[frame_name]]
+            plot$x$data[[line_index]]$meta <- c(
+              plot$x$data[[line_index]]$meta,
+              list(
+                rc_columns_group = columns_trace_group,
+                rc_columns_frame = frame_name
+              )
+            )
+            plot$x$data[[line_index]]$visible <- TRUE
+          } else {
+            hover_text <- paste0(
+              "position: ", frame_dt$position,
+              "<br>count: ", frame_dt$count,
+              "<br>frame: ", frame_name
+            )
+            seg <- track_vertical_segments(frame_dt$position, frame_dt$count, hover_text)
+            plot$x$data[[i]]$x <- seg$x
+            plot$x$data[[i]]$y <- seg$y
+            plot$x$data[[i]]$text <- seg$text
+          }
+        } else {
+          plot$x$data[[i]]$x <- frame_dt$position
+          plot$x$data[[i]]$y <- frame_dt$count
+          plot$x$data[[i]]$width <- 1
+          plot$x$data[[i]]$marker$color <- frame_colors[[frame_name]]
+          line_index <- i + length(frame_levels)
+          plot$x$data[[line_index]]$x <- frame_dt$position
+          plot$x$data[[line_index]]$y <- frame_dt$count
+          plot$x$data[[line_index]]$line$color <- frame_colors[[frame_name]]
+        }
       }
-      if (length(plot$x$data) > length(frame_levels)) {
-        plot$x$data <- plot$x$data[seq_along(frame_levels)]
+      keep_length <- if (is_gl_template && !has_switch_lines) {
+        length(frame_levels)
+      } else {
+        length(frame_levels) * 2
+      }
+      if (length(plot$x$data) > keep_length) {
+        plot$x$data <- plot$x$data[seq_len(keep_length)]
       }
     } else {
+      for (frame_name in frame_levels) {
+        plot <- plotly::add_trace(
+          plot,
+          x = c(NA_real_),
+          y = c(NA_real_),
+          text = NA_character_,
+          type = "scattergl",
+          mode = "lines",
+          name = frame_name,
+          legendgroup = frame_name,
+          line = list(color = frame_colors[[frame_name]], width = 6, simplify = FALSE),
+          hovertemplate = "%{text}<extra></extra>",
+          meta = list(
+            rc_columns_switch = "gl_subset",
+            rc_columns_group = columns_trace_group,
+            rc_columns_frame = frame_name
+          ),
+          showlegend = TRUE,
+          visible = "legendonly",
+          inherit = FALSE
+        )
+      }
       for (frame_name in frame_levels) {
         frame_dt <- profile[as.character(frame) == frame_name]
         plot <- plotly::add_trace(
@@ -307,12 +435,19 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
           data = frame_dt,
           x = ~position,
           y = ~count,
-          type = "bar",
+          type = "scatter",
+          mode = "lines",
           name = frame_name,
           legendgroup = frame_name,
-          marker = list(color = frame_colors[[frame_name]]),
+          line = list(color = frame_colors[[frame_name]], width = 0.8, simplify = FALSE),
           hovertemplate = track_hover_template(include_frame = TRUE),
-          showlegend = TRUE
+          meta = list(
+            rc_columns_switch = "line",
+            rc_columns_group = columns_trace_group,
+            rc_columns_frame = frame_name
+          ),
+          showlegend = FALSE,
+          visible = TRUE
         )
       }
     }

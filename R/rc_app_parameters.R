@@ -115,6 +115,7 @@ rc_parameter_setup <- function() {
       cov_panel_with_frames_plotly = covPanelWithFramesPlotlyTemplate(),
       cov_panel_without_frames_plotly = covPanelWithoutFramesPlotlyTemplate(),
       cov_panel_columns_plotly = covPanelColumnsPlotlyTemplate(),
+      cov_panel_columns_gl_plotly = covPanelColumnsGLPlotlyTemplate(),
       cov_panel_area_plotly = covPanelAreaPlotlyTemplate(),
       cov_panel_heatmap_plotly = covPanelHeatmapPlotlyTemplate()
     )

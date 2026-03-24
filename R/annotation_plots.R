@@ -84,7 +84,7 @@ plotAASeqPanelPlotly <- function(hits, sequence, frame_colors = "R", template = 
         mode = "lines",
         text = ~hover_text,
         hoverinfo = "text",
-        line = list(color = hit_col, width = 2),
+        line = list(color = hit_col, width = 2, simplify = FALSE),
         showlegend = FALSE
       )
     }

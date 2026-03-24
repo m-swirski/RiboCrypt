@@ -631,6 +631,24 @@ test_that("plotAASeqPanelPlotly hides frame tick labels", {
   expect_false(isTRUE(p$x$layout$yaxis$showticklabels))
 })
 
+test_that("plotAASeqPanelPlotly keeps codon marker lines unsimplified", {
+  hits <- data.table::data.table(
+    col = c("white", "black"),
+    pos = c(3L, 9L),
+    frames = c(0L, 1L)
+  )
+
+  built <- plotly::plotly_build(
+    RiboCrypt:::plotAASeqPanelPlotly(hits, Biostrings::DNAString("ATGATGATGATG"))
+  )
+  marker_traces <- built$x$data[vapply(built$x$data, function(tr) identical(tr$mode, "lines"), logical(1))]
+
+  expect_length(marker_traces, 2)
+  expect_true(all(vapply(marker_traces, function(tr) identical(tr$type, "scatter"), logical(1))))
+  expect_true(all(vapply(marker_traces, function(tr) identical(tr$line$simplify, FALSE), logical(1))))
+  expect_true(all(vapply(marker_traces, function(tr) identical(tr$line$width, 2), logical(1))))
+})
+
 test_that("plotAASeqPanelPlotly reuses template shapes without mutating template", {
   hits <- data.table::data.table(
     col = "white",
@@ -810,9 +828,25 @@ test_that("createSinglePlot uses native plotly traces for supported track types"
     type = "columns", lib_index = 1, total_libs = 2
   ))
   column_traces <- Filter(function(tr) isTRUE(tr$showlegend), column_plot$x$data)
-  expect_true(all(vapply(column_traces, function(tr) identical(tr$type, "bar"), logical(1))))
-  expect_identical(column_plot$x$layout$barmode, "stack")
-  expect_identical(column_plot$x$layout$bargap, 0.12)
+  expect_true(all(vapply(column_traces, function(tr) identical(tr$type, "scattergl"), logical(1))))
+  expect_true(all(vapply(column_traces, function(tr) identical(tr$mode, "lines"), logical(1))))
+  expect_true(all(vapply(column_traces, function(tr) identical(tr$line$simplify, FALSE), logical(1))))
+  expect_true(all(vapply(column_traces, function(tr) identical(tr$visible, "legendonly"), logical(1))))
+  expect_true(all(vapply(column_traces, function(tr) identical(tr$meta$rc_columns_switch, "gl_subset"), logical(1))))
+  hidden_column_line_traces <- Filter(function(tr) identical(tr$meta$rc_columns_switch, "line"), column_plot$x$data)
+  expect_length(hidden_column_line_traces, 3)
+  expect_true(all(vapply(hidden_column_line_traces, function(tr) identical(tr$visible, TRUE), logical(1))))
+  expect_equal(vapply(hidden_column_line_traces, function(tr) length(tr$x), integer(1)), c(4L, 4L, 4L))
+
+  column_gl_plot <- plotly::plotly_build(RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "columns", lib_index = 1, total_libs = 2,
+    templates = list(cov_panel_columns_plotly = RiboCrypt:::covPanelColumnsGLPlotlyTemplate())
+  ))
+  column_gl_traces <- Filter(function(tr) isTRUE(tr$showlegend), column_gl_plot$x$data)
+  expect_true(all(vapply(column_gl_traces, function(tr) identical(tr$type, "scattergl"), logical(1))))
+  expect_true(all(vapply(column_gl_traces, function(tr) identical(tr$mode, "lines"), logical(1))))
+  expect_true(all(vapply(column_gl_traces, function(tr) identical(tr$line$simplify, FALSE), logical(1))))
 
   area_plot <- plotly::plotly_build(RiboCrypt:::createSinglePlot(
     profile, TRUE, "R", NULL, "a", "a", numeric(),
@@ -899,10 +933,64 @@ test_that("createSinglePlot reuses column coverage template", {
   )
   built <- plotly::plotly_build(p)
 
-  expect_true(all(vapply(built$x$data[1:3], function(tr) identical(tr$type, "bar"), logical(1))))
-  expect_equal(vapply(built$x$data[1:3], function(tr) length(tr$x), integer(1)), c(4L, 4L, 4L))
+  expect_true(all(vapply(built$x$data[1:3], function(tr) identical(tr$type, "scattergl"), logical(1))))
+  expect_true(all(vapply(built$x$data[1:3], function(tr) identical(tr$visible, "legendonly"), logical(1))))
+  expect_equal(vapply(built$x$data[1:3], function(tr) length(tr$x), integer(1)), c(1L, 1L, 1L))
+  expect_true(all(vapply(built$x$data[4:6], function(tr) identical(tr$type, "scatter"), logical(1))))
+  expect_true(all(vapply(built$x$data[4:6], function(tr) identical(tr$visible, TRUE), logical(1))))
+  expect_equal(vapply(built$x$data[4:6], function(tr) length(tr$x), integer(1)), c(4L, 4L, 4L))
+  expect_equal(vapply(template$x$data, function(tr) length(tr$x), integer(1)), rep(1L, 6))
+})
+
+test_that("createSinglePlot reuses GL column coverage template", {
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+  template <- RiboCrypt:::covPanelColumnsGLPlotlyTemplate()
+
+  p <- RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "columns", lib_index = 1, total_libs = 2,
+    templates = list(cov_panel_columns_plotly = template)
+  )
+  built <- plotly::plotly_build(p)
+
+  expect_true(all(vapply(built$x$data[1:3], function(tr) identical(tr$type, "scattergl"), logical(1))))
+  expect_true(all(vapply(built$x$data[1:3], function(tr) identical(tr$mode, "lines"), logical(1))))
   expect_equal(vapply(template$x$data, function(tr) length(tr$x), integer(1)), c(1L, 1L, 1L))
 })
+
+test_that("browser_plot_final_layout_polish adds a render hook for column zoom switching", {
+  p <- plotly::subplot(
+    list(
+      RiboCrypt:::createSinglePlot(
+        data.table::data.table(
+          position = rep(1:4, each = 3),
+          count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+          frame = factor(rep(0:2, 4))
+        ),
+        TRUE, "R", NULL, "a", "a", numeric(),
+        type = "columns", lib_index = 1, total_libs = 1
+      )
+    ),
+    nrows = 1, shareX = TRUE, titleY = TRUE, titleX = TRUE
+  )
+
+  polished <- RiboCrypt:::browser_plot_final_layout_polish(
+    p, "default", tx[1], NULL, NULL, "svg", NULL, numeric(0), 1
+  )
+
+  render_hooks <- polished$jsHooks$render
+  expect_true(length(render_hooks) >= 2)
+  render_code <- paste(vapply(render_hooks, `[[`, character(1), "code"), collapse = "\n")
+  expect_match(render_code, "gl_subset")
+  expect_match(render_code, "buildSegments")
+  expect_match(render_code, "getGlLineWidth")
+  expect_match(render_code, "line\\.width")
+})
+
 
 test_that("createSinglePlot reuses area coverage template", {
   profile <- data.table::data.table(

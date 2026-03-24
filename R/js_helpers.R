@@ -74,6 +74,194 @@ addJSrender <- function(multiomics_plot, target_seq, nplots, seq_render_dist,
   return(multiomics_plot)
 }
 
+addColumnsZoomSwitch <- function(multiomics_plot, threshold = columns_zoom_switch_threshold()) {
+  multiomics_plot %>% htmlwidgets::onRender(
+    "
+function(el, x, data) {
+  function getRange(ev) {
+    function normalizeRange(lo, hi) {
+      lo = Number(lo);
+      hi = Number(hi);
+      if (!isFinite(lo) || !isFinite(hi)) return null;
+      return lo <= hi ? [lo, hi] : [hi, lo];
+    }
+
+    if (ev) {
+      var keys = Object.keys(ev);
+      for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        if (/^xaxis[0-9]*\\.range$/.test(key)) {
+          var direct = ev[key];
+          if (Array.isArray(direct) && direct.length === 2) {
+            var normalized = normalizeRange(direct[0], direct[1]);
+            if (normalized !== null) return normalized;
+          }
+        }
+      }
+      for (var j = 0; j < keys.length; j++) {
+        var key0 = keys[j];
+        var m = key0.match(/^(xaxis[0-9]*)\\.range\\[0\\]$/);
+        if (m) {
+          var base = m[1];
+          var normalized2 = normalizeRange(
+            ev[base + '.range[0]'],
+            ev[base + '.range[1]']
+          );
+          if (normalized2 !== null) return normalized2;
+        }
+      }
+    }
+
+    var layout = el._fullLayout || {};
+    var axisNames = Object.keys(layout).filter(function(k) {
+      return /^xaxis[0-9]*$/.test(k);
+    });
+    for (var a = 0; a < axisNames.length; a++) {
+      var axis = layout[axisNames[a]];
+      if (axis && Array.isArray(axis.range) && axis.range.length === 2) {
+        var normalized3 = normalizeRange(axis.range[0], axis.range[1]);
+        if (normalized3 !== null) return normalized3;
+      }
+    }
+    return null;
+  }
+
+  function buildSegments(trace, lo, hi) {
+    var xs = Array.isArray(trace.x) ? trace.x : [];
+    var ys = Array.isArray(trace.y) ? trace.y : [];
+    var frame = (trace.meta && trace.meta.rc_columns_frame) || trace.name || '';
+    var xOut = [];
+    var yOut = [];
+    var textOut = [];
+
+    for (var i = 0; i < xs.length && i < ys.length; i++) {
+      var xVal = Number(xs[i]);
+      var yVal = Number(ys[i]);
+      if (!isFinite(xVal) || !isFinite(yVal)) continue;
+      if (xVal < lo || xVal > hi) continue;
+      xOut.push(xVal, xVal, null);
+      yOut.push(0, yVal, null);
+      var label = 'position: ' + xVal + '<br>count: ' + yVal + '<br>frame: ' + frame;
+      textOut.push(label, label, null);
+    }
+
+    if (!xOut.length) {
+      xOut = [null];
+      yOut = [null];
+      textOut = [null];
+    }
+
+    return {x: xOut, y: yOut, text: textOut};
+  }
+
+  function getPanelWidthPx() {
+    var layout = el._fullLayout || {};
+    var candidates = ['xaxis', 'xaxis2', 'xaxis3', 'xaxis4'];
+    for (var i = 0; i < candidates.length; i++) {
+      var axis = layout[candidates[i]];
+      if (axis && axis._length && isFinite(axis._length)) return axis._length;
+    }
+    if (el.clientWidth && isFinite(el.clientWidth)) return el.clientWidth;
+    return 800;
+  }
+
+  function getGlLineWidth(span) {
+    if (!isFinite(span) || span <= 0) return 6;
+    var panelWidth = getPanelWidthPx();
+    var pxPerNt = panelWidth / span;
+    return Math.max(1, Math.min(12, Math.round(pxPerNt * 0.8 * 10) / 10));
+  }
+
+  function updateColumns(ev) {
+    var dataTraces = (el.data || []);
+    var groups = {};
+    for (var i = 0; i < dataTraces.length; i++) {
+      var meta = dataTraces[i].meta;
+      if (!meta || !meta.rc_columns_switch) continue;
+      var key = (meta.rc_columns_group || '') + '::' + (meta.rc_columns_frame || '');
+      if (!groups[key]) groups[key] = {};
+      if (meta.rc_columns_switch === 'gl_subset') groups[key].gl = i;
+      if (meta.rc_columns_switch === 'line') groups[key].line = i;
+    }
+    var groupKeys = Object.keys(groups).filter(function(key) {
+      return groups[key].gl !== undefined && groups[key].line !== undefined;
+    });
+    if (!groupKeys.length) return;
+
+    var range = getRange(ev);
+    if (range === null) return;
+    var lo = range[0];
+    var hi = range[1];
+    var span = Math.abs(hi - lo);
+    var showGl = span < data.threshold;
+    var rangeKey = lo + ':' + hi;
+    var glLineWidth = getGlLineWidth(span);
+    if (el.__rcColumnsMode === (showGl ? 'gl' : 'line') &&
+        el.__rcColumnsRangeKey === rangeKey &&
+        (!showGl || el.__rcColumnsWidth === glLineWidth)) {
+      return;
+    }
+
+    if (showGl) {
+      var glIdx = [];
+      var glX = [];
+      var glY = [];
+      var glText = [];
+      var glVisible = [];
+      var glWidth = [];
+      var lineIdx = [];
+      var lineVisible = [];
+      for (var k = 0; k < groupKeys.length; k++) {
+        var pair = groups[groupKeys[k]];
+        var glTraceIndex = pair.gl;
+        var lineTraceIndex = pair.line;
+        var seg = buildSegments(dataTraces[lineTraceIndex], lo, hi);
+        glIdx.push(glTraceIndex);
+        glX.push(seg.x);
+        glY.push(seg.y);
+        glText.push(seg.text);
+        glVisible.push(true);
+        glWidth.push(glLineWidth);
+        lineIdx.push(lineTraceIndex);
+        lineVisible.push(false);
+      }
+      Plotly.restyle(el, {
+        x: glX,
+        y: glY,
+        text: glText,
+        visible: glVisible,
+        'line.width': glWidth
+      }, glIdx);
+      Plotly.restyle(el, {visible: lineVisible}, lineIdx);
+    } else {
+      var glIdx2 = [];
+      var glVisible2 = [];
+      var lineIdx2 = [];
+      var lineVisible2 = [];
+      for (var k2 = 0; k2 < groupKeys.length; k2++) {
+        var pair2 = groups[groupKeys[k2]];
+        glIdx2.push(pair2.gl);
+        glVisible2.push('legendonly');
+        lineIdx2.push(pair2.line);
+        lineVisible2.push(true);
+      }
+      Plotly.restyle(el, {visible: glVisible2}, glIdx2);
+      Plotly.restyle(el, {visible: lineVisible2}, lineIdx2);
+    }
+    el.__rcColumnsMode = showGl ? 'gl' : 'line';
+    el.__rcColumnsRangeKey = rangeKey;
+    el.__rcColumnsWidth = glLineWidth;
+  }
+
+  el.on('plotly_relayout', updateColumns);
+  el.on('plotly_afterplot', updateColumns);
+  updateColumns();
+}
+",
+    list(threshold = threshold)
+  )
+}
+
 helper_button_redirect_call <- function() {
   tabPanel("a", tags$head(tags$script(HTML('
                           var fakeClick = function(tabName, anchorName) {
@@ -119,5 +307,3 @@ function(el) {
 }
 ")
 }
-
-

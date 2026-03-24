@@ -518,8 +518,9 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
     }
   }
   multiomics_plot <- browser_legend_cleanup(multiomics_plot)
+  multiomics_plot <- addColumnsZoomSwitch(multiomics_plot)
   if (isTRUE(apply_line_desimplify)) {
     return(lineDeSimplify(multiomics_plot))
   }
-  return(multiomics_plot)
+  return(lineDeSimplify(multiomics_plot))
 }

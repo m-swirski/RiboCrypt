@@ -517,6 +517,9 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
       multiomics_plot$x$layout[[axis_name]] <- axis
     }
   }
+  max_x <- as.numeric(widthPerGroup(display_range, FALSE))
+  if (length(max_x) > 1) max_x <- max_x[[1]]
+  multiomics_plot <- addBrowserXRangeClamp(multiomics_plot, min_x = 1, max_x = max_x)
   multiomics_plot <- browser_legend_cleanup(multiomics_plot)
   multiomics_plot <- addColumnsZoomSwitch(multiomics_plot)
   if (isTRUE(apply_line_desimplify)) {

@@ -88,6 +88,47 @@ test_that("profile_plotly_gl returns a plotly object", {
   expect_true(inherits(p, "plotly"))
 })
 
+test_that("sync_megabrowser_x_shiny resets synced tracks to explicit x range on autorange", {
+  calls <- list()
+  testthat::local_mocked_bindings(
+    plotlyProxy = function(outputId, session) structure(list(id = outputId), class = "plotly_proxy"),
+    plotlyProxyInvoke = function(p, method, ...) {
+      calls[[length(calls) + 1L]] <<- list(id = p$id, method = method, args = list(...))
+      p
+    },
+    .package = "plotly"
+  )
+
+  RiboCrypt:::sync_megabrowser_x_shiny(
+    ed = list("xaxis.autorange" = TRUE),
+    session = NULL,
+    sync_sidebar = FALSE,
+    x_reset_range = c(1, 500)
+  )
+
+  expect_length(calls, 2)
+  expect_equal(vapply(calls, `[[`, character(1), "id"), c("mb_top_summary", "mb_bottom_gene"))
+  expect_true(all(vapply(calls, function(call) identical(call$method, "relayout"), logical(1))))
+  expect_true(all(vapply(calls, function(call) identical(call$args[[1]][["xaxis.range"]], c(1, 500)), logical(1))))
+  expect_true(all(vapply(calls, function(call) identical(call$args[[1]][["xaxis.autorange"]], FALSE), logical(1))))
+})
+
+test_that("addMegabrowserDoubleClickReset attaches a double-click reset hook", {
+  p <- plotly::plot_ly(x = 1:10, y = 1:10, type = "scatter", mode = "lines")
+  p <- RiboCrypt:::addMegabrowserDoubleClickReset(
+    p,
+    reset_range = c(1, 100),
+    peer_ids = c("plot-a", "plot-b")
+  )
+
+  expect_true(length(p$jsHooks$render) >= 1)
+  render_code <- paste(vapply(p$jsHooks$render, `[[`, character(1), "code"), collapse = "\n")
+  expect_match(render_code, "plotly_doubleclick")
+  expect_match(render_code, "addEventListener\\('dblclick'")
+  expect_match(render_code, "xaxis\\.range")
+  expect_match(render_code, "peer_ids")
+})
+
 test_that("get_meta_browser_plot returns plotly heatmap for plotly type", {
   mat <- matrix(1:20, nrow = 5, ncol = 4)
   table <- data.table::data.table(mat)

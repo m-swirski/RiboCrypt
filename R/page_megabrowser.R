@@ -167,7 +167,12 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
 
       output$myPlotlyPlot <- renderPlotly({
         req(input$plotType == "plotly")
-        mb_mid_plot()
+        full_range <- c(1, nrow(table()$table))
+        addMegabrowserDoubleClickReset(
+          mb_mid_plot(),
+          reset_range = full_range,
+          peer_ids = c(ns("mb_top_summary"), ns("mb_bottom_gene"))
+        )
       }) %>%
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
@@ -184,13 +189,23 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$mb_top_summary <- renderPlotly({
-        mb_top_plot()
+        full_range <- c(1, nrow(table()$table))
+        addMegabrowserDoubleClickReset(
+          mb_top_plot(),
+          reset_range = full_range,
+          peer_ids = c(ns("myPlotlyPlot"), ns("mb_bottom_gene"))
+        )
       }) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$mb_bottom_gene <- renderPlotly({
-        mb_bottom_plot()
+        full_range <- c(1, nrow(table()$table))
+        addMegabrowserDoubleClickReset(
+          mb_bottom_plot(),
+          reset_range = full_range,
+          peer_ids = c(ns("myPlotlyPlot"), ns("mb_top_summary"))
+        )
       }) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)

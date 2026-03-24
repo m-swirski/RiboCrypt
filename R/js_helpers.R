@@ -262,6 +262,155 @@ function(el, x, data) {
   )
 }
 
+addBrowserXRangeClamp <- function(multiomics_plot, min_x = 1, max_x) {
+  multiomics_plot %>% htmlwidgets::onRender(
+    "
+function(el, x, data) {
+  function normalizeRange(lo, hi) {
+    lo = Number(lo);
+    hi = Number(hi);
+    if (!isFinite(lo) || !isFinite(hi)) return null;
+    return lo <= hi ? [lo, hi] : [hi, lo];
+  }
+
+  function clampRange(range) {
+    var parsed = normalizeRange(range[0], range[1]);
+    if (!parsed) return null;
+    var lo = Math.max(data.min_x, parsed[0]);
+    var hi = Math.min(data.max_x, parsed[1]);
+    if (hi < lo) {
+      hi = lo;
+    }
+    return [lo, hi];
+  }
+
+  function sameRange(a, b) {
+    return Array.isArray(a) && Array.isArray(b) &&
+      a.length === 2 && b.length === 2 &&
+      Math.abs(Number(a[0]) - Number(b[0])) < 1e-9 &&
+      Math.abs(Number(a[1]) - Number(b[1])) < 1e-9;
+  }
+
+  function collectRanges(ev) {
+    var updates = {};
+    var layout = el._fullLayout || {};
+    var axisNames = Object.keys(layout).filter(function(k) {
+      return /^xaxis[0-9]*$/.test(k);
+    });
+
+    function maybeClamp(axisName, range) {
+      if (!Array.isArray(range) || range.length !== 2) return;
+      var clamped = clampRange(range);
+      if (!clamped || sameRange(range, clamped)) return;
+      updates[axisName + '.range'] = clamped;
+      updates[axisName + '.autorange'] = false;
+    }
+
+    if (ev) {
+      Object.keys(ev).forEach(function(key) {
+        if (/^xaxis[0-9]*\\.range$/.test(key) && Array.isArray(ev[key])) {
+          var axisName = key.replace(/\\.range$/, '');
+          maybeClamp(axisName, ev[key]);
+        }
+      });
+
+      axisNames.forEach(function(axisName) {
+        var loKey = axisName + '.range[0]';
+        var hiKey = axisName + '.range[1]';
+        if (loKey in ev || hiKey in ev) {
+          var range = normalizeRange(ev[loKey], ev[hiKey]);
+          if (range) maybeClamp(axisName, range);
+        } else if (ev[axisName + '.autorange']) {
+          var axis = layout[axisName];
+          if (axis && Array.isArray(axis.range)) maybeClamp(axisName, axis.range);
+        }
+      });
+    } else {
+      axisNames.forEach(function(axisName) {
+        var axis = layout[axisName];
+        if (axis && Array.isArray(axis.range)) maybeClamp(axisName, axis.range);
+      });
+    }
+
+    return updates;
+  }
+
+  function enforceClamp(ev) {
+    if (el.__rcClampBusy) return;
+    var updates = collectRanges(ev);
+    if (!updates || !Object.keys(updates).length) return;
+    el.__rcClampBusy = true;
+    Plotly.relayout(el, updates).then(function() {
+      el.__rcClampBusy = false;
+    }).catch(function() {
+      el.__rcClampBusy = false;
+    });
+  }
+
+  el.on('plotly_relayout', enforceClamp);
+  el.on('plotly_afterplot', function() { enforceClamp(null); });
+  enforceClamp(null);
+}
+",
+    list(min_x = min_x, max_x = max_x)
+  )
+}
+
+addMegabrowserDoubleClickReset <- function(plot_object, reset_range, peer_ids = character()) {
+  plot_object %>% htmlwidgets::onRender(
+    "
+function(el, x, data) {
+  function applyReset(target) {
+    if (!target || typeof Plotly === 'undefined') return;
+    Plotly.relayout(target, {
+      'xaxis.range': data.reset_range,
+      'xaxis.autorange': false
+    });
+  }
+
+  function triggerReset() {
+    if (el.__rcMegabrowserResetBusy) return false;
+    el.__rcMegabrowserResetBusy = true;
+    applyReset(el);
+    (data.peer_ids || []).forEach(function(id) {
+      var peer = document.getElementById(id);
+      if (peer) applyReset(peer);
+    });
+    setTimeout(function() {
+      el.__rcMegabrowserResetBusy = false;
+    }, 0);
+    return false;
+  }
+
+  el.on('plotly_doubleclick', function() {
+    return triggerReset();
+  });
+
+  el.addEventListener('dblclick', function() {
+    return triggerReset();
+  }, true);
+
+  var attachInnerDblclick = function() {
+    var inner = el.querySelectorAll('.gl-container, .nsewdrag, .plotly .user-select-none, canvas');
+    Array.prototype.forEach.call(inner, function(node) {
+      if (!node || node.__rcMegabrowserDblclickBound) return;
+      node.__rcMegabrowserDblclickBound = true;
+      node.addEventListener('dblclick', function(evt) {
+        if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
+        if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
+        return triggerReset();
+      }, true);
+    });
+  };
+
+  attachInnerDblclick();
+  el.on('plotly_afterplot', attachInnerDblclick);
+}
+",
+    list(reset_range = reset_range, peer_ids = as.list(peer_ids))
+  )
+}
+
 helper_button_redirect_call <- function() {
   tabPanel("a", tags$head(tags$script(HTML('
                           var fakeClick = function(tabName, anchorName) {

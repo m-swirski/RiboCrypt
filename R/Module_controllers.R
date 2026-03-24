@@ -255,7 +255,13 @@ module_additional_megabrowser <- function(input, output, session) {
       ed <- get_plotly_event("plotly_relayout", "mb_mid")
       req(!is.null(ed))
       y_max <- ncol(table()$table)
-      sync_megabrowser_x_shiny(ed, session, y_max = y_max, y_reversed = TRUE)
+      x_reset_range <- c(1, nrow(table()$table))
+      sync_megabrowser_x_shiny(
+        ed, session,
+        y_max = y_max,
+        y_reversed = TRUE,
+        x_reset_range = x_reset_range
+      )
     }, ignoreInit = TRUE)
 
     selected_cluster_from_filtered <- reactive({

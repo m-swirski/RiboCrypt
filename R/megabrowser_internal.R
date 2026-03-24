@@ -125,6 +125,7 @@ mb_read_axis_event <- function(ed, axes) {
 
 sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sidebar = TRUE,
                                      y_max = NULL, y_reversed = TRUE,
+                                     x_reset_range = NULL,
                                      x_axes = c("xaxis", "xaxis2", "xaxis3"),
                                      y_axes = c("yaxis", "yaxis2", "yaxis3")) {
   if (is.null(ed)) return(invisible(NULL))
@@ -133,11 +134,16 @@ sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sideb
   yed <- mb_read_axis_event(ed, y_axes)
 
   if (!is.null(xed$r0) && !is.null(xed$r1)) {
-    relayout <- list(xaxis = list(range = c(xed$r0, xed$r1), autorange = FALSE))
+    relayout <- list("xaxis.range" = c(xed$r0, xed$r1), "xaxis.autorange" = FALSE)
   } else if (!is.null(xed$r) && length(xed$r) == 2) {
-    relayout <- list(xaxis = list(range = c(xed$r[[1]], xed$r[[2]]), autorange = FALSE))
+    relayout <- list("xaxis.range" = c(xed$r[[1]], xed$r[[2]]), "xaxis.autorange" = FALSE)
   } else if (xed$auto) {
-    relayout <- list(xaxis = list(autorange = TRUE))
+    if (!is.null(x_reset_range) && length(x_reset_range) == 2) {
+      relayout <- list("xaxis.range" = c(x_reset_range[[1]], x_reset_range[[2]]),
+                       "xaxis.autorange" = FALSE)
+    } else {
+      relayout <- list("xaxis.autorange" = TRUE)
+    }
   } else {
     relayout <- list()
   }

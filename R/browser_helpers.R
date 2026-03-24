@@ -53,13 +53,13 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, c
       plots <- mapply(function(p,w,fc,c,yl,ylf, lib_index) {
           createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs,
                            templates = templates)},
-        profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_along(total_libs),
+        profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_len(total_libs),
         SIMPLIFY = FALSE)
     } else {
       plots <- bpmapply(function(p,w,fc,c,yl,ylf, lib_index) {
           createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs,
                            templates = templates)},
-        profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_along(total_libs),
+        profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_len(total_libs),
         SIMPLIFY = FALSE, BPPARAM = BPPARAM)
     }
   }

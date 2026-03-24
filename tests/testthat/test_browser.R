@@ -878,6 +878,40 @@ test_that("createSinglePlot uses native plotly traces for supported track types"
   expect_false(isTRUE(heatmap_plot$x$data[[1]]$showscale))
 })
 
+test_that("multiOmicsPlot_all_track_plots assigns distinct lib_index groups for multiple column tracks", {
+  profiles <- list(
+    data.table::data.table(
+      position = rep(1:4, each = 3),
+      count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+      frame = factor(rep(0:2, 4))
+    ),
+    data.table::data.table(
+      position = rep(1:4, each = 3),
+      count = c(2, 1, 2, 3, 2, 1, 1, 3, 2, 2, 2, 1),
+      frame = factor(rep(0:2, 4))
+    )
+  )
+
+  track_panel <- RiboCrypt:::multiOmicsPlot_all_track_plots(
+    profiles = profiles,
+    withFrames = c(TRUE, TRUE),
+    frame_colors = "R",
+    colors = c(NA, NA),
+    ylabels = c("lib1", "lib2"),
+    ylabels_full_name = c("lib1", "lib2"),
+    lines = numeric(),
+    frames_type = "columns",
+    summary_track = FALSE,
+    summary_track_type = "columns",
+    BPPARAM = BiocParallel::SerialParam(),
+    templates = list(cov_panel_columns_plotly = RiboCrypt:::covPanelColumnsPlotlyTemplate())
+  )
+
+  expect_length(track_panel$plots, 2)
+  group_ids <- vapply(track_panel$plots, function(plot) plot$x$data[[1]]$meta$rc_columns_group, character(1))
+  expect_equal(group_ids, c("track_1", "track_2"))
+})
+
 test_that("createSinglePlot reuses framed coverage template for line tracks", {
   profile <- data.table::data.table(
     position = rep(1:4, each = 3),

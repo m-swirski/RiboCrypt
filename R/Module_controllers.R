@@ -405,10 +405,24 @@ study_and_gene_observers <- function(input, output, session) {
     } else if (uses_gene) {
       print(id)
       choices <- unique(isolate(gene_name_list())[,2][[1]])
+      default_gene <- if (id %in% collection_ids) {
+        browser_options["default_gene_meta"]
+      } else {
+        browser_options["default_gene"]
+      }
+      default_tx <- if (id %in% collection_ids) {
+        browser_options["default_isoform_meta"]
+      } else {
+        browser_options["default_isoform"]
+      }
+      initial_gene <- resolve_gene_selection(
+        isolate(gene_name_list()),
+        preferred = default_gene
+      )
       # Init round gene
       if (id %in% collection_ids) {
         print("Updating collection gene set")
-        gene_update_select_internal(isolate(gene_name_list()), selected = browser_options["default_gene_meta"])
+        gene_update_select_internal(isolate(gene_name_list()), selected = initial_gene)
         if (id == collection_ids[1]) {
           gene_update_select_internal(NULL, choices = c("", choices),
                                       id = "other_gene")
@@ -417,32 +431,68 @@ study_and_gene_observers <- function(input, output, session) {
                        ignoreNULL = TRUE, ignoreInit = FALSE, priority = 6)
         }
       } else {
-        gene_update_select_internal(isolate(gene_name_list()), selected = browser_options["default_gene"])
+        gene_update_select_internal(isolate(gene_name_list()), selected = initial_gene)
       }
       # Non init round gene
       observeEvent(gene_name_list(), {
-        selected <- unique(isolate(gene_name_list())[,2][[1]])[1]
-        gene_update_select(gene_name_list, selected = selected)
+        gene_name_list_local <- isolate(gene_name_list())
+        selected_gene <- resolve_gene_selection(
+          gene_name_list_local,
+          preferred = isolate(input$gene),
+          fallback = default_gene
+        )
+        gene_update_select(gene_name_list, selected = selected_gene)
+
+        selected_tx <- resolve_tx_selection(
+          gene_name_list_local,
+          gene = selected_gene,
+          preferred = isolate(input$tx),
+          fallback = default_tx
+        )
+        if (length(selected_tx) > 0) {
+          tx_update_select_isolated(
+            selected_gene,
+            gene_name_list_local,
+            selected = selected_tx,
+            page = id
+          )
+        }
       }, ignoreNULL = TRUE, ignoreInit = TRUE, priority = 5)
 
       # Tx id update
       # Init round
-      if (id %in% collection_ids) {
-        tx_update_select_isolated(browser_options["default_gene_meta"], isolate(gene_name_list()),
-                                  selected = browser_options["default_isoform_meta"], page = id)
-      } else {
-        tx_update_select_isolated(browser_options["default_gene"], isolate(gene_name_list()),
-                                  selected = browser_options["default_isoform"], page = id)
+      initial_tx <- resolve_tx_selection(
+        isolate(gene_name_list()),
+        gene = initial_gene,
+        preferred = default_tx
+      )
+      if (length(initial_tx) > 0) {
+        tx_update_select_isolated(
+          initial_gene,
+          isolate(gene_name_list()),
+          selected = initial_tx,
+          page = id
+        )
       }
       # Non int rounds
       observeEvent(input$gene, {
         req(input$gene != "")
-        if (!(id %in% collection_ids)) {
-          req(!(input$tx %in% c("",
-                isolate(gene_name_list())[label == input$gene,]$value)))
-        }
+        gene_name_list_local <- isolate(gene_name_list())
+        req(gene_exists_in_gene_list(gene_name_list_local, isolate(input$gene)))
+        selected_tx <- resolve_tx_selection(
+          gene_name_list_local,
+          gene = isolate(input$gene),
+          preferred = isolate(input$tx),
+          fallback = default_tx
+        )
+        req(length(selected_tx) > 0)
         print(paste("Page:", id, "(General observer)"))
-        tx_update_select_isolated(isolate(input$gene), isolate(gene_name_list()), page = id)
+        tx_update_select_isolated(
+          isolate(input$gene),
+          gene_name_list_local,
+          selected = selected_tx,
+          page = id
+        )
         },
         ignoreNULL = TRUE, ignoreInit = TRUE, priority = -15)
     }
@@ -487,6 +537,11 @@ org_and_study_changed_checker <- function(input, output, session) {
                               experiments, without_readlengths_env, exps_dir))
     df_with <- reactiveVal(get_exp(browser_options["default_experiment"],
                               experiments, with_readlengths_env, exps_dir))
+    init_df <- isolate(df())
+    use_cached_init <- identical(name(init_df), name(exp_init))
+    init_tx <- if (use_cached_init) tx_init else loadRegion(init_df)
+    init_cds <- if (use_cached_init) cds_init else loadRegion(init_df, "cds")
+    init_gene_names <- if (use_cached_init) names_init else get_gene_name_categories(init_df)
 
     libs <- reactive(bamVarName(df()))
     # The shared reactive values (rv)
@@ -496,7 +551,7 @@ org_and_study_changed_checker <- function(input, output, session) {
                          initval=isolate(df())@txdb,
                          genome = "ALL",
                          exp = browser_options["default_experiment"],
-                         changed=isolate(df())@txdb != exp_init@txdb)
+                         changed=isolate(df())@txdb != init_df@txdb)
     observe(update_rv_changed(rv), priority = 1) %>%
       bindEvent(rv$curval, ignoreInit = TRUE)
     observe({update_rv(rv, df)}) %>%
@@ -513,20 +568,20 @@ org_and_study_changed_checker <- function(input, output, session) {
 
     # Annotation change reactives
     tx <- reactive({
-      if(rv$curval == rv$initval) {message("Settings tx to init:"); tx_init}
+      if(rv$curval == rv$initval) {message("Settings tx to init:"); init_tx}
       else {loadRegion(isolate(df()))}}) %>%
       bindCache(rv$curval) %>%
       bindEvent(rv$changed, ignoreNULL = TRUE)
     cds <- reactive({
       if(rv$curval == rv$initval) {
-        message("Settings cds to init:"); cds_init}
+        message("Settings cds to init:"); init_cds}
       else {loadRegion(isolate(df()), "cds")}}) %>%
       bindCache(rv$curval) %>%
       bindEvent(rv$changed, ignoreNULL = TRUE)
     # gene_name_list <- reactiveVal(names_init)
     gene_name_list <- reactive({
       if(rv$curval == rv$initval) {
-        message("Settings gene_list to init:"); names_init}
+        message("Settings gene_list to init:"); init_gene_names}
       else {get_gene_name_categories(df())}}) %>%
       bindCache(rv$curval) %>%
       bindEvent(rv$changed, ignoreNULL = TRUE)

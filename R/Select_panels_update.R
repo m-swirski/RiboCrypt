@@ -68,6 +68,44 @@ tx_update_select <- function(gene = NULL, gene_name_list, additionals = NULL,
                              selected = NULL, page = "") {
   tx_update_select_isolated(gene, gene_name_list, additionals, selected, page)
 }
+
+gene_choices_from_gene_list <- function(gene_name_list) {
+  unique(gene_name_list[, 2][[1]])
+}
+
+gene_exists_in_gene_list <- function(gene_name_list, gene) {
+  isTruthy(gene) && gene %in% gene_choices_from_gene_list(gene_name_list)
+}
+
+resolve_gene_selection <- function(gene_name_list, preferred = NULL,
+                                   fallback = NULL) {
+  choices <- gene_choices_from_gene_list(gene_name_list)
+  if (length(choices) == 0) return(character())
+
+  candidates <- unique(c(preferred, fallback))
+  candidates <- candidates[!is.na(candidates) & nzchar(candidates)]
+  selected <- candidates[candidates %in% choices][1]
+
+  if (length(selected) == 0 || is.na(selected)) choices[1] else selected
+}
+
+resolve_tx_selection <- function(gene_name_list, gene, preferred = NULL,
+                                 fallback = NULL, additionals = NULL) {
+  if (!identical(gene, "all") && !gene_exists_in_gene_list(gene_name_list, gene)) {
+    return(character())
+  }
+
+  isoforms <- tx_from_gene_list(gene_name_list, gene = gene,
+                                additionals = additionals)
+  if (length(isoforms) == 0) return(character())
+
+  candidates <- unique(c(preferred, fallback))
+  candidates <- candidates[!is.na(candidates) & nzchar(candidates)]
+  selected <- candidates[candidates %in% isoforms][1]
+
+  if (length(selected) == 0 || is.na(selected)) isoforms[1] else selected
+}
+
 tx_update_select_isolated <- function(gene = NULL, gene_name_list, additionals = NULL,
                              selected = NULL, page = "") {
   page <- paste0("(", page, ")")

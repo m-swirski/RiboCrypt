@@ -222,6 +222,34 @@ test_that("go_when_input_is_ready does not trigger when plot_on_start is FALSE",
   expect_false(shiny::isolate(isTRUE(kickoff())))
 })
 
+test_that("browser selection helpers prefer valid species-specific defaults", {
+  gene_name_list <- data.table::data.table(
+    value = c("TXA1", "TXA2", "TXB1"),
+    label = c("GENEA", "GENEA", "GENEB")
+  )
+
+  expect_equal(
+    RiboCrypt:::resolve_gene_selection(gene_name_list, preferred = "GENEB", fallback = "GENEA"),
+    "GENEB"
+  )
+  expect_equal(
+    RiboCrypt:::resolve_gene_selection(gene_name_list, preferred = "MISSING", fallback = "GENEA"),
+    "GENEA"
+  )
+  expect_equal(
+    RiboCrypt:::resolve_tx_selection(gene_name_list, gene = "GENEA", preferred = "TXA2", fallback = "TXA1"),
+    "TXA2"
+  )
+  expect_equal(
+    RiboCrypt:::resolve_tx_selection(gene_name_list, gene = "GENEA", preferred = "MISSING", fallback = "TXA1"),
+    "TXA1"
+  )
+  expect_equal(
+    RiboCrypt:::resolve_tx_selection(gene_name_list, gene = "MISSING", preferred = "TXA1"),
+    character()
+  )
+})
+
 test_that("multiOmicsControllerView supports default selected_libraries", {
   env <- rlang::env(
     reads = list(1, 2),

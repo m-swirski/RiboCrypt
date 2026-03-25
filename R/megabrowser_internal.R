@@ -16,7 +16,6 @@ compute_collection_table_shiny <- function(mainPlotControls,
   if (is.null(metadata)) stop("Metadata not defined, no metabrowser allowed for now!")
   time_before <- Sys.time()
   cat("Starting loading + Profile + plot calc\n")
-  # browser()
   dtable <- compute_collection_table(path, lib_sizes, df, metadata_field,
                                      normalization, kmer, metadata, min_count,
                                      as_list = TRUE, subset = subset,
@@ -586,6 +585,46 @@ summary_track_allsamples <- function(mat, template = NULL) {
   if (is.null(template)) {
     template <- covPanelColumnsPlotlyTemplate()
   }
+  is_empty_summary <- is.null(mat) ||
+    nrow(mat) == 0L ||
+    !all(c("position", "count") %in% names(mat)) ||
+    !any(is.finite(mat$position)) ||
+    !any(is.finite(mat$count))
+
+  if (is_empty_summary) {
+    summary_plot <- template %>%
+      plotly::layout(
+        showlegend = FALSE,
+        hovermode = "closest",
+        margin = margin_megabrowser(),
+        paper_bgcolor = "rgba(0,0,0,0)",
+        plot_bgcolor = "rgba(0,0,0,0)",
+        xaxis = list(
+          range = c(0, 1),
+          autorange = FALSE,
+          showticklabels = FALSE,
+          ticks = "",
+          showgrid = FALSE,
+          zeroline = FALSE,
+          title = NULL,
+          fixedrange = FALSE
+        ),
+        yaxis = list(
+          showticklabels = FALSE,
+          ticks = "",
+          showgrid = FALSE,
+          zeroline = FALSE,
+          title = NULL,
+          fixedrange = TRUE
+        )
+      ) %>%
+      plotly::config(doubleClick = FALSE)
+    summary_plot$x$layout$yaxis$title <- NULL
+    summary_plot$x$source <- "mb_top"
+    timer_done_nice_print("-- Mega browser summary track done: ", time_before)
+    return(summary_plot)
+  }
+
   x_range <- range(mat$position, na.rm = TRUE)
   summary_plot <- createSinglePlot(
     profile = mat,

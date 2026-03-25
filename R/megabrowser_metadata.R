@@ -156,14 +156,10 @@ allsamples_sidebar_plotly <- function(meta, templates = NULL) {
       }
     }
   }
-  res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE) %>%
-    plotly::layout(
-      xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
-      yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL)
-    ) %>%
-    plotly::config(displayModeBar = FALSE)
-
   did_clustering <- length(unique(meta$cluster)) > 1
+  subplot_widths <- NULL
+  plot_margin <- list(t = 8, b = 8)
+  dragmode <- NULL
   if (did_clustering) {
     centers <- meta[, .(
       y_center = (min(index) + max(index)) / 2
@@ -214,20 +210,22 @@ allsamples_sidebar_plotly <- function(meta, templates = NULL) {
 
 
     plot_list <- c(list(cluster_labels), plot_list)
-    widths <- c(0.06, rep((0.94 / length(cols)), length(cols)))
-
-    res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE, widths = widths) %>%
-        plotly::layout(
-          xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
-          yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL),
-          dragmode = FALSE,
-          margin = list(l = 30)
-        ) %>%
-        plotly::config(displayModeBar = FALSE)
+    subplot_widths <- c(0.06, rep((0.94 / length(cols)), length(cols)))
+    plot_margin$l <- 30
+    dragmode <- FALSE
   }
   timer_done_nice_print("-- metabrowser sidebar done: ", time_before)
-  res <- res %>% plotly::layout(
-    margin = list(t = 8, b = 8),
+  res <- subplot(
+    plot_list,
+    nrows = 1,
+    shareY = TRUE,
+    titleX = FALSE,
+    titleY = FALSE,
+    widths = subplot_widths
+  ) %>%
+    plotly::layout(
+    margin = plot_margin,
+    dragmode = dragmode,
     yaxis = list(
       autorange = "reversed",
       showticklabels = FALSE,
@@ -235,8 +233,16 @@ allsamples_sidebar_plotly <- function(meta, templates = NULL) {
       showgrid = FALSE,
       zeroline = FALSE,
       title = NULL
+    ),
+    xaxis = list(
+      showticklabels = FALSE,
+      ticks = "",
+      showgrid = FALSE,
+      zeroline = FALSE,
+      title = NULL
     )
-  )
+  ) %>%
+    plotly::config(displayModeBar = FALSE)
   plotly::event_register(res, "plotly_clickannotation")
 }
 

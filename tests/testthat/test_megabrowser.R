@@ -140,6 +140,26 @@ test_that("summary_track_allsamples uses browser columns template with zoom swit
   expect_identical(built$x$data[[4]]$meta$rc_columns_switch, "line")
 })
 
+test_that("summary_track_allsamples handles empty summary data without warnings", {
+  empty_dt <- data.table::data.table(
+    count = numeric(),
+    position = numeric(),
+    frame = factor(levels = c("0", "1", "2"))
+  )
+
+  expect_no_warning(
+    p <- RiboCrypt:::summary_track_allsamples(
+      empty_dt,
+      template = RiboCrypt:::covPanelColumnsPlotlyTemplate()
+    )
+  )
+
+  expect_true(inherits(p, "plotly"))
+  built <- plotly::plotly_build(p)
+  expect_equal(unname(built$x$layout$xaxis$range), c(0, 1))
+  expect_identical(p$x$source, "mb_top")
+})
+
 test_that("annotation_track_allsamples forwards custom regions", {
   display_range <- GenomicRanges::GRangesList(
     tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(1, 10), "+")
@@ -521,6 +541,91 @@ test_that("compute_collection_table_grouping groups metadata with fallback enric
   expect_true(any(meta_tbl$Run == "SRR1001" & meta_tbl$BioProject == "PRJNA100001" & meta_tbl$TISSUE == "brain" &
                     meta_tbl$CELL_LINE == "CL1" & meta_tbl$CONDITION == "ctrl"))
 
+})
+
+test_that("normalize_collection returns a matrix and preserves megabrowser attributes", {
+  table <- data.table::data.table(
+    SRR1 = c(10, 20, 30),
+    SRR2 = c(5, 10, 15)
+  )
+  valid_libs <- c(SRR1 = TRUE, SRR2 = TRUE)
+  data.table::setattr(table, "valid_libs", valid_libs)
+
+  res <- RiboCrypt:::normalize_collection(
+    table,
+    normalization = "transcriptNormalized",
+    lib_sizes = c(SRR1 = 1000, SRR2 = 2000),
+    kmer = 1L
+  )
+
+  expect_true(is.matrix(res))
+  expect_equal(colnames(res), c("SRR1", "SRR2"))
+  expect_identical(attr(res, "valid_libs"), valid_libs)
+  expect_identical(attr(res, "ratio"), 1L)
+  expect_true(is.data.frame(attr(res, "summary_cov")))
+  expect_equal(attr(res, "summary_cov")$position, 1:3)
+})
+
+test_that("matrix collections still support grouping and clustering", {
+  metadata <- data.table::data.table(
+    Run = c("SRR1", "SRR2", "SRR3", "SRR4"),
+    BioProject = c("P1", "P1", "P2", "P2"),
+    TISSUE = c("brain", "brain", "heart", "heart"),
+    CONDITION = c("ctrl", "drug", "ctrl", "drug")
+  )
+  table <- matrix(
+    c(
+      100, 90, 10, 12,
+      95, 85, 15, 14,
+      12, 10, 110, 100
+    ),
+    nrow = 3,
+    byrow = TRUE,
+    dimnames = list(NULL, metadata$Run)
+  )
+  attr(table, "valid_libs") <- setNames(rep(TRUE, ncol(table)), colnames(table))
+
+  grouping <- RiboCrypt:::compute_collection_table_grouping(
+    metadata = metadata,
+    df = NULL,
+    metadata_field = c("TISSUE", "CONDITION"),
+    table = table,
+    ratio_interval = NULL,
+    group_on_tx_tpm = NULL,
+    decreasing_order = FALSE,
+    enrichment_term = "TISSUE"
+  )
+
+  ordered_table <- table[, attr(grouping, "meta_order"), drop = FALSE]
+  ordered_table <- RiboCrypt:::clustering_megabrowser(ordered_table, clusters = 2)
+
+  expect_true(is.matrix(ordered_table))
+  expect_length(attr(ordered_table, "row_order_list"), 2)
+  expect_identical(attr(grouping, "xlab"), "TISSUE")
+})
+
+test_that("matrix column subsetting preserves megabrowser attributes", {
+  table <- matrix(
+    c(1, 2, 3, 4, 5, 6),
+    nrow = 3,
+    dimnames = list(NULL, c("SRR1", "SRR2"))
+  )
+  attr(table, "summary_cov") <- data.table::data.table(
+    count = c(3, 7, 11),
+    position = 1:3,
+    frame = factor(c(0, 1, 2))
+  )
+  attr(table, "ratio") <- 1L
+  attr(table, "valid_libs") <- c(SRR1 = TRUE, SRR2 = TRUE)
+
+  res <- RiboCrypt:::subset_collection_columns(table, c(2, 1))
+
+  expect_true(is.matrix(res))
+  expect_equal(colnames(res), c("SRR2", "SRR1"))
+  expect_true(is.data.frame(attr(res, "summary_cov")))
+  expect_equal(attr(res, "summary_cov")$position, 1:3)
+  expect_identical(attr(res, "ratio"), 1L)
+  expect_identical(attr(res, "valid_libs"), c(SRR1 = TRUE, SRR2 = TRUE))
 })
 
 test_that("allsamples_sidebar_plotly reuses shared numeric and categorical templates", {

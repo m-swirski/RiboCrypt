@@ -22,6 +22,41 @@ load_collection <- function(path, grl = attr(path, "range"), columns = NULL) {
   return(table)
 }
 
+collection_user_attributes <- function(x) {
+  attrs <- attributes(x)
+  attrs[setdiff(
+    names(attrs),
+    c("names", "row.names", "class", ".internal.selfref", "sorted", "index", "dim", "dimnames")
+  )]
+}
+
+set_collection_user_attributes <- function(x, attrs) {
+  if (length(attrs) == 0) return(x)
+  for (nm in names(attrs)) {
+    setattr(x, nm, attrs[[nm]])
+  }
+  x
+}
+
+subset_collection_columns <- function(table, columns) {
+  attrs <- collection_user_attributes(table)
+  out <- if (is.matrix(table)) {
+    table[, columns, drop = FALSE]
+  } else {
+    table[, ..columns]
+  }
+  set_collection_user_attributes(out, attrs)
+}
+
+collection_valid_library_names <- function(valid_libs) {
+  if (is.null(valid_libs)) return(character())
+  if (is.logical(valid_libs)) {
+    if (is.null(names(valid_libs))) return(character())
+    return(names(valid_libs)[valid_libs])
+  }
+  as.character(valid_libs)
+}
+
 #' Normalize collection table
 #'
 #' @param table a data.table in long format
@@ -36,14 +71,12 @@ load_collection <- function(path, grl = attr(path, "range"), columns = NULL) {
 normalize_collection <- function(table, normalization, lib_sizes = NULL,
                                  kmer = 1L, add_logscore = TRUE,
                                  split_by_frame = FALSE) {
-
-
-  mat <- as.matrix(table)
+  mat <- if (is.matrix(table)) table else as.matrix(table)
   setattr(table, "summary_cov", summary_track(mat))
   if (is.character(lib_sizes)) lib_sizes <- readRDS(lib_sizes)
   setattr(table, "lib_sizes", lib_sizes)
   setattr(table, "ratio", kmer)
-  attr <- attributes(table)[-seq(4)]
+  attrs <- collection_user_attributes(table)
   # Binned window
   if (kmer > 1) mat <- multiSampleBinRows(mat, kmer, split_by_frame)
 
@@ -59,17 +92,13 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
   } else if (normalization == "zscore") {
     mat <- scale(mat, center = TRUE, scale = TRUE)
   } else if (normalization == "tpm") {
-    valid_libs <- if(!is.null(attr$valid_libs)){
-      attr$valid_libs} else colnames(mat)
+    valid_libs <- if (!is.null(attrs$valid_libs)) attrs$valid_libs else colnames(mat)
     mat <- tpm_calc_megabrowser(mat, valid_libs, lib_sizes)
   } else stop("Invalid normalization for collection!")
   mat[is.na(mat)] <- 0L
 
   if (add_logscore) mat <- log(mat + 1L)
-  table <- as.data.table(mat)
-
-  lapply(seq_along(attr), function(i) setattr(table, names(attr)[i], attr[[i]]))
-  return(table)
+  set_collection_user_attributes(mat, attrs)
 }
 
 summary_track <- function(mat) {
@@ -125,7 +154,7 @@ filter_collection_on_count <- function(table, min_count) {
       stop("Count filter too strict, no libraries with that much reads for this transcript!")
 
     filt_libs <- names(libs_counts_total[valid_libs])
-    table <- table[, ..filt_libs]
+    table <- subset_collection_columns(table, filt_libs)
 
     setattr(table, "valid_libs", valid_libs)
   } else {
@@ -159,7 +188,11 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
   } else if (order_on_other_tx_tpm) {
     isoform <- group_on_tx_tpm
     table_path_other <- collection_path_from_exp(df, isoform)
-    table_other <- load_collection(table_path_other)[, ..valid_libs]
+    valid_lib_names <- collection_valid_library_names(valid_libs)
+    table_other <- load_collection(table_path_other)
+    if (length(valid_lib_names) > 0) {
+      table_other <- subset_collection_columns(table_other, valid_lib_names)
+    }
     setattr(table_other, "valid_libs", valid_libs)
     table_other <- normalize_collection(table_other, "tpm", attr(table, "lib_sizes"), 1)
     ordering_vector <- colSums(table_other)
@@ -181,7 +214,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
 }
 
 clustering_megabrowser <- function(table, clusters = 1) {
-  km <- kmeans(t(as.matrix(table)), centers = clusters)
+  km <- kmeans(t(if (is.matrix(table)) table else as.matrix(table)), centers = clusters)
   row_clusters <- split(seq_along(km$cluster), km$cluster)
   setattr(table, "km", km)
   setattr(table, "row_order_list", row_clusters)
@@ -244,17 +277,16 @@ compute_collection_table <- function(path, lib_sizes, df,
                                      enrichment_term = metadata_field[1],
                                      clusters = 1) {
 
-  table <- load_collection(path)
+  table <- as.matrix(load_collection(path))
   intersect <- intersect(colnames(table), runIDs(df))
   if (length(intersect) == 0) stop("Malformed experiment to megafst format intersect, no matching runs!")
   if (!all(runIDs(df) %in% intersect)) df <- df[runIDs(df) %in% intersect,]
-  if (!all(unique(table$library) %in% intersect)) table <- table[library %in% intersect,]
+
 
   if (!is.null(subset)) {
     table <- subset_fst_by_interval(table, subset)
   }
   table <- filter_collection_on_count(table, min_count)
-
   # Normalize
   table <- normalize_collection(table, normalization, lib_sizes, kmer, TRUE,
                                 split_by_frame)
@@ -264,7 +296,7 @@ compute_collection_table <- function(path, lib_sizes, df,
                                                 ratio_interval, group_on_tx_tpm,
                                                 decreasing_order, enrichment_term)
   # Update order of libraries to follow grouping created
-  setcolorder(table, attr(meta_sub, "meta_order"))
+  table <- subset_collection_columns(table, attr(meta_sub, "meta_order"))
   table <- clustering_megabrowser(table, clusters)
 
 
@@ -404,7 +436,7 @@ subset_coordinates_grl_to_ir <- function(df, id,
 
 subset_fst_by_interval <- function(table, subset) {
   stopifnot(is.numeric(subset) && length(subset) > 0)
-  stopifnot(is(table, "data.table"))
+  stopifnot(is(table, "data.frame") | is(table, "matrix"))
 
   is_long_format <- all(c("library", "position") %in% colnames(table))
   if (is_long_format) {

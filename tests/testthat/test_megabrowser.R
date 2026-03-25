@@ -141,6 +141,7 @@ test_that("get_meta_browser_plot returns plotly heatmap for plotly type", {
 
   p <- RiboCrypt:::get_meta_browser_plot(table, color_theme = "default (White-Blue)", plotType = "plotly")
   expect_true(inherits(p, "plotly"))
+  expect_identical(p$x$config$doubleClick, FALSE)
 
 })
 

@@ -252,7 +252,7 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
       showscale = FALSE,
       type = "heatmapgl"
     ) %>% plotly::layout(margin = margins) %>%
-      plotly::config(doubleClick = "reset")
+      plotly::config(doubleClick = FALSE)
 
   } else {
     mat <- mat[rev(unlist(row_clusters, use.names = FALSE)),]

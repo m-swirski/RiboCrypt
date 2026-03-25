@@ -225,7 +225,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
   }
 }
 
-click_plot_browser_allsamp_controller <- function(input, df, gene_name_list, cds) {
+click_plot_browser_allsamp_controller <- function(input, df, gene_name_list, cds, tx) {
     time_before <- controller_init(input, id = "Mega Browser")
 
     # Input copies
@@ -252,7 +252,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list, cds
       message("Using motif: ", table_path)
     } else {
       # annotation extractors
-      annotation_list <- subset_tx_by_region(dff, id, region_type, cds())
+      annotation_list <- subset_tx_by_region(dff, id, region_type, cds(), tx())
       tx_annotation <- display_region <- annotation_list$region
       cds_annotation <- observed_cds_annotation_internal(id,
                                                          annotation_list$cds_annotation,

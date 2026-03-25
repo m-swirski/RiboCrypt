@@ -29,8 +29,8 @@ compute_collection_table_shiny <- function(mainPlotControls,
   return(dtable)
 }
 
-mb_controller_shiny <- function(input, df, gene_name_list, cds) {
-  click_plot_browser_allsamp_controller(input, df, gene_name_list, cds)
+mb_controller_shiny <- function(input, df, gene_name_list, cds, tx) {
+  click_plot_browser_allsamp_controller(input, df, gene_name_list, cds, tx)
 }
 
 mb_plot_object_shiny <- function(table_obj, input) {
@@ -221,6 +221,26 @@ sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sideb
   invisible(NULL)
 }
 
+megabrowser_full_x_range <- function(display_range = NULL, table = NULL) {
+  if (!is.null(display_range)) {
+    max_pos <- suppressWarnings(as.numeric(widthPerGroup(display_range, FALSE)))
+    if (length(max_pos) > 1) max_pos <- max_pos[[1]]
+    if (is.finite(max_pos) && max_pos >= 1) {
+      return(c(1, max_pos))
+    }
+  }
+  summary_cov <- attr(table, "summary_cov")
+  if (is.data.frame(summary_cov) &&
+      nrow(summary_cov) > 0 &&
+      "position" %in% names(summary_cov)) {
+    max_pos <- suppressWarnings(max(summary_cov$position, na.rm = TRUE))
+    if (is.finite(max_pos) && max_pos >= 1) {
+      return(c(1, max_pos))
+    }
+  }
+  c(1, nrow(table))
+}
+
 get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
                                   plotType = "plotly") {
   time_before <- Sys.time()
@@ -241,12 +261,18 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
   if (plotType == "plotly") {
     mat <- mat[unlist(row_clusters, use.names = FALSE),]
     ratio <- attr(table, "ratio")
-    x_range <- which(!duplicated((seq_len(ncol(mat)) - 1L) %/% ratio + 1L))
+    if (is.null(ratio) || !is.numeric(ratio) || length(ratio) != 1 || !is.finite(ratio) || ratio < 1) {
+      ratio <- 1
+    }
+    ratio <- as.integer(ratio)
+    x_positions <- ((seq_len(ncol(mat)) - 1L) * ratio) + 1L
+    full_x_range <- megabrowser_full_x_range(table = table)
+    full_y_range <- c(nrow(mat) + 0.5, 0.5)
 
     margins <- margin_megabrowser()
     margins$t <- margins$b  <- 8
     plot <- plotly::plot_ly(
-      x = ~x_range,
+      x = ~x_positions,
       z = mat,
       colors = colors,
       showscale = FALSE,
@@ -254,7 +280,11 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
     ) %>% plotly::layout(
       margin = margins,
       xaxis = list(
-        range = range(x_range, na.rm = TRUE),
+        range = full_x_range,
+        autorange = FALSE
+      ),
+      yaxis = list(
+        range = full_y_range,
         autorange = FALSE
       )
     ) %>%

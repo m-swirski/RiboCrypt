@@ -378,6 +378,13 @@ function(el, x, data) {
     return Array.isArray(range) ? [range[0], range[1]] : null;
   }
 
+  function suppressEvent(evt) {
+    if (!evt) return;
+    if (typeof evt.preventDefault === 'function') evt.preventDefault();
+    if (typeof evt.stopPropagation === 'function') evt.stopPropagation();
+    if (typeof evt.stopImmediatePropagation === 'function') evt.stopImmediatePropagation();
+  }
+
   function captureInitialResetLayout(target) {
     if (!target || target.__rcMegabrowserInitialResetLayout) return;
     var layout = target._fullLayout || {};
@@ -397,31 +404,48 @@ function(el, x, data) {
     }
   }
 
+  function buildResetLayout(layout) {
+    var cloned = {};
+    var source = layout || {};
+
+    Object.keys(source).forEach(function(key) {
+      var value = source[key];
+      cloned[key] = Array.isArray(value) ? value.slice() : value;
+    });
+
+    return cloned;
+  }
+
   function applyReset(target, layout) {
     if (!target || typeof Plotly === 'undefined') return;
     captureInitialResetLayout(target);
-    Plotly.relayout(target, target.__rcMegabrowserInitialResetLayout || layout);
+    Plotly.relayout(target, buildResetLayout(layout));
   }
 
   function triggerReset() {
     if (el.__rcMegabrowserResetBusy) return false;
     el.__rcMegabrowserResetBusy = true;
-    applyReset(el, data.reset_layout);
-    (data.peer_ids || []).forEach(function(id) {
-      var peer = document.getElementById(id);
-      if (peer) applyReset(peer, data.peer_reset_layout);
-    });
     setTimeout(function() {
-      el.__rcMegabrowserResetBusy = false;
+      applyReset(el, data.reset_layout);
+      (data.peer_ids || []).forEach(function(id) {
+        var peer = document.getElementById(id);
+        if (peer) applyReset(peer, data.peer_reset_layout);
+      });
+      setTimeout(function() {
+        el.__rcMegabrowserResetBusy = false;
+      }, 0);
     }, 0);
     return false;
   }
 
-  el.on('plotly_doubleclick', function() {
+  el.on('plotly_doubleclick', function(evt) {
+    suppressEvent(evt);
+    if (evt && evt.event) suppressEvent(evt.event);
     return triggerReset();
   });
 
-  el.addEventListener('dblclick', function() {
+  el.addEventListener('dblclick', function(evt) {
+    suppressEvent(evt);
     return triggerReset();
   }, true);
 
@@ -431,8 +455,7 @@ function(el, x, data) {
       if (!node || node.__rcMegabrowserDblclickBound) return;
       node.__rcMegabrowserDblclickBound = true;
       node.addEventListener('dblclick', function(evt) {
-        if (evt && typeof evt.preventDefault === 'function') evt.preventDefault();
-        if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
+        suppressEvent(evt);
         return triggerReset();
       }, true);
     });

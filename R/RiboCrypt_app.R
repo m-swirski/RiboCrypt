@@ -130,7 +130,7 @@ RiboCrypt_app <- function(
         org_and_study_changed_checker_collection(input, output, session)
         rv <- browser_allsamp_server(
           "browser_allsamp", all_exp, df, experiments,
-          gene_name_list, cds, org, motif_name_list,
+          gene_name_list, tx, cds, org, motif_name_list,
           metadata, browser_options, rv
         )
         rv <- observatory_server(

@@ -255,7 +255,7 @@ module_additional_megabrowser <- function(input, output, session) {
       ed <- get_plotly_event("plotly_relayout", "mb_mid")
       req(!is.null(ed))
       y_max <- ncol(table()$table)
-      x_reset_range <- c(1, nrow(table()$table))
+      x_reset_range <- megabrowser_full_x_range(controller()$display_region, table()$table)
       sync_megabrowser_x_shiny(
         ed, session,
         y_max = y_max,

@@ -347,27 +347,21 @@ subset_fst_coord_by_region <- function(df, id, region_type) {
 }
 
 subset_tx_by_region <- function(df, id, region_type,
-                                cds_annotation = loadRegion(df, part = "cds")) {
+                                cds_annotation = loadRegion(df, part = "cds"),
+                                tx_annotation = loadRegion(df)) {
   extend <- 650 # For yeast
   region <- region2 <- NULL
 
   if (organism(df) == "Saccharomyces cerevisiae") {
     region <- region2 <- cds_annotation
     gene_mrna <- extendTrailers(extendLeaders(region2, extend), extend)
-  } else region <- gene_mrna <- loadRegion(df, part = "mrna")
+  } else region <- gene_mrna <- tx_annotation
 
-  is_mrna <- id %in% names(region)
-  if (!is_mrna) {
-    cds_annotation <- GRangesList()
-    region <- gene_mrna <- loadRegion(df, part = "tx")[id]
-    if (organism(df) == "Saccharomyces cerevisiae") {
-      region <- gene_mrna <- extendTrailers(extendLeaders(region, extend), extend)
-    }
-  } else {
-    region <- region2 <- region[id]
-    gene_mrna <- gene_mrna[id]
-  }
 
+  region <- region2 <- region[id]
+  gene_mrna <- gene_mrna[id]
+
+  is_mrna <- id %in% names(cds_annotation)
   subset <-
     if (region_type != "mrna" && is_mrna) {
       if (region_type == "leader+cds") {

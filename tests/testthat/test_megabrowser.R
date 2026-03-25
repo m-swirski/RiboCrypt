@@ -53,6 +53,21 @@ test_that("summary_track returns expected columns and values", {
   expect_equal(res$position, 1:3)
 })
 
+test_that("megabrowser_full_x_range prefers display range span", {
+  table <- data.table::data.table(a = 1:150, b = 151:300)
+  summary_cov <- data.table::data.table(
+    count = seq_len(1350),
+    position = seq_len(1350),
+    frame = factor((seq_len(1350) - 1) %% 3)
+  )
+  data.table::setattr(table, "summary_cov", summary_cov)
+  display_range <- GenomicRanges::GRangesList(
+    tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(1, 1350), "+")
+  )
+
+  expect_equal(RiboCrypt:::megabrowser_full_x_range(display_range, table), c(1, 1350))
+})
+
 test_that("margin_megabrowser returns expected margins", {
   m <- RiboCrypt:::margin_megabrowser()
   expect_equal(m$l, 30)
@@ -236,6 +251,27 @@ test_that("get_meta_browser_plot returns plotly heatmap for plotly type", {
   expect_equal(unname(built$x$layout$xaxis$range), c(1, 5))
   expect_identical(built$x$layout$xaxis$autorange, FALSE)
 
+})
+
+test_that("get_meta_browser_plot uses original-coordinate x range for binned tables", {
+  mat <- matrix(seq_len(600), nrow = 150, ncol = 4)
+  table <- data.table::data.table(mat)
+  setnames(table, new = paste0("lib", seq(4)))
+  data.table::setattr(table, "ratio", 9L)
+  data.table::setattr(table, "summary_cov", data.table::data.table(
+    count = seq_len(1350),
+    position = seq_len(1350),
+    frame = factor((seq_len(1350) - 1L) %% 3)
+  ))
+  km <- stats::kmeans(t(as.matrix(table)), centers = 2)
+  data.table::setattr(table, "km", km)
+  data.table::setattr(table, "row_order_list", list("1" = seq(2)))
+
+  p <- RiboCrypt:::get_meta_browser_plot(table, color_theme = "default (White-Blue)", plotType = "plotly")
+  built <- plotly::plotly_build(p)
+
+  expect_equal(unname(built$x$layout$xaxis$range), c(1, 1350))
+  expect_equal(utils::head(built$x$data[[1]]$x, 2), c(1, 10))
 })
 
 test_that("compute_collection_table_grouping groups metadata with fallback enrichment term", {

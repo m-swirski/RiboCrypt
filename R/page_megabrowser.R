@@ -137,7 +137,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
 }
 
 browser_allsamp_server <- function(id, all_exp, df, experiments,
-                                   gene_name_list, cds, org, motif_name_list,
+                                   gene_name_list, tx, cds, org, motif_name_list,
                                    metadata, browser_options, rv
 ) {
   moduleServer(
@@ -147,7 +147,7 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
       allsamples_observer_controller(input, output, session)
       plot_type <- "plotly"
       # Main plot controller, this code is only run if 'plot' is pressed
-      controller <- reactive(mb_controller_shiny(input, df, gene_name_list, cds)) %>%
+      controller <- reactive(mb_controller_shiny(input, df, gene_name_list, cds, tx)) %>%
         bindCache(input_to_list(input)) %>%
         bindEvent(input$go, ignoreInit = TRUE, ignoreNULL = FALSE)
       # Table
@@ -178,7 +178,7 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
 
       output$myPlotlyPlot <- renderPlotly({
         req(input$plotType == "plotly")
-        full_range <- c(1, nrow(table()$table))
+        full_range <- megabrowser_full_x_range(controller()$display_region, table()$table)
         full_y_range <- c(ncol(table()$table) + 0.5, 0.5)
         addMegabrowserDoubleClickReset(
           mb_mid_plot(),
@@ -211,7 +211,7 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$mb_top_summary <- renderPlotly({
-        full_range <- c(1, nrow(table()$table))
+        full_range <- megabrowser_full_x_range(controller()$display_region, table()$table)
         addMegabrowserDoubleClickReset(
           mb_top_plot(),
           reset_range = full_range,
@@ -222,7 +222,7 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$mb_bottom_gene <- renderPlotly({
-        full_range <- c(1, nrow(table()$table))
+        full_range <- megabrowser_full_x_range(controller()$display_region, table()$table)
         addMegabrowserDoubleClickReset(
           mb_bottom_plot(),
           reset_range = full_range,

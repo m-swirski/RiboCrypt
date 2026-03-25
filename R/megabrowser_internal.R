@@ -482,9 +482,55 @@ profile_plotly_gl <- function(dt, frame_colors = frame_color_themes("R"),
     )
 }
 
-summary_track_allsamples <- function(mat, summary_track_type = "area") {
+summary_track_allsamples <- function(mat, template = NULL) {
   time_before <- Sys.time()
-  summary_plot <- profile_plotly_gl(mat)
+  if (is.null(template)) {
+    template <- covPanelColumnsPlotlyTemplate()
+  }
+  x_range <- range(mat$position, na.rm = TRUE)
+  summary_plot <- createSinglePlot(
+    profile = mat,
+    withFrames = TRUE,
+    frame_colors = "R",
+    colors = NULL,
+    ylabels = "summary",
+    ylabels_full_name = "summary",
+    lines = numeric(),
+    type = "columns",
+    lib_index = 1,
+    total_libs = 1,
+    flip_ylabel = FALSE,
+    templates = list(cov_panel_columns_plotly = template)
+  ) %>%
+    plotly::layout(
+      showlegend = FALSE,
+      hovermode = "closest",
+      margin = margin_megabrowser(),
+      paper_bgcolor = "rgba(0,0,0,0)",
+      plot_bgcolor  = "rgba(0,0,0,0)",
+      xaxis = list(
+        range = x_range,
+        autorange = FALSE,
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL,
+        fixedrange = FALSE
+      ),
+      yaxis = list(
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL,
+        fixedrange = TRUE
+      )
+    ) %>%
+    addColumnsZoomSwitch() %>%
+    lineDeSimplify() %>%
+    plotly::config(doubleClick = FALSE)
+  summary_plot$x$layout$yaxis$title <- NULL
   summary_plot$x$source <- "mb_top"
   timer_done_nice_print("-- Mega browser summary track done: ", time_before)
   return(summary_plot)

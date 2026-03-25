@@ -91,6 +91,40 @@ test_that("profile_plotly_gl returns a plotly object", {
   expect_identical(built$x$layout$xaxis$autorange, FALSE)
 })
 
+test_that("summary_track_allsamples uses browser columns template with zoom switch", {
+  dt <- data.table::data.table(
+    position = 1:6,
+    count = c(1, 2, 3, 4, 5, 6),
+    frame = factor(rep(0:2, length.out = 6))
+  )
+  p <- RiboCrypt:::summary_track_allsamples(
+    dt,
+    template = RiboCrypt:::covPanelColumnsPlotlyTemplate()
+  )
+
+  expect_true(inherits(p, "plotly"))
+  expect_identical(p$x$source, "mb_top")
+  expect_identical(p$x$config$doubleClick, FALSE)
+
+  built <- plotly::plotly_build(p)
+  expect_equal(unname(built$x$layout$xaxis$range), c(1, 6))
+  expect_identical(built$x$layout$xaxis$autorange, FALSE)
+  expect_equal(unname(built$x$layout$margin$l), 30)
+  expect_equal(unname(built$x$layout$margin$r), 100)
+  expect_identical(built$x$layout$paper_bgcolor, "rgba(0,0,0,0)")
+  expect_identical(built$x$layout$plot_bgcolor, "rgba(0,0,0,0)")
+  expect_identical(built$x$layout$hovermode, "closest")
+  expect_null(built$x$layout$yaxis$title)
+  expect_identical(built$x$layout$yaxis$fixedrange, TRUE)
+  expect_identical(built$x$layout$yaxis$showticklabels, FALSE)
+  expect_gte(length(built$x$data), 6)
+  expect_identical(built$x$data[[1]]$type, "scattergl")
+  expect_identical(built$x$data[[1]]$visible, "legendonly")
+  expect_identical(built$x$data[[1]]$meta$rc_columns_switch, "gl_subset")
+  expect_identical(built$x$data[[4]]$type, "scatter")
+  expect_identical(built$x$data[[4]]$meta$rc_columns_switch, "line")
+})
+
 test_that("sync_megabrowser_x_shiny resets synced tracks to explicit x range on autorange", {
   calls <- list()
   testthat::local_mocked_bindings(

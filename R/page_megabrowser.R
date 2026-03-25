@@ -147,13 +147,17 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
       table <- reactive(compute_collection_table_shiny(controller, metadata = metadata)) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(controller()$table_hash, ignoreInit = FALSE, ignoreNULL = TRUE)
+      mb_top_template <- covPanelColumnsPlotlyTemplate()
 
       # Heatmap (middle right)
       plot_object <- reactive(mb_plot_object_shiny(table()$table, input)) %>%
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(table(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      mb_top_plot <- reactive(summary_track_allsamples(attr(table()$table, "summary_cov"))) %>%
+      mb_top_plot <- reactive(summary_track_allsamples(
+        attr(table()$table, "summary_cov"),
+        template = mb_top_template
+      )) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 

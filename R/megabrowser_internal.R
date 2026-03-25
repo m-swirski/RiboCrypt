@@ -29,8 +29,8 @@ compute_collection_table_shiny <- function(mainPlotControls,
   return(dtable)
 }
 
-mb_controller_shiny <- function(input, df, gene_name_list) {
-  click_plot_browser_allsamp_controller(input, df, gene_name_list)
+mb_controller_shiny <- function(input, df, gene_name_list, cds) {
+  click_plot_browser_allsamp_controller(input, df, gene_name_list, cds)
 }
 
 mb_plot_object_shiny <- function(table_obj, input) {
@@ -365,6 +365,7 @@ get_megabrowser_annotation_plot_shiny <- function(controller) {
                              controller()$plotType, controller()$tx_annotation,
                              controller()$display_region,
                              controller()$annotation,
+                             controller()$customRegions,
                              controller()$viewMode,
                              controller()$collapsed_introns_width
   )
@@ -398,11 +399,13 @@ get_megabrowser_annotation_plot <- function(id, df,
                                        region_type,
                                        plotType = "plotly",
                                        tx_annotation, display_region,
-                                       cds_annotation, viewMode,
+                                       cds_annotation, custom_regions = NULL,
+                                       viewMode,
                                        collapse_intron_flank) {
   time_before <- Sys.time()
   res <- annotation_track_allsamples(df, id, display_region, cds_annotation,
-                                     tx_annotation, viewMode, collapse_intron_flank)
+                                     tx_annotation, custom_regions,
+                                     viewMode, collapse_intron_flank)
 
   timer_done_nice_print("-- Mega browser annotation plot done: ", time_before)
   return(res)
@@ -537,10 +540,19 @@ summary_track_allsamples <- function(mat, template = NULL) {
 }
 
 annotation_track_allsamples <- function(df, id, display_range, annotation,
-                                        tx_annotation, viewMode, collapse_intron_flank) {
-  gene_model_panel <- createGeneModelPanel(display_range, annotation,
+                                        tx_annotation, custom_regions = NULL,
+                                        viewMode, collapse_intron_flank) {
+  annotation_list <- annotation_controller(
+    df = df,
+    display_range = display_range,
+    annotation = annotation,
+    leader_extension = 0,
+    trailer_extension = 0,
+    viewMode = viewMode
+  )
+  gene_model_panel <- createGeneModelPanel(annotation_list$display_range, annotation_list$annotation,
                                            tx_annotation = tx_annotation,
-                                           custom_regions = NULL,
+                                           custom_regions = custom_regions,
                                            viewMode = viewMode, collapse_intron_flank)
   return(geneModelPanelPlotly(gene_model_panel[[1]]))
 }

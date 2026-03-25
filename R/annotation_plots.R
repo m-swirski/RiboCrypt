@@ -367,13 +367,14 @@ gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
     return(list(result_dt, lines_locations))
   }
 
+
+
   overlap_lengths <- lengths(overlaps)
   names_grouping <- rep.int(names(overlaps), overlap_lengths)
   overlaps <- unlistGrl(overlaps)
   names(overlaps) <- names_grouping
   overlaps$rel_frame_exon <- getRelativeFrames(overlaps)
   # overlaps <- subsetByOverlaps(overlaps, display_range)
-
   intersections <-  trimOverlaps(overlaps, display_range)
   intersections <- groupGRangesBy(intersections, paste0(names(intersections), "___", intersections$type))
   names(intersections) <- sub("___.*", "", names(intersections))

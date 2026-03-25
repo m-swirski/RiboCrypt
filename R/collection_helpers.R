@@ -378,8 +378,8 @@ subset_tx_by_region <- function(df, id, region_type,
           region <- loadRegion(df, part = "leaders", names.keep = id)
         }
 
-        region <- unlistGrl(c(region, region2))
-        region <- GRangesList(region)
+        region <- reduce(unlistGrl(c(region, region2)))
+        region <- sortPerGroup(GRangesList(region), quick.rev = TRUE)
         names(region) <- id
       } else {
         if (organism(df) == "Saccharomyces cerevisiae" & region_type != "cds") {

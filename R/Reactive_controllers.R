@@ -225,7 +225,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
   }
 }
 
-click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
+click_plot_browser_allsamp_controller <- function(input, df, gene_name_list, cds) {
     time_before <- controller_init(input, id = "Mega Browser")
 
     # Input copies
@@ -252,7 +252,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
       message("Using motif: ", table_path)
     } else {
       # annotation extractors
-      annotation_list <- subset_tx_by_region(dff, id, region_type)
+      annotation_list <- subset_tx_by_region(dff, id, region_type, cds())
       tx_annotation <- display_region <- annotation_list$region
       cds_annotation <- observed_cds_annotation_internal(id,
                                                          annotation_list$cds_annotation,
@@ -294,6 +294,14 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     kmer <- isolate(input$kmer)
     min_count <- isolate(input$min_count)
     frame <- isolate(input$frame)
+    translon_annotation <- observed_translon_annotation(
+      isolate(input$tx),
+      dff,
+      isolate(input$other_tx),
+      isolate(input$add_translon),
+      isolate(input$add_translons_transcode)
+    )
+    customRegions <- translon_annotation
 
     # Generic validators and geters
     if (!isTruthy(min_count)) min_count <- 0
@@ -312,6 +320,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
     table_hash <- paste(name(dff), id, table_path, lib_sizes, clusters, min_count,
                         region_type, paste(metadata_field, collapse = ":"), normalization, frame,
                         kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
+                        isolate(input$add_translon), isolate(input$add_translons_transcode),
                         leader_extension, trailer_extension,
                         isolate(input$viewMode), collapsed_introns_width, sep = "|_|")
     table_plot_hash <- paste(table_hash, isolate(input$other_tx), input$plotType,
@@ -324,6 +333,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list) {
                    display_region = display_region,
                    tx_annotation = tx_annotation,
                    annotation = cds_annotation,
+                   customRegions = customRegions,
                    table_path = table_path,
                    lib_sizes = lib_sizes,
                    metadata_field = metadata_field,

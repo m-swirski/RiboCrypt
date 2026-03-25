@@ -125,6 +125,48 @@ test_that("summary_track_allsamples uses browser columns template with zoom swit
   expect_identical(built$x$data[[4]]$meta$rc_columns_switch, "line")
 })
 
+test_that("annotation_track_allsamples forwards custom regions", {
+  display_range <- GenomicRanges::GRangesList(
+    tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(1, 10), "+")
+  )
+  annotation <- GenomicRanges::GRangesList(
+    tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(3, 8), "+")
+  )
+  translons <- GenomicRanges::GRangesList(
+    T1 = GenomicRanges::GRanges("chr1", IRanges::IRanges(4, 6), "+")
+  )
+  captured <- NULL
+
+  testthat::local_mocked_bindings(
+    annotation_controller = function(df, display_range, annotation, annotation_names = NULL,
+                                     leader_extension, trailer_extension, viewMode) {
+      list(display_range = display_range, annotation = annotation)
+    },
+    createGeneModelPanel = function(display_range, annotation, tx_annotation,
+                                    custom_regions, viewMode, collapse_intron_flank,
+                                    frame_colors = "R") {
+      captured <<- custom_regions
+      list(data.table::data.table(), numeric())
+    },
+    geneModelPanelPlotly = function(dt) plotly::plot_ly(),
+    .package = "RiboCrypt"
+  )
+
+  p <- RiboCrypt:::annotation_track_allsamples(
+    df = NULL,
+    id = "tx",
+    display_range = display_range,
+    annotation = annotation,
+    tx_annotation = annotation,
+    custom_regions = translons,
+    viewMode = "tx",
+    collapse_intron_flank = 100
+  )
+
+  expect_true(inherits(p, "plotly"))
+  expect_identical(captured, translons)
+})
+
 test_that("sync_megabrowser_x_shiny resets synced tracks to explicit x range on autorange", {
   calls <- list()
   testthat::local_mocked_bindings(

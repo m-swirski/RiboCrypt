@@ -11,6 +11,8 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   columns_to_show <- columns_to_show[columns_to_show %in% colnames(metadata)]
   metadata <- metadata[, ..columns_to_show]
   full_annotation <- as.logical(browser_options["full_annotation"])
+  translons <- isTRUE(as.logical(browser_options["translons"]))
+  translons_transcode <- isTRUE(as.logical(browser_options["translons_transcode"]))
   if (!is.null(browser_options["default_gene_meta"])) {
     all_isoforms <- subset(gene_names_init, label == browser_options["default_gene_meta"])
   } else all_isoforms <- NULL
@@ -68,6 +70,11 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                    fluidRow(column(6, gene_input_select(ns, label = "Sort by other gene", id = "other_gene")),
                                             column(6, textInput(ns("ratio_interval"), label = "Sort on interval/ratio : a:b;x:y", value = NULL))),
                                    checkboxInput(ns("display_annot"), label = "Display annotation", value = TRUE),
+                                   fluidRow(
+                                     column(4, checkboxInput(ns("add_translon"), "Predicted translons (Our all-merged: T)", translons)),
+                                     column(4, checkboxInput(ns("add_translons_transcode"), "Predicted translons (TransCode: TC)",
+                                                             translons_transcode))
+                                   ),
                                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                                    checkboxInput(ns("frame"), label = "Split by frame", value = FALSE),
                                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
@@ -130,7 +137,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
 }
 
 browser_allsamp_server <- function(id, all_exp, df, experiments,
-                                   gene_name_list, org, motif_name_list,
+                                   gene_name_list, cds, org, motif_name_list,
                                    metadata, browser_options, rv
 ) {
   moduleServer(
@@ -140,7 +147,7 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
       allsamples_observer_controller(input, output, session)
       plot_type <- "plotly"
       # Main plot controller, this code is only run if 'plot' is pressed
-      controller <- reactive(mb_controller_shiny(input, df, gene_name_list)) %>%
+      controller <- reactive(mb_controller_shiny(input, df, gene_name_list, cds)) %>%
         bindCache(input_to_list(input)) %>%
         bindEvent(input$go, ignoreInit = TRUE, ignoreNULL = FALSE)
       # Table

@@ -138,7 +138,8 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
 
 browser_allsamp_server <- function(id, all_exp, df, experiments,
                                    gene_name_list, tx, cds, org, motif_name_list,
-                                   metadata, browser_options, rv
+                                   metadata, browser_options, rv,
+                                   templates = NULL
 ) {
   moduleServer(
     id,
@@ -154,16 +155,14 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
       table <- reactive(compute_collection_table_shiny(controller, metadata = metadata)) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(controller()$table_hash, ignoreInit = FALSE, ignoreNULL = TRUE)
-      mb_top_template <- covPanelColumnsPlotlyTemplate()
-
       # Heatmap (middle right)
-      plot_object <- reactive(mb_plot_object_shiny(table()$table, input)) %>%
+      plot_object <- reactive(mb_plot_object_shiny(table()$table, input, templates = templates)) %>%
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(table(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       mb_top_plot <- reactive(summary_track_allsamples(
         attr(table()$table, "summary_cov"),
-        template = mb_top_template
+        template = templates$cov_panel_columns_plotly
       )) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
@@ -172,14 +171,13 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      mb_bottom_plot <- reactive(get_megabrowser_annotation_plot_shiny(controller)) %>%
+      mb_bottom_plot <- reactive(get_megabrowser_annotation_plot_shiny(controller, templates = templates)) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$myPlotlyPlot <- renderPlotly({
         req(input$plotType == "plotly")
         full_range <- megabrowser_full_x_range(controller()$display_region, table()$table)
-        full_y_range <- c(ncol(table()$table) + 0.5, 0.5)
         addMegabrowserDoubleClickReset(
           mb_mid_plot(),
           reset_range = full_range,
@@ -187,7 +185,7 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
           reset_layout = list(
             "xaxis.range" = full_range,
             "xaxis.autorange" = FALSE,
-            "yaxis.range" = full_y_range,
+            "yaxis.range" = c(0.5, ncol(table()$table) + 0.5),
             "yaxis.autorange" = FALSE
           ),
           peer_reset_layout = list(
@@ -244,7 +242,7 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$d <- renderPlotly({
-        allsamples_sidebar_plotly(meta_and_clusters()$meta)
+        allsamples_sidebar_plotly(meta_and_clusters()$meta, templates = templates)
       }) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(meta_and_clusters(),

@@ -69,7 +69,7 @@ allsamples_sidebar <- function(meta) {
 }
 
 
-allsamples_sidebar_plotly <- function(meta) {
+allsamples_sidebar_plotly <- function(meta, templates = NULL) {
   time_before <- Sys.time()
 
   stopifnot(is.data.table(meta))
@@ -86,42 +86,74 @@ allsamples_sidebar_plotly <- function(meta) {
     hover_text <- as.character(xj)  # hover text only
     if (is.numeric(xj)) {
       # thin track line; hover shows grouping
-      plot_list[[j]] <- plot_ly(
-        x = xj, y = y,
-        type = "scatter", mode = "lines",
-        hoverinfo = "text", text = hover_text,
-        line = list(width = 1), showlegend = FALSE,
-        source = "mb_sidebar"
-      ) %>%
-        layout(
-          margin = list(l = 0, r = 0, t = 0, b = 0),
-          paper_bgcolor = "rgba(0,0,0,0)",
-          plot_bgcolor  = "rgba(0,0,0,0)",
-          xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL,
-                       rangeslider = list(visible = FALSE)),
-          yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL)
-        )
+      if (inherits(templates$allsamples_sidebar_numeric_plotly, "plotly")) {
+        plot_list[[j]] <- templates$allsamples_sidebar_numeric_plotly
+        plot_list[[j]]$x$data[[1]]$x <- xj
+        plot_list[[j]]$x$data[[1]]$y <- y
+        plot_list[[j]]$x$data[[1]]$text <- hover_text
+        if (length(plot_list[[j]]$x$attrs) >= 1) {
+          plot_list[[j]]$x$attrs[[1]]$x <- xj
+          plot_list[[j]]$x$attrs[[1]]$y <- y
+          plot_list[[j]]$x$attrs[[1]]$text <- hover_text
+        }
+      } else {
+        plot_list[[j]] <- plot_ly(
+          x = xj, y = y,
+          type = "scatter", mode = "lines",
+          hoverinfo = "text", text = hover_text,
+          line = list(width = 1), showlegend = FALSE,
+          source = "mb_sidebar"
+        ) %>%
+          layout(
+            margin = list(l = 0, r = 0, t = 0, b = 0),
+            paper_bgcolor = "rgba(0,0,0,0)",
+            plot_bgcolor  = "rgba(0,0,0,0)",
+            xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL,
+                         rangeslider = list(visible = FALSE)),
+            yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL)
+          )
+      }
     } else {
       # categorical track as 1-col heatmap; hover shows grouping
       f <- factor(xj, exclude = NULL)
       z <- matrix(as.integer(f), ncol = 1)
-
-      plot_list[[j]] <- plot_ly(
-        x = 1, y = y, z = z,
-        type = "heatmap",
-        showscale = FALSE,
-        hoverinfo = "text",
-        text = matrix(hover_text, ncol = 1),
-        source = "mb_sidebar"
-      ) %>%
-        layout(
-          margin = list(l = 0, r = 0, t = 0, b = 0),
-          paper_bgcolor = "rgba(0,0,0,0)",
-          plot_bgcolor  = "rgba(0,0,0,0)",
-          xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL,
-                       rangeslider = list(visible = FALSE)),
-          yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL)
-        )
+      if (inherits(templates$allsamples_sidebar_categorical_plotly, "plotly")) {
+        plot_list[[j]] <- templates$allsamples_sidebar_categorical_plotly
+        plot_list[[j]]$x$data[[1]]$x <- 1
+        plot_list[[j]]$x$data[[1]]$y <- y
+        plot_list[[j]]$x$data[[1]]$z <- z
+        plot_list[[j]]$x$data[[1]]$text <- matrix(hover_text, ncol = 1)
+        plot_list[[j]]$x$data[[1]]$zmin <- NULL
+        plot_list[[j]]$x$data[[1]]$zmax <- NULL
+        plot_list[[j]]$x$data[[1]]$zauto <- NULL
+        plot_list[[j]]$x$data[[1]]$autocolorscale <- NULL
+        if (length(plot_list[[j]]$x$attrs) >= 1) {
+          plot_list[[j]]$x$attrs[[1]]$x <- 1
+          plot_list[[j]]$x$attrs[[1]]$y <- y
+          plot_list[[j]]$x$attrs[[1]]$z <- z
+          plot_list[[j]]$x$attrs[[1]]$text <- matrix(hover_text, ncol = 1)
+          plot_list[[j]]$x$attrs[[1]]$zmin <- NULL
+          plot_list[[j]]$x$attrs[[1]]$zmax <- NULL
+          plot_list[[j]]$x$attrs[[1]]$zauto <- NULL
+        }
+      } else {
+        plot_list[[j]] <- plot_ly(
+          x = 1, y = y, z = z,
+          type = "heatmap",
+          showscale = FALSE,
+          hoverinfo = "text",
+          text = matrix(hover_text, ncol = 1),
+          source = "mb_sidebar"
+        ) %>%
+          layout(
+            margin = list(l = 0, r = 0, t = 0, b = 0),
+            paper_bgcolor = "rgba(0,0,0,0)",
+            plot_bgcolor  = "rgba(0,0,0,0)",
+            xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL,
+                         rangeslider = list(visible = FALSE)),
+            yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL)
+          )
+      }
     }
   }
   res <- subplot(plot_list, nrows = 1, shareY = TRUE, titleX = FALSE, titleY = FALSE) %>%
@@ -154,26 +186,31 @@ allsamples_sidebar_plotly <- function(meta) {
       )
     })
 
-    cluster_labels <- plotly::plot_ly(
-      source = "mb_sidebar",
-      x = numeric(0),
-      y = numeric(0),
-      type = "scatter",
-      mode = "markers",
-      hoverinfo = "skip",
-      showlegend = FALSE
-    ) %>%
-      plotly::layout(
-        margin = list(l = 0, r = 0, t = 0, b = 0),
-        paper_bgcolor = "rgba(0,0,0,0)",
-        plot_bgcolor = "rgba(0,0,0,0)",
-        xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE,
-                     zeroline = FALSE, title = NULL, range = c(-1, 1)),
-        yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE,
-                     zeroline = FALSE, title = NULL),
-        annotations = cluster_ann,
+    if (inherits(templates$allsamples_sidebar_cluster_label_plotly, "plotly")) {
+      cluster_labels <- templates$allsamples_sidebar_cluster_label_plotly %>%
+        plotly::layout(annotations = cluster_ann)
+    } else {
+      cluster_labels <- plotly::plot_ly(
+        source = "mb_sidebar",
+        x = numeric(0),
+        y = numeric(0),
+        type = "scatter",
+        mode = "markers",
+        hoverinfo = "skip",
         showlegend = FALSE
-      )
+      ) %>%
+        plotly::layout(
+          margin = list(l = 0, r = 0, t = 0, b = 0),
+          paper_bgcolor = "rgba(0,0,0,0)",
+          plot_bgcolor = "rgba(0,0,0,0)",
+          xaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE,
+                       zeroline = FALSE, title = NULL, range = c(-1, 1)),
+          yaxis = list(showticklabels = FALSE, ticks = "", showgrid = FALSE,
+                       zeroline = FALSE, title = NULL),
+          annotations = cluster_ann,
+          showlegend = FALSE
+        )
+    }
 
 
     plot_list <- c(list(cluster_labels), plot_list)
@@ -360,4 +397,106 @@ allsamples_meta_table <- function(meta_and_clusters) {
     res[, Cluster := as.character(Cluster)]
   }
   res
+}
+allsamplesSidebarNumericPlotlyTemplate <- function() {
+  plotly::plot_ly(
+    x = 1,
+    y = 1,
+    type = "scatter",
+    mode = "lines",
+    hoverinfo = "text",
+    text = "",
+    line = list(width = 1),
+    showlegend = FALSE,
+    source = "mb_sidebar"
+  ) %>%
+    plotly::layout(
+      margin = list(l = 0, r = 0, t = 0, b = 0),
+      paper_bgcolor = "rgba(0,0,0,0)",
+      plot_bgcolor  = "rgba(0,0,0,0)",
+      xaxis = list(
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL,
+        rangeslider = list(visible = FALSE)
+      ),
+      yaxis = list(
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL
+      )
+    ) %>%
+    plotly::plotly_build()
+}
+
+allsamplesSidebarCategoricalPlotlyTemplate <- function() {
+  plotly::plot_ly(
+    x = 1,
+    y = 1:2,
+    z = matrix(c(1, 2), ncol = 1),
+    type = "heatmap",
+    showscale = FALSE,
+    hoverinfo = "text",
+    text = matrix(c("", ""), ncol = 1),
+    source = "mb_sidebar"
+  ) %>%
+    plotly::layout(
+      margin = list(l = 0, r = 0, t = 0, b = 0),
+      paper_bgcolor = "rgba(0,0,0,0)",
+      plot_bgcolor  = "rgba(0,0,0,0)",
+      xaxis = list(
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL,
+        rangeslider = list(visible = FALSE)
+      ),
+      yaxis = list(
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL
+      )
+    ) %>%
+    plotly::plotly_build()
+}
+
+allsamplesSidebarClusterLabelPlotlyTemplate <- function() {
+  plotly::plot_ly(
+    source = "mb_sidebar",
+    x = numeric(0),
+    y = numeric(0),
+    type = "scatter",
+    mode = "markers",
+    hoverinfo = "skip",
+    showlegend = FALSE
+  ) %>%
+    plotly::layout(
+      margin = list(l = 0, r = 0, t = 0, b = 0),
+      paper_bgcolor = "rgba(0,0,0,0)",
+      plot_bgcolor = "rgba(0,0,0,0)",
+      xaxis = list(
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL,
+        range = c(-1, 1)
+      ),
+      yaxis = list(
+        showticklabels = FALSE,
+        ticks = "",
+        showgrid = FALSE,
+        zeroline = FALSE,
+        title = NULL
+      ),
+      showlegend = FALSE
+    ) %>%
+    plotly::plotly_build()
 }

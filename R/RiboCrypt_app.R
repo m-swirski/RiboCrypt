@@ -131,7 +131,7 @@ RiboCrypt_app <- function(
         rv <- browser_allsamp_server(
           "browser_allsamp", all_exp, df, experiments,
           gene_name_list, tx, cds, org, motif_name_list,
-          metadata, browser_options, rv
+          metadata, browser_options, rv, templates = templates
         )
         rv <- observatory_server(
           "observatory", all_exp, df, experiments,

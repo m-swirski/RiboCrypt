@@ -163,7 +163,7 @@ test_that("annotation_track_allsamples forwards custom regions", {
       captured <<- custom_regions
       list(data.table::data.table(), numeric())
     },
-    geneModelPanelPlotly = function(dt) plotly::plot_ly(),
+    geneModelPanelPlotly = function(dt, template = NULL) plotly::plot_ly(),
     .package = "RiboCrypt"
   )
 
@@ -180,6 +180,49 @@ test_that("annotation_track_allsamples forwards custom regions", {
 
   expect_true(inherits(p, "plotly"))
   expect_identical(captured, translons)
+})
+
+test_that("annotation_track_allsamples forwards shared gene model template", {
+  display_range <- GenomicRanges::GRangesList(
+    tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(1, 10), "+")
+  )
+  annotation <- GenomicRanges::GRangesList(
+    tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(3, 8), "+")
+  )
+  template <- plotly::plot_ly() %>% plotly::layout(paper_bgcolor = "pink")
+  captured_template <- NULL
+
+  testthat::local_mocked_bindings(
+    annotation_controller = function(df, display_range, annotation, annotation_names = NULL,
+                                     leader_extension, trailer_extension, viewMode) {
+      list(display_range = display_range, annotation = annotation)
+    },
+    createGeneModelPanel = function(display_range, annotation, tx_annotation,
+                                    custom_regions, viewMode, collapse_intron_flank,
+                                    frame_colors = "R") {
+      list(data.table::data.table(), numeric())
+    },
+    geneModelPanelPlotly = function(dt, template = NULL) {
+      captured_template <<- template
+      plotly::plot_ly()
+    },
+    .package = "RiboCrypt"
+  )
+
+  p <- RiboCrypt:::annotation_track_allsamples(
+    df = NULL,
+    id = "tx",
+    display_range = display_range,
+    annotation = annotation,
+    tx_annotation = annotation,
+    custom_regions = NULL,
+    viewMode = "tx",
+    collapse_intron_flank = 100,
+    templates = list(gene_model_panel_plotly = template)
+  )
+
+  expect_true(inherits(p, "plotly"))
+  expect_identical(captured_template, template)
 })
 
 test_that("sync_megabrowser_x_shiny resets synced tracks to explicit x range on autorange", {
@@ -205,6 +248,33 @@ test_that("sync_megabrowser_x_shiny resets synced tracks to explicit x range on 
   expect_true(all(vapply(calls, function(call) identical(call$method, "relayout"), logical(1))))
   expect_true(all(vapply(calls, function(call) identical(call$args[[1]][["xaxis.range"]], c(1, 500)), logical(1))))
   expect_true(all(vapply(calls, function(call) identical(call$args[[1]][["xaxis.autorange"]], FALSE), logical(1))))
+})
+
+test_that("sync_megabrowser_x_shiny keeps sidebar y zoom aligned without reversal", {
+  calls <- list()
+  testthat::local_mocked_bindings(
+    plotlyProxy = function(outputId, session) structure(list(id = outputId), class = "plotly_proxy"),
+    plotlyProxyInvoke = function(p, method, ...) {
+      calls[[length(calls) + 1L]] <<- list(id = p$id, method = method, args = list(...))
+      p
+    },
+    .package = "plotly"
+  )
+
+  RiboCrypt:::sync_megabrowser_x_shiny(
+    ed = list("yaxis.range[0]" = 8.4, "yaxis.range[1]" = 4.6),
+    session = NULL,
+    sync_tracks = FALSE,
+    sync_sidebar = TRUE,
+    y_max = 8,
+    y_reversed = TRUE
+  )
+
+  expect_length(calls, 1)
+  expect_identical(calls[[1]]$id, "d")
+  expect_identical(calls[[1]]$method, "relayout")
+  expect_equal(calls[[1]]$args[[1]]$yaxis$range, c(4.5, 0.5))
+  expect_identical(calls[[1]]$args[[1]]$yaxis$autorange, FALSE)
 })
 
 test_that("addMegabrowserDoubleClickReset attaches a double-click reset hook", {
@@ -250,7 +320,10 @@ test_that("get_meta_browser_plot returns plotly heatmap for plotly type", {
   built <- plotly::plotly_build(p)
   expect_equal(unname(built$x$layout$xaxis$range), c(1, 5))
   expect_identical(built$x$layout$xaxis$autorange, FALSE)
-
+  expect_equal(unname(built$x$layout$yaxis$range), c(0.5, 4.5))
+  expect_identical(built$x$layout$yaxis$autorange, FALSE)
+  expect_identical(built$x$layout$dragmode, "zoom")
+  expect_equal(unname(built$x$data[[1]]$z[, 1]), c(1, 6, 11, 16))
 })
 
 test_that("get_meta_browser_plot uses original-coordinate x range for binned tables", {
@@ -272,6 +345,83 @@ test_that("get_meta_browser_plot uses original-coordinate x range for binned tab
 
   expect_equal(unname(built$x$layout$xaxis$range), c(1, 1350))
   expect_equal(utils::head(built$x$data[[1]]$x, 2), c(1, 10))
+})
+
+test_that("get_meta_browser_plot reuses shared heatmap template", {
+  mat <- matrix(1:20, nrow = 5, ncol = 4)
+  table <- data.table::data.table(mat)
+  data.table::setnames(table, new = paste0("lib", seq(4)))
+  data.table::setattr(table, "ratio", 1L)
+  km <- stats::kmeans(t(mat), centers = 2)
+  data.table::setattr(table, "km", km)
+  data.table::setattr(table, "row_order_list", list("1" = seq(4)))
+  template <- RiboCrypt:::covPanelHeatmapPlotlyTemplate()
+
+  p <- RiboCrypt:::get_meta_browser_plot(
+    table,
+    color_theme = "default (White-Blue)",
+    plotType = "plotly",
+    template = RiboCrypt:::megabrowserHeatmapPlotlyTemplate()
+  )
+
+  expect_true(inherits(p, "plotly"))
+  expect_identical(p$x$data[[1]]$type, "heatmapgl")
+  expect_equal(unname(p$x$data[[1]]$x), 1:5)
+  expect_equal(dim(p$x$data[[1]]$z), c(4, 5))
+})
+
+test_that("get_meta_browser_plot plotly row order matches reversed sidebar order", {
+  mat <- matrix(1:20, nrow = 5, ncol = 4)
+  table <- data.table::data.table(mat)
+  data.table::setnames(table, new = paste0("lib", seq(4)))
+  data.table::setattr(table, "ratio", 1L)
+  km <- stats::kmeans(t(mat), centers = 2)
+  data.table::setattr(table, "km", km)
+  data.table::setattr(table, "row_order_list", list("1" = c(2L, 4L, 1L, 3L)))
+
+  p <- RiboCrypt:::get_meta_browser_plot(
+    table,
+    color_theme = "default (White-Blue)",
+    plotType = "plotly",
+    template = RiboCrypt:::megabrowserHeatmapPlotlyTemplate()
+  )
+
+  expect_equal(unname(p$x$data[[1]]$z[, 1]), c(6, 16, 1, 11))
+})
+
+test_that("mb_mid_plot_shiny registers interactive megabrowser source", {
+  p <- plotly::plot_ly(
+    x = 1:5,
+    y = 1:5,
+    z = matrix(seq_len(25), nrow = 5),
+    type = "heatmapgl"
+  ) %>% plotly::layout(yaxis = list(range = c(5.5, 0.5)))
+
+  p <- RiboCrypt:::mb_mid_plot_shiny(p, "plotly")
+
+  expect_identical(p$x$source, "mb_mid")
+})
+
+test_that("get_meta_browser_plot preserves matrix heatmap colorscale with shared template", {
+  mat <- matrix(1:20, nrow = 5, ncol = 4)
+  table <- data.table::data.table(mat)
+  data.table::setnames(table, new = paste0("lib", seq(4)))
+  data.table::setattr(table, "ratio", 1L)
+  km <- stats::kmeans(t(mat), centers = 2)
+  data.table::setattr(table, "km", km)
+  data.table::setattr(table, "row_order_list", list("1" = seq(4)))
+  p <- RiboCrypt:::get_meta_browser_plot(
+    table,
+    color_theme = "Matrix (black,green,red)",
+    plotType = "plotly",
+    template = RiboCrypt:::megabrowserHeatmapPlotlyTemplate()
+  )
+
+  built <- plotly::plotly_build(p)
+  colorscale <- built$x$data[[1]]$colorscale
+  expect_identical(colorscale[[1, 2]], "#000000")
+  expect_true(any(colorscale[, 2] == "#2CFA1F"))
+  expect_true(any(colorscale[, 2] == "#FF2400"))
 })
 
 test_that("compute_collection_table_grouping groups metadata with fallback enrichment term", {
@@ -371,4 +521,61 @@ test_that("compute_collection_table_grouping groups metadata with fallback enric
   expect_true(any(meta_tbl$Run == "SRR1001" & meta_tbl$BioProject == "PRJNA100001" & meta_tbl$TISSUE == "brain" &
                     meta_tbl$CELL_LINE == "CL1" & meta_tbl$CONDITION == "ctrl"))
 
+})
+
+test_that("allsamples_sidebar_plotly reuses shared numeric and categorical templates", {
+  meta <- data.table::data.table(
+    Run = c("SRR1", "SRR2", "SRR3"),
+    grouping = c("A", "B", "C"),
+    order = 1:3,
+    index = 1:3,
+    score = c(10, 20, 30),
+    tissue = c("brain", "heart", "brain")
+  )
+  attr(meta, "xlab") <- "grouping"
+
+  p <- RiboCrypt:::allsamples_sidebar_plotly(
+    meta,
+    templates = list(
+      allsamples_sidebar_numeric_plotly = RiboCrypt:::allsamplesSidebarNumericPlotlyTemplate(),
+      allsamples_sidebar_categorical_plotly = RiboCrypt:::allsamplesSidebarCategoricalPlotlyTemplate()
+    )
+  )
+
+  expect_true(inherits(p, "plotly"))
+  built <- plotly::plotly_build(p)
+  expect_identical(built$x$data[[1]]$type, "scatter")
+  expect_equal(as.numeric(built$x$data[[1]]$x), c(10, 20, 30))
+  expect_equal(as.integer(built$x$data[[1]]$y), 1:3)
+  expect_identical(built$x$data[[2]]$type, "heatmap")
+  expect_equal(as.integer(built$x$data[[2]]$y), 1:3)
+  expect_equal(dim(built$x$data[[2]]$z), c(3, 1))
+  expect_gt(length(unique(built$x$data[[2]]$colorscale[, 2])), 1)
+})
+
+test_that("allsamples_sidebar_plotly reuses shared cluster label template", {
+  meta <- data.table::data.table(
+    Run = c("SRR1", "SRR2", "SRR3", "SRR4"),
+    grouping = c("A", "A", "B", "B"),
+    order = 1:4,
+    index = 1:4,
+    cluster = c(1, 1, 2, 2),
+    tissue = c("brain", "brain", "heart", "heart")
+  )
+  attr(meta, "xlab") <- "grouping"
+
+  p <- RiboCrypt:::allsamples_sidebar_plotly(
+    meta,
+    templates = list(
+      allsamples_sidebar_categorical_plotly = RiboCrypt:::allsamplesSidebarCategoricalPlotlyTemplate(),
+      allsamples_sidebar_cluster_label_plotly = RiboCrypt:::allsamplesSidebarClusterLabelPlotlyTemplate()
+    )
+  )
+
+  expect_true(inherits(p, "plotly"))
+  built <- plotly::plotly_build(p)
+  expect_identical(built$x$data[[1]]$type, "scatter")
+  expect_identical(built$x$data[[2]]$type, "heatmap")
+  expect_length(built$x$layout$annotations, 2)
+  expect_equal(vapply(built$x$layout$annotations, `[[`, character(1), "text"), c("1", "2"))
 })

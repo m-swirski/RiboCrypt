@@ -33,10 +33,11 @@ mb_controller_shiny <- function(input, df, gene_name_list, cds, tx) {
   click_plot_browser_allsamp_controller(input, df, gene_name_list, cds, tx)
 }
 
-mb_plot_object_shiny <- function(table_obj, input) {
+mb_plot_object_shiny <- function(table_obj, input, templates = NULL) {
   get_meta_browser_plot(table_obj, isolate(input$heatmap_color),
                         isolate(input$color_mult),
-                        isolate(input$plotType))
+                        isolate(input$plotType),
+                        template = templates$megabrowser_heatmap_plotly)
 }
 
 mb_mid_plot_shiny <- function(plot_object, plotType) {
@@ -242,7 +243,7 @@ megabrowser_full_x_range <- function(display_range = NULL, table = NULL) {
 }
 
 get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
-                                  plotType = "plotly") {
+                                  plotType = "plotly", template = NULL) {
   time_before <- Sys.time()
   cat("Creating metabrowser heatmap\n")
 
@@ -259,7 +260,8 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
   stopifnot(!is.null(row_clusters))
 
   if (plotType == "plotly") {
-    mat <- mat[unlist(row_clusters, use.names = FALSE),]
+    mat <- mat[rev(unlist(row_clusters, use.names = FALSE)),]
+    plot_mat <- mat[rev(seq_len(nrow(mat))), , drop = FALSE]
     ratio <- attr(table, "ratio")
     if (is.null(ratio) || !is.numeric(ratio) || length(ratio) != 1 || !is.finite(ratio) || ratio < 1) {
       ratio <- 1
@@ -267,28 +269,61 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
     ratio <- as.integer(ratio)
     x_positions <- ((seq_len(ncol(mat)) - 1L) * ratio) + 1L
     full_x_range <- megabrowser_full_x_range(table = table)
-    full_y_range <- c(nrow(mat) + 0.5, 0.5)
+    full_y_range <- c(0.5, nrow(mat) + 0.5)
+    colorscale <- megabrowser_heatmap_colorscale(colors)
 
     margins <- margin_megabrowser()
     margins$t <- margins$b  <- 8
-    plot <- plotly::plot_ly(
-      x = ~x_positions,
-      z = mat,
-      colors = colors,
-      showscale = FALSE,
-      type = "heatmapgl"
-    ) %>% plotly::layout(
-      margin = margins,
-      xaxis = list(
-        range = full_x_range,
-        autorange = FALSE
-      ),
-      yaxis = list(
-        range = full_y_range,
-        autorange = FALSE
-      )
-    ) %>%
-      plotly::config(doubleClick = FALSE)
+    if (inherits(template, "plotly")) {
+      plot <- template
+      plot$x$data[[1]]$x <- x_positions
+      plot$x$data[[1]]$y <- NULL
+      plot$x$data[[1]]$z <- plot_mat
+      plot$x$data[[1]]$colorscale <- colorscale
+      plot$x$data[[1]]$zmin <- NULL
+      plot$x$data[[1]]$zmax <- NULL
+      plot$x$data[[1]]$zauto <- NULL
+      plot$x$data[[1]]$autocolorscale <- NULL
+      if (length(plot$x$attrs) >= 1) {
+        plot$x$attrs[[1]]$x <- x_positions
+        plot$x$attrs[[1]]$y <- NULL
+        plot$x$attrs[[1]]$z <- plot_mat
+        plot$x$attrs[[1]]$colorscale <- colorscale
+      }
+      plot <- plot %>% plotly::layout(
+        margin = margins,
+        xaxis = list(
+          range = full_x_range,
+          autorange = FALSE
+        ),
+        yaxis = list(
+          range = full_y_range,
+          autorange = FALSE
+        ),
+        dragmode = "zoom"
+      ) %>%
+        plotly::config(doubleClick = FALSE)
+    } else {
+      plot <- plotly::plot_ly(
+        x = x_positions,
+        z = plot_mat,
+        colors = colors,
+        showscale = FALSE,
+        type = "heatmapgl"
+      ) %>% plotly::layout(
+        margin = margins,
+        xaxis = list(
+          range = full_x_range,
+          autorange = FALSE
+        ),
+        yaxis = list(
+          range = full_y_range,
+          autorange = FALSE
+        ),
+        dragmode = "zoom"
+      ) %>%
+        plotly::config(doubleClick = FALSE)
+    }
 
   } else {
     mat <- mat[rev(unlist(row_clusters, use.names = FALSE)),]
@@ -305,6 +340,34 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
   }
   timer_done_nice_print("-- metabrowser heatmap done: ", time_before)
   return(plot)
+}
+
+megabrowser_heatmap_colorscale <- function(colors) {
+  rgb <- grDevices::col2rgb(colors)
+  rgba <- grDevices::rgb(rgb[1, ], rgb[2, ], rgb[3, ], maxColorValue = 255)
+  cbind(
+    seq(0, 1, length.out = length(rgba)),
+    rgba
+  )
+}
+
+megabrowserHeatmapPlotlyTemplate <- function() {
+  plotly::plotly_build(
+    plotly::plot_ly(
+      x = 1,
+      y = 1,
+      z = matrix(0, nrow = 1),
+      type = "heatmapgl",
+      showscale = FALSE,
+      hoverinfo = "skip"
+    ) %>%
+      plotly::layout(
+        margin = margin_megabrowser(),
+        xaxis = list(autorange = FALSE),
+        yaxis = list(autorange = FALSE),
+        dragmode = "zoom"
+      )
+  )
 }
 
 get_meta_browser_plot_full_shiny <- function(table, plot_object, controller, theme_template) {
@@ -387,7 +450,7 @@ plotly_image_from_plot <- function(plot_fn, width, height, res = 96,
     )
 }
 
-get_megabrowser_annotation_plot_shiny <- function(controller) {
+get_megabrowser_annotation_plot_shiny <- function(controller, templates = NULL) {
   p <- get_megabrowser_annotation_plot(controller()$id,
                              controller()$dff, controller()$summary_track,
                              controller()$display_annot,
@@ -397,7 +460,8 @@ get_megabrowser_annotation_plot_shiny <- function(controller) {
                              controller()$annotation,
                              controller()$customRegions,
                              controller()$viewMode,
-                             controller()$collapsed_introns_width
+                             controller()$collapsed_introns_width,
+                             templates = templates
   )
   p$x$source <- "mb_bottom"
   p
@@ -431,11 +495,13 @@ get_megabrowser_annotation_plot <- function(id, df,
                                        tx_annotation, display_region,
                                        cds_annotation, custom_regions = NULL,
                                        viewMode,
-                                       collapse_intron_flank) {
+                                       collapse_intron_flank,
+                                       templates = NULL) {
   time_before <- Sys.time()
   res <- annotation_track_allsamples(df, id, display_region, cds_annotation,
                                      tx_annotation, custom_regions,
-                                     viewMode, collapse_intron_flank)
+                                     viewMode, collapse_intron_flank,
+                                     templates = templates)
 
   timer_done_nice_print("-- Mega browser annotation plot done: ", time_before)
   return(res)
@@ -571,7 +637,8 @@ summary_track_allsamples <- function(mat, template = NULL) {
 
 annotation_track_allsamples <- function(df, id, display_range, annotation,
                                         tx_annotation, custom_regions = NULL,
-                                        viewMode, collapse_intron_flank) {
+                                        viewMode, collapse_intron_flank,
+                                        templates = NULL) {
   annotation_list <- annotation_controller(
     df = df,
     display_range = display_range,
@@ -584,7 +651,10 @@ annotation_track_allsamples <- function(df, id, display_range, annotation,
                                            tx_annotation = tx_annotation,
                                            custom_regions = custom_regions,
                                            viewMode = viewMode, collapse_intron_flank)
-  return(geneModelPanelPlotly(gene_model_panel[[1]]))
+  return(geneModelPanelPlotly(
+    gene_model_panel[[1]],
+    template = templates$gene_model_panel_plotly
+  ))
 }
 
 get_lib_sizes_file <- function(dff) {

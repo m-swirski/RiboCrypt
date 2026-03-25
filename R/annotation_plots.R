@@ -570,18 +570,38 @@ geneModelPanelPlotTemplate <- function() {
 }
 
 # Pure plotly version (no ggplot/ggplotly)
-geneModelPanelPlotly <- function(dt) {
+geneModelPanelPlotlyTemplate <- function() {
+  plotly::plot_ly(
+    x = numeric(0),
+    y = numeric(0),
+    type = "scatter",
+    mode = "markers",
+    hoverinfo = "skip",
+    showlegend = FALSE
+  ) %>%
+    plotly::layout(
+      showlegend = FALSE,
+      margin = list(l = 0, r = 0, b = 0, t = 0),
+      paper_bgcolor = "white",
+      plot_bgcolor  = "white",
+      hovermode = "closest"
+    )
+}
+
+geneModelPanelPlotly <- function(dt, template = geneModelPanelPlotlyTemplate()) {
   # If no annotation given, return blank plotly
   if (is.null(dt) || nrow(dt) == 0) {
-    return(plotly::plot_ly(
-             x = 0,
-             y = 0,
-             type = "scatter",
-             mode = "markers",
-             marker = list(opacity = 0),
-             hoverinfo = "skip",
-             showlegend = FALSE
-           ) %>%
+    p <- template
+    p$x$data <- list(list(
+      x = 0,
+      y = 0,
+      type = "scatter",
+      mode = "markers",
+      marker = list(opacity = 0),
+      hoverinfo = "skip",
+      showlegend = FALSE
+    ))
+    return(p %>%
              plotly::layout(
                xaxis = list(visible = FALSE),
                yaxis = list(visible = FALSE),
@@ -614,9 +634,8 @@ geneModelPanelPlotly <- function(dt) {
   y_max <- max(box_dt$ymax, if (nrow(seg_dt)) (0.5 - seg_dt$layers) else -Inf, na.rm = TRUE) + 0.05
 
   all_shapes <- list()
-  p <- plotly::plot_ly() %>%
+  p <- template %>%
     plotly::layout(
-      showlegend = FALSE,
       xaxis = list(
         visible = FALSE,
         range = c(x_min, x_max),
@@ -628,11 +647,7 @@ geneModelPanelPlotly <- function(dt) {
         range = c(y_min, y_max),
         fixedrange = TRUE,
         zeroline = FALSE
-      ),
-      margin = list(l = 0, r = 0, b = 0, t = 0),
-      paper_bgcolor = "white",
-      plot_bgcolor  = "white",
-      hovermode = "closest"
+      )
     )
 
   # --- Introns as line shapes rendered behind boxes ---

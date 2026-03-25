@@ -470,7 +470,9 @@ test_that("bottom_panel_shiny handles genomic string input on non tx region", {
     genomic_string = genomic_string
   )
 
-  bottom_panel <- RiboCrypt:::bottom_panel_shiny(controls$controls)
+  expect_no_warning(
+    bottom_panel <- RiboCrypt:::bottom_panel_shiny(controls$controls)
+  )
 
   expect_equal(ORFik::widthPerGroup(bottom_panel$display_range, FALSE), 300)
   expect_length(unlist(bottom_panel$display_range), 1)

@@ -112,6 +112,11 @@ rc_parameter_setup <- function() {
     templates <- list(
       nt_seq_panel_plotly = ntSeqPanelPlotlyTemplate(),
       aa_seq_panel_plotly = aaSeqPanelPlotlyTemplate(),
+      gene_model_panel_plotly = geneModelPanelPlotlyTemplate(),
+      allsamples_sidebar_numeric_plotly = allsamplesSidebarNumericPlotlyTemplate(),
+      allsamples_sidebar_categorical_plotly = allsamplesSidebarCategoricalPlotlyTemplate(),
+      allsamples_sidebar_cluster_label_plotly = allsamplesSidebarClusterLabelPlotlyTemplate(),
+      megabrowser_heatmap_plotly = megabrowserHeatmapPlotlyTemplate(),
       cov_panel_with_frames_plotly = covPanelWithFramesPlotlyTemplate(),
       cov_panel_without_frames_plotly = covPanelWithoutFramesPlotlyTemplate(),
       cov_panel_columns_plotly = covPanelColumnsPlotlyTemplate(),

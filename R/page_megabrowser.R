@@ -168,10 +168,21 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
       output$myPlotlyPlot <- renderPlotly({
         req(input$plotType == "plotly")
         full_range <- c(1, nrow(table()$table))
+        full_y_range <- c(ncol(table()$table) + 0.5, 0.5)
         addMegabrowserDoubleClickReset(
           mb_mid_plot(),
           reset_range = full_range,
-          peer_ids = c(ns("mb_top_summary"), ns("mb_bottom_gene"))
+          peer_ids = c(ns("mb_top_summary"), ns("mb_bottom_gene")),
+          reset_layout = list(
+            "xaxis.range" = full_range,
+            "xaxis.autorange" = FALSE,
+            "yaxis.range" = full_y_range,
+            "yaxis.autorange" = FALSE
+          ),
+          peer_reset_layout = list(
+            "xaxis.range" = full_range,
+            "xaxis.autorange" = FALSE
+          )
         )
       }) %>%
         bindCache(controller()$table_plot_hash) %>%

@@ -251,7 +251,13 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
       colors = colors,
       showscale = FALSE,
       type = "heatmapgl"
-    ) %>% plotly::layout(margin = margins) %>%
+    ) %>% plotly::layout(
+      margin = margins,
+      xaxis = list(
+        range = range(x_range, na.rm = TRUE),
+        autorange = FALSE
+      )
+    ) %>%
       plotly::config(doubleClick = FALSE)
 
   } else {
@@ -414,6 +420,7 @@ profile_plotly_gl <- function(dt, frame_colors = frame_color_themes("R"),
   # dt needs: position, count, frame
   stopifnot(is.data.table(dt) || is.data.frame(dt))
   dt <- as.data.table(dt)
+  x_range <- range(dt$position, na.rm = TRUE)
 
 
   # ensure deterministic order
@@ -455,6 +462,8 @@ profile_plotly_gl <- function(dt, frame_colors = frame_color_themes("R"),
       paper_bgcolor = "rgba(0,0,0,0)",
       plot_bgcolor  = "rgba(0,0,0,0)",
       xaxis = list(
+        range = x_range,
+        autorange = FALSE,
         showticklabels = FALSE,
         ticks = "",
         showgrid = FALSE,

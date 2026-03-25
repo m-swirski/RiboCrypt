@@ -86,6 +86,9 @@ test_that("profile_plotly_gl returns a plotly object", {
   )
   p <- RiboCrypt:::profile_plotly_gl(dt, bar_px = 2, alpha = 0.6)
   expect_true(inherits(p, "plotly"))
+  built <- plotly::plotly_build(p)
+  expect_equal(unname(built$x$layout$xaxis$range), c(1, 6))
+  expect_identical(built$x$layout$xaxis$autorange, FALSE)
 })
 
 test_that("sync_megabrowser_x_shiny resets synced tracks to explicit x range on autorange", {
@@ -118,14 +121,25 @@ test_that("addMegabrowserDoubleClickReset attaches a double-click reset hook", {
   p <- RiboCrypt:::addMegabrowserDoubleClickReset(
     p,
     reset_range = c(1, 100),
-    peer_ids = c("plot-a", "plot-b")
+    peer_ids = c("plot-a", "plot-b"),
+    reset_layout = list(
+      "xaxis.range" = c(1, 100),
+      "xaxis.autorange" = FALSE,
+      "yaxis.range" = c(10.5, 0.5),
+      "yaxis.autorange" = FALSE
+    ),
+    peer_reset_layout = list(
+      "xaxis.range" = c(1, 100),
+      "xaxis.autorange" = FALSE
+    )
   )
 
   expect_true(length(p$jsHooks$render) >= 1)
   render_code <- paste(vapply(p$jsHooks$render, `[[`, character(1), "code"), collapse = "\n")
   expect_match(render_code, "plotly_doubleclick")
   expect_match(render_code, "addEventListener\\('dblclick'")
-  expect_match(render_code, "xaxis\\.range")
+  expect_match(render_code, "reset_layout")
+  expect_match(render_code, "peer_reset_layout")
   expect_match(render_code, "peer_ids")
 })
 
@@ -142,6 +156,9 @@ test_that("get_meta_browser_plot returns plotly heatmap for plotly type", {
   p <- RiboCrypt:::get_meta_browser_plot(table, color_theme = "default (White-Blue)", plotType = "plotly")
   expect_true(inherits(p, "plotly"))
   expect_identical(p$x$config$doubleClick, FALSE)
+  built <- plotly::plotly_build(p)
+  expect_equal(unname(built$x$layout$xaxis$range), c(1, 5))
+  expect_identical(built$x$layout$xaxis$autorange, FALSE)
 
 })
 

@@ -356,25 +356,60 @@ function(el, x, data) {
   )
 }
 
-addMegabrowserDoubleClickReset <- function(plot_object, reset_range, peer_ids = character()) {
+addMegabrowserDoubleClickReset <- function(plot_object, reset_range, peer_ids = character(),
+                                           reset_layout = NULL,
+                                           peer_reset_layout = NULL) {
+  if (is.null(reset_layout)) {
+    reset_layout <- list(
+      "xaxis.range" = reset_range,
+      "xaxis.autorange" = FALSE
+    )
+  }
+  if (is.null(peer_reset_layout)) {
+    peer_reset_layout <- list(
+      "xaxis.range" = reset_range,
+      "xaxis.autorange" = FALSE
+    )
+  }
   plot_object %>% htmlwidgets::onRender(
     "
 function(el, x, data) {
-  function applyReset(target) {
+  function cloneRange(range) {
+    return Array.isArray(range) ? [range[0], range[1]] : null;
+  }
+
+  function captureInitialResetLayout(target) {
+    if (!target || target.__rcMegabrowserInitialResetLayout) return;
+    var layout = target._fullLayout || {};
+    var resetLayout = {};
+
+    if (layout.xaxis && Array.isArray(layout.xaxis.range)) {
+      resetLayout['xaxis.range'] = cloneRange(layout.xaxis.range);
+      resetLayout['xaxis.autorange'] = false;
+    }
+    if (layout.yaxis && Array.isArray(layout.yaxis.range)) {
+      resetLayout['yaxis.range'] = cloneRange(layout.yaxis.range);
+      resetLayout['yaxis.autorange'] = false;
+    }
+
+    if (Object.keys(resetLayout).length) {
+      target.__rcMegabrowserInitialResetLayout = resetLayout;
+    }
+  }
+
+  function applyReset(target, layout) {
     if (!target || typeof Plotly === 'undefined') return;
-    Plotly.relayout(target, {
-      'xaxis.range': data.reset_range,
-      'xaxis.autorange': false
-    });
+    captureInitialResetLayout(target);
+    Plotly.relayout(target, target.__rcMegabrowserInitialResetLayout || layout);
   }
 
   function triggerReset() {
     if (el.__rcMegabrowserResetBusy) return false;
     el.__rcMegabrowserResetBusy = true;
-    applyReset(el);
+    applyReset(el, data.reset_layout);
     (data.peer_ids || []).forEach(function(id) {
       var peer = document.getElementById(id);
-      if (peer) applyReset(peer);
+      if (peer) applyReset(peer, data.peer_reset_layout);
     });
     setTimeout(function() {
       el.__rcMegabrowserResetBusy = false;
@@ -404,10 +439,17 @@ function(el, x, data) {
   };
 
   attachInnerDblclick();
+  captureInitialResetLayout(el);
+  el.on('plotly_afterplot', function() { captureInitialResetLayout(el); });
   el.on('plotly_afterplot', attachInnerDblclick);
 }
 ",
-    list(reset_range = reset_range, peer_ids = as.list(peer_ids))
+    list(
+      reset_range = reset_range,
+      reset_layout = reset_layout,
+      peer_reset_layout = peer_reset_layout,
+      peer_ids = as.list(peer_ids)
+    )
   )
 }
 

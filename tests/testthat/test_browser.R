@@ -347,8 +347,10 @@ test_that("bottom_panel_shiny supports Color_blind frame theme", {
 
   bottom_panel <- RiboCrypt:::bottom_panel_shiny(controls$controls)
   cds_cols <- unique(bottom_panel$gene_model_panel_dt[type == "cds"]$cols)
+  aa_shape_cols <- vapply(bottom_panel$seq_panel$x$layout$shapes, `[[`, character(1), "fillcolor")
 
   expect_true(all(cds_cols %in% RiboCrypt:::frame_color_themes("Color_blind", FALSE)))
+  expect_equal(unname(aa_shape_cols), RiboCrypt:::frame_color_themes("Color_blind", FALSE))
 })
 
 test_that("bottom_panel_shiny handles transcript view with custom region overlapping CDS", {

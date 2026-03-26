@@ -58,6 +58,7 @@ plotAASeqPanelPlotly <- function(hits, sequence, frame_colors = "R", template = 
   } else {
     p <- aaSeqPanelPlotlyTemplate(frame_colors = frame_colors)
   }
+  p <- aaSeqPanelPlotlySetFrameColors(p, frame_colors)
   p <- aaSeqPanelPlotlySetRange(p, seq_length)
 
   if (nrow(hits) > 0) {
@@ -91,6 +92,26 @@ plotAASeqPanelPlotly <- function(hits, sequence, frame_colors = "R", template = 
   }
 
   p
+}
+
+aaSeqPanelPlotlySetFrameColors <- function(plot, frame_colors) {
+  frame_colors <- frame_color_themes(frame_colors, FALSE)
+
+  if (!is.null(plot$x$layout$shapes)) {
+    for (i in seq_len(min(length(plot$x$layout$shapes), length(frame_colors)))) {
+      plot$x$layout$shapes[[i]]$fillcolor <- frame_colors[i]
+      plot$x$layout$shapes[[i]]$line$color <- frame_colors[i]
+    }
+  }
+
+  if (length(plot$x$layoutAttrs) > 0 && !is.null(plot$x$layoutAttrs[[1]]$shapes)) {
+    for (i in seq_len(min(length(plot$x$layoutAttrs[[1]]$shapes), length(frame_colors)))) {
+      plot$x$layoutAttrs[[1]]$shapes[[i]]$fillcolor <- frame_colors[i]
+      plot$x$layoutAttrs[[1]]$shapes[[i]]$line$color <- frame_colors[i]
+    }
+  }
+
+  plot
 }
 
 aaSeqPanelPlotlySetRange <- function(plot, seq_length) {

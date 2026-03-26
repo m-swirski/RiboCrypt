@@ -702,6 +702,59 @@ test_that("plotAASeqPanelPlotly reuses template shapes without mutating template
   expect_true(length(built$x$data) > length(template$x$data))
 })
 
+test_that("geneModelPanelPlotly exposes gene id labels as a named legend item", {
+  dt <- data.table::data.table(
+    gene_names = c("txA", "txA", "txB"),
+    rect_starts = c(1, 8, 3),
+    rect_ends = c(5, 12, 10),
+    labels_locations = c(3, 10, 6.5),
+    layers = c(1, 1, 2),
+    type = c("cds", "cds", "cds"),
+    cols = c("#F8766D", "#F8766D", "#00BA38")
+  )
+
+  built <- plotly::plotly_build(RiboCrypt:::geneModelPanelPlotly(dt))
+  legend_traces <- Filter(function(tr) isTRUE(tr$showlegend), built$x$data)
+
+  expect_length(legend_traces, 1)
+  expect_identical(legend_traces[[1]]$name, "id")
+  expect_identical(legend_traces[[1]]$legendgroup, "id")
+  expect_identical(legend_traces[[1]]$mode, "text")
+  expect_equal(sort(as.character(legend_traces[[1]]$text)), c("txA", "txB"))
+})
+
+test_that("browser_legend_cleanup keeps gene id legend item alongside frame legends", {
+  profile <- data.table::data.table(
+    position = 1:6,
+    count = c(1, 2, 3, 2, 1, 0),
+    frame = factor(c(0, 1, 2, 0, 1, 2))
+  )
+  gene_dt <- data.table::data.table(
+    gene_names = c("txA", "txA"),
+    rect_starts = c(1, 8),
+    rect_ends = c(5, 12),
+    labels_locations = c(3, 10),
+    layers = c(1, 1),
+    type = c("cds", "cds"),
+    cols = c("#F8766D", "#F8766D")
+  )
+
+  p1 <- RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "lines", lib_index = 1, total_libs = 1
+  )
+  gene_plot <- RiboCrypt:::geneModelPanelPlotly(gene_dt)
+
+  polished <- suppressWarnings(RiboCrypt:::browser_legend_cleanup(
+    plotly::subplot(list(p1, gene_plot), nrows = 2, shareX = TRUE, titleY = TRUE, titleX = TRUE)
+  ))
+
+  legend_traces <- Filter(function(tr) isTRUE(tr$showlegend), polished$x$data)
+  legend_names <- vapply(legend_traces, function(tr) as.character(if (is.null(tr$name)) "" else tr$name), character(1))
+
+  expect_equal(sort(legend_names[nzchar(legend_names)]), c("0", "1", "2", "id"))
+})
+
 test_that("ntSeqPanelPlotly reuses template x-axis layout without mutating template", {
   template <- RiboCrypt:::ntSeqPanelPlotlyTemplate()
 

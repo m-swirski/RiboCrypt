@@ -768,7 +768,10 @@ geneModelPanelPlotly <- function(dt, template = geneModelPanelPlotlyTemplate()) 
         text = ~gene_names,
         textposition = "middle center",
         textfont = list(color = "black", size = 16),
-        hoverinfo = "skip"
+        hoverinfo = "skip",
+        name = "id",
+        legendgroup = "id",
+        showlegend = TRUE
       )
   }
   if (length(all_shapes) > 0) {

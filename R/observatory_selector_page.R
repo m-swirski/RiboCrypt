@@ -277,13 +277,7 @@ observatory_apply_dt_filters <- function(df, global_search, column_searches) {
     max_cols <- min(ncol(df), length(column_searches))
     for (col_index in seq_len(max_cols)) {
       pattern <- column_searches[[col_index]]
-      if (!is.null(pattern) && nzchar(pattern)) {
-        keep <- keep & grepl(
-          pattern,
-          as.character(df[[col_index]]),
-          ignore.case = TRUE
-        )
-      }
+      keep <- keep & observatory_apply_dt_column_filter(df[[col_index]], pattern)
     }
   }
 
@@ -302,6 +296,52 @@ observatory_apply_dt_filters <- function(df, global_search, column_searches) {
   }
 
   df[keep]
+}
+
+observatory_filter_range <- function(values, search_string) {
+  if (!grepl("[.]{3}", search_string) || length(parts <- strsplit(search_string, "[.]{3}")[[1]]) > 2) {
+    stop("The range of a numeric / date / time column must be of length 2")
+  }
+  if (length(parts) == 1) {
+    parts <- c(parts, "")
+  }
+  parts <- gsub("^\\s+|\\s+$", "", parts)
+  lower <- parts[1]
+  upper <- parts[2]
+
+  lower_num <- if (lower == "") NA_real_ else as.numeric(lower)
+  upper_num <- if (upper == "") NA_real_ else as.numeric(upper)
+
+  if (is.na(lower_num) && lower != "") {
+    return(rep(FALSE, length(values)))
+  }
+  if (is.na(upper_num) && upper != "") {
+    return(rep(FALSE, length(values)))
+  }
+
+  if (lower == "") {
+    return(values <= upper_num)
+  }
+  if (upper == "") {
+    return(values >= lower_num)
+  }
+  values >= lower_num & values <= upper_num
+}
+
+observatory_apply_dt_column_filter <- function(column, pattern) {
+  if (is.null(pattern) || !nzchar(pattern)) {
+    return(rep(TRUE, length(column)))
+  }
+
+  if (is.numeric(column)) {
+    return(observatory_filter_range(column, pattern))
+  }
+
+  grepl(
+    pattern,
+    as.character(column),
+    ignore.case = TRUE
+  )
 }
 
 observatory_selector_additional_controller <- function(input, output, session, observatory) {

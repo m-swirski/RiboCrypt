@@ -488,6 +488,21 @@ test_that("observatory table hides library type and scientific name columns", {
   expect_equal(colnames(formatted), c("Run", "BioProject", "author"))
 })
 
+test_that("observatory numeric DT filter helper applies range syntax", {
+  df <- data.table::data.table(
+    Run = c("SRR1", "SRR2", "SRR3"),
+    Frame_usage_0 = c(0.15, 0.45, 0.85)
+  )
+
+  filtered <- RiboCrypt:::observatory_apply_dt_filters(
+    df,
+    global_search = "",
+    column_searches = c("", "0.2 ... 0.6")
+  )
+
+  expect_equal(filtered$Run, "SRR2")
+})
+
 test_that("observatory selector applies DT column filters using displayed column order", {
   fixture <- make_observatory_selector_fixture()
 
@@ -532,6 +547,57 @@ test_that("observatory selector applies DT column filters using displayed column
       expect_equal(
         sort(selected_libraries$data_table_selections()[["1"]]),
         c("SRR1", "SRR2")
+      )
+    }
+  )
+})
+
+test_that("observatory selector stores numeric DT range filters as filtered runs", {
+  fixture <- make_observatory_selector_fixture()
+  fixture$libraries_df[, Frame_usage_0 := c(0.15, 0.45, 0.55, 0.85, 0.95)]
+  fixture$umap_df[, Frame_usage_0 := c(0.15, 0.45, 0.55, 0.85, 0.95)]
+
+  local_mocked_bindings(
+    allsamples_observer_controller = function(input, output, session) invisible(NULL),
+    create_observatory_module = function(meta_experiment_df, libraries_df) {
+      list(
+        get_libraries_data = function(library_types = c("RFP")) {
+          libraries_df[LIBRARYTYPE %in% library_types]
+        },
+        get_umap_data = function(color_by = c("tissue", "cell_line")) {
+          data.table::copy(fixture$umap_df)
+        }
+      )
+    },
+    .package = "RiboCrypt"
+  )
+
+  shiny::testServer(
+    observatory_selector_harness_server,
+    args = list(
+      all_exp = fixture$all_exp,
+      experiment_df = fixture$experiment_df,
+      libraries_df = fixture$libraries_df,
+      browser_options = fixture$browser_options
+    ),
+    {
+      session$setInputs(
+        `selector-dff` = "exp-a",
+        `selector-color_by` = c("tissue"),
+        `selector-go` = 1
+      )
+      session$flushReact()
+
+      displayed_columns <- colnames(RiboCrypt:::observatory_format_libraries_df(fixture$libraries_df))
+      column_filters <- rep("", length(displayed_columns))
+      column_filters[match("Frame_usage_0", displayed_columns)] <- "0.2 ... 0.6"
+
+      session$setInputs(`selector-libraries_data_table_manual_search_columns` = column_filters)
+      session$flushReact()
+
+      expect_equal(
+        sort(selected_libraries$data_table_selections()[["1"]]),
+        c("SRR2", "SRR3")
       )
     }
   )

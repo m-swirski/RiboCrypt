@@ -4,6 +4,12 @@
   const sendSelection = (selection) => {
     Shiny.setInputValue(valuesInputId, selection, { priority: "event" });
   };
+  const suppressEvent = (evt) => {
+    if (!evt) return;
+    if (typeof evt.preventDefault === "function") evt.preventDefault();
+    if (typeof evt.stopPropagation === "function") evt.stopPropagation();
+    if (typeof evt.stopImmediatePropagation === "function") evt.stopImmediatePropagation();
+  };
 
   const onSelected = (e) => {
     const selectedPoints = e && Array.isArray(e.points) ? e.points : [];
@@ -18,10 +24,30 @@
     sendSelection([]);
     console.log("onDeselected fired");
   };
+  const triggerDeselected = (evt) => {
+    suppressEvent(evt);
+    if (evt && evt.event) suppressEvent(evt.event);
+    onDeselected();
+    return false;
+  };
 
   elem.on("plotly_selected", onSelected);
   elem.on("plotly_deselect", onDeselected);
-  elem.on("plotly_doubleclick", onDeselected);
+  elem.on("plotly_doubleclick", triggerDeselected);
+
+  elem.addEventListener("dblclick", triggerDeselected, true);
+
+  const attachInnerDblclick = () => {
+    const inner = elem.querySelectorAll(".gl-container, .nsewdrag, .plotly .user-select-none, canvas");
+    Array.prototype.forEach.call(inner, (node) => {
+      if (!node || node.__rcUmapDblclickBound) return;
+      node.__rcUmapDblclickBound = true;
+      node.addEventListener("dblclick", triggerDeselected, true);
+    });
+  };
+
+  attachInnerDblclick();
+  elem.on("plotly_afterplot", attachInnerDblclick);
 
   onSelectionChanged = (message) => {
     let selected = null
@@ -71,7 +97,7 @@
 
     let updatedData = [...elem.data]
     tracesToUpdate.forEach((t, index) => {
-      updatedData[index]["selectedpoints"] = []
+      updatedData[index]["selectedpoints"] = null
     });
 
     let updatedLayout = { ...elem.layout };

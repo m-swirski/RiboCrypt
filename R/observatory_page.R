@@ -43,6 +43,7 @@ observatory_server <- function(
       "browser_obs",
       selections$meta_experiment_df,
       selections$selected_libraries$data_table_selections,
+      selections$all_library_runs,
       selections$selected_libraries$labels, gene_name_list,
       tx, cds, experiments, org, rv, browser_options,
       templates = templates,

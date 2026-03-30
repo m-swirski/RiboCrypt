@@ -23,11 +23,9 @@ rc_parameter_setup <- function() {
     if (!is.null(metadata)) {
       if (is.character(metadata)) metadata <- fread(metadata)
       stopifnot(is(metadata, "data.table"))
-      columns_to_show <- c("study_accession", "Run", "ScientificName", "sample_title", "BioProject",
-                           "YEAR", "LIBRARYTYPE", "REPLICATE", "CONDITION", "INHIBITOR",
-                           "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION",
-                           "Cancer_type", "Cell_model", "Cell_type",
-                           "Organ_system", "Sex", "Life_stage")
+      stopifnot(!is.null(metadata$Run))
+      stopifnot(("Run" %in% columns_to_show))
+
       columns_to_show <- columns_to_show[columns_to_show %in% colnames(metadata)]
       metadata <- metadata[, ..columns_to_show]
       print(paste("Running with", nrow(metadata), "metadata rows"))

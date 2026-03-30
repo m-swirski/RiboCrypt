@@ -84,7 +84,12 @@ RiboCrypt_app <- function(
   options = list("launch.browser" = ifelse(interactive(), TRUE, FALSE)),
   all_exp = list.experiments(validate = validate.experiments),
   browser_options = c(), init_tab_focus = "browser",
-  metadata = NULL, all_exp_meta = all_exp[grep("all_samples-", name), ]
+  metadata = NULL, all_exp_meta = all_exp[grep("all_samples-", name), ],
+  columns_to_show = c("study_accession", "Run", "ScientificName", "sample_title", "BioProject",
+                       "YEAR", "LIBRARYTYPE", "REPLICATE", "CONDITION", "INHIBITOR",
+                       "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION",
+                       "Cancer_type", "Cell_model", "Cell_type",
+                       "Organ_system", "Sex", "Life_stage")
 ) {
   rc_parameter_setup()
   # User interface

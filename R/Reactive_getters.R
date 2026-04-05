@@ -134,10 +134,11 @@ custom_seq_track_panel_bigwig <- function(grl, bigwig_path, ylab) {
     data = dt,
     x = ~position,
     y = ~count,
-    type = "bar",
+    type = "scatter",
+    mode = "lines",
+    line = list(color = "black", width = 0.5),
     hoverinfo = "none",
-    showlegend = FALSE,
-    marker = list(color = "black")
+    showlegend = FALSE
   ) %>%
     plotly::layout(
       bargap = 0,

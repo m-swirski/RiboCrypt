@@ -19,6 +19,18 @@ track_vertical_segments <- function(x, y, text = NULL) {
   list(x = xseg, y = yseg, text = textseg)
 }
 
+ensure_columns_gl_hover <- function(plot) {
+  for (i in seq_along(plot$x$data)) {
+    trace <- plot$x$data[[i]]
+    is_columns_gl_trace <- identical(trace$type, "scattergl") &&
+      identical(trace$mode, "lines")
+    if (!is_columns_gl_trace) next
+    plot$x$data[[i]]$hoverinfo <- "text"
+    plot$x$data[[i]]$hovertemplate <- "%{text}<extra></extra>"
+  }
+  plot
+}
+
 columns_zoom_switch_threshold <- function() 5000
 
 covPanelWithFramesPlotlyTemplate <- function() {
@@ -70,7 +82,6 @@ covPanelColumnsPlotlyTemplate <- function() {
       name = frame_name,
       legendgroup = frame_name,
       line = list(color = "#000000", width = 6, simplify = FALSE),
-      hovertemplate = "%{text}<extra></extra>",
       text = NA_character_,
       meta = list(rc_columns_switch = "gl_subset"),
       showlegend = TRUE,
@@ -95,7 +106,7 @@ covPanelColumnsPlotlyTemplate <- function() {
       inherit = FALSE
     )
   }
-  plotly::plotly_build(p)
+  ensure_columns_gl_hover(plotly::plotly_build(p))
 }
 
 covPanelColumnsGLPlotlyTemplate <- function(bar_px = 6) {
@@ -110,13 +121,12 @@ covPanelColumnsGLPlotlyTemplate <- function(bar_px = 6) {
       name = frame_name,
       legendgroup = frame_name,
       line = list(color = "#000000", width = bar_px, simplify = FALSE),
-      hovertemplate = "%{text}<extra></extra>",
       text = NA_character_,
       showlegend = TRUE,
       inherit = FALSE
     )
   }
-  plotly::plotly_build(p)
+  ensure_columns_gl_hover(plotly::plotly_build(p))
 }
 
 covPanelAreaPlotlyTemplate <- function() {
@@ -515,7 +525,11 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
     guide_y_max <- max(profile[, .(count = sum(count)), by = position]$count, na.rm = TRUE)
   }
 
-  track_guides(plot, x_range, guide_y_max, lines, add_zero = TRUE, line_size = line_size)
+  plot <- track_guides(plot, x_range, guide_y_max, lines, add_zero = TRUE, line_size = line_size)
+  if (type == "columns") {
+    plot <- ensure_columns_gl_hover(plot)
+  }
+  plot
 }
 
 singlePlot_add_theme <- function(profile_plot, ylabels, type,

@@ -230,6 +230,8 @@ function(el, x, data) {
         y: glY,
         text: glText,
         visible: glVisible,
+        hoverinfo: glVisible.map(function() { return 'text'; }),
+        hovertemplate: glVisible.map(function() { return '%{text}<extra></extra>'; }),
         'line.width': glWidth
       }, glIdx);
       Plotly.restyle(el, {visible: lineVisible}, lineIdx);

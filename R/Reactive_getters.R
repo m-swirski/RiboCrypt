@@ -134,9 +134,8 @@ custom_seq_track_panel_bigwig <- function(grl, bigwig_path, ylab) {
     data = dt,
     x = ~position,
     y = ~count,
-    type = "scatter",
-    mode = "lines",
-    line = list(color = "black", width = 0.5),
+    type = "bar",
+    marker = list(color = "black"),
     hoverinfo = "none",
     showlegend = FALSE
   ) %>%

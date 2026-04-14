@@ -83,6 +83,57 @@ module_browser_shared_ui <- function(input, output, session, clip_ui) {
   })
 }
 
+apply_observatory_browser_url_state <- function(session, browser_state) {
+  if (!is.null(browser_state$gene)) shiny::updateSelectizeInput(session, "gene", selected = browser_state$gene)
+  if (!is.null(browser_state$tx)) shiny::updateSelectizeInput(session, "tx", selected = browser_state$tx)
+  if (!is.null(browser_state$frames_type)) shiny::updateSelectizeInput(session, "frames_type", selected = browser_state$frames_type)
+  if (!is.null(browser_state$kmer) && !is.na(as.numeric(browser_state$kmer))) {
+    shiny::updateSliderInput(session, "kmer", value = as.numeric(browser_state$kmer))
+  }
+  if (!is.null(browser_state$extendLeaders) && !is.na(as.numeric(browser_state$extendLeaders))) {
+    shiny::updateNumericInput(session, "extendLeaders", value = as.numeric(browser_state$extendLeaders))
+  }
+  if (!is.null(browser_state$extendTrailers) && !is.na(as.numeric(browser_state$extendTrailers))) {
+    shiny::updateNumericInput(session, "extendTrailers", value = as.numeric(browser_state$extendTrailers))
+  }
+  if (!is.null(browser_state$viewMode)) shinyWidgets::updatePrettySwitch(session, "viewMode", value = isTRUE(browser_state$viewMode))
+  if (!is.null(browser_state$other_tx)) shinyWidgets::updatePrettySwitch(session, "other_tx", value = isTRUE(browser_state$other_tx))
+  if (!is.null(browser_state$collapsed_introns)) {
+    shinyWidgets::updatePrettySwitch(session, "collapsed_introns", value = isTRUE(browser_state$collapsed_introns))
+  }
+  if (!is.null(browser_state$collapsed_introns_width) && !is.na(as.numeric(browser_state$collapsed_introns_width))) {
+    shiny::updateNumericInput(session, "collapsed_introns_width", value = as.numeric(browser_state$collapsed_introns_width))
+  }
+  if (!is.null(browser_state$genomic_region)) shiny::updateTextInput(session, "genomic_region", value = browser_state$genomic_region)
+  if (!is.null(browser_state$zoom_range)) shiny::updateTextInput(session, "zoom_range", value = browser_state$zoom_range)
+  if (!is.null(browser_state$customSequence)) shiny::updateTextInput(session, "customSequence", value = browser_state$customSequence)
+}
+
+#' @noRd
+observatory_browser_ready_to_kickoff <- function(url_state, input, library_selections) {
+  identical(url_state$view, "browser") &&
+    isTRUE(url_state$browser$go) &&
+    nzchar(input$gene) &&
+    nzchar(input$tx) &&
+    !is.null(library_selections) &&
+    any(lengths(library_selections) > 0)
+}
+
+#' @noRd
+get_plotly_session_event <- function(session, event, source) {
+  event_id <- paste(event, source, sep = "-")
+  raw <- session$rootScope()$input[[event_id]]
+  if (is.null(raw)) return(NULL)
+  if (is.character(raw) && length(raw) == 1) {
+    parsed <- tryCatch(
+      jsonlite::parse_json(raw, simplifyVector = TRUE),
+      error = function(e) NULL
+    )
+    return(parsed)
+  }
+  raw
+}
+
 module_additional_browser <- function(input, output, session,
                                       mode = c("default", "observatory"),
                                       observatory = NULL) {
@@ -104,37 +155,13 @@ module_additional_browser <- function(input, output, session,
         if (is.null(st)) return()
         br <- st$browser
         if (is.null(br)) return()
-
-        if (!is.null(br$gene)) shiny::updateSelectizeInput(session, "gene", selected = br$gene)
-        if (!is.null(br$tx)) shiny::updateSelectizeInput(session, "tx", selected = br$tx)
-        if (!is.null(br$frames_type)) shiny::updateSelectizeInput(session, "frames_type", selected = br$frames_type)
-        if (!is.null(br$kmer) && !is.na(as.numeric(br$kmer))) shiny::updateSliderInput(session, "kmer", value = as.numeric(br$kmer))
-        if (!is.null(br$extendLeaders) && !is.na(as.numeric(br$extendLeaders))) {
-          shiny::updateNumericInput(session, "extendLeaders", value = as.numeric(br$extendLeaders))
-        }
-        if (!is.null(br$extendTrailers) && !is.na(as.numeric(br$extendTrailers))) {
-          shiny::updateNumericInput(session, "extendTrailers", value = as.numeric(br$extendTrailers))
-        }
-        if (!is.null(br$viewMode)) shinyWidgets::updatePrettySwitch(session, "viewMode", value = isTRUE(br$viewMode))
-        if (!is.null(br$other_tx)) shinyWidgets::updatePrettySwitch(session, "other_tx", value = isTRUE(br$other_tx))
-        if (!is.null(br$collapsed_introns)) {
-          shinyWidgets::updatePrettySwitch(session, "collapsed_introns", value = isTRUE(br$collapsed_introns))
-        }
-        if (!is.null(br$collapsed_introns_width) && !is.na(as.numeric(br$collapsed_introns_width))) {
-          shiny::updateNumericInput(session, "collapsed_introns_width", value = as.numeric(br$collapsed_introns_width))
-        }
-        if (!is.null(br$genomic_region)) shiny::updateTextInput(session, "genomic_region", value = br$genomic_region)
-        if (!is.null(br$zoom_range)) shiny::updateTextInput(session, "zoom_range", value = br$zoom_range)
-        if (!is.null(br$customSequence)) shiny::updateTextInput(session, "customSequence", value = br$customSequence)
+        apply_observatory_browser_url_state(session, br)
       }) |> bindEvent(observatory$observatory_url_state(), ignoreInit = FALSE, once = TRUE)
 
       observe({
         st <- observatory$observatory_url_state()
-        if (is.null(st) || !identical(st$view, "browser")) return()
-        if (!isTRUE(st$browser$go)) return()
-        req(nzchar(input$gene), nzchar(input$tx))
         sel <- observatory$library_selections()
-        if (is.null(sel) || !any(lengths(sel) > 0)) return()
+        req(observatory_browser_ready_to_kickoff(st, input, sel))
         observatory$kickoff(TRUE)
       }) |> bindEvent(
         input$gene, input$tx,
@@ -185,27 +212,13 @@ module_additional_browser <- function(input, output, session,
 
 module_additional_megabrowser <- function(input, output, session) {
   with(rlang::caller_env(), {
-    get_plotly_event <- function(event, source) {
-      event_id <- paste(event, source, sep = "-")
-      raw <- session$rootScope()$input[[event_id]]
-      if (is.null(raw)) return(NULL)
-      if (is.character(raw) && length(raw) == 1) {
-        parsed <- tryCatch(
-          jsonlite::parse_json(raw, simplifyVector = TRUE),
-          error = function(e) NULL
-        )
-        return(parsed)
-      }
-      raw
-    }
-
     selected_enrich_filters <- reactiveVal(NULL)
     observeEvent(meta_and_clusters(), {
       selected_enrich_filters(NULL)
     }, ignoreInit = TRUE)
 
-    observeEvent(get_plotly_event("plotly_click", "mb_enrich"), {
-      ed <- get_plotly_event("plotly_click", "mb_enrich")
+    observeEvent(get_plotly_session_event(session, "plotly_click", "mb_enrich"), {
+      ed <- get_plotly_session_event(session, "plotly_click", "mb_enrich")
       req(!is.null(ed))
 
       category <- as.character(ed$x)
@@ -224,8 +237,8 @@ module_additional_megabrowser <- function(input, output, session) {
       )
     })
 
-    observeEvent(get_plotly_event("plotly_clickannotation", "mb_sidebar"), {
-      ed <- get_plotly_event("plotly_clickannotation", "mb_sidebar")
+    observeEvent(get_plotly_session_event(session, "plotly_clickannotation", "mb_sidebar"), {
+      ed <- get_plotly_session_event(session, "plotly_clickannotation", "mb_sidebar")
       req(!is.null(ed))
 
       cluster_val <- NULL
@@ -250,9 +263,9 @@ module_additional_megabrowser <- function(input, output, session) {
       )
     })
 
-    observeEvent(get_plotly_event("plotly_relayout", "mb_mid"), {
+    observeEvent(get_plotly_session_event(session, "plotly_relayout", "mb_mid"), {
       req(input$plotType == "plotly")
-      ed <- get_plotly_event("plotly_relayout", "mb_mid")
+      ed <- get_plotly_session_event(session, "plotly_relayout", "mb_mid")
       req(!is.null(ed))
       y_max <- ncol(table()$table)
       x_reset_range <- megabrowser_full_x_range(controller()$display_region, table()$table)

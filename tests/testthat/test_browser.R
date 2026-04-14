@@ -250,6 +250,107 @@ test_that("browser selection helpers prefer valid species-specific defaults", {
   )
 })
 
+test_that("library selection helpers sanitize, match and hash selections", {
+  selections <- list(
+    GroupA = c("SRR1", "SRR1", NA, ""),
+    Empty = c(NA, "")
+  )
+
+  normalized <- RiboCrypt:::normalize_library_selections(selections)
+  expect_named(normalized, "GroupA")
+  expect_equal(normalized$GroupA, "SRR1")
+
+  matched <- RiboCrypt:::match_library_selections_to_runs(
+    list(GroupA = c("SRR1", "SRR2"), GroupB = c("SRR3")),
+    c("SRR2", "SRR1")
+  )
+  expect_equal(matched$selections$GroupA, c("SRR1", "SRR2"))
+  expect_equal(matched$selection_indices$GroupA, c(2, 1))
+  expect_false("GroupB" %in% names(matched$selections))
+
+  labeled <- RiboCrypt:::apply_library_selection_labels(
+    list(GroupA = c("SRR1"), GroupB = c("SRR2")),
+    list(GroupA = "Tumor", GroupB = "GroupB")
+  )
+  expect_identical(names(labeled), c("GroupA - Tumor", "GroupB"))
+
+  expect_equal(
+    RiboCrypt:::collection_library_hash_suffix(list(A = c("SRR1", "SRR2"), B = "SRR3")),
+    "A:SRR1,SRR2|group|B:SRR3"
+  )
+})
+
+test_that("browser profile helpers delegate to named builder functions", {
+  calls <- list()
+
+  testthat::local_mocked_bindings(
+    createSinglePlot = function(profile, with_frames, frame_color, color,
+                                ylabel, ylabel_full_name, lines,
+                                type, lib_index, total_libs, templates = NULL) {
+      calls[[length(calls) + 1L]] <<- list(
+        profile = profile,
+        with_frames = with_frames,
+        frame_color = frame_color,
+        color = color,
+        ylabel = ylabel,
+        ylabel_full_name = ylabel_full_name,
+        lines = lines,
+        type = type,
+        lib_index = lib_index,
+        total_libs = total_libs,
+        templates = templates
+      )
+      paste("plot", lib_index)
+    },
+    getProfileWrapper = function(display_range, read, with_frames, kmer, log_scale,
+                                 kmers_type, type, frames_subset) {
+      list(
+        display_range = display_range,
+        read = read,
+        with_frames = with_frames,
+        kmer = kmer,
+        log_scale = log_scale,
+        kmers_type = kmers_type,
+        type = type,
+        frames_subset = frames_subset
+      )
+    },
+    .package = "RiboCrypt"
+  )
+
+  track_plots <- RiboCrypt:::build_browser_track_plots(
+    profiles = list("p1", "p2"),
+    withFrames = c(TRUE, FALSE),
+    frame_colors = c("red", "blue"),
+    colors = c("black", "gray"),
+    ylabels = c("a", "b"),
+    ylabels_full_name = c("A", "B"),
+    lines = 3,
+    frames_type = "lines",
+    BPPARAM = BiocParallel::SerialParam(),
+    templates = list(panel = "template")
+  )
+  expect_equal(track_plots, list("plot 1", "plot 2"))
+  expect_equal(length(calls), 2)
+  expect_equal(calls[[2]]$total_libs, 2)
+  expect_equal(calls[[2]]$templates$panel, "template")
+
+  profiles <- RiboCrypt:::build_browser_profiles(
+    display_range = "range",
+    reads = list("r1", "r2"),
+    kmers = c(1, 3),
+    kmers_type = "mean",
+    frames_type = "lines",
+    frames_subset = "all",
+    withFrames = c(TRUE, FALSE),
+    log_scale = c(FALSE, TRUE),
+    BPPARAM = BiocParallel::SerialParam()
+  )
+  expect_equal(profiles[[1]]$read, "r1")
+  expect_equal(profiles[[2]]$kmer, 3)
+  expect_equal(profiles[[2]]$log_scale, TRUE)
+})
+
 test_that("multiOmicsControllerView supports default selected_libraries", {
   env <- rlang::env(
     reads = list(1, 2),

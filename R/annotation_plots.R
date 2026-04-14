@@ -14,7 +14,7 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
     custom_motif <- NULL
   } else {
     custom_motif <- toupper(custom_motif)
-    custom_motif <- gsub("U", "T", custom_motif)
+    custom_motif <- gsub("U", "T", custom_motif, fixed = TRUE)
     custom_motif <- strsplit(custom_motif, ",")[[1]] %>% strsplit(" ") %>% unlist
   }
   hits <- lapply(list(start_codons, stop_codons, custom_motif), function(x) matchMultiplePatterns(x, sequence))
@@ -370,30 +370,57 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
     }
   }
 
-  if (use_custom_region) annotation_shown <- c(annotation_shown, overlaps_custom)
-  if (length(annotation_shown) > 0) annotation_shown@unlistData$type <-
-    rep("cds", length(annotation_shown@unlistData))
-  if (length(overlaps_tx) > 0) overlaps_tx@unlistData$type <-
-    rep("utr", length(overlaps_tx@unlistData))
-
-  return(gene_box_fix_overlaps(display_range, c(annotation_shown, overlaps_tx), custom_regions,
-                               collapse_intron_flank, frame_colors))
+  return(gene_box_fix_overlaps(
+    display_range,
+    annotation_shown = annotation_shown,
+    overlaps_tx = overlaps_tx,
+    overlaps_custom = if (use_custom_region) overlaps_custom else NULL,
+    custom_regions = custom_regions,
+    collapse_intron_flank = collapse_intron_flank,
+    frame_colors = frame_colors
+  ))
 }
 
-gene_box_fix_overlaps <- function(display_range, overlaps, custom_regions,
+flatten_gene_model_component <- function(grl, type) {
+  if (is.null(grl) || length(grl) == 0) return(NULL)
+
+  overlap_lengths <- lengths(grl)
+  grl_names <- names(grl)
+  if (is.null(grl_names)) grl_names <- as.character(seq_along(grl))
+  names_grouping <- rep.int(grl_names, overlap_lengths)
+  gr <- unlistGrl(grl)
+  names(gr) <- names_grouping
+  gr$type <- rep.int(type, length(gr))
+  gr
+}
+
+combine_gene_model_overlaps <- function(annotation_shown, overlaps_tx = NULL,
+                                        overlaps_custom = NULL) {
+  overlap_parts <- Filter(
+    Negate(is.null),
+    list(
+      flatten_gene_model_component(annotation_shown, "cds"),
+      flatten_gene_model_component(overlaps_tx, "utr"),
+      flatten_gene_model_component(overlaps_custom, "cds")
+    )
+  )
+
+  if (length(overlap_parts) == 0) {
+    return(GenomicRanges::GRanges())
+  }
+
+  do.call(c, unname(overlap_parts))
+}
+
+gene_box_fix_overlaps <- function(display_range, annotation_shown, overlaps_tx,
+                                  overlaps_custom, custom_regions,
                                   collapse_intron_flank, frame_colors) {
+  overlaps <- combine_gene_model_overlaps(annotation_shown, overlaps_tx, overlaps_custom)
   if (length(overlaps) == 0) {
     result_dt <- data.table()
     lines_locations <- NULL
     return(list(result_dt, lines_locations))
   }
-
-
-
-  overlap_lengths <- lengths(overlaps)
-  names_grouping <- rep.int(names(overlaps), overlap_lengths)
-  overlaps <- unlistGrl(overlaps)
-  names(overlaps) <- names_grouping
   overlaps$rel_frame_exon <- getRelativeFrames(overlaps)
   # overlaps <- subsetByOverlaps(overlaps, display_range)
   intersections <-  trimOverlaps(overlaps, display_range)

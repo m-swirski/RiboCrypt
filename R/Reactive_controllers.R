@@ -14,13 +14,7 @@ browser_collection_controller_data <- function(input, selected_tx, display_regio
     profile_display_range <- ORFik::extendTrailers(profile_display_range, input$extendTrailers)
   }
 
-  lib_sel <- library_selections
-  if (is.null(lib_sel)) lib_sel <- list()
-  lib_sel <- lapply(lib_sel, function(selection) {
-    selection <- as.character(selection)
-    unique(selection[!is.na(selection) & nzchar(selection)])
-  })
-  lib_sel <- lib_sel[lengths(lib_sel) > 0]
+  lib_sel <- normalize_library_selections(library_selections)
   if (length(lib_sel) == 0) {
     stop("No non-empty library selection groups available for observatory browse.")
   }
@@ -28,75 +22,27 @@ browser_collection_controller_data <- function(input, selected_tx, display_regio
   runs <- unique(unlist(lib_sel, use.names = FALSE))
   reads <- load_collection(path, grl = profile_display_range, columns = runs)
   available_runs <- colnames(reads)
-  lib_sel <- lapply(lib_sel, intersect, y = available_runs)
-  lib_sel <- lib_sel[lengths(lib_sel) > 0]
+  matched_selections <- match_library_selections_to_runs(lib_sel, available_runs)
+  lib_sel <- matched_selections$selections
   if (length(lib_sel) == 0) {
     stop("No selected runs are available for the chosen transcript in observatory browse.")
   }
   reads_mat <- as.matrix(reads)
-  lib_sel_idx <- lapply(lib_sel, function(selection) match(selection, available_runs))
-  profile_template <- data.table::data.table(
-    position = seq_len(nrow(reads_mat)),
-    library = as.factor(rep_len(1, length.out = nrow(reads_mat))),
-    frame = as.factor(rep_len(1:3, length.out = nrow(reads_mat)))
+  lib_sel <- apply_library_selection_labels(lib_sel, library_selection_labels)
+  lib_sel <- rename_all_merged_library_selections(lib_sel, path)
+
+  profiles <- build_collection_profiles(
+    matched_selections$selection_indices,
+    reads_mat,
+    input$kmer
   )
-
-  if (!is.null(library_selection_labels)) {
-    selection_ids <- names(lib_sel)
-    display_labels <- vapply(
-      selection_ids,
-      function(selection_id) {
-        label <- library_selection_labels[[selection_id]]
-        if (is.null(label) || label == "" || label == selection_id) {
-          selection_id
-        } else {
-          paste(selection_id, label, sep = " - ")
-        }
-      },
-      character(1)
-    )
-    names(lib_sel) <- display_labels
-  }
-
-  fst_index <- path
-  file_forward <- fst::read_fst(path)[1, ]$file_forward
-  file_forward <- file.path(dirname(fst_index), basename(file_forward))
-  megafst_samples <- length(fst::metadata_fst(file_forward)$columnNames)
-  group_is_all <- lengths(lib_sel) == megafst_samples
-  if (any(group_is_all)) names(lib_sel)[group_is_all] <- "All merged"
-
-  profiles <- lapply(lib_sel_idx, function(selection_idx) {
-    cbind(
-      data.table::data.table(
-        count = matrixStats::rowSums2(
-          reads_mat,
-          cols = selection_idx,
-          na.rm = TRUE
-        )
-      ),
-      profile_template
-    ) |>
-      smoothenMultiSampCoverage(
-        input$kmer,
-        kmers_type = "mean",
-        split_by_frame = TRUE
-      )
-  })
-
-  message("Number of runs used: ", length(unlist(lib_sel)),
-          " (", paste(lengths(lib_sel), collapse = ", "), ")")
 
   list(
     dff = experiment_df,
     reads = reads,
     profiles = profiles,
     library_selections = lib_sel,
-    hash_suffix = paste(
-      vapply(names(lib_sel), function(selection_id) {
-        paste(selection_id, paste(lib_sel[[selection_id]], collapse = ","), sep = ":")
-      }, character(1)),
-      collapse = "|group|"
-    )
+    hash_suffix = collection_library_hash_suffix(lib_sel)
   )
 }
 

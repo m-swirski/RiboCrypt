@@ -35,6 +35,30 @@ test_that("validate_enrichment_term uses Shiny validation for invalid inputs", {
   expect_match(conditionMessage(err), "TISSUE")
 })
 
+test_that("module controller helpers parse events and observatory kickoff state", {
+  session <- list(
+    rootScope = function() {
+      list(input = list(
+        `plotly_click-mb_enrich` = "{\"x\":\"term\",\"customdata\":\"2\"}",
+        `plotly_relayout-mb_mid` = list(`xaxis.range[0]` = 10)
+      ))
+    }
+  )
+
+  click_event <- RiboCrypt:::get_plotly_session_event(session, "plotly_click", "mb_enrich")
+  expect_equal(click_event$x, "term")
+  expect_equal(click_event$customdata, "2")
+
+  relayout_event <- RiboCrypt:::get_plotly_session_event(session, "plotly_relayout", "mb_mid")
+  expect_equal(relayout_event[["xaxis.range[0]"]], 10)
+
+  input <- list(gene = "GENE1", tx = "TX1")
+  state <- list(view = "browser", browser = list(go = TRUE))
+  expect_true(RiboCrypt:::observatory_browser_ready_to_kickoff(state, input, list(A = "SRR1")))
+  expect_false(RiboCrypt:::observatory_browser_ready_to_kickoff(state, list(gene = "", tx = "TX1"), list(A = "SRR1")))
+  expect_false(RiboCrypt:::observatory_browser_ready_to_kickoff(list(view = "selector", browser = list(go = TRUE)), input, list(A = "SRR1")))
+})
+
 test_that("multiSampleBinRows bins rows as expected", {
   mat <- matrix(1:20, nrow = 10, ncol = 2)
   binned <- RiboCrypt:::multiSampleBinRows(mat, ratio = 3)

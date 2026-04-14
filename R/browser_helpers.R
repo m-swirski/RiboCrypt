@@ -48,20 +48,18 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, c
                                 colors = colors[1], frame_colors = frame_colors,
                                 ylabels = ylabels[1], lines = lines))
   } else {
-    total_libs <- length(profiles)
-    if (is(BPPARAM, "SerialParam")) {
-      plots <- mapply(function(p,w,fc,c,yl,ylf, lib_index) {
-          createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs,
-                           templates = templates)},
-        profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_len(total_libs),
-        SIMPLIFY = FALSE)
-    } else {
-      plots <- bpmapply(function(p,w,fc,c,yl,ylf, lib_index) {
-          createSinglePlot(p,w,fc,c,yl,ylf, lines, type = frames_type, lib_index, total_libs,
-                           templates = templates)},
-        profiles, withFrames, frame_colors, colors, ylabels, ylabels_full_name, seq_len(total_libs),
-        SIMPLIFY = FALSE, BPPARAM = BPPARAM)
-    }
+    plots <- build_browser_track_plots(
+      profiles,
+      withFrames,
+      frame_colors,
+      colors,
+      ylabels,
+      ylabels_full_name,
+      lines,
+      frames_type,
+      BPPARAM,
+      templates = templates
+    )
   }
 
   nplots <- ifelse(frames_type == "animate", 1, length(plots))
@@ -84,16 +82,17 @@ multiOmicsPlot_all_profiles <- function(display_range, reads, kmers,
   force(withFrames)
   force(log_scale)
   force(frames_subset)
-  if (is(BPPARAM, "SerialParam")) {
-    profiles <- mapply(function(x,y,c,l) getProfileWrapper(display_range, x, y, c, l, kmers_type,
-                                                           type = frames_type, frames_subset = frames_subset),
-                       reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE)
-  } else {
-    profiles <- bpmapply(function(x,y,c,l) getProfileWrapper(display_range, x,y,c,l, kmers_type,
-                                                             type = frames_type, frames_subset = frames_subset),
-                         reads, withFrames, kmers, log_scale, SIMPLIFY = FALSE,
-                         BPPARAM = BPPARAM)
-  }
+  profiles <- build_browser_profiles(
+    display_range,
+    reads,
+    kmers,
+    kmers_type,
+    frames_type,
+    frames_subset,
+    withFrames,
+    log_scale,
+    BPPARAM
+  )
   return(profiles)
 }
 

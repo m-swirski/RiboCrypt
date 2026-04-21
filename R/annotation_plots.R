@@ -303,6 +303,9 @@ get_current_index <- function(v) {
 #' @return numeric, the track row index
 #' @keywords internal
 geneTrackLayer <- function(grl) {
+  if (length(grl) <= 1L) {
+    return(rep.int(1L, numExonsPerGroup(grl)))
+  }
   grl_flanks <- flankPerGroup(grl)
   overlaps <- as.data.table(findOverlaps(grl_flanks, grl_flanks))
   overlaps <- overlaps[subjectHits > queryHits, ]
@@ -317,6 +320,30 @@ geneTrackLayer <- function(grl) {
     all_layers <- rep(all_layers, numExonsPerGroup(grl))
   }
   return(all_layers)
+}
+
+interval_overlaps_any <- function(query_start, query_end,
+                                  subject_start, subject_end) {
+  if (length(query_start) == 0L) return(logical())
+  valid_query <- query_start <= query_end
+  if (!any(valid_query) || length(subject_start) == 0L) {
+    return(rep(FALSE, length(query_start)))
+  }
+
+  query_dt <- data.table(
+    idx = seq_along(query_start),
+    start = query_start,
+    end = query_end
+  )[valid_query]
+  subject_dt <- unique(data.table(start = subject_start, end = subject_end))
+
+  data.table::setkey(subject_dt, start, end)
+  data.table::setkey(query_dt, start, end)
+
+  hits <- data.table::foverlaps(query_dt, subject_dt, nomatch = 0L)
+  out <- rep(FALSE, length(query_start))
+  if (nrow(hits) > 0L) out[unique(hits$idx)] <- TRUE
+  out
 }
 
 #' Create gene annotation layer for browser
@@ -384,13 +411,13 @@ createGeneModelPanel <- function(display_range, annotation, tx_annotation = NULL
 flatten_gene_model_component <- function(grl, type) {
   if (is.null(grl) || length(grl) == 0) return(NULL)
 
-  overlap_lengths <- lengths(grl)
-  grl_names <- names(grl)
+  overlap_lengths <- width(grl@partitioning)
+  grl_names <- grl@partitioning@NAMES
   if (is.null(grl_names)) grl_names <- as.character(seq_along(grl))
   names_grouping <- rep.int(grl_names, overlap_lengths)
-  gr <- unlistGrl(grl)
-  names(gr) <- names_grouping
-  gr$type <- rep.int(type, length(gr))
+  gr <- grl@unlistData
+  gr@ranges@NAMES <- names_grouping
+  gr$type <- rep.int(type, length(gr@ranges@start))
   gr
 }
 
@@ -436,12 +463,12 @@ gene_box_fix_overlaps <- function(display_range, annotation_shown, overlaps_tx,
   locations$rel_frame_orf <- getRelativeFrames(locations)
 
   cols <- colour_bars(locations, overlaps, display_range, frame_colors)
-  locations_by_name <- groupGRangesBy(locations, names(locations))
+  locations_by_name <- groupGRangesBy(locations, locations@ranges@NAMES)
   group_layers_full <- geneTrackLayer(locations_by_name)
   group_lengths <- lengths(locations_by_name)
   group_first <- cumsum(c(1L, head(group_lengths, -1L)))
   layer_by_group <- group_layers_full[group_first]
-  names(layer_by_group) <- names(locations_by_name)
+  names(layer_by_group) <- locations_by_name@partitioning@NAMES
   layers <- unname(layer_by_group[names(locations)])
   plot_width <- widthPerGroup(display_range)
   geneBox <- geneBoxFromRanges(locations, plot_width, layers, cols,
@@ -461,19 +488,18 @@ geneBoxFromRanges <- function(locations, plot_width,
   type <- locations$type
   locations <- move_utrs_touching_cds(locations, type, plot_width)
 
+  location_ranges <- ranges(locations)
+  rect_starts <- start(location_ranges)
+  rect_ends <- end(location_ranges)
+  gene_names <- names(location_ranges)
 
-  locations <- ranges(locations)
-  blocks <- c(start(locations) , end(locations))
-  names(blocks) <- rep(names(locations), 2)
+  blocks <- c(rect_starts, rect_ends)
+  names(blocks) <- rep(gene_names, 2)
   blocks <- sort(blocks)
   lines_locations <- blocks[!(blocks %in% c(1, plot_width))]
 
-  rect_locations <- locations
-  locations <- resize(locations, width = 1, fix = "center")
-  labels_locations <- start(locations)
-  gene_names <- names(locations)
-
   cap <- 0.00133*nchar(gene_names)
+  labels_locations <- ((rect_starts + rect_ends) %/% 2L)
   too_close <- labels_locations < cap * plot_width
   too_far <- labels_locations > (1-cap) * plot_width
 
@@ -487,8 +513,8 @@ geneBoxFromRanges <- function(locations, plot_width,
   names(lines_locations) <- rep("black", length(lines_locations))
   names(lines_locations)[custom_region_names] <- "orange4"
   result_dt <- data.table(layers = layers,
-                          rect_starts = start(rect_locations),
-                          rect_ends = end(rect_locations),
+                          rect_starts = rect_starts,
+                          rect_ends = rect_ends,
                           cols = cols,
                           labels_locations = labels_locations,
                           hjusts = hjusts,
@@ -499,25 +525,66 @@ geneBoxFromRanges <- function(locations, plot_width,
   dt <- result_dt
   draw_introns <- nrow(dt[no_ex > 1]) > 0
   if (draw_introns) {
-    seg_dt <- dt[no_ex > 1]
-    ranges <- GenomicRanges::reduce(GRanges(seg_dt$gene_names, ranges = IRanges(seg_dt$rect_starts, seg_dt$rect_ends)))
-    did_collapse_introns <- (nrow(seg_dt) > 1 & length(ranges) != 1) & collapse_intron_flank > 0
-    if (did_collapse_introns ) {
-      seg_dt <- data.table(gene_names = as.character(seqnames(ranges)), rect_starts = start(ranges), rect_ends = end(ranges))
-      unique_layers <- dt[, .(layers = unique(layers)[1]), by = gene_names]
-      seg_dt <- merge.data.table(seg_dt, unique_layers, by = "gene_names", sort = FALSE)
+    seg_source <- unique(
+      dt[no_ex > 1, .(gene_names, rect_starts, rect_ends, layers)]
+    )
+    data.table::setorder(seg_source, gene_names, rect_starts, rect_ends)
+
+    did_collapse_introns <- FALSE
+    if (collapse_intron_flank > 0 && nrow(seg_source) > 1L) {
+      reduced_ranges <- GenomicRanges::reduce(
+        GRanges(
+          seg_source$gene_names,
+          ranges = IRanges(seg_source$rect_starts, seg_source$rect_ends)
+        )
+      )
+      did_collapse_introns <- length(reduced_ranges) != 1L
+      if (did_collapse_introns) {
+        seg_source <- data.table(
+          gene_names = as.character(seqnames(reduced_ranges)),
+          rect_starts = start(reduced_ranges),
+          rect_ends = end(reduced_ranges)
+        )
+        unique_layers <- unique(dt[, .(gene_names, layers)])
+        seg_source <- merge.data.table(
+          seg_source,
+          unique_layers,
+          by = "gene_names",
+          sort = FALSE
+        )
+        data.table::setorder(seg_source, gene_names, rect_starts, rect_ends)
+      }
     }
 
-    seg_dt <- seg_dt[ , .(layers = layers[1], rect_starts = rect_ends[1:(.N - 1)], rect_ends = rect_starts[2:.N],
-                          cols = "grey45", labels_locations = 0, hjusts = "center",
-                          type = "intron", no_ex = "1"), by = gene_names]
-    seg_dt <- seg_dt[which(rect_starts < rect_ends),]
-    if (did_collapse_introns) {
-      dt_unique <- dt[!duplicated(dt[, .(rect_starts, rect_ends)]), ][, .(rect_starts, rect_ends)]
-      dt_unique_all_pos <- unique(unlist(lapply(as.data.table(t(as.matrix(dt_unique))), function(x) {seq.int(x[1], x[2])}), use.names = FALSE))
-      seg_dt_all_pos <- lapply(as.data.table(t(as.matrix(seg_dt[, .(rect_starts, rect_ends)]))), function(x) {seq.int(x[1]+1, x[2]-1)})
-      overlaps_other_exon <- sapply(seq_along(seg_dt_all_pos), function(i) {any(seg_dt_all_pos[[i]] %in% dt_unique_all_pos)})
-      seg_dt[(rect_ends - rect_starts > collapse_intron_flank*2) & !overlaps_other_exon, type := "intron_collapsed"]
+    seg_dt <- seg_source[
+      ,
+      if (.N > 1L) {
+        .(
+          layers = layers[1L],
+          rect_starts = head(rect_ends, -1L),
+          rect_ends = tail(rect_starts, -1L),
+          cols = "grey45",
+          labels_locations = 0,
+          hjusts = "center",
+          type = "intron",
+          no_ex = 1L
+        )
+      } else NULL,
+      by = gene_names
+    ]
+    seg_dt <- seg_dt[rect_starts < rect_ends]
+    if (did_collapse_introns && nrow(seg_dt) > 0L) {
+      exon_intervals <- unique(dt[, .(rect_starts, rect_ends)])
+      overlaps_other_exon <- interval_overlaps_any(
+        seg_dt$rect_starts + 1L,
+        seg_dt$rect_ends - 1L,
+        exon_intervals$rect_starts,
+        exon_intervals$rect_ends
+      )
+      seg_dt[
+        (rect_ends - rect_starts > collapse_intron_flank * 2L) & !overlaps_other_exon,
+        type := "intron_collapsed"
+      ]
     }
     seg_dt <- seg_dt[, colnames(dt), with = FALSE]
     with_introns_dt <- rbindlist(list(dt, seg_dt))
@@ -528,13 +595,13 @@ geneBoxFromRanges <- function(locations, plot_width,
 }
 
 move_utrs_touching_cds <- function(locations, type, plot_width) {
-  utr_end_touch_cds <- type == "utr" & (end(locations)+1) %in% start(locations)[type == "cds"]
-  new_utr_ends <- end(locations)[utr_end_touch_cds] + 1
+  utr_end_touch_cds <- type == "utr" & (end(locations)+1L) %in% start(locations)[type == "cds"]
+  new_utr_ends <- end(locations)[utr_end_touch_cds] + 1L
   end(locations)[utr_end_touch_cds] <- pmin(plot_width, new_utr_ends)
 
-  utr_start_touch_cds <- type == "utr" & (start(locations)-1) %in% end(locations)[type == "cds"]
-  new_utr_starts <- start(locations)[utr_start_touch_cds] - 1
-  start(locations)[utr_start_touch_cds] <- pmax(1, new_utr_starts)
+  utr_start_touch_cds <- type == "utr" & (start(locations)-1L) %in% end(locations)[type == "cds"]
+  new_utr_starts <- locations@ranges@start[utr_start_touch_cds] - 1L
+  locations@ranges@start[utr_start_touch_cds] <- pmax(1L, new_utr_starts)
   return(locations)
 }
 

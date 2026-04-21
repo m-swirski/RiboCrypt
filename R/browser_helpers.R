@@ -1,3 +1,114 @@
+browser_tx_seqs_getSeq <- function(reference_sequence, display_range,
+                                   keep.names = TRUE) {
+  if (is(display_range, "GRanges")) {
+    display_range <- GenomicRanges::GRangesList(tx = display_range)
+  }
+  stopifnot(is(display_range, "GRangesList"))
+
+  tx_count <- length(display_range)
+  if (tx_count == 0L) return(Biostrings::DNAStringSet())
+
+  tx_names <- names(display_range)
+  if (is.null(tx_names)) tx_names <- as.character(seq_len(tx_count))
+
+  if (tx_count == 1L) {
+    gr <- display_range[[1]]
+    tx_strand <- as.character(GenomicRanges::strand(gr)[1])
+
+    if (length(gr) > 1L && identical(tx_strand, "-")) {
+      starts <- BiocGenerics::start(gr)
+      if (!all(starts[-1L] >= starts[-length(starts)])) {
+        gr <- gr[order(starts, BiocGenerics::end(gr))]
+      }
+    }
+
+    GenomicRanges::strand(gr) <- "+"
+    exon_seqs <- if (is(reference_sequence, "FaFile")) {
+      Rsamtools::scanFa(reference_sequence, param = gr)
+    } else {
+      Biostrings::getSeq(reference_sequence, gr)
+    }
+    tx_string <- if (length(exon_seqs) == 1L) {
+      as.character(exon_seqs[[1]])
+    } else {
+      paste0(as.character(exon_seqs), collapse = "")
+    }
+
+    if (identical(tx_strand, "-")) {
+      tx_string <- as.character(Biostrings::reverseComplement(Biostrings::DNAString(tx_string)))
+    }
+
+    tx_seqs <- Biostrings::DNAStringSet(tx_string)
+    if (isTRUE(keep.names)) {
+      tx_seqs@ranges@NAMES <- tx_names[[1]]
+    } else {
+      tx_seqs@ranges@NAMES <- NULL
+    }
+    return(tx_seqs)
+  }
+
+  exon_counts <- lengths(display_range)
+
+  gr <- unlist(display_range, use.names = FALSE)
+  group_starts <- cumsum(c(1L, head(exon_counts, -1L)))
+  tx_strands <- as.character(GenomicRanges::strand(gr)[group_starts])
+  tx_ends <- cumsum(exon_counts)
+
+  if (tx_count == 1L && exon_counts[[1]] > 1L && identical(tx_strands[[1]], "-")) {
+    ord <- order(BiocGenerics::start(gr), BiocGenerics::end(gr))
+    gr <- gr[ord]
+  } else if (any(exon_counts > 1L & tx_strands == "-")) {
+    exon_idx <- seq_along(gr)
+    tx_starts <- c(1L, head(tx_ends, -1L) + 1L)
+    for (i in which(exon_counts > 1L & tx_strands == "-")) {
+      grp_idx <- tx_starts[[i]]:tx_ends[[i]]
+      exon_idx[grp_idx] <- grp_idx[order(
+        BiocGenerics::start(gr)[grp_idx],
+        BiocGenerics::end(gr)[grp_idx]
+      )]
+    }
+    gr <- gr[exon_idx]
+  }
+
+  # Fetch genomic sequence directly and apply transcript-level reverse
+  # complement after exon concatenation for minus-strand transcripts.
+  GenomicRanges::strand(gr) <- "+"
+  exon_seqs <- if (is(reference_sequence, "FaFile")) {
+    Rsamtools::scanFa(reference_sequence, param = gr)
+  } else {
+    Biostrings::getSeq(reference_sequence, gr)
+  }
+
+  if (all(exon_counts == 1L)) {
+    tx_strings <- as.character(exon_seqs)
+  } else {
+    tx_starts <- c(1L, head(tx_ends, -1L) + 1L)
+    exon_strings <- as.character(exon_seqs)
+    tx_strings <- character(tx_count)
+    for (i in seq_len(tx_count)) {
+      tx_strings[[i]] <- paste0(exon_strings[tx_starts[[i]]:tx_ends[[i]]], collapse = "")
+    }
+  }
+
+  minus_tx <- tx_strands == "-"
+  if (any(minus_tx)) {
+    tx_strings[minus_tx] <- vapply(
+      tx_strings[minus_tx],
+      function(x) as.character(Biostrings::reverseComplement(Biostrings::DNAString(x))),
+      character(1)
+    )
+  }
+
+  tx_seqs <- Biostrings::DNAStringSet(tx_strings)
+
+  if (isTRUE(keep.names)) {
+    tx_seqs@ranges@NAMES <- tx_names
+  } else {
+    tx_seqs@ranges@NAMES <- NULL
+  }
+  tx_seqs
+}
+
 multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, annotation,
                                          start_codons, stop_codons, custom_motif,
                                          custom_regions, viewMode,
@@ -6,7 +117,7 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
                                          templates = NULL) {
   force(display_range)
   # Get sequence and create basic seq panel
-  target_seq <- extractTranscriptSeqs(reference_sequence, display_range)
+  target_seq <- browser_tx_seqs_getSeq(reference_sequence, display_range)
   seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
                                           stop_codons = stop_codons, custom_motif = custom_motif)
   seq_aa_panel <- plotAASeqPanelPlotly(
@@ -524,5 +635,5 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
   if (isTRUE(apply_line_desimplify)) {
     return(lineDeSimplify(multiomics_plot))
   }
-  return(lineDeSimplify(multiomics_plot))
+  multiomics_plot
 }

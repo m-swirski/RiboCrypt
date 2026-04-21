@@ -387,6 +387,7 @@ allsamples_enrich_bar_plotly <- function(enrich) {
         )
       )
   }
+  p <- suppressWarnings(plotly::plotly_build(p))
   timer_done_nice_print("-- metabrowser enrichment plot done: ", time_before)
   plotly::event_register(p, "plotly_click")
 }

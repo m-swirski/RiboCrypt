@@ -45,7 +45,7 @@ covPanelWithFramesPlotlyTemplate <- function() {
       mode = "lines",
       name = frame_name,
       legendgroup = frame_name,
-      line = list(color = "#000000", width = 0.8),
+      line = list(color = "#000000", width = 0.8, simplify = FALSE),
       hovertemplate = track_hover_template(include_frame = TRUE),
       showlegend = TRUE,
       inherit = FALSE
@@ -61,7 +61,7 @@ covPanelWithoutFramesPlotlyTemplate <- function() {
       y = numeric(),
       type = "scatter",
       mode = "lines",
-      line = list(color = "black", width = 0.5),
+      line = list(color = "black", width = 0.5, simplify = FALSE),
       fill = "tozeroy",
       fillcolor = resolve_track_fill_color(NULL),
       hovertemplate = track_hover_template(),
@@ -140,7 +140,7 @@ covPanelAreaPlotlyTemplate <- function() {
       mode = "lines",
       name = frame_name,
       legendgroup = frame_name,
-      line = list(color = "black", width = 0.4),
+      line = list(color = "black", width = 0.4, simplify = FALSE),
       fill = "tozeroy",
       fillcolor = "#00000099",
       hovertemplate = track_hover_template(include_frame = TRUE),
@@ -224,12 +224,12 @@ track_guides <- function(plot, x_range, y_max, lines = numeric(), add_zero = TRU
       plot,
       x = x_range,
       y = c(0, 0),
-      type = "scatter",
-      mode = "lines",
-      line = list(color = "rgba(0,0,0,0.5)", width = 0.5),
-      hoverinfo = "skip",
-      showlegend = FALSE,
-      inherit = FALSE
+        type = "scatter",
+        mode = "lines",
+        line = list(color = "rgba(0,0,0,0.5)", width = 0.5, simplify = FALSE),
+        hoverinfo = "skip",
+        showlegend = FALSE,
+        inherit = FALSE
     )
   }
   plot
@@ -309,7 +309,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
         y = ~count,
         type = "scatter",
         mode = "lines",
-        line = list(color = "black", width = 0.5),
+        line = list(color = "black", width = 0.5, simplify = FALSE),
         fill = "tozeroy",
         fillcolor = grDevices::adjustcolor(fill_color, alpha.f = track_area_fill_alpha()),
         hovertemplate = track_hover_template(),
@@ -343,7 +343,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
           mode = "lines",
           name = frame_name,
           legendgroup = frame_name,
-          line = list(color = frame_colors[[frame_name]], width = 0.8),
+          line = list(color = frame_colors[[frame_name]], width = 0.8, simplify = FALSE),
           hovertemplate = track_hover_template(include_frame = TRUE),
           showlegend = TRUE
         )
@@ -492,7 +492,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
           mode = "lines",
           name = frame_name,
           legendgroup = frame_name,
-          line = list(color = "black", width = 0.4),
+          line = list(color = "black", width = 0.4, simplify = FALSE),
           fill = "tozeroy",
           fillcolor = grDevices::adjustcolor(
             frame_fill_colors[[frame_name]],
@@ -516,7 +516,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
         name = frame_name,
         legendgroup = frame_name,
         stackgroup = "coverage",
-        line = list(color = "black", width = 0.4),
+        line = list(color = "black", width = 0.4, simplify = FALSE),
         fillcolor = grDevices::adjustcolor(frame_colors[[frame_name]], alpha.f = 0.8),
         hovertemplate = track_hover_template(include_frame = TRUE),
         showlegend = TRUE

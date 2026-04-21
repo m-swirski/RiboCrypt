@@ -31,6 +31,7 @@ getPlotAnimate <- function(profile, withFrames, colors, frame_colors,
       mode = "lines",
       colors = unname(frame_colors),
       color = ~frame,
+      line = list(simplify = FALSE),
       hovertemplate = "position: %{x:.0f}<br>count: %{y}<br>frame: %{fullData.name}<extra></extra>"
     ))
   } else {
@@ -41,7 +42,7 @@ getPlotAnimate <- function(profile, withFrames, colors, frame_colors,
       frame = ~file,
       type = "scatter",
       mode = "lines",
-      line = list(color = "black", width = 0.5),
+      line = list(color = "black", width = 0.5, simplify = FALSE),
       fill = "tozeroy",
       fillcolor = grDevices::adjustcolor(
         resolve_track_fill_color(colors),

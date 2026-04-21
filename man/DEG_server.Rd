@@ -16,6 +16,25 @@ DEG_server(
   rv
 )
 }
+\arguments{
+\item{id}{module id.}
+
+\item{all_experiments}{a table of available experiments.}
+
+\item{env}{environment used by the surrounding app.}
+
+\item{df}{reactive returning the selected experiment table.}
+
+\item{experiments}{reactive returning experiment names.}
+
+\item{libs}{reactive returning available library names.}
+
+\item{org}{reactive returning the selected organism.}
+
+\item{gene_name_list}{reactive returning gene labels and ids.}
+
+\item{rv}{reactiveValues object shared across modules.}
+}
 \description{
 A contrast compares 2 levels of a factor
 Given factor from 9 elements (samples):
@@ -24,3 +43,4 @@ This is a contrast
 A + B
 A + B + A/B
 }
+\keyword{internal}

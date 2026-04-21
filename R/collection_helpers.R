@@ -3,6 +3,7 @@
 #' @param path the path to megafst index file
 #' @param grl a GRangesList, default attr(path, "range"),
 #' for new fst format, which range to get.
+#' @param columns character vector of columns to read from the collection file.
 #' @return a data.table in wide format
 #' @importFrom fst read_fst
 load_collection <- function(path, grl = attr(path, "range"), columns = NULL) {
@@ -264,6 +265,10 @@ collection_to_wide <- function(table, value.var = "logscore") {
 #' of that region in this gene vs the other region in another gene.
 #' @param decreasing_order logical, default FALSE. Sort you ordering vector from lowest (default).
 #' If TRUE, sort from highest downwards.
+#' @param enrichment_term character, metadata column used when ordering by
+#' metadata rather than signal.
+#' @param clusters integer, default 1. Number of k-means clusters for sample
+#' ordering metadata stored on the returned table.
 #' @return a data.table in long or wide (default) format, if as list, it is a
 #' list of size 2 (see argument as_list)
 compute_collection_table <- function(path, lib_sizes, df,

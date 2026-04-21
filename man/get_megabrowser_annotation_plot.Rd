@@ -14,8 +14,10 @@ get_megabrowser_annotation_plot(
   tx_annotation,
   display_region,
   cds_annotation,
+  custom_regions = NULL,
   viewMode,
-  collapse_intron_flank
+  collapse_intron_flank,
+  templates = NULL
 )
 }
 \arguments{
@@ -38,17 +40,14 @@ get_megabrowser_annotation_plot(
 
 \item{cds_annotation}{a GRangesList of cds annotation}
 
+\item{custom_regions}{optional custom annotation regions to draw.}
+
 \item{viewMode}{character, "tx" or "genomic"}
 
 \item{collapse_intron_flank}{integer, if TRUE and viewMode genomic, collapse
 introns to this max size.}
 
-\item{m}{data.table of coverage per sample (wide format)}
-
-\item{heatmap}{ComplexHeatmap object of plot from 'm'}
-
-\item{rel_heights}{numeric < 1, default: c(0.2, 0.75, 0.05).
-Relative heights, sum to 1 and must be length 3.}
+\item{templates}{optional plotly template bundle.}
 }
 \value{
 a cowplot grub

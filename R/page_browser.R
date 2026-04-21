@@ -253,23 +253,3 @@ input_to_list <- function(input, user_info = NULL) {
   a <- c(a, user.info = user_info[-1])
   return(a)
 }
-
-# Tester (put in server if needed):
-# observeEvent(input$go, {
-#   message("CACHE TIMER START:")
-#   t <- system.time({
-#     x <- mainPlotControls()   # should be a cache hit if key unchanged
-#   }, gcFirst = FALSE)
-#   message("mainPlotControls() access elapsed: ", t[["elapsed"]])
-#   key <- mainPlotControls()$hash_browser
-#   # message("hash_bottom: ", key)
-#   t <- system.time({
-#     x <- bottom_panel()   # should be a cache hit if key unchanged
-#   }, gcFirst = FALSE)
-#   message("bottom_panel() access elapsed: ", t[["elapsed"]])
-#
-#   t <- system.time({
-#     x <- browser_plot()   # should be a cache hit if key unchanged
-#   }, gcFirst = FALSE)
-#   message("browser_plot() access elapsed: ", t[["elapsed"]])
-# }, priority = 1000)

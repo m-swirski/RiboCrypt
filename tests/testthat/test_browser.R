@@ -856,6 +856,87 @@ test_that("browser_legend_cleanup keeps gene id legend item alongside frame lege
   expect_equal(sort(legend_names[nzchar(legend_names)]), c("0", "1", "2", "id"))
 })
 
+test_that("fast_subplot_shared_x reuses already built plotly widgets", {
+  p1 <- plotly::plotly_build(
+    plotly::plot_ly(x = 1:3, y = 1:3, type = "scatter", mode = "lines") %>%
+      plotly::layout(
+        shapes = list(list(type = "line", x0 = 1, x1 = 3, y0 = 2, y1 = 2))
+      )
+  )
+  p2 <- plotly::plotly_build(
+    plotly::plot_ly(x = 1:3, y = 3:1, type = "scatter", mode = "lines")
+  )
+
+  testthat::local_mocked_bindings(
+    plotly_build = function(...) stop("plotly_build should not be called"),
+    .package = "plotly"
+  )
+
+  merged <- RiboCrypt:::fast_subplot_shared_x(
+    list(p1, p2),
+    nrows = 2,
+    heights = c(0.5, 0.5),
+    shareX = TRUE,
+    titleY = TRUE,
+    titleX = TRUE
+  )
+
+  expect_length(merged$x$data, 2)
+  expect_identical(merged$x$data[[1]]$xaxis, "x")
+  expect_identical(merged$x$data[[1]]$yaxis, "y")
+  expect_identical(merged$x$data[[2]]$xaxis, "x")
+  expect_identical(merged$x$data[[2]]$yaxis, "y2")
+  expect_equal(unname(merged$x$layout$yaxis$domain), c(0.5, 1))
+  expect_equal(unname(merged$x$layout$yaxis2$domain), c(0, 0.5))
+  expect_identical(merged$x$layout$shapes[[1]]$yref, "y")
+})
+
+test_that("fast_subplot_shared_x preserves AA codon traces and avoids inflated right margin", {
+  sequence <- Biostrings::DNAString("ATGATGATGATGATGATG")
+  hits <- RiboCrypt:::createSeqPanelPattern(
+    sequence,
+    start_codons = "ATG",
+    stop_codons = c("TAA", "TAG", "TGA")
+  )
+
+  aa_plot <- RiboCrypt:::automateTicksAA(
+    RiboCrypt:::plotAASeqPanelPlotly(hits, sequence, frame_colors = "R")
+  )
+  nt_plot <- RiboCrypt:::ntSeqPanelPlotly(sequence)
+  gene_plot <- RiboCrypt:::automateTicksGMP(
+    RiboCrypt:::geneModelPanelPlotly(data.table::data.table(
+      gene_names = c("txA", "txA"),
+      rect_starts = c(1, 12),
+      rect_ends = c(8, 20),
+      labels_locations = c(4, 16),
+      layers = c(1L, 1L),
+      type = c("cds", "cds"),
+      cols = c("#F8766D", "#F8766D")
+    ))
+  )
+
+  merged <- RiboCrypt:::fast_subplot_shared_x(
+    list(nt_plot, gene_plot, aa_plot),
+    nrows = 3,
+    heights = c(1 / 3, 1 / 3, 1 / 3),
+    shareX = TRUE,
+    titleY = TRUE,
+    titleX = TRUE
+  )
+
+  line_colors <- vapply(
+    merged$x$data,
+    function(tr) if (is.null(tr$line$color)) NA_character_ else as.character(tr$line$color),
+    character(1)
+  )
+
+  expect_true("white" %in% line_colors)
+  expect_true("black" %in% line_colors)
+  expect_identical(if (is.null(merged$x$layout$margin$r)) 0 else merged$x$layout$margin$r, 0)
+  expect_identical(length(merged$x$attrs), length(merged$x$data))
+  expect_null(merged$x$visdat)
+})
+
 test_that("ntSeqPanelPlotly reuses template x-axis layout without mutating template", {
   template <- RiboCrypt:::ntSeqPanelPlotlyTemplate()
 
@@ -890,12 +971,12 @@ test_that("multiOmicsPlot_bottom_panels uses nt sequence plotly template", {
 
   expect_equal(
     unname(panels$seq_nt_panel$x$layout$xaxis$range),
-    c(1, Biostrings::nchar(panels$target_seq[[1]]))
+    c(1, Biostrings::nchar(panels$target_seq))
   )
   expect_equal(unname(template$x$layout$xaxis$range), c(1, 1))
   expect_equal(
     vapply(panels$seq_panel$x$layout$shapes, function(shape) shape$x1, numeric(1)),
-    rep(Biostrings::nchar(panels$target_seq[[1]]), 3)
+    rep(Biostrings::nchar(panels$target_seq), 3)
   )
   expect_equal(vapply(aa_template$x$layout$shapes, function(shape) shape$x1, numeric(1)), rep(1, 3))
 })

@@ -4,13 +4,15 @@
 \alias{load_collection}
 \title{Load a ORFik collection table}
 \usage{
-load_collection(path, grl = attr(path, "range"))
+load_collection(path, grl = attr(path, "range"), columns = NULL)
 }
 \arguments{
 \item{path}{the path to megafst index file}
 
 \item{grl}{a GRangesList, default attr(path, "range"),
 for new fst format, which range to get.}
+
+\item{columns}{character vector of columns to read from the collection file.}
 }
 \value{
 a data.table in wide format

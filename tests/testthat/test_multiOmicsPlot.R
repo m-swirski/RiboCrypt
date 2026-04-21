@@ -5,9 +5,9 @@ cds <- ORFik::loadRegion(df, "cds")
 test_that("multiOmicsPlot_ORFikExp works as intended", {
   t <- tx[1]
   c <- cds[1]
-  reads <- filepath(df[1,], "bigwig")[[1]]
+  reads <- ORFik::filepath(df[1,], "bigwig")[[1]]
   res <- multiOmicsPlot_ORFikExp(display_range = t, df = df[1,], annotation = c, reads = reads)
-  profvis::profvis(multiOmicsPlot_ORFikExp(display_range = t, df = df[1,], annotation = c, reads = reads))
+  # profvis::profvis(multiOmicsPlot_ORFikExp(display_range = t, df = df[1,], annotation = c, reads = reads))
   expect_false(isTRUE(res$x$layout$yaxis$showticklabels))
 })
 

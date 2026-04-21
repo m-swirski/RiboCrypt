@@ -71,6 +71,12 @@ of that region in this gene vs the other region in another gene.}
 
 \item{decreasing_order}{logical, default FALSE. Sort you ordering vector from lowest (default).
 If TRUE, sort from highest downwards.}
+
+\item{enrichment_term}{character, metadata column used when ordering by
+metadata rather than signal.}
+
+\item{clusters}{integer, default 1. Number of k-means clusters for sample
+ordering metadata stored on the returned table.}
 }
 \value{
 a data.table in long or wide (default) format, if as list, it is a

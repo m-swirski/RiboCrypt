@@ -468,8 +468,6 @@ get_megabrowser_annotation_plot_shiny <- function(controller, templates = NULL) 
 
 #' Full plot for allsamples browser
 #'
-#' @param m data.table of coverage per sample (wide format)
-#' @param heatmap ComplexHeatmap object of plot from 'm'
 #' @param id id of transcript
 #' @param df ORFik experiment
 #' @param summary logical, default TRUE (add top plot)
@@ -480,11 +478,11 @@ get_megabrowser_annotation_plot_shiny <- function(controller, templates = NULL) 
 #' @param tx_annotation a GRangesList of tx annotation
 #' @param display_region a GRangesList of display region
 #' @param cds_annotation a GRangesList of cds annotation
+#' @param custom_regions optional custom annotation regions to draw.
 #' @param viewMode character, "tx" or "genomic"
 #' @param collapse_intron_flank integer, if TRUE and viewMode genomic, collapse
 #' introns to this max size.
-#' @param rel_heights numeric < 1, default: c(0.2, 0.75, 0.05).
-#' Relative heights, sum to 1 and must be length 3.
+#' @param templates optional plotly template bundle.
 #' @return a cowplot grub
 #' @importFrom cowplot plot_grid
 get_megabrowser_annotation_plot <- function(id, df,

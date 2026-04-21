@@ -276,7 +276,7 @@ get_fastq_page <- function(input, libs, df, relative_dir) {
   }
   candidates <- list.files(trim_dir, full.names = TRUE, pattern = "html")
   candidates_base <- gsub("report_", "", sub(".html$", "", basename(candidates)))
-  proper_names <- gsub("_Aligned.*", "", ORFik:::remove.file_ext(dff$filepath, basename = TRUE))
+  proper_names <- gsub("_Aligned.*", "", orfik_remove_file_ext(dff$filepath, basename = TRUE))
   path <- grep(pattern = proper_names, candidates, value = TRUE)
 
   if (length(path) != 1) {

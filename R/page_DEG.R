@@ -48,6 +48,16 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
 #' This is a contrast
 #' A + B
 #' A + B + A/B
+#' @param id module id.
+#' @param all_experiments a table of available experiments.
+#' @param env environment used by the surrounding app.
+#' @param df reactive returning the selected experiment table.
+#' @param experiments reactive returning experiment names.
+#' @param libs reactive returning available library names.
+#' @param org reactive returning the selected organism.
+#' @param gene_name_list reactive returning gene labels and ids.
+#' @param rv reactiveValues object shared across modules.
+#' @keywords internal
 DEG_server <- function(id, all_experiments, env, df, experiments, libs,
                        org, gene_name_list, rv) {
   moduleServer(
@@ -185,7 +195,7 @@ DEG_server <- function(id, all_experiments, env, df, experiments, libs,
           dt <- analysis_dt()
           dt[, external_gene_name := sub("-.*", "", label)]
           gorilla_output_dir <- tempdir()
-          gorilla_result <- ORFik:::DEG_gorilla(dt = dt, output_dir = gorilla_output_dir, organism(df()))
+          gorilla_result <- ORFik::DEG_gorilla(dt = dt, output_dir = gorilla_output_dir, organism(df()))
           gorilla_result[, url := sprintf('<a href="%s" target="_blank" style="color: blue;">Link</a>', url)]
           datatable(gorilla_result, escape = FALSE, options = list(pageLength = 25))
         })

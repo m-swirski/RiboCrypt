@@ -6,6 +6,12 @@
 \usage{
 get_protein_structure_online(uniprot_id)
 }
+\arguments{
+\item{uniprot_id}{character vector of UniProt identifiers.}
+}
+\value{
+character vector of downloaded structure file paths.
+}
 \description{
 Download pdb by uniprot id
 }

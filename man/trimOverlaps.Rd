@@ -15,6 +15,7 @@ trimOverlaps(overlaps, display_range)
 GRanges
 }
 \description{
-Trim overlaps
+Input ranges must be already given to be on the same chromosome, no check
+is done to ensure this for speed reasons.
 }
 \keyword{internal}

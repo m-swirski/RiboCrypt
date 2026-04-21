@@ -17,6 +17,7 @@ createSeqPanelPattern <- function(sequence, start_codons = "ATG", stop_codons = 
     custom_motif <- gsub("U", "T", custom_motif, fixed = TRUE)
     custom_motif <- strsplit(custom_motif, ",")[[1]] %>% strsplit(" ") %>% unlist
   }
+
   hits <- lapply(list(start_codons, stop_codons, custom_motif), function(x) matchMultiplePatterns(x, sequence))
   names(hits) <- c("white", "black", "#C97D00")
   hits <- lapply(hits, as.data.table)
@@ -52,7 +53,7 @@ plotAASeqPanel <- function(hits, sequence, frame_colors = "R", theme_template = 
 }
 
 plotAASeqPanelPlotly <- function(hits, sequence, frame_colors = "R", template = NULL) {
-  seq_length <- nchar(as.character(sequence))
+  seq_length <- nchar(sequence)
   if (inherits(template, "plotly")) {
     p <- template
   } else {
@@ -253,7 +254,7 @@ ntSeqPanelPlotlyTemplate <- function() {
 }
 
 ntSeqPanelPlotly <- function(sequence, template = NULL) {
-  seq_length <- nchar(as.character(sequence))
+  seq_length <- nchar(sequence)
 
   if (inherits(template, "plotly")) {
     p <- template

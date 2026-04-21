@@ -388,7 +388,7 @@ click_plot_heatmap_main_controller <- function(input, tx, cds, libs, df,
 
   hash_string <- paste(hash_string_anchor,
                        input$normalization,
-                       paste(ORFik:::name_decider(dff, naming = "full"), collapse = "|__|"),
+                       paste(orfik_name_decider(dff, naming = "full"), collapse = "|__|"),
                        input$readlength_min,
                        input$readlength_max, sep = "|__|")
 
@@ -422,13 +422,13 @@ click_plot_codon_main_controller <- function(input, tx, cds, libs, df, length_ta
   all_libs <- isolate(input$library)
   background <- if (isTruthy(input$background)) {
     all_libs <- unique(c(all_libs, isolate(input$background)))
-    ORFik:::name_decider(observed_exp_subset(isolate(input$background), libs, df), "full")
+    orfik_name_decider(observed_exp_subset(isolate(input$background), libs, df), "full")
   }
   dff <- observed_exp_subset(all_libs, libs, df)
 
   time_before <- Sys.time()
   reads <- load_reads(dff, "cov")
-  names <- ORFik:::name_decider(dff, "full")
+  names <- orfik_name_decider(dff, "full")
   names(reads) <- names
 
   filter_value <- input$codon_filter_value
@@ -483,7 +483,7 @@ click_plot_DEG_main_controller <- function(input, df, all_libs, factor = NULL) {
   pval <- isolate(input$pval)
 
   full <- isolate(input$other_tx)
-  libs <- paste(ORFik:::name_decider(dff, naming = "full"), collapse = "")
+  libs <- paste(orfik_name_decider(dff, naming = "full"), collapse = "")
   group_1 <- input$library1
   group_2 <- input$library2
   plot_export_format <- isolate(input$plot_export_format)

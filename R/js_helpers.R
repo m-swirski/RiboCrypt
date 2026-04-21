@@ -17,6 +17,8 @@ fetchJS <- function(script_name) {
 #' <= to this number.
 #' @param aa_letter_code character, default: "one_letter", alternative: three_letters
 #' @param input_id shiny id of the object
+#' @param frame_colors character, frame color theme passed to
+#' \code{frame_color_themes()}.
 #' @return a list of 2 lists, the nt list (per frame, total 3)
 #'  and AA list (per frame, total 3)
 #' @importFrom Biostrings AMINO_ACID_CODE
@@ -30,8 +32,8 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 250,
   rendered_seq <- strsplit(as.character(target_seq),"")[[1]]
   translate_fuzzy_logic <- ifelse(all(rendered_seq %in% DNA_BASES), "error", "X")
 
-  ir <- IRanges(seq(3), display_dist) # 3 AA frames
-  aas <- suppressWarnings(translate(extractAt(target_seq[[1]], ir), if.fuzzy.codon = translate_fuzzy_logic))
+  ir <- new2("IRanges", start = seq.int(3), width = display_dist - seq.int(0, 2), check = FALSE) # 3 AA frames
+  aas <- suppressWarnings(translate(extractAt(target_seq, ir), if.fuzzy.codon = translate_fuzzy_logic))
   aas <- strsplit(as.character(aas), "")
   if (aa_letter_code == "three_letters") {
     aa_code <- AMINO_ACID_CODE

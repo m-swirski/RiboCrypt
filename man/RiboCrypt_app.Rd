@@ -11,7 +11,11 @@ RiboCrypt_app(
   browser_options = c(),
   init_tab_focus = "browser",
   metadata = NULL,
-  all_exp_meta = all_exp[grep("all_samples-", name), ]
+  all_exp_meta = all_exp[grep("all_samples-", name), ],
+  columns_to_show = c("study_accession", "Run", "ScientificName", "sample_title",
+    "BioProject", "YEAR", "LIBRARYTYPE", "REPLICATE", "CONDITION", "INHIBITOR", "BATCH",
+    "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION", "Cancer_type", "Cell_model",
+    "Cell_type", "Organ_system", "Sex", "Life_stage")
 )
 }
 \arguments{
@@ -60,6 +64,9 @@ the metabrowser completly.
 It is the subset of all_exp which are collections (the set of
 all experiments per organism), this will be fed to the metabrowser, while
 remaining all_exp are used in all other modules.}
+
+\item{columns_to_show}{character vector of metadata columns shown in the
+metadata table tab.}
 }
 \value{
 RiboCrypt shiny app
@@ -75,17 +82,17 @@ run_variable <- 1 # Ignore check test limit
 # RiboCrypt_app(browser_options = c(plot_on_start = "TRUE"))
 ## Init with an experiment and gene (you must of course have the experiment)
 
-#RiboCrypt_app(validate.experiments = FALSE,
+# RiboCrypt_app(validate.experiments = FALSE,
 #       browser_options = c(plot_on_start = "TRUE",
 #                           default_experiment = "all_merged-Homo_sapiens_2024_8",
 #                           default_gene = "ATF4-ENSG00000128272"))
-#RiboCrypt_app(validate.experiments = FALSE, all_exp = all_exp,
-#browser_options = c(plot_on_start = "TRUE",
+# RiboCrypt_app(validate.experiments = FALSE, all_exp = all_exp,
+# browser_options = c(plot_on_start = "TRUE",
 #                    default_experiment = "human_all_merged_l50",
 #                    default_gene = "RPL12-ENSG00000197958",
 #                    default_isoform = "ENST00000361436",
 #                    default_view_mode = "genomic"))
-#RiboCrypt_app(validate.experiments = FALSE,
+# RiboCrypt_app(validate.experiments = FALSE,
 #       browser_options = c(plot_on_start = "TRUE",
 #                           default_experiment = "all_merged-Saccharomyces_cerevisiae",
 #                           default_gene = "EFM5-YGR001",

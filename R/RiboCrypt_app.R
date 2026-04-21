@@ -38,6 +38,8 @@
 #' It is the subset of all_exp which are collections (the set of
 #' all experiments per organism), this will be fed to the metabrowser, while
 #' remaining all_exp are used in all other modules.
+#' @param columns_to_show character vector of metadata columns shown in the
+#' metadata table tab.
 #' @import shiny bslib ORFik NGLVieweR ggplot2 fst rclipboard data.table
 #' @importFrom Biostrings strsplit width
 #' @importFrom GenomeInfoDb seqlevelsStyle seqlevelsStyle<-

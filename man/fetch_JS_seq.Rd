@@ -24,6 +24,9 @@ fetch_JS_seq(
 \item{aa_letter_code}{character, default: "one_letter", alternative: three_letters}
 
 \item{input_id}{shiny id of the object}
+
+\item{frame_colors}{character, frame color theme passed to
+\code{frame_color_themes()}.}
 }
 \value{
 a list of 2 lists, the nt list (per frame, total 3)

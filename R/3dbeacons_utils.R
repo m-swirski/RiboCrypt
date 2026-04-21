@@ -38,6 +38,8 @@ get_protein_structure <- function(gene_name_list, selectedRegion, selectedTX, re
 }
 
 #' Download pdb by uniprot id
+#' @param uniprot_id character vector of UniProt identifiers.
+#' @return character vector of downloaded structure file paths.
 get_protein_structure_online <- function(uniprot_id) {
   results <- get_protein_structure_urls(uniprot_id)
   tempfiles <- make_tempfile_paths_for_protein_structures(results)

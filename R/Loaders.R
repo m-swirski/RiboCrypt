@@ -1,5 +1,5 @@
 get_track_paths <- function(dff) {
-  libtypes <- ORFik:::libraryTypes(dff, FALSE)
+  libtypes <- ORFik::libraryTypes(dff, FALSE)
   must_check_non_unique_mappers_for_non_ribo <- uniqueMappers(dff) &
     !identical("RFP", unique(libtypes))
 

@@ -1,5 +1,5 @@
 browser_tx_seqs_getSeq <- function(reference_sequence, display_range,
-                                   keep.names = TRUE) {
+                                   keep.names = FALSE) {
   if (is(display_range, "GRanges")) {
     display_range <- GenomicRanges::GRangesList(tx = display_range)
   }
@@ -29,22 +29,15 @@ browser_tx_seqs_getSeq <- function(reference_sequence, display_range,
       Biostrings::getSeq(reference_sequence, gr)
     }
     tx_string <- if (length(exon_seqs) == 1L) {
-      as.character(exon_seqs[[1]])
+      exon_seqs[[1]]
     } else {
-      paste0(as.character(exon_seqs), collapse = "")
+      Biostrings::DNAString(paste0(as.character(exon_seqs), collapse = ""))
     }
 
     if (identical(tx_strand, "-")) {
-      tx_string <- as.character(Biostrings::reverseComplement(Biostrings::DNAString(tx_string)))
+      tx_string <- Biostrings::reverseComplement(tx_string)
     }
-
-    tx_seqs <- Biostrings::DNAStringSet(tx_string)
-    if (isTRUE(keep.names)) {
-      tx_seqs@ranges@NAMES <- tx_names[[1]]
-    } else {
-      tx_seqs@ranges@NAMES <- NULL
-    }
-    return(tx_seqs)
+    return(tx_string)
   }
 
   exon_counts <- lengths(display_range)
@@ -118,11 +111,11 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
   force(display_range)
   # Get sequence and create basic seq panel
   target_seq <- browser_tx_seqs_getSeq(reference_sequence, display_range)
-  seq_panel_hits <- createSeqPanelPattern(target_seq[[1]], start_codons = start_codons,
+  seq_panel_hits <- createSeqPanelPattern(target_seq, start_codons = start_codons,
                                           stop_codons = stop_codons, custom_motif = custom_motif)
   seq_aa_panel <- plotAASeqPanelPlotly(
     seq_panel_hits,
-    target_seq[[1]],
+    target_seq,
     frame_colors = frame_colors,
     template = templates$aa_seq_panel_plotly
   )
@@ -137,7 +130,7 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
 
   gene_model_panel <- geneModelPanelPlotly(gene_model_panel_dt[[1]])
   seq_nt_panel <- ntSeqPanelPlotly(
-    target_seq[[1]],
+    target_seq,
     template = templates$nt_seq_panel_plotly
   )
   return(list(seq_panel = seq_aa_panel, seq_nt_panel = seq_nt_panel,
@@ -218,12 +211,25 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   bottom_plots <- bottom_panel$bottom_plots
   plots <- c(track_plots, bottom_plots)
 
-  multiomics_plot <- suppressWarnings(subplot(plots,
-                                              margin = 0,
-                                              nrows = length(plots),
-                                              heights = proportions,
-                                              shareX = TRUE,
-                                              titleY = TRUE, titleX = TRUE))
+  old <- TRUE
+  if (old) {
+    multiomics_plot <- suppressWarnings(subplot(plots,
+                                                margin = 0,
+                                                nrows = length(plots),
+                                                heights = proportions,
+                                                shareX = TRUE,
+                                                titleY = TRUE, titleX = TRUE))
+  } else {
+    multiomics_plot <- suppressWarnings(fast_subplot_shared_x(plots,
+                                                              margin = 0,
+                                                              nrows = length(plots),
+                                                              heights = proportions,
+                                                              shareX = TRUE,
+                                                              titleY = TRUE,
+                                                              titleX = TRUE))
+  }
+
+
 
   if (isTruthy(display_sequence)) {
     nt_seq_y_index <- length(plots) - bottom_panel$ncustom - 3
@@ -446,7 +452,7 @@ observatory_selection_cache_key <- function(library_selections,
 
 hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width) {
   full_names <- runIDs(dff)
-  if (all(full_names == "")) full_names <- ORFik:::name_decider(dff, naming = "full")
+  if (all(full_names == "")) full_names <- orfik_name_decider(dff, naming = "full")
 
   hash_bottom <- paste(browser_input_or_default(input, "tx", ""),
                        browser_input_or_default(input, "other_tx", FALSE),
@@ -636,4 +642,200 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
     return(lineDeSimplify(multiomics_plot))
   }
   multiomics_plot
+}
+
+fast_subplot_shared_x <- function(...,
+                                  nrows = NULL,
+                                  heights = NULL,
+                                  shareX = FALSE,
+                                  titleY = TRUE,
+                                  titleX = TRUE,
+                                  margin = 0) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+
+  args <- list(...)
+  plots <- if (length(args) == 1L && is.list(args[[1]]) && !
+               inherits(args[[1]], "plotly")) {
+    args[[1]]
+  } else {
+    args
+  }
+
+  if (!length(plots)) stop("No plots supplied.")
+  if (!all(vapply(plots, inherits, logical(1), what = "plotly"))) {
+    stop("All inputs must be plotly objects.")
+  }
+  if (!isTRUE(shareX)) {
+    stop("fast_subplot_shared_x currently only supports shareX = TRUE.")
+  }
+
+  n <- length(plots)
+  if (is.null(nrows)) nrows <- n
+  if (length(nrows) != 1L || is.na(nrows) || nrows != n) {
+    stop("fast_subplot_shared_x currently only supports one plot per row.")
+  }
+
+  if (is.null(heights)) heights <- rep(1, n)
+  if (length(heights) != n) stop("`heights` must have one value per plot.")
+  if (n > 1L && (length(margin) != 1L || !is.numeric(margin) || is.na(margin)
+                 || margin < 0)) {
+    stop("`margin` must be a single non-negative number.")
+  }
+
+  built <- lapply(plots, function(p) {
+    is_materialized <- !is.null(p$x$data) &&
+      !is.null(p$x$layout) &&
+      length(p$x$layoutAttrs %||% list()) == 0L
+    if (is_materialized) {
+      p
+    } else {
+      suppressWarnings(plotly::plotly_build(p))
+    }
+  })
+  layouts <- lapply(built, function(p) p$x$layout %||% list())
+
+  total_gap <- margin * max(0, n - 1L)
+  if (total_gap >= 1) stop("`margin` is too large for the number of rows.")
+  heights <- heights / sum(heights) * (1 - total_gap)
+
+  domains <- vector("list", n)
+  top <- 1
+  for (i in seq_len(n)) {
+    bottom <- top - heights[[i]]
+    domains[[i]] <- c(bottom, top)
+    top <- bottom - margin
+  }
+
+  axis_ref <- function(prefix, i) {
+    if (i == 1L) prefix else paste0(prefix, i)
+  }
+
+  remap_axis_ref <- function(ref, target, axis_prefix) {
+    if (is.null(ref)) return(target)
+
+    ref_chr <- as.character(ref)
+    if (identical(ref_chr, "paper")) return("paper")
+    if (grepl(paste0("^", axis_prefix, "[0-9]* domain$"), ref_chr)) {
+      return(paste0(target, " domain"))
+    }
+    if (grepl(paste0("^", axis_prefix, "[0-9]*$"), ref_chr)) {
+      return(target)
+    }
+    ref_chr
+  }
+
+  out <- built[[1]]
+  trace_counts <- vapply(built, function(p) length(p$x$data %||% list()), integer(1))
+  attrs_counts <- vapply(built, function(p) length(p$x$attrs %||% list()), integer(1))
+  shape_counts <- vapply(layouts, function(lay) length(lay$shapes %||% list()), integer(1))
+  annotation_counts <- vapply(layouts, function(lay) length(lay$annotations %||% list()), integer(1))
+  image_counts <- vapply(layouts, function(lay) length(lay$images %||% list()), integer(1))
+
+  out$x$data <- vector("list", sum(trace_counts))
+  out$x$attrs <- vector("list", sum(attrs_counts))
+  out$x$layout <- out$x$layout %||% list()
+  out$x$layoutAttrs <- list()
+  out$x$layout$shapes <- vector("list", sum(shape_counts))
+  out$x$layout$annotations <- vector("list", sum(annotation_counts))
+  out$x$layout$images <- vector("list", sum(image_counts))
+  out$x$visdat <- NULL
+  out$x$cur_data <- NULL
+
+  shared_xaxis <- layouts[[n]]$xaxis %||% layouts[[1]]$xaxis %||% list()
+  bottom_yaxis_name <- paste0("yaxis", if (n == 1L) "" else n)
+  shared_xaxis$domain <- c(0, 1)
+  shared_xaxis$anchor <- sub("^yaxis", "y", bottom_yaxis_name)
+  if (!isTRUE(titleX)) shared_xaxis$title <- list(text = "")
+  out$x$layout$xaxis <- shared_xaxis
+
+  out$x$layout$margin <- layouts[[1]]$margin %||% list(l = 0, r = 0, t = 0, b = 0, pad = 0)
+
+  trace_index <- 1L
+  attrs_index <- 1L
+  shape_index <- 1L
+  annotation_index <- 1L
+  image_index <- 1L
+
+  for (i in seq_len(n)) {
+    p <- built[[i]]
+    layout_i <- layouts[[i]]
+
+    yaxis_name <- axis_ref("yaxis", i)
+    ytrace_name <- axis_ref("y", i)
+
+    yaxis <- layout_i$yaxis %||% list()
+    yaxis$domain <- domains[[i]]
+    yaxis$anchor <- "x"
+    if (!isTRUE(titleY)) yaxis$title <- list(text = "")
+    out$x$layout[[yaxis_name]] <- yaxis
+
+    traces_i <- p$x$data %||% list()
+    if (length(traces_i)) {
+      for (j in seq_along(traces_i)) {
+        traces_i[[j]]$xaxis <- "x"
+        traces_i[[j]]$yaxis <- ytrace_name
+      }
+      idx <- trace_index:(trace_index + length(traces_i) - 1L)
+      out$x$data[idx] <- traces_i
+      trace_index <- trace_index + length(traces_i)
+    }
+
+    attrs_i <- p$x$attrs %||% list()
+    if (length(attrs_i)) {
+      idx <- attrs_index:(attrs_index + length(attrs_i) - 1L)
+      out$x$attrs[idx] <- attrs_i
+      attrs_index <- attrs_index + length(attrs_i)
+    }
+
+    shapes_i <- layout_i$shapes %||% list()
+    if (length(shapes_i)) {
+      for (j in seq_along(shapes_i)) {
+        shape <- shapes_i[[j]]
+        shape$xref <- remap_axis_ref(shape$xref %||% "x", "x", "x")
+        shape$yref <- remap_axis_ref(shape$yref %||% "y", ytrace_name, "y")
+        out$x$layout$shapes[[shape_index]] <- shape
+        shape_index <- shape_index + 1L
+      }
+    }
+
+    annotations_i <- layout_i$annotations %||% list()
+    if (length(annotations_i)) {
+      for (j in seq_along(annotations_i)) {
+        annotation <- annotations_i[[j]]
+        annotation$xref <- remap_axis_ref(annotation$xref %||% "x", "x", "x")
+        annotation$yref <- remap_axis_ref(annotation$yref %||% "y", ytrace_name, "y")
+        out$x$layout$annotations[[annotation_index]] <- annotation
+        annotation_index <- annotation_index + 1L
+      }
+    }
+
+    images_i <- layout_i$images %||% list()
+    if (length(images_i)) {
+      for (j in seq_along(images_i)) {
+        image <- images_i[[j]]
+        image$xref <- remap_axis_ref(image$xref %||% "x", "x", "x")
+        image$yref <- remap_axis_ref(image$yref %||% "y", ytrace_name, "y")
+        out$x$layout$images[[image_index]] <- image
+        image_index <- image_index + 1L
+      }
+    }
+  }
+
+  render_hooks <- unlist(lapply(built, function(p) p$jsHooks$render %||%
+                                  list()), recursive = FALSE)
+  if (length(render_hooks)) out$jsHooks$render <- render_hooks
+
+  deps <- unlist(lapply(built, function(p) p$dependencies %||% list()),
+                 recursive = FALSE)
+  if (length(deps)) {
+    dep_keys <- vapply(
+      deps,
+      function(d) paste(d$name %||% "", d$version %||% "", d$src$file %||%
+                          d$src$href %||% "", sep = "::"),
+      character(1)
+    )
+    out$dependencies <- deps[!duplicated(dep_keys)]
+  }
+
+  out
 }

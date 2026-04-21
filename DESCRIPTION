@@ -42,11 +42,13 @@ Imports:
   jsonlite,
   knitr,
   markdown,
+  matrixStats,
   NGLVieweR,
   plotly,
   rlang,
   rclipboard,
   RCurl,
+  Rsamtools,
   rtracklayer,
   shiny,
   shinycssloaders,
@@ -57,10 +59,14 @@ Imports:
   stringr,
   writexl
 Suggests:
-  testthat,
+  base64enc,
+  profvis,
   rmarkdown,
+  ragg,
+  testthat,
   BiocStyle, 
   BSgenome,
-  BSgenome.Hsapiens.UCSC.hg19
+  BSgenome.Hsapiens.UCSC.hg19,
+  withr
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr

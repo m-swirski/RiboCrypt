@@ -6,7 +6,7 @@ test_that("browser_tx_seqs_getSeq matches extractTranscriptSeqs for single-exon 
   tx <- tx_browser_tx_seqs[1]
   tx[[1]] <- tx[[1]][1]
 
-  expected <- GenomicFeatures::extractTranscriptSeqs(fa_browser_tx_seqs, tx)
+  expected <- GenomicFeatures::extractTranscriptSeqs(fa_browser_tx_seqs, tx)[[1]]
   observed <- browser_tx_seqs_getSeq(fa_browser_tx_seqs, tx)
   observed_no_names <- browser_tx_seqs_getSeq(fa_browser_tx_seqs, tx, keep.names = FALSE)
 
@@ -19,7 +19,7 @@ test_that("browser_tx_seqs_getSeq matches extractTranscriptSeqs for single-exon 
   tx <- tx_browser_tx_seqs[5]
   tx[[1]] <- tx[[1]][1]
 
-  expected <- GenomicFeatures::extractTranscriptSeqs(fa_browser_tx_seqs, tx)
+  expected <- GenomicFeatures::extractTranscriptSeqs(fa_browser_tx_seqs, tx)[[1]]
   observed <- browser_tx_seqs_getSeq(fa_browser_tx_seqs, tx)
   observed_no_names <- browser_tx_seqs_getSeq(fa_browser_tx_seqs, tx, keep.names = FALSE)
 
@@ -31,7 +31,7 @@ test_that("browser_tx_seqs_getSeq matches extractTranscriptSeqs for single-exon 
 test_that("browser_tx_seqs_getSeq matches extractTranscriptSeqs for multi-exon plus transcripts", {
   tx <- tx_browser_tx_seqs[1]
 
-  expected <- GenomicFeatures::extractTranscriptSeqs(fa_browser_tx_seqs, tx)
+  expected <- GenomicFeatures::extractTranscriptSeqs(fa_browser_tx_seqs, tx)[[1]]
   observed <- browser_tx_seqs_getSeq(fa_browser_tx_seqs, tx)
   observed_no_names <- browser_tx_seqs_getSeq(fa_browser_tx_seqs, tx, keep.names = FALSE)
 
@@ -43,7 +43,7 @@ test_that("browser_tx_seqs_getSeq matches extractTranscriptSeqs for multi-exon p
 test_that("browser_tx_seqs_getSeq matches extractTranscriptSeqs for multi-exon minus transcripts", {
   tx <- tx_browser_tx_seqs[5]
 
-  expected <- GenomicFeatures::extractTranscriptSeqs(fa_browser_tx_seqs, tx)
+  expected <- GenomicFeatures::extractTranscriptSeqs(fa_browser_tx_seqs, tx)[[1]]
   observed <- browser_tx_seqs_getSeq(fa_browser_tx_seqs, tx)
   observed_no_names <- browser_tx_seqs_getSeq(fa_browser_tx_seqs, tx, keep.names = FALSE)
 

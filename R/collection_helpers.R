@@ -13,7 +13,7 @@ load_collection <- function(path, grl = attr(path, "range"), columns = NULL) {
   index_provided <- basename(path) == "coverage_index.fst"
   if (index_provided) {
     if (!subset_defined) stop("When path is index, grl must be a defined GRangesList")
-    avoid_lapply_speedup <- length(columns) > 3000
+    avoid_lapply_speedup <- length(columns) > 3000 & widthPerGroup(grl) < 4e4
     if (avoid_lapply_speedup) {
       table <- coverageByTranscriptFST(grl, path, NULL)[[1]][, ..columns]
     } else table <- coverageByTranscriptFST(grl, path, columns)[[1]]
@@ -372,10 +372,10 @@ subset_fst_coord_by_region <- function(df, id, region_type) {
           }
         } else region <- loadRegion(df, part = region_type, names.keep = id)
       }
-  }
+    }
   if (!is.null(region)) {
     subset <- subset_coordinates_grl_to_ir(df, id = id, gene_mrna = gene_mrna,
-                                 subset = region)
+                                           subset = region)
     attr(subset, "region") <- region
     attr(subset, "full_region") <- region
 

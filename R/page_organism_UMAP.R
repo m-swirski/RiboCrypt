@@ -51,12 +51,36 @@ umap_server <- function(id, all_exp_meta, browser_options) {
   )
 }
 
-umap_plot <- function(dt_umap, color.by = attr(dt_umap, "color.by")) {
-  color.by.temp <- "color_column"
-  names(color.by.temp) <- stringr::str_to_title(paste(color.by, collapse = " | "))
-  color.by <- color.by.temp
-  groups_n <- data.table::uniqueN(dt_umap$color_column)
-  custom_palette <- grDevices::colorRampPalette(c(
+observatoryUmapPlotlyTemplate <- function() {
+  plotly::plotly_build(
+    plotly::plot_ly(
+      x = numeric(),
+      y = numeric(),
+      type = "scatter",
+      mode = "markers",
+      name = "",
+      legendgroup = "",
+      marker = list(size = 9, opacity = 0.75),
+      text = character(),
+      hovertemplate = "%{text}<extra></extra>",
+      showlegend = TRUE
+    ) %>%
+      plotly::layout(
+        xaxis = list(title = "UMAP 1", zeroline = FALSE),
+        yaxis = list(title = "UMAP 2", zeroline = FALSE),
+        legend = list(title = list(text = "")),
+        template = "plotly_white",
+        dragmode = "select"
+      ) |>
+      plotly::config(
+        displaylogo = FALSE,
+        modeBarButtons = list(list("select2d", "lasso2d"))
+      )
+  )
+}
+
+umap_plot_palette <- function(groups_n) {
+  grDevices::colorRampPalette(c(
     "#7A0403", # lava red
     "#FF6A00", # orange
     "#8B4513", # brown
@@ -68,7 +92,9 @@ umap_plot <- function(dt_umap, color.by = attr(dt_umap, "color.by")) {
     "#D65DB1", # pink
     "#F6B1B1"  # light red
   ))(max(groups_n, 3))
+}
 
+umap_plot_add_hover_text <- function(dt_umap) {
   dt_umap[, hover_text := paste0(
     "Bioproject ", BioProject, "<br />",
     "Run ID: ", sample, "<br />",
@@ -76,6 +102,68 @@ umap_plot <- function(dt_umap, color.by = attr(dt_umap, "color.by")) {
     "Inhibitor: ", inhibitors, "<br />",
     "Tissue | CellLine: ", tissues_cell_lines
   )]
+  dt_umap
+}
+
+umap_plot_from_template <- function(dt_umap, color.by, template) {
+  color_title <- stringr::str_to_title(paste(color.by, collapse = " | "))
+  dt_umap <- umap_plot_add_hover_text(dt_umap)
+  group_values <- as.character(dt_umap$color_column)
+  group_values[is.na(group_values)] <- "NA"
+  groups <- sort(unique(group_values))
+  if (length(groups) == 0) groups <- character()
+  palette <- umap_plot_palette(length(groups))
+
+  base_trace <- template$x$data[[1]]
+  traces <- vector("list", max(length(groups), 1L))
+
+  if (length(groups) == 0) {
+    trace <- base_trace
+    trace$x <- numeric()
+    trace$y <- numeric()
+    trace$text <- character()
+    trace$name <- ""
+    trace$legendgroup <- ""
+    trace$showlegend <- FALSE
+    traces[[1]] <- trace
+  } else {
+    for (i in seq_along(groups)) {
+      group <- groups[[i]]
+      group_dt <- dt_umap[group_values == group]
+      trace <- base_trace
+      trace$x <- group_dt[["UMAP 1"]]
+      trace$y <- group_dt[["UMAP 2"]]
+      trace$text <- group_dt$hover_text
+      trace$name <- group
+      trace$legendgroup <- group
+      trace$marker$color <- palette[[i]]
+      trace$showlegend <- TRUE
+      traces[[i]] <- trace
+    }
+  }
+
+  plot <- template
+  plot$x$data <- traces
+  plot$x$attrs <- list()
+  plot$x$layoutAttrs <- list()
+  plot$x$visdat <- NULL
+  plot$x$cur_data <- NULL
+  plot$x$layout$legend$title$text <- color_title
+  plot
+}
+
+umap_plot <- function(dt_umap, color.by = attr(dt_umap, "color.by"),
+                      template = NULL) {
+  color.by.temp <- "color_column"
+  names(color.by.temp) <- stringr::str_to_title(paste(color.by, collapse = " | "))
+  color.by <- color.by.temp
+  groups_n <- data.table::uniqueN(dt_umap$color_column)
+  custom_palette <- umap_plot_palette(groups_n)
+  if (inherits(template, "plotly")) {
+    return(umap_plot_from_template(dt_umap, names(color.by), template))
+  }
+
+  dt_umap <- umap_plot_add_hover_text(dt_umap)
 
   plotly::plot_ly(
     data = dt_umap,

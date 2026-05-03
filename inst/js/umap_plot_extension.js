@@ -4,6 +4,35 @@
   const sendSelection = (selection) => {
     Shiny.setInputValue(valuesInputId, selection, { priority: "event" });
   };
+  let suppressSelectionEvents = 0;
+
+  const releaseProgrammaticSelectionSync = () => {
+    const release = () => {
+      suppressSelectionEvents = Math.max(0, suppressSelectionEvents - 1);
+    };
+
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => window.requestAnimationFrame(release));
+    } else {
+      window.setTimeout(release, 50);
+    }
+  };
+  const runProgrammaticSelectionSync = (sync) => {
+    suppressSelectionEvents += 1;
+    let result = null;
+    try {
+      result = sync();
+    } catch (error) {
+      releaseProgrammaticSelectionSync();
+      throw error;
+    }
+
+    if (result && typeof result.then === "function") {
+      result.then(releaseProgrammaticSelectionSync, releaseProgrammaticSelectionSync);
+    } else {
+      releaseProgrammaticSelectionSync();
+    }
+  };
   const suppressEvent = (evt) => {
     if (!evt) return;
     if (typeof evt.preventDefault === "function") evt.preventDefault();
@@ -12,6 +41,7 @@
   };
 
   const onSelected = (e) => {
+    if (suppressSelectionEvents > 0) return;
     const selectedPoints = e && Array.isArray(e.points) ? e.points : [];
     const pointValuesToSet = selectedPoints.map((elem) => {
       return elem.text.split("<br />")[1].split(": ")[1]
@@ -21,6 +51,7 @@
     console.log(pointValuesToSet);
   };
   const onDeselected = () => {
+    if (suppressSelectionEvents > 0) return;
     sendSelection([]);
     console.log("onDeselected fired");
   };
@@ -49,7 +80,7 @@
   attachInnerDblclick();
   elem.on("plotly_afterplot", attachInnerDblclick);
 
-  onSelectionChanged = (message) => {
+  const onSelectionChanged = (message) => {
     let selected = null
     if (Array.isArray(message)) {
       selected = message;
@@ -88,11 +119,11 @@
     let updatedLayout = { ...elem.layout };
     updatedLayout["selections"] = [];
 
-    Plotly.react(elem, updatedData, updatedLayout);
+    runProgrammaticSelectionSync(() => Plotly.react(elem, updatedData, updatedLayout));
   };
   Shiny.addCustomMessageHandler("librariesActiveSelectionChanged", onSelectionChanged);
 
-  onSelectionReset = (_) => {
+  const onSelectionReset = (_) => {
     const tracesToUpdate = Array.from({ length: elem.data.length }, (_, i) => i + 1);
 
     let updatedData = [...elem.data]
@@ -103,7 +134,7 @@
     let updatedLayout = { ...elem.layout };
     updatedLayout["selections"] = [];
 
-    Plotly.react(elem, updatedData, updatedLayout);
+    runProgrammaticSelectionSync(() => Plotly.react(elem, updatedData, updatedLayout));
   };
   Shiny.addCustomMessageHandler("librariesActiveSelectionReset", onSelectionReset);
 };

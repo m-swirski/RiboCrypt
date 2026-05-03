@@ -100,6 +100,42 @@ test_that("observatory UMAP JS attaches robust double-click reset handlers", {
   expect_match(render_code, "selectedpoints\"\\] = null")
 })
 
+test_that("observatory UMAP JS suppresses programmatic Plotly selection feedback", {
+  render_code <- RiboCrypt:::fetchJS("umap_plot_extension.js")
+
+  expect_match(render_code, "suppressSelectionEvents")
+  expect_match(render_code, "runProgrammaticSelectionSync")
+  expect_match(render_code, "if \\(suppressSelectionEvents > 0\\) return;")
+  expect_match(render_code, "requestAnimationFrame")
+  expect_match(render_code, "runProgrammaticSelectionSync\\(\\(\\) => Plotly\\.react")
+})
+
+test_that("observatory UMAP plot reuses built plotly template", {
+  fixture <- make_observatory_selector_fixture()
+  template <- RiboCrypt:::observatoryUmapPlotlyTemplate()
+  dt <- data.table::copy(fixture$umap_df)
+  dt <- dt[c(3L, 1L, 2L, 5L, 4L)]
+  dt[, color_column := BioProject]
+
+  testthat::local_mocked_bindings(
+    plotly_build = function(...) stop("plotly_build should not be called"),
+    .package = "plotly"
+  )
+
+  p <- RiboCrypt:::umap_plot(dt, color.by = "BioProject", template = template)
+
+  expect_s3_class(p, "plotly")
+  expect_equal(length(p$x$data), data.table::uniqueN(dt$BioProject))
+  expect_equal(
+    vapply(p$x$data, `[[`, character(1), "name"),
+    sort(unique(dt$BioProject))
+  )
+  expect_equal(vapply(p$x$data, function(trace) length(trace$x), integer(1)), c(2L, 1L, 1L, 1L))
+  expect_equal(p$x$data[[1]]$marker$color, RiboCrypt:::umap_plot_palette(4L)[[1]])
+  expect_equal(template$x$layout$legend$title$text, "")
+  expect_equal(length(template$x$data[[1]]$x), 1L)
+})
+
 test_that("observatory selector harness initializes URL-backed selection state", {
   fixture <- make_observatory_selector_fixture()
   initial_state <- list(
@@ -207,6 +243,11 @@ test_that("observatory selection helper treats full-run selection as All merged"
   expect_true(RiboCrypt:::observatory_selection_is_all_merged(NULL, c("SRR1", "SRR2")))
   expect_true(RiboCrypt:::observatory_selection_is_all_merged(c("SRR2", "SRR1"), c("SRR1", "SRR2")))
   expect_false(RiboCrypt:::observatory_selection_is_all_merged(c("SRR1"), c("SRR1", "SRR2")))
+
+  expect_null(RiboCrypt:::observatory_normalize_plot_selection(NULL, c("SRR1", "SRR2")))
+  expect_null(RiboCrypt:::observatory_normalize_plot_selection(character(), c("SRR1", "SRR2")))
+  expect_null(RiboCrypt:::observatory_normalize_plot_selection(c("SRR2", "SRR1"), c("SRR1", "SRR2")))
+  expect_equal(RiboCrypt:::observatory_normalize_plot_selection(c("SRR1"), c("SRR1", "SRR2")), "SRR1")
 })
 
 test_that("observatory selector derives data-table selection from UMAP selection", {
@@ -741,6 +782,87 @@ test_that("observatory selector new selections start as All merged over all runs
       expect_equal(selected_libraries$labels()[["2"]], "All merged")
       expect_equal(sort(selected_libraries$plot_selections()[["2"]]), sort(fixture$libraries_df$Run))
       expect_equal(sort(selected_libraries$data_table_selections()[["2"]]), sort(fixture$libraries_df$Run))
+    }
+  )
+})
+
+test_that("observatory selector restores plot filtering when switching groups", {
+  fixture <- make_observatory_selector_fixture()
+  original_controller <- RiboCrypt:::observatory_selector_additional_controller
+  current_plot_selection <- NULL
+  filtered_libraries_df <- NULL
+
+  local_mocked_bindings(
+    allsamples_observer_controller = function(input, output, session) invisible(NULL),
+    create_observatory_module = function(meta_experiment_df, libraries_df) {
+      list(
+        get_libraries_data = function(library_types = c("RFP")) {
+          libraries_df[LIBRARYTYPE %in% library_types]
+        },
+        get_umap_data = function(color_by = c("tissue", "cell_line")) {
+          data.table::copy(fixture$umap_df)
+        }
+      )
+    },
+    observatory_selector_additional_controller = function(input, output, session, observatory) {
+      current_plot_selection <<- observatory$current_plot_selection
+      filtered_libraries_df <<- observatory$filtered_libraries_df
+      original_controller(input, output, session, observatory)
+    },
+    .package = "RiboCrypt"
+  )
+
+  shiny::testServer(
+    observatory_selector_harness_server,
+    args = list(
+      all_exp = fixture$all_exp,
+      experiment_df = fixture$experiment_df,
+      libraries_df = fixture$libraries_df,
+      browser_options = fixture$browser_options
+    ),
+    {
+      session$setInputs(
+        `selector-dff` = "exp-a",
+        `selector-color_by` = c("tissue"),
+        `selector-go` = 1
+      )
+      session$flushReact()
+
+      session$setInputs(`selector-library_selection-active_selection_label` = "custom all")
+      session$flushReact()
+
+      session$setInputs(`selector-library_selection-active_selection_id` = "New selection...")
+      session$flushReact()
+
+      session$setInputs(`selector-libraries_umap_plot_selection` = c("SRR1", "SRR3"))
+      session$flushReact()
+
+      session$setInputs(`selector-libraries_data_table_selected_runs` = c("SRR1", "SRR3"))
+      session$flushReact()
+
+      session$setInputs(`selector-library_selection-active_selection_label` = "custom subset")
+      session$flushReact()
+
+      expect_equal(current_plot_selection(), c("SRR1", "SRR3"))
+      expect_equal(filtered_libraries_df()$Run, c("SRR1", "SRR3"))
+
+      session$setInputs(`selector-library_selection-active_selection_id` = "1")
+      session$flushReact()
+
+      expect_null(current_plot_selection())
+      expect_equal(sort(filtered_libraries_df()$Run), sort(fixture$libraries_df$Run))
+      expect_equal(sort(selected_libraries$data_table_selections()[["1"]]), sort(fixture$libraries_df$Run))
+      expect_equal(selected_libraries$labels()[["1"]], "custom all")
+      expect_equal(selected_libraries$labels()[["2"]], "custom subset")
+
+      session$setInputs(`selector-library_selection-active_selection_id` = "2")
+      session$flushReact()
+
+      expect_equal(current_plot_selection(), c("SRR1", "SRR3"))
+      expect_equal(filtered_libraries_df()$Run, c("SRR1", "SRR3"))
+      expect_equal(sort(selected_libraries$data_table_selections()[["2"]]), c("SRR1", "SRR3"))
+      expect_equal(selected_libraries$labels()[["1"]], "custom all")
+      expect_equal(selected_libraries$labels()[["2"]], "custom subset")
     }
   )
 })

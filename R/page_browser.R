@@ -190,7 +190,6 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       study_and_gene_observers(input, output, session)
 
       # Main plot controller, this code is only run if 'plot' is pressed
-      i <- 1
       mainPlotControls <- reactive(click_plot_browser_main_controller(input, tx, cds, libs, df, user_info)) %>%
         bindCache(input_to_list(input, user_info())) %>%
         bindEvent(list(input$go, kickoff()), ignoreInit = TRUE, ignoreNULL = FALSE)

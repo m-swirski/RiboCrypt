@@ -36,7 +36,8 @@ observatory_server <- function(
     selections <- observatory_selector_server(
       "selector",
       all_exp, df, metadata, experiments, org, rv, browser_options,
-      observatory_url_state = observatory_url_state
+      observatory_url_state = observatory_url_state,
+      templates = templates
     )
 
     observatory_browser_server(

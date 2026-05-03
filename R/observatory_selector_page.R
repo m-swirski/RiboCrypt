@@ -122,10 +122,27 @@ observatory_selection_is_all_merged <- function(selected_runs, all_runs) {
   setequal(selected_runs, all_runs)
 }
 
-observatory_selector_umap_plot_shiny <- function(observatory_module, color_by, session) {
+observatory_normalize_plot_selection <- function(selected_runs, all_runs) {
+  if (is.null(selected_runs) || length(selected_runs) == 0) {
+    return(NULL)
+  }
+
+  selected_runs <- unique(as.character(selected_runs))
+  if (observatory_selection_is_all_merged(selected_runs, all_runs)) {
+    return(NULL)
+  }
+
+  selected_runs
+}
+
+observatory_selector_umap_plot_shiny <- function(observatory_module, color_by, session,
+                                                 templates = NULL) {
   time_before <- Sys.time()
   p <- observatory_module$get_umap_data(color_by) |>
-    umap_plot(color.by = color_by) |>
+    umap_plot(
+      color.by = color_by,
+      template = templates$observatory_umap_plotly
+    ) |>
     htmlwidgets::onRender(
       fetchJS("umap_plot_extension.js"),
       session$ns("libraries_umap_plot_selection")
@@ -359,6 +376,27 @@ observatory_selector_additional_controller <- function(input, output, session, o
 
   data_table_filters <- shiny::reactiveVal(list())
   last_active_selection_id <- shiny::reactiveVal(NULL)
+  restoring_active_plot_selection <- shiny::reactiveVal(FALSE)
+
+  with_active_plot_restore <- function(expr) {
+    restoring_active_plot_selection(TRUE)
+    session$onFlushed(
+      function() restoring_active_plot_selection(FALSE),
+      once = TRUE
+    )
+    force(expr)
+  }
+
+  restore_active_plot_selection <- function(selection_id) {
+    plot_sel <- selected_libraries$all_selections$plot_selections()[[selection_id]]
+    plot_sel <- observatory_normalize_plot_selection(plot_sel, libraries_df()$Run)
+    if (identical(current_plot_selection(), plot_sel)) {
+      return(invisible(NULL))
+    }
+
+    with_active_plot_restore(current_plot_selection(plot_sel))
+    invisible(NULL)
+  }
 
   apply_data_table_filters <- function(selection_id) {
     filters <- data_table_filters()[[selection_id]]
@@ -415,6 +453,10 @@ observatory_selector_additional_controller <- function(input, output, session, o
       input$libraries_data_table_selected_runs
     ),
     {
+      if (shiny::isolate(restoring_active_plot_selection())) {
+        return()
+      }
+
       selection_value <- tryCatch(data_table_selection(), error = function(e) NULL)
       data_table_selection_val(selection_value)
     },
@@ -423,6 +465,10 @@ observatory_selector_additional_controller <- function(input, output, session, o
 
   shiny::observe({
     shiny::req(selected_libraries$active_selection_id())
+    if (shiny::isolate(restoring_active_plot_selection())) {
+      return()
+    }
+
     plot_sel <- current_plot_selection()
     if (!is.null(plot_sel) && length(plot_sel) != 0) {
       return()
@@ -452,6 +498,10 @@ observatory_selector_additional_controller <- function(input, output, session, o
 
   shiny::observe({
     shiny::req(selected_libraries$active_selection_id())
+    if (shiny::isolate(restoring_active_plot_selection())) {
+      return()
+    }
+
     plot_sel <- current_plot_selection()
     if (is.null(plot_sel) || length(plot_sel) == 0) return()
 
@@ -477,6 +527,7 @@ observatory_selector_additional_controller <- function(input, output, session, o
       data_table_filters(filters)
     }
     last_active_selection_id(selection_id)
+    restore_active_plot_selection(selection_id)
     apply_data_table_filters(selection_id)
     apply_data_table_selection(selection_id)
   }) |> shiny::bindEvent(selected_libraries$active_selection_id())
@@ -577,7 +628,8 @@ observatory_selector_server <- function(
   meta_experiment_list,
   meta_experiment_df,
   all_libraries_df, experiments, org, rv, browser_options,
-  observatory_url_state = shiny::reactiveVal(NULL)
+  observatory_url_state = shiny::reactiveVal(NULL),
+  templates = NULL
 ) {
   shiny::moduleServer(id, function(input, output, session) {
     allsamples_observer_controller(input, output, session)
@@ -633,7 +685,8 @@ observatory_selector_server <- function(
       observatory_selector_umap_plot_shiny(
         observatory_module = observatory_module(),
         color_by = input$color_by,
-        session = session
+        session = session,
+        templates = templates
       )
     }) |> shiny::bindCache(name(meta_experiment_df()), input$color_by) |> shiny::bindEvent(observatory_module())
 

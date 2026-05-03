@@ -351,6 +351,65 @@ test_that("browser profile helpers delegate to named builder functions", {
   expect_equal(profiles[[2]]$log_scale, TRUE)
 })
 
+test_that("get_zoom_range_controller returns parsed zoom range without modal", {
+  modal_calls <- list()
+
+  testthat::local_mocked_bindings(
+    showModal = function(...) {
+      modal_calls[[length(modal_calls) + 1L]] <<- list(...)
+      invisible(NULL)
+    },
+    modalDialog = function(...) list(...),
+    .package = "RiboCrypt"
+  )
+
+  zoom_range <- RiboCrypt:::get_zoom_range_controller(
+    zoom_range = "10:20",
+    display_region = tx[1],
+    max_size = 1e6,
+    viewMode = FALSE,
+    leader_extension = 0,
+    trailer_extension = 0
+  )
+
+  expect_identical(zoom_range, c(10, 20))
+  expect_length(modal_calls, 0)
+})
+
+test_that("get_zoom_range_controller shows modal when parser returns message", {
+  modal_calls <- list()
+
+  testthat::local_mocked_bindings(
+    get_zoom_range = function(...) {
+      range <- numeric(0)
+      attr(range, "message") <- "Zoom range not overlapping displayed region."
+      range
+    },
+    modalDialog = function(title, ...) list(title = title, body = list(...)),
+    showModal = function(dialog) {
+      modal_calls[[length(modal_calls) + 1L]] <<- dialog
+      invisible(NULL)
+    },
+    .package = "RiboCrypt"
+  )
+
+  zoom_range <- RiboCrypt:::get_zoom_range_controller(
+    zoom_range = "chr1:1-10",
+    display_region = tx[1],
+    max_size = 1e6,
+    viewMode = TRUE,
+    leader_extension = 0,
+    trailer_extension = 0
+  )
+
+  expect_type(zoom_range, "double")
+  expect_length(zoom_range, 0)
+  expect_identical(attr(zoom_range, "message"), "Zoom range not overlapping displayed region.")
+  expect_length(modal_calls, 1)
+  expect_identical(modal_calls[[1]]$title, "Invalid zoom range")
+  expect_identical(modal_calls[[1]]$body[[1]], "Zoom range not overlapping displayed region.")
+})
+
 test_that("multiOmicsControllerView supports default selected_libraries", {
   env <- rlang::env(
     reads = list(1, 2),

@@ -114,6 +114,7 @@ rc_parameter_setup <- function() {
       allsamples_sidebar_numeric_plotly = allsamplesSidebarNumericPlotlyTemplate(),
       allsamples_sidebar_categorical_plotly = allsamplesSidebarCategoricalPlotlyTemplate(),
       allsamples_sidebar_cluster_label_plotly = allsamplesSidebarClusterLabelPlotlyTemplate(),
+      observatory_umap_plotly = observatoryUmapPlotlyTemplate(),
       megabrowser_heatmap_plotly = megabrowserHeatmapPlotlyTemplate(),
       cov_panel_with_frames_plotly = covPanelWithFramesPlotlyTemplate(),
       cov_panel_without_frames_plotly = covPanelWithoutFramesPlotlyTemplate(),

@@ -46,6 +46,29 @@ browser_collection_controller_data <- function(input, selected_tx, display_regio
   )
 }
 
+get_zoom_range_controller <- function(zoom_range, display_region, max_size,
+                                      viewMode, leader_extension, trailer_extension,
+                                      zoom_range_flank = 10) {
+  zoom_range <- get_zoom_range(
+    zoom_range = zoom_range,
+    display_region = display_region,
+    max_size = max_size,
+    viewMode = viewMode,
+    leader_extension = leader_extension,
+    trailer_extension = trailer_extension,
+    zoom_range_flank = zoom_range_flank
+  )
+
+  if (!is.null(attr(zoom_range, "message"))) {
+    showModal(modalDialog(
+      title = "Invalid zoom range",
+      attr(zoom_range, "message")
+    ))
+  }
+
+  zoom_range
+}
+
 click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_info,
                                                library_selections = NULL,
                                                library_selection_labels = NULL) {
@@ -82,21 +105,19 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
                                             isolate(input$extendLeaders),
                                             isolate(input$extendTrailers),
                                             collapsed_introns_width)
-    zoom_range <- get_zoom_range(isolate(input$zoom_range), display_region,
-                                 max_size = 1e6, isolate(input$viewMode),
-                                 isolate(input$extendLeaders),
-                                 isolate(input$extendTrailers))
-
-    if (!is.null(attr(zoom_range, "message"))) {
-      showModal(modalDialog(
-        title = "Invalid zoom range",
-        attr(zoom_range, "message")
-      ))
-    }
+    zoom_range <- get_zoom_range_controller(
+      zoom_range = isolate(input$zoom_range),
+      display_region = display_region,
+      max_size = 1e6,
+      viewMode = isolate(input$viewMode),
+      leader_extension = isolate(input$extendLeaders),
+      trailer_extension = isolate(input$extendTrailers)
+    )
 
     profiles <- NULL
     selected_library_groups <- NULL
     if (is_observatory) {
+      lib_labels <- if (is.null(library_selection_labels)) NULL else library_selection_labels()
       collection_data <- browser_collection_controller_data(
         input = input,
         selected_tx = isolate(input$tx),
@@ -104,7 +125,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
         experiment_df = df(),
         tx = tx,
         library_selections = library_selections(),
-        library_selection_labels = if (is.null(library_selection_labels)) NULL else library_selection_labels()
+        library_selection_labels = lib_labels
       )
       dff <- collection_data$dff
       reads <- collection_data$reads
@@ -113,7 +134,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
       withFrames <- rep(isTRUE(isolate(input$withFrames)), length(profiles))
     } else {
       dff <- observed_exp_subset(isolate(input$library), libs, df)
-      if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now, use megabrowser!")
+      if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now,
+                                use Observatory Browser / Megabrowser")
       reads <- get_track_paths(dff)
       if (isolate(input$withFrames)) {
         withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
@@ -135,8 +157,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
     frame_colors <- isolate(input$colors)
     colors <- NULL
 
-
-    cat("-- Browser controller done: "); print(round(Sys.time() - time_before, 2))
+    timer_done_nice_print("-- Browser controller done: ", time_before)
     reactiveValues(dff = dff,
                    display_region = display_region,
                    customRegions = customRegions,

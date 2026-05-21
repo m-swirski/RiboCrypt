@@ -687,27 +687,101 @@ geneModelPanelPlotTemplate <- function() {
 
 # Pure plotly version (no ggplot/ggplotly)
 geneModelPanelPlotlyTemplate <- function() {
-  plotly::plot_ly(
-    x = numeric(0),
-    y = numeric(0),
-    type = "scatter",
-    mode = "markers",
-    hoverinfo = "skip",
-    showlegend = FALSE
-  ) %>%
-    plotly::layout(
-      showlegend = FALSE,
-      margin = list(l = 0, r = 0, b = 0, t = 0),
-      paper_bgcolor = "white",
-      plot_bgcolor  = "white",
-      hovermode = "closest"
-    )
+  p <- plotly::plotly_build(
+    plotly::plot_ly(
+      x = numeric(0),
+      y = numeric(0),
+      type = "scatter",
+      mode = "markers",
+      hoverinfo = "skip",
+      showlegend = FALSE
+    ) %>%
+      plotly::layout(
+        showlegend = FALSE,
+        margin = list(l = 0, r = 0, b = 0, t = 0),
+        paper_bgcolor = "white",
+        plot_bgcolor  = "white",
+        hovermode = "closest"
+      )
+  )
+  p$x$data <- list()
+  p$x$attrs <- list()
+  p$x$layoutAttrs <- list()
+  p$x$visdat <- NULL
+  p$x$cur_data <- NULL
+  p
 }
 
+gene_model_panel_prepare_template <- function(template) {
+  if (!inherits(template, "plotly")) template <- geneModelPanelPlotlyTemplate()
+  is_materialized <- !is.null(template$x$data) &&
+    !is.null(template$x$layout) &&
+    length(template$x$layoutAttrs %||% list()) == 0L
+  if (!is_materialized) template <- suppressWarnings(plotly::plotly_build(template))
+  template$x$data <- list()
+  template$x$attrs <- list()
+  template$x$layoutAttrs <- list()
+  template$x$visdat <- NULL
+  template$x$cur_data <- NULL
+  if (is.null(template$x$layout)) template$x$layout <- list()
+  template
+}
+
+gene_model_marker_trace <- function(x, y, text, size) {
+  list(
+    x = x,
+    y = y,
+    type = "scatter",
+    mode = "markers",
+    marker = list(opacity = 0, size = size),
+    text = text,
+    hovertext = text,
+    hoverinfo = "text",
+    showlegend = FALSE
+  )
+}
+
+gene_model_text_trace <- function(x, y, text, hovertext = NULL,
+                                  textfont = list(color = "black", size = 16),
+                                  showlegend = FALSE, name = NULL,
+                                  legendgroup = NULL,
+                                  hoverinfo = "skip") {
+  trace <- list(
+    x = x,
+    y = y,
+    type = "scatter",
+    mode = "text",
+    text = text,
+    textposition = "middle center",
+    textfont = textfont,
+    hoverinfo = hoverinfo,
+    showlegend = showlegend
+  )
+  if (!is.null(hovertext)) trace$hovertext <- hovertext
+  if (!is.null(name)) trace$name <- name
+  if (!is.null(legendgroup)) trace$legendgroup <- legendgroup
+  trace
+}
+
+gene_model_set_base_layout <- function(p, xaxis, yaxis) {
+  p$x$layout$xaxis <- xaxis
+  p$x$layout$yaxis <- yaxis
+  p$x$layout$showlegend <- FALSE
+  p$x$layout$margin <- margin_megabrowser()
+  p$x$layout$paper_bgcolor <- "white"
+  p$x$layout$plot_bgcolor <- "white"
+  p$x$layout$hovermode <- "closest"
+  p$x$config$displayModeBar <- FALSE
+  p
+}
+
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
 geneModelPanelPlotly <- function(dt, template = geneModelPanelPlotlyTemplate()) {
+  p <- gene_model_panel_prepare_template(template)
+
   # If no annotation given, return blank plotly
   if (is.null(dt) || nrow(dt) == 0) {
-    p <- template
     p$x$data <- list(list(
       x = 0,
       y = 0,
@@ -717,14 +791,11 @@ geneModelPanelPlotly <- function(dt, template = geneModelPanelPlotlyTemplate()) 
       hoverinfo = "skip",
       showlegend = FALSE
     ))
-    return(p %>%
-             plotly::layout(
-               xaxis = list(visible = FALSE),
-               yaxis = list(visible = FALSE),
-               margin = list(l = 0, r = 0, b = 0, t = 0),
-               paper_bgcolor = "white",
-               plot_bgcolor  = "white"
-             ))
+    return(gene_model_set_base_layout(
+      p,
+      xaxis = list(visible = FALSE),
+      yaxis = list(visible = FALSE)
+    ))
   }
 
   stopifnot(is(dt, "data.table"))
@@ -750,21 +821,21 @@ geneModelPanelPlotly <- function(dt, template = geneModelPanelPlotlyTemplate()) 
   y_max <- max(box_dt$ymax, if (nrow(seg_dt)) (0.5 - seg_dt$layers) else -Inf, na.rm = TRUE) + 0.05
 
   all_shapes <- list()
-  p <- template %>%
-    plotly::layout(
-      xaxis = list(
-        visible = FALSE,
-        range = c(x_min, x_max),
-        fixedrange = FALSE,
-        zeroline = FALSE
-      ),
-      yaxis = list(
-        visible = FALSE,
-        range = c(y_min, y_max),
-        fixedrange = TRUE,
-        zeroline = FALSE
-      )
+  p <- gene_model_set_base_layout(
+    p,
+    xaxis = list(
+      visible = FALSE,
+      range = c(x_min, x_max),
+      fixedrange = FALSE,
+      zeroline = FALSE
+    ),
+    yaxis = list(
+      visible = FALSE,
+      range = c(y_min, y_max),
+      fixedrange = TRUE,
+      zeroline = FALSE
     )
+  )
 
   # --- Introns as line shapes rendered behind boxes ---
   if (nrow(seg_dt) > 0) {
@@ -783,17 +854,12 @@ geneModelPanelPlotly <- function(dt, template = geneModelPanelPlotlyTemplate()) 
     })
     all_shapes <- c(all_shapes, seg_shapes)
 
-    p <- p %>%
-      plotly::add_markers(
-        data = seg_dt,
-        x = ~(rect_starts + rect_ends) / 2,
-        y = ~(0.5 - layers),
-        marker = list(opacity = 0, size = 10),
-        text = ~gene_names,
-        hovertext = ~gene_names,
-        hoverinfo = "text",
-        showlegend = FALSE
-      )
+    p$x$data[[length(p$x$data) + 1L]] <- gene_model_marker_trace(
+      x = (seg_dt$rect_starts + seg_dt$rect_ends) / 2,
+      y = 0.5 - seg_dt$layers,
+      text = seg_dt$gene_names,
+      size = 10
+    )
 
     # Collapsed intron label "..."
     intron_flank_coords <- seg_dt[type %in% c("intron_collapsed")]
@@ -803,16 +869,14 @@ geneModelPanelPlotly <- function(dt, template = geneModelPanelPlotlyTemplate()) 
         ymid = 0.5 - layers,
         tooltip = "Collapsed Intron"
       )]
-      p <- p %>%
-        plotly::add_text(
-          data = intron_flank_coords,
-          x = ~xmid, y = ~ymid,
-          text = "...",
-          textposition = "middle center",
-          textfont = list(size = 18, color = "black"),
-          hovertext = ~tooltip,
-          hoverinfo = "text"
-        )
+      p$x$data[[length(p$x$data) + 1L]] <- gene_model_text_trace(
+        x = intron_flank_coords$xmid,
+        y = intron_flank_coords$ymid,
+        text = rep("...", nrow(intron_flank_coords)),
+        hovertext = intron_flank_coords$tooltip,
+        textfont = list(size = 18, color = "black"),
+        hoverinfo = "text"
+      )
     }
   }
 
@@ -839,15 +903,12 @@ geneModelPanelPlotly <- function(dt, template = geneModelPanelPlotlyTemplate()) 
       ymid = (ymin + ymax) / 2
     )]
 
-    p <- p %>%
-      plotly::add_markers(
-        data = box_dt,
-        x = ~xmid, y = ~ymid,
-        marker = list(opacity = 0, size = 12),
-        text = ~gene_names,
-        hovertext = ~gene_names,
-        hoverinfo = "text"
-      )
+    p$x$data[[length(p$x$data) + 1L]] <- gene_model_marker_trace(
+      x = box_dt$xmid,
+      y = box_dt$ymid,
+      text = box_dt$gene_names,
+      size = 12
+    )
 
     # Gene name labels per (layer, gene_names) at mean(labels_locations)
     lab_dt <- box_dt[, .(
@@ -855,25 +916,17 @@ geneModelPanelPlotly <- function(dt, template = geneModelPanelPlotlyTemplate()) 
       labels_locations = mean(labels_locations)
     ), by = gene_names]
 
-    p <- p %>%
-      plotly::add_text(
-        data = lab_dt,
-        x = ~labels_locations,
-        y = ~(0.50 - layers),
-        text = ~gene_names,
-        textposition = "middle center",
-        textfont = list(color = "black", size = 16),
-        hoverinfo = "skip",
-        name = "id",
-        legendgroup = "id",
-        showlegend = TRUE
-      )
+    p$x$data[[length(p$x$data) + 1L]] <- gene_model_text_trace(
+      x = lab_dt$labels_locations,
+      y = 0.50 - lab_dt$layers,
+      text = lab_dt$gene_names,
+      name = "id",
+      legendgroup = "id",
+      showlegend = TRUE
+    )
   }
-  if (length(all_shapes) > 0) {
-    p <- p %>% plotly::layout(shapes = all_shapes)
-  }
-  p %>% plotly::config(displayModeBar = FALSE) %>%
-    plotly::layout(margin = margin_megabrowser())
+  p$x$layout$shapes <- all_shapes
+  p
 }
 
 margin_megabrowser <- function() {

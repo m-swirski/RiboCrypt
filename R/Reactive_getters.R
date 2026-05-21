@@ -38,15 +38,16 @@ get_exp <- function(exp_name, experiments, env,
 bottom_panel_shiny <- function(mainPlotControls, templates = NULL) {
   time_before <- Sys.time()
   print("Creating bottom panel..")
-  viewMode <- ifelse(mainPlotControls()$viewMode, "genomic", "tx")
-  df <- mainPlotControls()$dff
-  is_cellphone <- mainPlotControls()$is_cellphone
+  controls <- mainPlotControls()
+  viewMode <- ifelse(controls$viewMode, "genomic", "tx")
+  df <- controls$dff
+  is_cellphone <- controls$is_cellphone
   annotation_list <- annotation_controller(
     df = df,
-    display_range = mainPlotControls()$display_region,
-    annotation = mainPlotControls()$annotation,
-    leader_extension = mainPlotControls()$extendLeaders,
-    trailer_extension = mainPlotControls()$extendTrailers,
+    display_range = controls$display_region,
+    annotation = controls$annotation,
+    leader_extension = controls$extendLeaders,
+    trailer_extension = controls$extendTrailers,
     viewMode = viewMode
   )
 
@@ -55,17 +56,17 @@ bottom_panel_shiny <- function(mainPlotControls, templates = NULL) {
     annotation_list$display_range,
     annotation_list$annotation,
     start_codons = "ATG", stop_codons = c("TAA", "TAG", "TGA"),
-    custom_motif = mainPlotControls()$custom_sequence,
-    custom_regions = mainPlotControls()$customRegions,
+    custom_motif = controls$custom_sequence,
+    custom_regions = controls$customRegions,
     viewMode,
-    tx_annotation = mainPlotControls()$tx_annotation,
-    mainPlotControls()$collapsed_introns_width,
-    mainPlotControls()$frame_colors,
+    tx_annotation = controls$tx_annotation,
+    controls$collapsed_introns_width,
+    controls$frame_colors,
     templates = templates
   )
   custom_bigwig_panels <- custom_seq_track_panels(
     df, annotation_list$display_range,
-    mainPlotControls()$phyloP, mainPlotControls()$mapability
+    controls$phyloP, controls$mapability
   )
   bottom_panel <- c(bottom_panel, annotation_list, custom_bigwig_panels,
     ncustom = length(custom_bigwig_panels[[1]])
@@ -194,6 +195,24 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       templates = NULL) {
   time_before <- Sys.time()
   print("Creating track panel..")
+  controls <- mainPlotControls()
+  if (missing(reads)) reads <- controls$reads
+  if (missing(withFrames)) withFrames <- controls$withFrames
+  if (missing(viewMode)) viewMode <- ifelse(controls$viewMode, "genomic", "tx")
+  if (missing(frames_type)) frames_type <- controls$frames_type
+  if (missing(frame_colors)) frame_colors <- controls$frame_colors
+  if (missing(colors)) colors <- controls$colors
+  if (missing(kmers)) kmers <- controls$kmerLength
+  if (missing(ylabels)) ylabels <- bamVarName(controls$dff)
+  if (missing(seq_render_dist)) {
+    seq_render_dist <- ifelse(controls$is_cellphone, 100, 250)
+  }
+  if (missing(log_scale)) log_scale <- controls$log_scale
+  if (missing(summary_track)) summary_track <- controls$summary_track
+  if (missing(summary_track_type)) summary_track_type <- controls$summary_track_type
+  if (missing(export.format)) export.format <- controls$export_format
+  if (missing(zoom_range)) zoom_range <- controls$zoom_range
+  if (missing(frames_subset)) frames_subset <- controls$frames_subset
   # Input controller
   multiOmicsControllerView(use_fst, selected_libraries)
   # Get NGS data track panels

@@ -247,8 +247,12 @@ input_to_list <- function(input, user_info = NULL) {
   a <- reactiveValuesToList(input, TRUE)
   to_ignore <- c("go", "toggle_settings", "select_all_btn")
   resize_input_pattern <- "(__shinyjquiBookmarkState__resizable|_is_resizing|_size)$"
+  # Client dimensions arrive after initial render and vary per session. They do
+  # not affect browser plot construction, so they must not fragment the cache.
+  cache_user_info <- user_info[-1]
+  cache_user_info <- cache_user_info[setdiff(names(cache_user_info), c("width", "height"))]
 
   a <- a[-which(names(a) %in% to_ignore | grepl(resize_input_pattern, names(a)))]
-  a <- c(a, user.info = user_info[-1])
+  a <- c(a, user.info = cache_user_info)
   return(a)
 }

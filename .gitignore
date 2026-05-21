@@ -11,3 +11,4 @@ renv.lock
 /renv/
 
 renv/
+dominant_cell_states/

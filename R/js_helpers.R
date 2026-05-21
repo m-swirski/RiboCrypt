@@ -1,12 +1,18 @@
+fetchJS_cache <- new.env(parent = emptyenv())
+
 fetchJS <- function(script_name) {
   # if (script_name == "render_on_zoom.js") {
   #   message("Using local render script!")
   #   script <- "~/Desktop/forks/RiboCrypt/inst/js/render_on_zoom.js"
   # } else
+  cached <- fetchJS_cache[[script_name]]
+  if (!is.null(cached)) return(cached)
   script <- system.file("js", script_name, package =
                          "RiboCrypt")
-  lines <- readLines(script)
-  paste(lines, sep = "", collapse = "\n")
+  lines <- readLines(script, warn = FALSE)
+  cached <- paste(lines, sep = "", collapse = "\n")
+  fetchJS_cache[[script_name]] <- cached
+  cached
 }
 
 #' Fetch Javascript sequence

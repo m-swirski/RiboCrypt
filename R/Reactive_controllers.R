@@ -78,6 +78,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
     if (is.null(user_info)) {
       user_info <- function() list(is_cellphone = FALSE, width = NULL)
     }
+    user_info_value <- user_info()
 
     # Annotation
     display_region <- observed_tx_annotation(isolate(input$tx), tx)
@@ -143,7 +144,10 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
     }
 
     # Hash strings for cache
-    hash_strings <- hash_strings_browser(input, dff, collapsed_introns_width)
+    hash_strings <- hash_strings_browser(
+      input, dff, collapsed_introns_width,
+      is_cellphone = user_info_value$is_cellphone
+    )
     if (is_observatory) {
       hash_strings <- lapply(hash_strings, paste,
                              paste(selected_library_groups, collapse = "|sel|"),
@@ -184,8 +188,8 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
                    colors = colors,
                    library_selections = selected_library_groups,
                    profiles = profiles,
-                   is_cellphone = user_info()$is_cellphone,
-                   user_browser_width = user_info()$width,
+                   is_cellphone = user_info_value$is_cellphone,
+                   user_browser_width = user_info_value$width,
                    hash_bottom = hash_strings[["hash_bottom"]],
                    hash_browser = hash_strings[["hash_browser"]],
                    hash_expression = hash_strings[["hash_expression"]])

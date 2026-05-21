@@ -163,7 +163,15 @@ test_that("input_to_list drops ignored inputs and adds user info", {
   )
   res <- shiny::isolate(RiboCrypt:::input_to_list(
     input,
-    list(id = "user-1", browser = "firefox")
+    list(userAgent = "desktop", is_cellphone = FALSE, width = 1200, height = 700)
+  ))
+  resized <- shiny::isolate(RiboCrypt:::input_to_list(
+    input,
+    list(userAgent = "desktop", is_cellphone = FALSE, width = 800, height = 500)
+  ))
+  cellphone <- shiny::isolate(RiboCrypt:::input_to_list(
+    input,
+    list(userAgent = "android", is_cellphone = TRUE, width = 800, height = 500)
   ))
   expect_true("gene" %in% names(res))
   expect_true("tx" %in% names(res))
@@ -176,8 +184,30 @@ test_that("input_to_list drops ignored inputs and adds user info", {
   expect_false("browser_plot__shinyjquiBookmarkState__resizable" %in% names(res))
   expect_false("browser_plot_is_resizing" %in% names(res))
   expect_false("browser_plot_size" %in% names(res))
-  expect_true("user.info.browser" %in% names(res))
-  expect_equal(res[["user.info.browser"]], "firefox")
+  expect_true("user.info.is_cellphone" %in% names(res))
+  expect_false(res[["user.info.is_cellphone"]])
+  expect_false("user.info.width" %in% names(res))
+  expect_false("user.info.height" %in% names(res))
+  expect_identical(res, resized)
+  expect_false(identical(res, cellphone))
+})
+
+test_that("browser plot hashes keep cellphone panels out of desktop caches", {
+  input <- list(
+    tx = names(tx)[1],
+    collapsed_introns_width = 0,
+    colors = "R"
+  )
+
+  desktop <- RiboCrypt:::hash_strings_browser(
+    input, df[1, ], ciw = 0, is_cellphone = FALSE
+  )
+  cellphone <- RiboCrypt:::hash_strings_browser(
+    input, df[1, ], ciw = 0, is_cellphone = TRUE
+  )
+
+  expect_false(identical(desktop$hash_bottom, cellphone$hash_bottom))
+  expect_false(identical(desktop$hash_browser, cellphone$hash_browser))
 })
 
 test_that("go_when_input_is_ready triggers kickoff when inputs match", {
@@ -483,6 +513,20 @@ test_that("bottom_panel_shiny handles transcript view", {
   expect_false(isTRUE(bottom_panel$seq_nt_panel$x$layoutAttrs[[1]]$yaxis$showticklabels))
 })
 
+test_that("bottom_panel_shiny reads plot controls once", {
+  controls <- make_bottom_panel_test_controls(viewMode = FALSE, df, tx, cds)
+  calls <- 0L
+  counted_controls <- function() {
+    calls <<- calls + 1L
+    controls$controls()
+  }
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(counted_controls)
+
+  expect_equal(calls, 1L)
+  expect_equal(ORFik::widthPerGroup(bottom_panel$display_range, FALSE), 551)
+})
+
 test_that("bottom_panel_shiny applies 5' and 3' extensions", {
   original_size <- widthPerGroup(tx[1], FALSE)
   extendLeaders <- 10
@@ -660,6 +704,62 @@ test_that("browser_track_panel_shiny handles area tracks with 9-mers", {
   expect_gt(length(plot$x$data), 0)
 })
 
+test_that("browser_track_panel_shiny keeps closest hover for frame coverage", {
+  fixture <- make_browser_track_test_fixture(frames_type = "lines", kmers = 1,
+                                             df, tx, cds)
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(fixture$controls)
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+
+  plot <- RiboCrypt:::browser_track_panel_shiny(
+    fixture$controls,
+    bottom_panel,
+    fixture$session,
+    profiles = list(profile)
+  )
+
+  frame_traces <- Filter(function(tr) {
+    !is.null(tr$name) && as.character(tr$name[[1]]) %in% c("0", "1", "2") &&
+      isTRUE(tr$showlegend)
+  }, plot$x$data)
+  frame_hover_templates <- vapply(frame_traces, function(tr) {
+    paste(tr$hovertemplate, collapse = "\n")
+  }, character(1))
+
+  expect_identical(plot$x$layout$hovermode, "closest")
+  expect_length(frame_traces, 3)
+  expect_true(all(grepl("frame: %\\{fullData.name\\}", frame_hover_templates)))
+})
+
+test_that("browser_track_panel_shiny reads plot controls once when defaults are used", {
+  fixture <- make_browser_track_test_fixture(frames_type = "area", kmers = 1,
+                                             df, tx, cds)
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(fixture$controls)
+  calls <- 0L
+  counted_controls <- function() {
+    calls <<- calls + 1L
+    fixture$controls()
+  }
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+
+  plot <- RiboCrypt:::browser_track_panel_shiny(
+    counted_controls,
+    bottom_panel,
+    fixture$session,
+    profiles = list(profile)
+  )
+
+  expect_equal(calls, 1L)
+  expect_s3_class(plot, "plotly")
+})
+
 test_that("browser_track_panel_shiny handles column tracks with single-nucleotide bins", {
   fixture <- make_browser_track_test_fixture(frames_type = "columns", kmers = 1,
                                              df, tx, cds)
@@ -811,6 +911,14 @@ test_that("lineDeSimplify only updates pure line traces", {
   expect_null(built$x$data[[2]]$line$simplify)
 })
 
+test_that("fetchJS returns stable packaged scripts", {
+  script <- RiboCrypt:::fetchJS("render_on_zoom.js")
+
+  expect_type(script, "character")
+  expect_identical(script, RiboCrypt:::fetchJS("render_on_zoom.js"))
+  expect_match(script, "Plotly")
+})
+
 test_that("plotAASeqPanelPlotly hides frame tick labels", {
   hits <- data.table::data.table(
     col = "white",
@@ -915,6 +1023,65 @@ test_that("browser_legend_cleanup keeps gene id legend item alongside frame lege
   expect_equal(sort(legend_names[nzchar(legend_names)]), c("0", "1", "2", "id"))
 })
 
+test_that("fast_subplot_shared_x keeps browser hover closest like plotly subplot", {
+  profile <- data.table::data.table(
+    position = rep(1:4, each = 3),
+    count = c(1, 2, 3, 2, 1, 2, 3, 2, 1, 1, 3, 2),
+    frame = factor(rep(0:2, 4))
+  )
+  gene_dt <- data.table::data.table(
+    gene_names = c("txA", "txA"),
+    rect_starts = c(1, 8),
+    rect_ends = c(5, 12),
+    labels_locations = c(3, 10),
+    layers = c(1, 1),
+    type = c("cds", "cds"),
+    cols = c("#F8766D", "#F8766D")
+  )
+
+  coverage_plot <- RiboCrypt:::createSinglePlot(
+    profile, TRUE, "R", NULL, "a", "a", numeric(),
+    type = "lines", lib_index = 1, total_libs = 1
+  )
+  gene_plot <- RiboCrypt:::geneModelPanelPlotly(gene_dt)
+
+  old_subplot <- suppressWarnings(plotly::subplot(
+    list(coverage_plot, gene_plot),
+    nrows = 2,
+    shareX = TRUE,
+    titleY = TRUE,
+    titleX = TRUE
+  ))
+  merged <- RiboCrypt:::fast_subplot_shared_x(
+    list(coverage_plot, gene_plot),
+    nrows = 2,
+    heights = c(0.5, 0.5),
+    shareX = TRUE,
+    titleY = TRUE,
+    titleX = TRUE
+  )
+
+  expect_identical(old_subplot$x$layout$hovermode, "closest")
+  expect_identical(merged$x$layout$hovermode, "closest")
+  expect_false(identical(merged$x$layout$hovermode, "x unified"))
+
+  frame_traces <- Filter(function(tr) {
+    !is.null(tr$name) && as.character(tr$name[[1]]) %in% c("0", "1", "2") &&
+      isTRUE(tr$showlegend)
+  }, merged$x$data)
+  frame_hover_templates <- vapply(frame_traces, function(tr) {
+    paste(tr$hovertemplate, collapse = "\n")
+  }, character(1))
+
+  expect_length(frame_traces, 3)
+  expect_true(all(grepl("frame: %\\{fullData.name\\}", frame_hover_templates)))
+  expect_true(any(vapply(
+    merged$x$data,
+    function(tr) identical(tr$legendgroup, "id"),
+    logical(1)
+  )))
+})
+
 test_that("fast_subplot_shared_x reuses already built plotly widgets", {
   p1 <- plotly::plotly_build(
     plotly::plot_ly(x = 1:3, y = 1:3, type = "scatter", mode = "lines") %>%
@@ -992,7 +1159,7 @@ test_that("fast_subplot_shared_x preserves AA codon traces and avoids inflated r
   expect_true("white" %in% line_colors)
   expect_true("black" %in% line_colors)
   expect_identical(if (is.null(merged$x$layout$margin$r)) 0 else merged$x$layout$margin$r, 0)
-  expect_identical(length(merged$x$attrs), length(merged$x$data))
+  expect_lte(length(merged$x$attrs), length(merged$x$data))
   expect_null(merged$x$visdat)
 })
 

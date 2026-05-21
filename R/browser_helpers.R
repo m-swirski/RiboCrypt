@@ -128,7 +128,14 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
   lines <- gene_model_panel_dt[[2]]
   layers <- if (nrow(gene_model_panel_dt[[1]]) == 0) 1L else max(gene_model_panel_dt[[1]]$layers)
 
-  gene_model_panel <- geneModelPanelPlotly(gene_model_panel_dt[[1]])
+  gene_model_panel <- if (inherits(templates$gene_model_panel_plotly, "plotly")) {
+    geneModelPanelPlotly(
+      gene_model_panel_dt[[1]],
+      template = templates$gene_model_panel_plotly
+    )
+  } else {
+    geneModelPanelPlotly(gene_model_panel_dt[[1]])
+  }
   seq_nt_panel <- ntSeqPanelPlotly(
     target_seq,
     template = templates$nt_seq_panel_plotly
@@ -211,25 +218,13 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
   bottom_plots <- bottom_panel$bottom_plots
   plots <- c(track_plots, bottom_plots)
 
-  old <- TRUE
-  if (old) {
-    multiomics_plot <- suppressWarnings(subplot(plots,
-                                                margin = 0,
-                                                nrows = length(plots),
-                                                heights = proportions,
-                                                shareX = TRUE,
-                                                titleY = TRUE, titleX = TRUE))
-  } else {
-    multiomics_plot <- suppressWarnings(fast_subplot_shared_x(plots,
-                                                              margin = 0,
-                                                              nrows = length(plots),
-                                                              heights = proportions,
-                                                              shareX = TRUE,
-                                                              titleY = TRUE,
-                                                              titleX = TRUE))
-  }
-
-
+  multiomics_plot <- suppressWarnings(fast_subplot_shared_x(plots,
+                                                            margin = 0,
+                                                            nrows = length(plots),
+                                                            heights = proportions,
+                                                            shareX = TRUE,
+                                                            titleY = TRUE,
+                                                            titleX = TRUE))
 
   if (isTruthy(display_sequence)) {
     nt_seq_y_index <- length(plots) - bottom_panel$ncustom - 3
@@ -450,7 +445,8 @@ observatory_selection_cache_key <- function(library_selections,
   paste(parts, collapse = "|group|")
 }
 
-hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width) {
+hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width,
+                                 is_cellphone = FALSE) {
   full_names <- runIDs(dff)
   if (all(full_names == "")) full_names <- orfik_name_decider(dff, naming = "full")
 
@@ -468,6 +464,7 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
                        browser_input_or_default(input, "customSequence", ""),
                        browser_input_or_default(input, "phyloP", FALSE),
                        browser_input_or_default(input, "mapability", FALSE),
+                       isTRUE(is_cellphone),
                        collapse = "|_|")
   # Until plot and coverage is split (bottom must be part of browser hash)
   hash_browser <- paste(hash_bottom,
@@ -738,6 +735,9 @@ fast_subplot_shared_x <- function(...,
   out$x$layout$shapes <- vector("list", sum(shape_counts))
   out$x$layout$annotations <- vector("list", sum(annotation_counts))
   out$x$layout$images <- vector("list", sum(image_counts))
+  # Match plotly::subplot() here; otherwise row-level "x unified" hover from
+  # coverage panels makes browser hover aggregate all frames at a position.
+  out$x$layout$hovermode <- "closest"
   out$x$visdat <- NULL
   out$x$cur_data <- NULL
 

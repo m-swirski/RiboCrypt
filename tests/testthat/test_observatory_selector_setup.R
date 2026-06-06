@@ -84,6 +84,9 @@ test_that("observatory_ui includes selector and browser tabs", {
   expect_match(html, "Observatory")
   expect_match(html, "Select libraries")
   expect_match(html, "Browse")
+  expect_match(html, "observatory-dt-top")
+  expect_match(html, "observatory-dt-actions")
+  expect_match(html, "display: flex")
 })
 
 test_that("observatory UMAP JS attaches robust double-click reset handlers", {
@@ -410,7 +413,7 @@ test_that("observatory selector auto-labels UMAP selections by tissue when study
   )
 })
 
-test_that("observatory selector respects explicit DT-selected run ids", {
+test_that("observatory selector waits for DT subset action before committing clicked rows", {
   fixture <- make_observatory_selector_fixture()
 
   local_mocked_bindings(
@@ -448,9 +451,95 @@ test_that("observatory selector respects explicit DT-selected run ids", {
       session$flushReact()
 
       expect_equal(
-        selected_libraries$data_table_selections()[["1"]],
-        "SRR2"
+        sort(selected_libraries$plot_selections()[["1"]]),
+        sort(fixture$libraries_df$Run)
       )
+      expect_equal(
+        sort(selected_libraries$data_table_selections()[["1"]]),
+        sort(fixture$libraries_df$Run)
+      )
+    }
+  )
+})
+
+test_that("observatory selector subset button commits plot and table state", {
+  fixture <- make_observatory_selector_fixture()
+  original_controller <- RiboCrypt:::observatory_selector_additional_controller
+  current_plot_selection <- NULL
+  filtered_libraries_df <- NULL
+
+  local_mocked_bindings(
+    allsamples_observer_controller = function(input, output, session) invisible(NULL),
+    create_observatory_module = function(meta_experiment_df, libraries_df) {
+      list(
+        get_libraries_data = function(library_types = c("RFP")) {
+          libraries_df[LIBRARYTYPE %in% library_types]
+        },
+        get_umap_data = function(color_by = c("tissue", "cell_line")) {
+          data.table::copy(fixture$umap_df)
+        }
+      )
+    },
+    observatory_selector_additional_controller = function(input, output, session, observatory) {
+      current_plot_selection <<- observatory$current_plot_selection
+      filtered_libraries_df <<- observatory$filtered_libraries_df
+      original_controller(input, output, session, observatory)
+    },
+    .package = "RiboCrypt"
+  )
+
+  shiny::testServer(
+    observatory_selector_harness_server,
+    args = list(
+      all_exp = fixture$all_exp,
+      experiment_df = fixture$experiment_df,
+      libraries_df = fixture$libraries_df,
+      browser_options = fixture$browser_options
+    ),
+    {
+      session$setInputs(
+        `selector-dff` = "exp-a",
+        `selector-color_by` = c("tissue"),
+        `selector-go` = 1
+      )
+      session$flushReact()
+
+      session$setInputs(
+        `selector-libraries_data_table_subset_runs` = list(
+          action = "selected",
+          runs = c("SRR2")
+        )
+      )
+      session$flushReact()
+
+      expect_equal(selected_libraries$plot_selections()[["1"]], "SRR2")
+      expect_equal(selected_libraries$data_table_selections()[["1"]], "SRR2")
+      expect_equal(current_plot_selection(), "SRR2")
+      expect_equal(filtered_libraries_df()$Run, "SRR2")
+      expect_equal(selected_libraries$labels()[["1"]], "PRJ1 subset")
+
+      empty_display_filters <- rep("", ncol(RiboCrypt:::observatory_format_libraries_df(fixture$libraries_df)))
+      session$setInputs(
+        `selector-libraries_data_table_manual_search` = "",
+        `selector-libraries_data_table_manual_search_columns` = empty_display_filters
+      )
+      session$flushReact()
+
+      expect_equal(selected_libraries$labels()[["1"]], "PRJ1 subset")
+
+      session$setInputs(
+        `selector-libraries_data_table_subset_runs` = list(
+          action = "reset",
+          runs = character()
+        )
+      )
+      session$flushReact()
+
+      expect_length(current_plot_selection(), 0L)
+      expect_equal(sort(filtered_libraries_df()$Run), sort(fixture$libraries_df$Run))
+      expect_equal(sort(selected_libraries$plot_selections()[["1"]]), sort(fixture$libraries_df$Run))
+      expect_equal(sort(selected_libraries$data_table_selections()[["1"]]), sort(fixture$libraries_df$Run))
+      expect_equal(selected_libraries$labels()[["1"]], "All merged")
     }
   )
 })
@@ -527,6 +616,53 @@ test_that("observatory table hides library type and scientific name columns", {
   expect_false("LIBRARYTYPE" %in% colnames(formatted))
   expect_false("ScientificName" %in% colnames(formatted))
   expect_equal(colnames(formatted), c("Run", "BioProject", "author"))
+})
+
+test_that("observatory table shows length, search, info, and pagination above rows", {
+  df <- data.table::data.table(
+    Run = c("SRR1", "SRR2"),
+    BioProject = c("PRJ1", "PRJ2"),
+    TISSUE = c("Liver", "Brain")
+  )
+
+  widget <- RiboCrypt:::observatory_selector_data_table_shiny(
+    df,
+    table_id = "selector-libraries_data_table"
+  )
+  init_complete <- as.character(widget$x$options$initComplete)
+
+  expect_false(grepl("<th> </th>", widget$x$container, fixed = TRUE))
+  expect_match(widget$x$container, "<th>Run</th>", fixed = TRUE)
+  expect_equal(widget$x$options$dom, '<"observatory-dt-top"l<"observatory-dt-actions">fip>rt')
+  expect_equal(widget$x$options$language$lengthMenu, "Show _MENU_ libraries")
+  expect_equal(widget$x$options$language$info, "Showing _START_ to _END_ out of _TOTAL_ libraries")
+  expect_equal(widget$x$options$language$infoEmpty, "Showing 0 to 0 out of 0 libraries")
+  expect_equal(widget$x$options$language$infoFiltered, "(filtered from _MAX_ total libraries)")
+  expect_match(init_complete, "Subset to selected", fixed = TRUE)
+  expect_match(init_complete, "Subset to page", fixed = TRUE)
+  expect_match(init_complete, "Remove subset", fixed = TRUE)
+  expect_match(init_complete, "sendSubsetRuns('reset', [])", fixed = TRUE)
+  expect_match(init_complete, 'var baseId = "selector-libraries_data_table";', fixed = TRUE)
+  expect_match(init_complete, "tableHeaderInputs", fixed = TRUE)
+  expect_match(init_complete, "globalSearchInput", fixed = TRUE)
+  expect_match(init_complete, "currentPageRuns", fixed = TRUE)
+  expect_match(init_complete, "runFromRowApi", fixed = TRUE)
+  expect_match(init_complete, "data[String(runCol)]", fixed = TRUE)
+  expect_match(init_complete, "collectSelectedRunsFromTable", fixed = TRUE)
+  expect_match(init_complete, "setSelectedRuns", fixed = TRUE)
+  expect_match(init_complete, "_subset_runs", fixed = TRUE)
+  expect_match(init_complete, "tbody tr", fixed = TRUE)
+  expect_match(init_complete, "window.alert('No samples are selected.');", fixed = TRUE)
+})
+
+test_that("observatory DT replacement keeps rownames disabled", {
+  controller_source <- paste(
+    deparse(RiboCrypt:::observatory_selector_additional_controller),
+    collapse = "\n"
+  )
+
+  expect_match(controller_source, "DT::replaceData", fixed = TRUE)
+  expect_match(controller_source, "rownames = FALSE", fixed = TRUE)
 })
 
 test_that("observatory numeric DT filter helper applies range syntax", {

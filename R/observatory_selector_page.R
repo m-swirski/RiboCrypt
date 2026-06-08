@@ -830,16 +830,11 @@ observatory_selector_additional_controller <- function(input, output, session, o
   shiny::observe({
     columns <- input$libraries_data_table_manual_search_columns
     global <- input$libraries_data_table_manual_search
-    if (is.null(columns) && is.null(global)) {
-      columns <- input$libraries_data_table_search_columns
-      global <- input$libraries_data_table_search
-    }
     plot_sel <- current_plot_selection()
     if (!is.null(plot_sel) && length(plot_sel) > 0) {
       return()
     }
     if (is.null(columns) && is.null(global)) {
-      selected_libraries$set_active_label("All merged")
       return()
     }
 
@@ -863,9 +858,7 @@ observatory_selector_additional_controller <- function(input, output, session, o
     selected_libraries$set_active_label(label)
   }) |> shiny::bindEvent(
     input$libraries_data_table_manual_search_columns,
-    input$libraries_data_table_manual_search,
-    input$libraries_data_table_search_columns,
-    input$libraries_data_table_search
+    input$libraries_data_table_manual_search
   )
 
   shiny::observe({

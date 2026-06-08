@@ -68,7 +68,19 @@ library_selection_server <- function(
 
     # reactive value to keep track of which selection is active at the moment
     active_selection_id <- shiny::reactiveVal(as.character(1))
+    pending_label_input_updates <- shiny::reactiveVal(character())
     `%||%` <- function(x, y) if (is.null(x)) y else x
+
+    update_active_label_input <- function(label) {
+      if (is.null(label)) label <- ""
+      label <- as.character(label)
+      if (identical(shiny::isolate(input$active_selection_label), label)) {
+        return(invisible(NULL))
+      }
+      pending_label_input_updates(unique(c(pending_label_input_updates(), label)))
+      shiny::updateTextInput(session, "active_selection_label", value = label)
+      invisible(NULL)
+    }
 
     initialize_from_state <- function(state) {
       if (is.null(state) || !is.list(state)) return(invisible(FALSE))
@@ -154,11 +166,7 @@ library_selection_server <- function(
     # Keep selection name input in sync with active selection
     shiny::observe({
       label <- selection_store$labels()[[active_selection_id()]]
-      shiny::updateTextInput(
-        session,
-        "active_selection_label",
-        value = if (is.null(label)) "" else label
-      )
+      update_active_label_input(if (is.null(label)) "" else label)
     }) |> shiny::bindEvent(
       active_selection_id(),
       selection_store$labels()
@@ -167,7 +175,20 @@ library_selection_server <- function(
     # Store updated label for active selection
     shiny::observe({
       shiny::req(!is.null(active_selection_id()) && active_selection_id() != "")
+      pending <- pending_label_input_updates()
+      if (input$active_selection_label %in% pending) {
+        pending_label_input_updates(setdiff(pending, input$active_selection_label))
+        current_label <- selection_store$labels()[[active_selection_id()]]
+        current_label <- if (is.null(current_label)) "" else as.character(current_label)
+        if (!identical(input$active_selection_label, current_label)) {
+          update_active_label_input(current_label)
+        }
+        return()
+      }
       labels <- selection_store$labels()
+      if (identical(labels[[active_selection_id()]], input$active_selection_label)) {
+        return()
+      }
       labels[[active_selection_id()]] <- input$active_selection_label
       selection_store$labels(labels)
     }) |> shiny::bindEvent(input$active_selection_label, ignoreInit = TRUE)
@@ -175,11 +196,13 @@ library_selection_server <- function(
     set_active_label <- function(label, selection_id = active_selection_id()) {
       if (is.null(selection_id) || selection_id == "") return(invisible(NULL))
       if (is.null(label)) label <- ""
+      label <- as.character(label)
       labels <- selection_store$labels()
+      if (identical(labels[[selection_id]], label)) return(invisible(NULL))
       labels[[selection_id]] <- label
       selection_store$labels(labels)
       if (selection_id == active_selection_id()) {
-        shiny::updateTextInput(session, "active_selection_label", value = label)
+        update_active_label_input(label)
       }
       invisible(NULL)
     }

@@ -582,6 +582,14 @@ test_that("observatory selector derives active selection label from DT search te
       session$flushReact()
 
       expect_match(selected_libraries$labels()[["1"]], "brain")
+
+      session$setInputs(
+        `selector-libraries_data_table_manual_search` = "WT",
+        `selector-libraries_data_table_search` = "W"
+      )
+      session$flushReact()
+
+      expect_equal(selected_libraries$labels()[["1"]], "wt")
     }
   )
 })

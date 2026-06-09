@@ -815,6 +815,38 @@ test_that("browser_track_panel_shiny applies zoom_range to the shared x axis", {
   expect_equal(unname(plot$x$layout$xaxis$range), c(20, 60))
 })
 
+test_that("browser_track_panel_shiny keeps full x range with sparse custom bottom track", {
+  fixture <- make_browser_track_test_fixture(frames_type = "columns", kmers = 1,
+                                             df, tx, cds)
+  controls <- fixture$controls()
+
+  bottom_panel <- RiboCrypt:::bottom_panel_shiny(function() controls)
+  custom_track <- plotly::plot_ly(
+    x = 1:6,
+    y = rep(1, 6),
+    type = "bar",
+    showlegend = FALSE
+  ) %>%
+    plotly::layout(
+      xaxis = list(showticklabels = FALSE),
+      yaxis = list(title = list(text = "P"), showticklabels = FALSE)
+    )
+  bottom_panel$custom_bigwig_panels <- list(custom_track)
+  bottom_panel$bottom_plots <- RiboCrypt:::bottom_plots_to_plotly(bottom_panel)
+  bottom_panel$ncustom <- 1L
+
+  plot <- RiboCrypt:::browser_track_panel_shiny(
+    function() controls,
+    bottom_panel,
+    fixture$session
+  )
+
+  expected_max <- as.numeric(ORFik::widthPerGroup(bottom_panel$display_range, FALSE))
+  if (length(expected_max) > 1L) expected_max <- expected_max[[1]]
+  expect_equal(unname(plot$x$layout$xaxis$range), c(1, expected_max))
+  expect_false(isTRUE(plot$x$layout$xaxis$autorange))
+})
+
 test_that("browser_track_panel_shiny keeps zoom_range when a custom bottom track is present", {
   fixture <- make_browser_track_test_fixture(frames_type = "columns", kmers = 1,
                                              df, tx, cds)
@@ -873,6 +905,8 @@ test_that("custom_seq_track_panel_bigwig builds a native plotly bar track", {
   expect_identical(built$x$layout$yaxis$title$text, "P")
   expect_false(isTRUE(built$x$data[[1]]$showlegend))
   expect_null(built$x$layout$width)
+  expect_equal(unname(built$x$layout$xaxis$range), c(1, 4))
+  expect_false(isTRUE(built$x$layout$xaxis$autorange))
 })
 
 test_that("automateTicksCustomTrack supports native plotly inputs", {

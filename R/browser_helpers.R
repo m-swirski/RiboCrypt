@@ -563,6 +563,9 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
                                              proportions,
                                              apply_line_desimplify = FALSE) {
   multiomics_plot <- remove_y_axis_zero_tick_js(multiomics_plot)
+  max_x <- as.numeric(widthPerGroup(display_range, FALSE))
+  if (length(max_x) > 1) max_x <- max_x[[1]]
+  full_x_range <- c(1, max_x)
 
   xaxis_names <- names(multiomics_plot$x$layout)[grepl("^xaxis[0-9]*$", names(multiomics_plot$x$layout))]
   bottom_xaxis <- "xaxis"
@@ -620,18 +623,24 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
     plotly::layout(title = plot_title)
   # Lock proportions on zoom out
   # multiomics_plot <- lock_yaxis_domains_by_proportions(multiomics_plot, proportions, gap = 0)
-  if (!is.null(zoom_range) && length(zoom_range) == 2) {
-    # Apply the initial zoom to every shared x-axis so added tracks do not
-    # reset the visible axis back to the full range.
+  target_x_range <- if (!is.null(zoom_range) && length(zoom_range) == 2) {
+    zoom_range
+  } else if (length(full_x_range) == 2L && all(is.finite(full_x_range))) {
+    full_x_range
+  } else {
+    NULL
+  }
+  if (!is.null(target_x_range)) {
+    # Apply the initial range to every shared x-axis so sparse added tracks do
+    # not define the reset/autorange range.
     for (axis_name in unique(c(bottom_xaxis, xaxis_names))) {
       axis <- multiomics_plot$x$layout[[axis_name]]
       if (is.null(axis)) axis <- list()
-      axis$range <- zoom_range
+      axis$range <- target_x_range
+      axis$autorange <- FALSE
       multiomics_plot$x$layout[[axis_name]] <- axis
     }
   }
-  max_x <- as.numeric(widthPerGroup(display_range, FALSE))
-  if (length(max_x) > 1) max_x <- max_x[[1]]
   multiomics_plot <- addBrowserXRangeClamp(multiomics_plot, min_x = 1, max_x = max_x)
   multiomics_plot <- browser_legend_cleanup(multiomics_plot)
   multiomics_plot <- addColumnsZoomSwitch(multiomics_plot)

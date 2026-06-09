@@ -131,6 +131,8 @@ mapability_custom_seq_track_panel <- function(df, display_range) {
 custom_seq_track_panel_bigwig <- function(grl, bigwig_path, ylab) {
   seqlevelsStyle(grl) <- seqlevelsStyle(rtracklayer::BigWigFile(bigwig_path))[1]
   dt <- coveragePerTiling(grl, bigwig_path)
+  seq_length <- as.numeric(widthPerGroup(grl, FALSE))
+  if (length(seq_length) > 1L) seq_length <- seq_length[[1]]
   p <- plotly::plot_ly(
     data = dt,
     x = ~position,
@@ -150,6 +152,8 @@ custom_seq_track_panel_bigwig <- function(grl, bigwig_path, ylab) {
         showgrid = FALSE,
         zeroline = FALSE,
         showline = FALSE,
+        autorange = FALSE,
+        range = c(1, seq_length),
         fixedrange = FALSE
       ),
       yaxis = list(

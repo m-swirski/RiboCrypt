@@ -88,6 +88,54 @@ test_that("URL helpers can be explicitly targeted for observatory", {
   expect_no_error(RiboCrypt:::browser_specific_url_checker(target = "observatory"))
 })
 
+test_that("observatory browser URL state seeds metadata gene and transcript defaults", {
+  gene_name_list <- data.table::data.table(
+    value = c("TXA1", "TXA2", "TXB1", "TXB2"),
+    label = c("GENEA", "GENEA", "GENEB", "GENEB")
+  )
+  browser_options <- c(
+    default_gene_meta = "GENEA",
+    default_isoform_meta = "TXA1"
+  )
+
+  url_state <- list(
+    view = "browser",
+    browser = list(gene = "GENEB", tx = "TXB2")
+  )
+  updated <- RiboCrypt:::observatory_browser_url_defaults(
+    browser_options,
+    url_state,
+    gene_name_list = gene_name_list
+  )
+  expect_equal(unname(updated["default_gene_meta"]), "GENEB")
+  expect_equal(unname(updated["default_isoform_meta"]), "TXB2")
+
+  invalid_tx_state <- list(
+    view = "browser",
+    browser = list(gene = "GENEB", tx = "MISSING_TX")
+  )
+  updated <- RiboCrypt:::observatory_browser_url_defaults(
+    browser_options,
+    invalid_tx_state,
+    gene_name_list = gene_name_list
+  )
+  expect_equal(unname(updated["default_gene_meta"]), "GENEB")
+  expect_equal(unname(updated["default_isoform_meta"]), "TXB1")
+
+  selector_state <- list(
+    view = "umap",
+    browser = list(gene = "GENEB", tx = "TXB2")
+  )
+  expect_equal(
+    RiboCrypt:::observatory_browser_url_defaults(
+      browser_options,
+      selector_state,
+      gene_name_list = gene_name_list
+    ),
+    browser_options
+  )
+})
+
 test_that("clipboard_url_text supports browser libraries and observatory run selections", {
   input <- list(
     dff = "exp-a",
@@ -179,6 +227,90 @@ test_that("clipboard_url_text supports browser libraries and observatory run sel
   )
   expect_match(observatory_url, "/#Observatory\\?obs_state=")
   expect_equal(observatory_url, RiboCrypt:::make_observatory_url(expected_state, session))
+})
+
+test_that("clipboard URL button is module-scoped and does not precompute URLs", {
+  input <- list(
+    gene = "GENE2",
+    tx = "TX2",
+    frames_type = "columns",
+    kmer = 1,
+    extendLeaders = 0,
+    extendTrailers = 0,
+    viewMode = FALSE,
+    other_tx = FALSE,
+    collapsed_introns = FALSE,
+    collapsed_introns_width = 100,
+    genomic_region = "",
+    zoom_range = "",
+    customSequence = ""
+  )
+  session <- list(
+    ns = function(id) paste0("browser_obs-", id),
+    clientData = list(
+      url_hostname = "localhost",
+      url_port = "1234",
+      url_pathname = "/app",
+      url_hash = "#Observatory"
+    )
+  )
+
+  button <- RiboCrypt:::clipboard_url_button(
+    input = input,
+    session = session,
+    mode = "observatory",
+    observatory = list(
+      selected_experiment = function() "obs-exp",
+      color_by = function() c("tissue", "cell_line"),
+      selection_index = function() c("1"),
+      library_selections = function() list("1" = c("SRR100")),
+      library_selection_labels = function() list("1" = "selected"),
+      active_selection_id = function() "1"
+    )
+  )
+  html <- htmltools::renderTags(button)$html
+  expect_match(html, 'id="browser_obs-clip_button"', fixed = TRUE)
+  expect_match(html, "ribocrypt-copy-url", fixed = TRUE)
+  expect_false(grepl("data-clipboard-text", html, fixed = TRUE))
+  expect_false(grepl("obs_state=", html, fixed = TRUE))
+  expect_false(grepl('id="clip"', html, fixed = TRUE))
+})
+
+test_that("clipboard URL text is computed at click time", {
+  calls <- 0L
+  sent <- NULL
+
+  shiny::testServer(function(input, output, session) {
+    session$sendCustomMessage <- function(type, message) {
+      sent <<- list(type = type, message = message)
+    }
+    RiboCrypt:::module_browser_shared_ui(
+      input,
+      output,
+      session,
+      clip_ui = function() {
+        shiny::actionButton(session$ns("clip_button"), "Get URL")
+      },
+      clip_text = function() {
+        calls <<- calls + 1L
+        paste0("gene=", input$gene)
+      }
+    )
+  }, {
+    session$setInputs(gene = "GENE_A")
+    output$clip
+    expect_equal(calls, 0L)
+
+    session$setInputs(clip_button = 1)
+    expect_equal(calls, 1L)
+    expect_equal(sent$type, "ribocrypt-copy-url")
+    expect_equal(sent$message$text, "gene=GENE_A")
+
+    session$setInputs(gene = "GENE_B")
+    session$setInputs(clip_button = 2)
+    expect_equal(calls, 2L)
+    expect_equal(sent$message$text, "gene=GENE_B")
+  })
 })
 
 test_that("observatory selection cache key is stable and sensitive to group membership", {

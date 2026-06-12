@@ -69,7 +69,8 @@ module_protein <- function(input, output, gene_name_list, session) {
   })
 }
 
-module_browser_shared_ui <- function(input, output, session, clip_ui) {
+module_browser_shared_ui <- function(input, output, session, clip_ui,
+                                     clip_text = NULL) {
   observeEvent(input$toggle_settings, {
     shinyjs::toggleClass(id = "floating_settings", class = "hidden")
   })
@@ -77,10 +78,32 @@ module_browser_shared_ui <- function(input, output, session, clip_ui) {
   output$clip <- renderUI({
     clip_ui()
   })
+  shiny::outputOptions(output, "clip", suspendWhenHidden = FALSE)
 
-  observeEvent(input$myInput_copy, {
-    showNotification(paste("Copied", nchar(input$myInput_copy), "nt to clipboard"), type = "message")
-  })
+  observeEvent(input$clip_button, {
+    req(!is.null(clip_text))
+    text <- clip_text()
+    session$sendCustomMessage(
+      "ribocrypt-copy-url",
+      list(
+        text = text,
+        resultInputId = session$ns("clipboard_copy_result")
+      )
+    )
+  }, ignoreInit = TRUE)
+
+  observeEvent(input$clipboard_copy_result, {
+    result <- input$clipboard_copy_result
+    if (isTRUE(result$ok)) {
+      showNotification(paste("Copied", result$n, "characters to clipboard"),
+                       type = "message")
+    } else {
+      showNotification(
+        paste("Could not copy URL to clipboard:", result$error),
+        type = "error"
+      )
+    }
+  }, ignoreInit = TRUE)
 }
 
 apply_observatory_browser_url_state <- function(session, browser_state) {
@@ -110,11 +133,82 @@ apply_observatory_browser_url_state <- function(session, browser_state) {
 }
 
 #' @noRd
+observatory_browser_url_defaults <- function(browser_options, url_state,
+                                             gene_name_list = NULL) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+  if (is.null(url_state) || !identical(url_state$view, "browser")) {
+    return(browser_options)
+  }
+  browser_state <- url_state$browser
+  if (is.null(browser_state) || !is.list(browser_state)) {
+    return(browser_options)
+  }
+
+  url_gene <- as.character(browser_state$gene %||% "")
+  url_tx <- as.character(browser_state$tx %||% "")
+  current_gene <- as.character(browser_options["default_gene_meta"] %||% "")
+  current_tx <- as.character(browser_options["default_isoform_meta"] %||% "")
+
+  if (is.null(gene_name_list)) {
+    if (shiny::isTruthy(url_gene)) {
+      browser_options["default_gene_meta"] <- url_gene
+    }
+    if (shiny::isTruthy(url_tx)) {
+      browser_options["default_isoform_meta"] <- url_tx
+    }
+    return(browser_options)
+  }
+
+  if (!shiny::isTruthy(url_gene) && shiny::isTruthy(url_tx)) {
+    tx_match <- gene_name_list[value == url_tx, label][1]
+    if (length(tx_match) > 0 && !is.na(tx_match)) {
+      url_gene <- tx_match
+    }
+  }
+
+  selected_gene <- resolve_gene_selection(
+    gene_name_list,
+    preferred = url_gene,
+    fallback = current_gene
+  )
+  if (length(selected_gene) == 0 || !shiny::isTruthy(selected_gene)) {
+    return(browser_options)
+  }
+  browser_options["default_gene_meta"] <- selected_gene
+
+  selected_tx <- resolve_tx_selection(
+    gene_name_list,
+    gene = selected_gene,
+    preferred = url_tx,
+    fallback = current_tx
+  )
+  if (length(selected_tx) > 0 && shiny::isTruthy(selected_tx)) {
+    browser_options["default_isoform_meta"] <- selected_tx
+  }
+
+  browser_options
+}
+
+#' @noRd
 observatory_browser_ready_to_kickoff <- function(url_state, input, library_selections) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+  browser_state <- url_state$browser %||% list()
+  expected_value <- function(name) {
+    value <- browser_state[[name]]
+    if (!shiny::isTruthy(value)) return(NULL)
+    as.character(value)[1]
+  }
+  input_gene <- as.character(input$gene %||% "")
+  input_tx <- as.character(input$tx %||% "")
+  expected_gene <- expected_value("gene")
+  expected_tx <- expected_value("tx")
+
   identical(url_state$view, "browser") &&
-    isTRUE(url_state$browser$go) &&
-    nzchar(input$gene) &&
-    nzchar(input$tx) &&
+    isTRUE(browser_state$go) &&
+    nzchar(input_gene) &&
+    nzchar(input_tx) &&
+    (is.null(expected_gene) || identical(input_gene, expected_gene)) &&
+    (is.null(expected_tx) || identical(input_tx, expected_tx)) &&
     !is.null(library_selections) &&
     any(lengths(library_selections) > 0)
 }
@@ -141,14 +235,24 @@ module_additional_browser <- function(input, output, session,
     if (is.null(observatory)) observatory <- list()
 
     if (mode == "observatory") {
-      module_browser_shared_ui(input, output, session, function() {
-        clipboard_url_button(
-          input = input,
-          session = session,
-          mode = "observatory",
-          observatory = observatory
-        )
-      })
+      module_browser_shared_ui(
+        input, output, session,
+        clip_ui = function() {
+          clipboard_url_button(
+            input = input,
+            session = session,
+            mode = "observatory"
+          )
+        },
+        clip_text = function() {
+          clipboard_url_text(
+            input = input,
+            session = session,
+            mode = "observatory",
+            observatory = observatory
+          )
+        }
+      )
 
       observe({
         st <- observatory$observatory_url_state()
@@ -176,9 +280,15 @@ module_additional_browser <- function(input, output, session,
     # Protein display
     module_protein(input, output, gene_name_list, session)
 
-    module_browser_shared_ui(input, output, session, function() {
-      clipboard_url_button(input, session)
-    })
+    module_browser_shared_ui(
+      input, output, session,
+      clip_ui = function() {
+        clipboard_url_button(input, session)
+      },
+      clip_text = function() {
+        clipboard_url_text(input, session, mode = "browser")
+      }
+    )
 
     output$download_plot_html <- downloadHandler(
       filename = function() {

@@ -126,29 +126,77 @@ clipboard_url_text <- function(input, session,
   make_observatory_url(state, session)
 }
 
+clipboard_copy_handler <- function() {
+  shiny::singleton(shiny::tags$script(shiny::HTML("
+    if (!window.RiboCryptCopyUrlHandlerInstalled) {
+      window.RiboCryptCopyUrlHandlerInstalled = true;
+      Shiny.addCustomMessageHandler('ribocrypt-copy-url', function(message) {
+        var text = message.text || '';
+        var resultInputId = message.resultInputId || 'clipboard_copy_result';
+        var report = function(ok, error) {
+          if (window.Shiny && Shiny.setInputValue) {
+            Shiny.setInputValue(resultInputId, {
+              ok: ok,
+              n: text.length,
+              error: error || '',
+              nonce: Math.random()
+            }, {priority: 'event'});
+          }
+        };
+        var fallbackCopy = function() {
+          var el = document.createElement('textarea');
+          el.value = text;
+          el.setAttribute('readonly', '');
+          el.style.position = 'fixed';
+          el.style.top = '-1000px';
+          document.body.appendChild(el);
+          el.select();
+          try {
+            var ok = document.execCommand('copy');
+            document.body.removeChild(el);
+            report(ok, ok ? '' : 'document.execCommand(copy) returned false');
+          } catch (err) {
+            document.body.removeChild(el);
+            report(false, err && err.message ? err.message : String(err));
+          }
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(function() {
+            report(true, '');
+          }).catch(function(err) {
+            fallbackCopy();
+          });
+        } else {
+          fallbackCopy();
+        }
+      });
+    }
+  ")))
+}
+
 clipboard_url_button <- function(input, session,
                                  mode = c("browser", "observatory"),
                                  libraries = NULL,
                                  observatory = NULL) {
   mode <- match.arg(mode)
-  rclipButton(
-    inputId = "clip",
-    label = "Get URL",
-    clipText = clipboard_url_text(
-      input = input,
-      session = session,
-      mode = mode,
-      libraries = libraries,
-      observatory = observatory
-    ),
-    icon = icon("clipboard"),
-    tooltip = if (mode == "observatory") {
-      "Get URL to share observatory state. Copied to clipboard (ctrl+v to paste)"
-    } else {
-      "Get URL to share for this plot. Copied to clipboard (ctrl+v to paste)"
-    },
-    placement = "top",
-    options = list(delay = list(show = 600, hide = 100), trigger = "hover")
+  clip_button_id <- if (!is.null(session$ns) && is.function(session$ns)) {
+    session$ns("clip_button")
+  } else {
+    "clip_button"
+  }
+  tooltip <- if (mode == "observatory") {
+    "Get URL to share observatory state. Copied to clipboard (ctrl+v to paste)"
+  } else {
+    "Get URL to share for this plot. Copied to clipboard (ctrl+v to paste)"
+  }
+  shiny::tagList(
+    clipboard_copy_handler(),
+    shiny::actionButton(
+      inputId = clip_button_id,
+      label = "Get URL",
+      icon = shiny::icon("clipboard"),
+      title = tooltip
+    )
   )
 }
 
@@ -240,6 +288,7 @@ make_observatory_url_state_param <- function(state) {
   raw <- charToRaw(json)
   compressed <- memCompress(raw, type = "gzip")
   encoded <- jsonlite::base64_enc(compressed)
+  encoded <- gsub("[\r\n]", "", encoded)
   # URL-safe base64 without padding to keep payload short and fragment-safe.
   encoded <- chartr("+/", "-_", encoded)
   sub("=+$", "", encoded)

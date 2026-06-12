@@ -63,6 +63,7 @@ observatory_selector_harness_server <- function(
     )
 
     selected_libraries <- selections$selected_libraries
+    selected_libraries_snapshot <- selections$selected_libraries_snapshot
     selected_experiment <- selections$selected_experiment
     color_by <- selections$color_by
     active_selection_id <- selections$active_selection_id
@@ -145,20 +146,23 @@ test_that("observatory selector harness initializes URL-backed selection state",
     exp = "exp-a",
     color_by = c("tissue", "cell_line"),
     selections = list(
-      index = c("1", "2"),
+      index = c("1", "2", "3"),
       plot_selections = list(
         "1" = c("SRR1", "SRR2"),
-        "2" = c("SRR3")
+        "2" = c("SRR3"),
+        "3" = c("SRR4", "SRR5")
       ),
       data_table_selections = list(
         "1" = c("SRR1"),
-        "2" = c("SRR3")
+        "2" = c("SRR3"),
+        "3" = c("SRR4")
       ),
       labels = list(
         "1" = "brain",
-        "2" = "heart"
+        "2" = "heart",
+        "3" = "tumor"
       ),
-      active_selection_id = "2"
+      active_selection_id = "3"
     )
   )
 
@@ -195,11 +199,42 @@ test_that("observatory selector harness initializes URL-backed selection state",
 
       expect_equal(selected_experiment(), "exp-a")
       expect_equal(color_by(), c("tissue", "cell_line"))
-      expect_equal(active_selection_id(), "2")
-      expect_equal(selected_libraries$index(), c("1", "2"))
+      expect_equal(active_selection_id(), "3")
+      expect_equal(selected_libraries$index(), c("1", "2", "3"))
       expect_equal(selected_libraries$labels()[["1"]], "brain")
+      expect_equal(selected_libraries$plot_selections()[["2"]], "SRR3")
+      expect_equal(selected_libraries$data_table_selections()[["2"]], "SRR3")
+      expect_equal(selected_libraries$plot_selections()[["3"]], c("SRR4", "SRR5"))
+      expect_equal(selected_libraries$data_table_selections()[["3"]], "SRR4")
     }
   )
+})
+
+test_that("observatory selection snapshot overlays the live active selection", {
+  stored_plot <- list(
+    "1" = c("SRR1", "SRR2"),
+    "2" = c("SRR1", "SRR2", "SRR3", "SRR4")
+  )
+  stored_data <- list(
+    "1" = c("SRR1", "SRR2"),
+    "2" = c("SRR1", "SRR2", "SRR3", "SRR4")
+  )
+
+  snapshot <- RiboCrypt:::observatory_selection_snapshot(
+    index = c("1", "2"),
+    plot_selections = stored_plot,
+    data_table_selections = stored_data,
+    labels = list("1" = "old subset", "2" = "All merged"),
+    active_selection_id = "2",
+    active_plot_selection = c("SRR3", "SRR4"),
+    active_data_table_selection = "SRR4"
+  )
+
+  expect_equal(snapshot$plot_selections[["1"]], stored_plot[["1"]])
+  expect_equal(snapshot$data_table_selections[["1"]], stored_data[["1"]])
+  expect_equal(snapshot$plot_selections[["2"]], c("SRR3", "SRR4"))
+  expect_equal(snapshot$data_table_selections[["2"]], "SRR4")
+  expect_equal(snapshot$active_selection_id, "2")
 })
 
 test_that("observatory selector defaults active selection label to All merged", {

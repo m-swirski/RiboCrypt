@@ -57,6 +57,11 @@ test_that("module controller helpers parse events and observatory kickoff state"
   expect_true(RiboCrypt:::observatory_browser_ready_to_kickoff(state, input, list(A = "SRR1")))
   expect_false(RiboCrypt:::observatory_browser_ready_to_kickoff(state, list(gene = "", tx = "TX1"), list(A = "SRR1")))
   expect_false(RiboCrypt:::observatory_browser_ready_to_kickoff(list(view = "selector", browser = list(go = TRUE)), input, list(A = "SRR1")))
+
+  targeted_state <- list(view = "browser", browser = list(go = TRUE, gene = "GENE1", tx = "TX1"))
+  expect_true(RiboCrypt:::observatory_browser_ready_to_kickoff(targeted_state, input, list(A = "SRR1")))
+  expect_false(RiboCrypt:::observatory_browser_ready_to_kickoff(targeted_state, list(gene = "GENE2", tx = "TX1"), list(A = "SRR1")))
+  expect_false(RiboCrypt:::observatory_browser_ready_to_kickoff(targeted_state, list(gene = "GENE1", tx = "TX2"), list(A = "SRR1")))
 })
 
 test_that("multiSampleBinRows bins rows as expected", {

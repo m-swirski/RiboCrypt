@@ -50,6 +50,14 @@ library_selection_server <- function(
       if (is.null(value)) return(NULL)
       as.character(value)
     }
+    clean_selection_value <- function(value) {
+      if (is.null(value)) return(character())
+      value <- unique(as.character(value))
+      value[!is.na(value) & nzchar(value)]
+    }
+    same_selection_value <- function(x, y) {
+      setequal(clean_selection_value(x), clean_selection_value(y))
+    }
     # reactive value to store multiple selections
     selection_store <- {
       plot_selections <- list()
@@ -69,6 +77,8 @@ library_selection_server <- function(
     # reactive value to keep track of which selection is active at the moment
     active_selection_id <- shiny::reactiveVal(as.character(1))
     pending_label_input_updates <- shiny::reactiveVal(character())
+    skip_initial_plot_sync <- shiny::reactiveVal(FALSE)
+    skip_initial_data_table_sync <- shiny::reactiveVal(FALSE)
     `%||%` <- function(x, y) if (is.null(x)) y else x
 
     update_active_label_input <- function(label) {
@@ -262,9 +272,18 @@ library_selection_server <- function(
     # Observer to keep active plot_selection
     # in sync with incoming values of reactive_plot_selection
     shiny::observe({
+      incoming <- reactive_plot_selection_input()
+      if (isTRUE(skip_initial_plot_sync())) {
+        skip_initial_plot_sync(FALSE)
+        current <- selection_store$plot_selections()[[active_selection_id()]]
+        if (same_selection_value(incoming, default_selection_value()) &&
+            !same_selection_value(current, default_selection_value())) {
+          return()
+        }
+      }
       plot_selections <- selection_store$plot_selections()
       plot_selections[[active_selection_id()]] <-
-        reactive_plot_selection_input()
+        incoming
 
       selection_store$plot_selections(plot_selections)
     }) |> shiny::bindEvent(
@@ -275,9 +294,18 @@ library_selection_server <- function(
     # Observer to keep active_data_table_selection
     # in sync with incoming values of reactive_data_table_selection
     shiny::observe({
+      incoming <- reactive_data_table_selection_input()
+      if (isTRUE(skip_initial_data_table_sync())) {
+        skip_initial_data_table_sync(FALSE)
+        current <- selection_store$data_table_selections()[[active_selection_id()]]
+        if (same_selection_value(incoming, default_selection_value()) &&
+            !same_selection_value(current, default_selection_value())) {
+          return()
+        }
+      }
       data_table_selections <- selection_store$data_table_selections()
       data_table_selections[[active_selection_id()]] <-
-        reactive_data_table_selection_input()
+        incoming
       selection_store$data_table_selections(data_table_selections)
     }) |> shiny::bindEvent(
       reactive_data_table_selection_input(),
@@ -285,7 +313,11 @@ library_selection_server <- function(
     )
 
     shiny::observe({
-      initialize_from_state(initial_state())
+      initialized <- initialize_from_state(initial_state())
+      if (isTRUE(initialized)) {
+        skip_initial_plot_sync(TRUE)
+        skip_initial_data_table_sync(TRUE)
+      }
     }) |> shiny::bindEvent(initial_state(), ignoreInit = FALSE, once = TRUE)
 
     list(

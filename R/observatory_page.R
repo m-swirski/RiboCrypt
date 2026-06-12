@@ -25,6 +25,11 @@ observatory_server <- function(
         hash = shiny::isolate(session$clientData$url_hash)
       )
     )
+    browser_options <- observatory_browser_url_defaults(
+      browser_options,
+      shiny::isolate(observatory_url_state()),
+      gene_name_list = shiny::isolate(gene_name_list())
+    )
 
     shiny::observe({
       st <- observatory_url_state()
@@ -43,13 +48,13 @@ observatory_server <- function(
     observatory_browser_server(
       "browser_obs",
       selections$meta_experiment_df,
-      selections$selected_libraries$data_table_selections,
+      shiny::reactive(selections$selected_libraries_snapshot()$data_table_selections),
       selections$all_library_runs,
-      selections$selected_libraries$labels, gene_name_list,
+      shiny::reactive(selections$selected_libraries_snapshot()$labels), gene_name_list,
       tx, cds, experiments, org, rv, browser_options,
       templates = templates,
-      selection_index = selections$selected_libraries$index,
-      active_selection_id = selections$active_selection_id,
+      selection_index = shiny::reactive(selections$selected_libraries_snapshot()$index),
+      active_selection_id = shiny::reactive(selections$selected_libraries_snapshot()$active_selection_id),
       selected_experiment = selections$selected_experiment,
       color_by = selections$color_by,
       observatory_url_state = observatory_url_state

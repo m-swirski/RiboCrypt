@@ -538,6 +538,55 @@ observatory_apply_dt_column_filter <- function(column, pattern) {
   )
 }
 
+observatory_selection_snapshot <- function(
+    index,
+    plot_selections,
+    data_table_selections,
+    labels,
+    active_selection_id,
+    active_plot_selection = NULL,
+    active_data_table_selection = NULL) {
+  `%||%` <- function(x, y) if (is.null(x)) y else x
+  clean_runs <- function(x) {
+    if (is.null(x)) return(NULL)
+    x <- unique(as.character(x))
+    x <- x[!is.na(x) & nzchar(x)]
+    x
+  }
+
+  plot_selections <- plot_selections %||% list()
+  data_table_selections <- data_table_selections %||% list()
+  labels <- labels %||% list()
+  index <- as.character(index %||% names(plot_selections) %||% names(data_table_selections))
+  index <- index[!is.na(index) & nzchar(index)]
+  if (length(index) == 0) index <- "1"
+
+  active_selection_id <- as.character(active_selection_id %||% index[1])
+  active_selection_id <- active_selection_id[!is.na(active_selection_id) & nzchar(active_selection_id)]
+  active_selection_id <- active_selection_id[1]
+  if (length(active_selection_id) == 0 || !(active_selection_id %in% index)) {
+    active_selection_id <- index[1]
+  }
+
+  active_plot_selection <- clean_runs(active_plot_selection)
+  if (!is.null(active_plot_selection)) {
+    plot_selections[[active_selection_id]] <- active_plot_selection
+  }
+
+  active_data_table_selection <- clean_runs(active_data_table_selection)
+  if (!is.null(active_data_table_selection)) {
+    data_table_selections[[active_selection_id]] <- active_data_table_selection
+  }
+
+  list(
+    index = index,
+    plot_selections = plot_selections,
+    data_table_selections = data_table_selections,
+    labels = labels,
+    active_selection_id = active_selection_id
+  )
+}
+
 observatory_selector_additional_controller <- function(input, output, session, observatory) {
   `%||%` <- function(x, y) if (is.null(x)) y else x
 
@@ -1087,6 +1136,18 @@ observatory_selector_server <- function(
       data_table_filtered_df()$Run
     })
 
+    selected_libraries_snapshot <- shiny::reactive({
+      observatory_selection_snapshot(
+        index = selected_libraries$all_selections$index(),
+        plot_selections = selected_libraries$all_selections$plot_selections(),
+        data_table_selections = selected_libraries$all_selections$data_table_selections(),
+        labels = selected_libraries$all_selections$labels(),
+        active_selection_id = selected_libraries$active_selection_id(),
+        active_plot_selection = plot_selection(),
+        active_data_table_selection = data_table_selection()
+      )
+    })
+
     observatory_selector_additional_controller(
       input, output, session,
       observatory = list(
@@ -1107,6 +1168,7 @@ observatory_selector_server <- function(
     list(
       meta_experiment_df = meta_experiment_df,
       selected_libraries = selected_libraries$all_selections,
+      selected_libraries_snapshot = selected_libraries_snapshot,
       all_library_runs = shiny::reactive(libraries_df()$Run),
       selected_experiment = shiny::reactive(input$dff),
       color_by = shiny::reactive(input$color_by),

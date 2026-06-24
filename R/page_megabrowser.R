@@ -5,11 +5,14 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   experiments <- all_exp$name
   normalizations <- normalizations("metabrowser")
   enrichment_test_types <- c(`Clusters (Order factor 1)` = "Clusters", `Ratio bins` = "Ratio bins", `Other gene tpm bins` = "Other gene tpm bins")
-  columns_to_show <- c("BioProject", "YEAR","CONDITION", "INHIBITOR",
-                       "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION",
-                       "Cancer_type", "Cell_model", "Cell_type")
-  columns_to_show <- columns_to_show[columns_to_show %in% colnames(metadata)]
-  metadata <- metadata[, ..columns_to_show]
+  if (!is.null(metadata)) {
+    columns_to_show <- c("BioProject", "YEAR","CONDITION", "INHIBITOR",
+                         "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION",
+                         "Cancer_type", "Cell_model", "Cell_type")
+    columns_to_show <- columns_to_show[columns_to_show %in% colnames(metadata)]
+    metadata <- metadata[, ..columns_to_show]
+  }
+
   full_annotation <- as.logical(browser_options["full_annotation"])
   translons <- isTRUE(as.logical(browser_options["translons"]))
   translons_transcode <- isTRUE(as.logical(browser_options["translons_transcode"]))

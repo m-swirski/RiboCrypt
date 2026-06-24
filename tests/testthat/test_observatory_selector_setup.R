@@ -114,6 +114,18 @@ test_that("observatory UMAP JS suppresses programmatic Plotly selection feedback
   expect_match(render_code, "runProgrammaticSelectionSync\\(\\(\\) => Plotly\\.react")
 })
 
+test_that("observatory UMAP JS matches run ids exactly and targets live widget", {
+  render_code <- RiboCrypt:::fetchJS("umap_plot_extension.js")
+
+  expect_match(render_code, "runIdFromText")
+  expect_match(render_code, "selectedRunSetFromMessage")
+  expect_match(render_code, "selectedRuns.has\\(run\\)")
+  expect_match(render_code, "__ribocryptUmapSelectionRegistry")
+  expect_match(render_code, "message.target")
+  expect_false(grepl("runId_counter", render_code, fixed = TRUE))
+  expect_false(grepl("includes(selected", render_code, fixed = TRUE))
+})
+
 test_that("observatory UMAP plot reuses built plotly template", {
   fixture <- make_observatory_selector_fixture()
   template <- RiboCrypt:::observatoryUmapPlotlyTemplate()
@@ -235,6 +247,30 @@ test_that("observatory selection snapshot overlays the live active selection", {
   expect_equal(snapshot$plot_selections[["2"]], c("SRR3", "SRR4"))
   expect_equal(snapshot$data_table_selections[["2"]], "SRR4")
   expect_equal(snapshot$active_selection_id, "2")
+})
+
+test_that("observatory DT filter helpers normalize columns and derive labels", {
+  filters <- list(
+    "2" = list(global = " infected |", columns = c("WT|KO", NA))
+  )
+
+  normalized <- RiboCrypt:::observatory_table_filters_for_selection(filters, "2", 4)
+
+  expect_equal(normalized$global, " infected |")
+  expect_equal(normalized$columns, c("WT|KO", "", "", ""))
+  expect_equal(
+    RiboCrypt:::observatory_table_filter_label(normalized$columns, normalized$global),
+    "wt|ko|infected"
+  )
+  expect_equal(RiboCrypt:::observatory_table_filter_label(NULL, ""), "All merged")
+  expect_equal(
+    RiboCrypt:::observatory_filter_terms_from_string(c("WT", "KO|IFN", NA)),
+    c("WT", "KO", "IFN")
+  )
+  expect_equal(
+    RiboCrypt:::observatory_normalize_column_filters(c("a", "b", "c"), 2),
+    c("a", "b")
+  )
 })
 
 test_that("observatory selector defaults active selection label to All merged", {
@@ -723,6 +759,23 @@ test_that("observatory numeric DT filter helper applies range syntax", {
   expect_equal(filtered$Run, "SRR2")
 })
 
+test_that("observatory DT filtering treats NA search values as empty filters", {
+  df <- data.table::data.table(
+    Run = c("SRR1", "SRR2", "SRR3"),
+    BioProject = c("PRJ1", "PRJ2", "PRJ3"),
+    Frame_usage_0 = c(0.15, 0.45, 0.85)
+  )
+
+  expect_equal(
+    RiboCrypt:::observatory_apply_dt_filters(df, NA_character_, c("", NA, ""))$Run,
+    df$Run
+  )
+  expect_equal(
+    RiboCrypt:::observatory_apply_dt_filters(df, "", c("", "", NA))$Run,
+    df$Run
+  )
+})
+
 test_that("observatory selector applies DT column filters using displayed column order", {
   fixture <- make_observatory_selector_fixture()
 
@@ -1166,6 +1219,26 @@ test_that("observatory browser creates default all-runs selection when none exis
 
   expect_equal(names(resolved), "5")
   expect_equal(resolved[["5"]], c("SRR1", "SRR2"))
+})
+
+test_that("observatory browser selection helpers clean runs and constrain active id", {
+  expect_equal(
+    RiboCrypt:::observatory_clean_run_vector(c("SRR1", NA, "", "SRR1", "SRR2")),
+    c("SRR1", "SRR2")
+  )
+  expect_equal(
+    RiboCrypt:::observatory_browser_selection_ids(list("2" = "SRR2"), c("1", "2")),
+    c("1", "2")
+  )
+  expect_equal(
+    RiboCrypt:::observatory_browser_active_selection_id("9", c("1", "2")),
+    "1"
+  )
+  expect_true(
+    RiboCrypt:::observatory_browser_should_expand_selection(
+      "1", "2", c("1", "2"), "All merged"
+    )
+  )
 })
 
 test_that("observatory browser preserves subset groups alongside All merged", {

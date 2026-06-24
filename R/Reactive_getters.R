@@ -90,50 +90,72 @@ bottom_plots_to_plotly <- function(bottom_panel, is_cellphone = FALSE) {
 }
 
 
+#' Build optional browser bottom tracks from sequence-level bigWig files.
+#' @noRd
 custom_seq_track_panels <- function(df, display_range, phyloP, mapability) {
-  p <- list()
-  if (phyloP) {
-    p <- c(p, phylo = list(phylo_custom_seq_track_panel(df, display_range)))
-  }
-  if (mapability) {
-    p2 <- mapability_custom_seq_track_panel(df, display_range)
-    p <- c(p, mapability = list(p2))
-  }
-  return(list(custom_bigwig_panels = p))
+  tracks <- list()
+  tracks <- append_custom_seq_track(tracks, "phylo", phyloP, function() {
+    phylo_custom_seq_track_panel(df, display_range)
+  })
+  tracks <- append_custom_seq_track(tracks, "mapability", mapability, function() {
+    mapability_custom_seq_track_panel(df, display_range)
+  })
+  list(custom_bigwig_panels = tracks)
 }
 
+#' Add an enabled custom sequence track when the backing file exists.
+#' @noRd
+append_custom_seq_track <- function(tracks, name, enabled, builder) {
+  if (!isTRUE(enabled)) return(tracks)
+  panel <- builder()
+  if (!is.null(panel)) tracks[[name]] <- panel
+  tracks
+}
+
+#' Build the phyloP browser panel when the species file is available.
+#' @noRd
 phylo_custom_seq_track_panel <- function(df, display_range) {
-  bw_dir <- file.path(dirname(df@fafile), "phyloP100way")
-  if (dir.exists(bw_dir)) {
-    bw_track <- list.files(bw_dir, pattern = "\\.phyloP100way\\.bw$", full.names = TRUE)[1]
-    if (length(bw_track) == 1) {
-      print("- Loading PhyloP track")
-      p <- custom_seq_track_panel_bigwig(display_range, bw_track, "P")
-      return(p) # If no valid file found
-    }
-  }
-  return(NULL)
+  custom_seq_track_panel_from_dir(
+    df, display_range, "phyloP100way", "\\.phyloP100way\\.bw$", "P",
+    "- Loading PhyloP track"
+  )
 }
 
+#' Build the 28mer mappability browser panel when the species file is available.
+#' @noRd
 mapability_custom_seq_track_panel <- function(df, display_range) {
-  bw_dir <- file.path(dirname(df@fafile), "mapability")
-  if (dir.exists(bw_dir)) {
-    bw_track <- list.files(bw_dir, pattern = "28mers_mappability\\.bw$", full.names = TRUE)[1]
-    if (length(bw_track) == 1) {
-      print("- Loading mapability track")
-      p <- custom_seq_track_panel_bigwig(display_range, bw_track, "M")
-      return(p) # If no valid file found
-    }
-  }
-  return(NULL)
+  custom_seq_track_panel_from_dir(
+    df, display_range, "mapability", "28mers_mappability\\.bw$", "M",
+    "- Loading mapability track"
+  )
 }
 
+#' Find and build one custom sequence track from a reference sibling directory.
+#' @noRd
+custom_seq_track_panel_from_dir <- function(df, display_range, subdir,
+                                            pattern, ylab, message) {
+  bw_track <- custom_seq_track_file(df, subdir, pattern)
+  if (is.null(bw_track)) return(NULL)
+  print(message)
+  custom_seq_track_panel_bigwig(display_range, bw_track, ylab)
+}
+
+#' Return the first matching custom sequence track file, or NULL.
+#' @noRd
+custom_seq_track_file <- function(df, subdir, pattern) {
+  bw_dir <- file.path(dirname(df@fafile), subdir)
+  if (!dir.exists(bw_dir)) return(NULL)
+  bw_track <- list.files(bw_dir, pattern = pattern, full.names = TRUE)
+  if (!length(bw_track)) return(NULL)
+  bw_track[[1]]
+}
+
+#' Build a compact plotly bar panel from a custom sequence bigWig track.
+#' @noRd
 custom_seq_track_panel_bigwig <- function(grl, bigwig_path, ylab) {
   seqlevelsStyle(grl) <- seqlevelsStyle(rtracklayer::BigWigFile(bigwig_path))[1]
   dt <- coveragePerTiling(grl, bigwig_path)
-  seq_length <- as.numeric(widthPerGroup(grl, FALSE))
-  if (length(seq_length) > 1L) seq_length <- seq_length[[1]]
-  p <- plotly::plot_ly(
+  plot <- plotly::plot_ly(
     data = dt,
     x = ~position,
     y = ~count,
@@ -141,32 +163,41 @@ custom_seq_track_panel_bigwig <- function(grl, bigwig_path, ylab) {
     marker = list(color = "black"),
     hoverinfo = "none",
     showlegend = FALSE
-  ) %>%
-    plotly::layout(
-      bargap = 0,
-      margin = list(t = 0, r = 0, b = 0, l = 0, pad = 0),
-      xaxis = list(
-        title = list(text = ""),
-        showticklabels = FALSE,
-        ticks = "",
-        showgrid = FALSE,
-        zeroline = FALSE,
-        showline = FALSE,
-        autorange = FALSE,
-        range = c(1, seq_length),
-        fixedrange = FALSE
-      ),
-      yaxis = list(
-        title = list(text = ylab, font = list(size = 8)),
-        showticklabels = FALSE,
-        ticks = "",
-        showgrid = FALSE,
-        zeroline = FALSE,
-        showline = FALSE,
-        fixedrange = TRUE
-      )
-    )
-  return(p)
+  )
+  do.call(plotly::layout, c(list(plot), custom_seq_track_layout(grl, ylab)))
+}
+
+#' Plotly layout for compact custom browser sequence tracks.
+#' @noRd
+custom_seq_track_layout <- function(grl, ylab) {
+  list(
+    bargap = 0,
+    margin = list(t = 0, r = 0, b = 0, l = 0, pad = 0),
+    xaxis = custom_seq_track_xaxis(grl),
+    yaxis = custom_seq_track_yaxis(ylab)
+  )
+}
+
+#' X-axis layout for a custom sequence track.
+#' @noRd
+custom_seq_track_xaxis <- function(grl) {
+  browser_set_xaxis_range(custom_seq_track_xaxis_base(), browser_display_x_range(grl))
+}
+
+#' Base x-axis style for custom sequence tracks.
+#' @noRd
+custom_seq_track_xaxis_base <- function() {
+  list(title = list(text = ""), showticklabels = FALSE, ticks = "",
+       showgrid = FALSE, zeroline = FALSE, showline = FALSE,
+       fixedrange = FALSE)
+}
+
+#' Y-axis layout for compact custom sequence tracks.
+#' @noRd
+custom_seq_track_yaxis <- function(ylab) {
+  list(title = list(text = ylab, font = list(size = 8)),
+       showticklabels = FALSE, ticks = "", showgrid = FALSE,
+       zeroline = FALSE, showline = FALSE, fixedrange = TRUE)
 }
 
 

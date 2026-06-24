@@ -136,6 +136,49 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
   )
 }
 
+#' Full x reset range for the active megabrowser state.
+#' @noRd
+megabrowser_reset_range_shiny <- function(controller, table) {
+  megabrowser_full_x_range(controller()$display_region, table()$table)
+}
+
+#' Reset layout for the central megabrowser heatmap.
+#' @noRd
+megabrowser_mid_reset_layout <- function(full_range, table_obj) {
+  list(
+    "xaxis.range" = full_range,
+    "xaxis.autorange" = FALSE,
+    "yaxis.range" = c(0.5, ncol(table_obj$table) + 0.5),
+    "yaxis.autorange" = FALSE
+  )
+}
+
+#' Reset layout for top and bottom megabrowser peer tracks.
+#' @noRd
+megabrowser_peer_reset_layout <- function(full_range) {
+  list("xaxis.range" = full_range, "xaxis.autorange" = FALSE)
+}
+
+#' Add double-click reset behavior to the central megabrowser heatmap.
+#' @noRd
+megabrowser_mid_reset_plot <- function(plot, controller, table, ns) {
+  full_range <- megabrowser_reset_range_shiny(controller, table)
+  addMegabrowserDoubleClickReset(
+    plot,
+    reset_range = full_range,
+    peer_ids = c(ns("mb_top_summary"), ns("mb_bottom_gene")),
+    reset_layout = megabrowser_mid_reset_layout(full_range, table()),
+    peer_reset_layout = megabrowser_peer_reset_layout(full_range)
+  )
+}
+
+#' Add double-click reset behavior to a megabrowser peer track.
+#' @noRd
+megabrowser_peer_reset_plot <- function(plot, controller, table, peer_ids) {
+  full_range <- megabrowser_reset_range_shiny(controller, table)
+  addMegabrowserDoubleClickReset(plot, reset_range = full_range, peer_ids = peer_ids)
+}
+
 browser_allsamp_server <- function(id, all_exp, df, experiments,
                                    gene_name_list, tx, cds, org, motif_name_list,
                                    metadata, browser_options, rv,
@@ -177,22 +220,7 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
 
       output$myPlotlyPlot <- renderPlotly({
         req(input$plotType == "plotly")
-        full_range <- megabrowser_full_x_range(controller()$display_region, table()$table)
-        addMegabrowserDoubleClickReset(
-          mb_mid_plot(),
-          reset_range = full_range,
-          peer_ids = c(ns("mb_top_summary"), ns("mb_bottom_gene")),
-          reset_layout = list(
-            "xaxis.range" = full_range,
-            "xaxis.autorange" = FALSE,
-            "yaxis.range" = c(0.5, ncol(table()$table) + 0.5),
-            "yaxis.autorange" = FALSE
-          ),
-          peer_reset_layout = list(
-            "xaxis.range" = full_range,
-            "xaxis.autorange" = FALSE
-          )
-        )
+        megabrowser_mid_reset_plot(mb_mid_plot(), controller, table, ns)
       }) %>%
         bindCache(controller()$table_plot_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
@@ -209,22 +237,18 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$mb_top_summary <- renderPlotly({
-        full_range <- megabrowser_full_x_range(controller()$display_region, table()$table)
-        addMegabrowserDoubleClickReset(
-          mb_top_plot(),
-          reset_range = full_range,
-          peer_ids = c(ns("myPlotlyPlot"), ns("mb_bottom_gene"))
+        megabrowser_peer_reset_plot(
+          mb_top_plot(), controller, table,
+          c(ns("myPlotlyPlot"), ns("mb_bottom_gene"))
         )
       }) %>%
         bindCache(controller()$table_hash) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$mb_bottom_gene <- renderPlotly({
-        full_range <- megabrowser_full_x_range(controller()$display_region, table()$table)
-        addMegabrowserDoubleClickReset(
-          mb_bottom_plot(),
-          reset_range = full_range,
-          peer_ids = c(ns("myPlotlyPlot"), ns("mb_top_summary"))
+        megabrowser_peer_reset_plot(
+          mb_bottom_plot(), controller, table,
+          c(ns("myPlotlyPlot"), ns("mb_top_summary"))
         )
       }) %>%
         bindCache(controller()$table_hash) %>%

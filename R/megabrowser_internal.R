@@ -123,6 +123,91 @@ mb_read_axis_event <- function(ed, axes) {
   list(r0 = NULL, r1 = NULL, r = NULL, auto = FALSE)
 }
 
+#' Build a megabrowser x-axis relayout from a Plotly relayout event.
+#' @noRd
+mb_x_relayout_from_event <- function(xed, x_reset_range = NULL) {
+  if (!is.null(xed$r0) && !is.null(xed$r1)) {
+    return(list("xaxis.range" = c(xed$r0, xed$r1), "xaxis.autorange" = FALSE))
+  }
+  if (!is.null(xed$r) && length(xed$r) == 2) {
+    return(list("xaxis.range" = c(xed$r[[1]], xed$r[[2]]), "xaxis.autorange" = FALSE))
+  }
+  mb_x_autorange_relayout(xed, x_reset_range)
+}
+
+#' Convert x-axis autorange events to explicit reset ranges when available.
+#' @noRd
+mb_x_autorange_relayout <- function(xed, x_reset_range = NULL) {
+  if (!isTRUE(xed$auto)) return(list())
+  if (is.numeric(x_reset_range) && length(x_reset_range) == 2L &&
+      all(is.finite(x_reset_range)) && x_reset_range[[2]] >= x_reset_range[[1]]) {
+    return(list("xaxis.range" = unname(x_reset_range), "xaxis.autorange" = FALSE))
+  }
+  list("xaxis.autorange" = TRUE)
+}
+
+#' Megabrowser sidebar y-axis style shared by all relayout updates.
+#' @noRd
+mb_sidebar_yaxis_style <- function() {
+  list(showticklabels = FALSE, ticks = "", showgrid = FALSE,
+       zeroline = FALSE, title = NULL)
+}
+
+#' Normalize a y-axis event range for the reversed sidebar coordinate system.
+#' @noRd
+mb_sidebar_y_range <- function(y0_raw, y1_raw, y_max = NULL, y_reversed = TRUE) {
+  if (y_reversed && !is.null(y_max)) {
+    y0_raw <- (y_max + 1) - y0_raw
+    y1_raw <- (y_max + 1) - y1_raw
+  }
+  rounded <- sort(round(c(y0_raw, y1_raw)))
+  c(rounded[[2]] + 0.5, rounded[[1]] - 0.5)
+}
+
+#' Build a sidebar y-axis relayout from a Plotly relayout event.
+#' @noRd
+mb_y_relayout_from_event <- function(yed, y_max = NULL, y_reversed = TRUE) {
+  if (!is.null(yed$r0) && !is.null(yed$r1)) {
+    return(mb_sidebar_range_relayout(yed$r0, yed$r1, y_max, y_reversed))
+  }
+  if (!is.null(yed$r) && length(yed$r) == 2) {
+    return(mb_sidebar_range_relayout(yed$r[[1]], yed$r[[2]], y_max, y_reversed))
+  }
+  if (isTRUE(yed$auto)) return(mb_sidebar_autorange_relayout())
+  NULL
+}
+
+#' Sidebar relayout for an explicit y-axis range.
+#' @noRd
+mb_sidebar_range_relayout <- function(y0, y1, y_max = NULL, y_reversed = TRUE) {
+  yaxis <- c(
+    list(range = mb_sidebar_y_range(y0, y1, y_max, y_reversed),
+         autorange = FALSE),
+    mb_sidebar_yaxis_style()
+  )
+  list(yaxis = yaxis)
+}
+
+#' Sidebar relayout for a y-axis reset.
+#' @noRd
+mb_sidebar_autorange_relayout <- function() {
+  list(yaxis = c(list(autorange = "reversed"), mb_sidebar_yaxis_style()))
+}
+
+#' Apply one relayout payload to a plotly output id.
+#' @noRd
+mb_proxy_relayout <- function(output_id, session, relayout) {
+  plotly::plotlyProxy(output_id, session) %>%
+    plotly::plotlyProxyInvoke("relayout", relayout)
+}
+
+#' Synchronize top and bottom megabrowser x-axis peers.
+#' @noRd
+mb_sync_track_relayout <- function(session, relayout) {
+  mb_proxy_relayout("mb_top_summary", session, relayout)
+  mb_proxy_relayout("mb_bottom_gene", session, relayout)
+}
+
 sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sidebar = TRUE,
                                      y_max = NULL, y_reversed = TRUE,
                                      x_reset_range = NULL,
@@ -132,91 +217,15 @@ sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sideb
 
   xed <- mb_read_axis_event(ed, x_axes)
   yed <- mb_read_axis_event(ed, y_axes)
-
-  if (!is.null(xed$r0) && !is.null(xed$r1)) {
-    relayout <- list("xaxis.range" = c(xed$r0, xed$r1), "xaxis.autorange" = FALSE)
-  } else if (!is.null(xed$r) && length(xed$r) == 2) {
-    relayout <- list("xaxis.range" = c(xed$r[[1]], xed$r[[2]]), "xaxis.autorange" = FALSE)
-  } else if (xed$auto) {
-    if (!is.null(x_reset_range) && length(x_reset_range) == 2) {
-      relayout <- list("xaxis.range" = c(x_reset_range[[1]], x_reset_range[[2]]),
-                       "xaxis.autorange" = FALSE)
-    } else {
-      relayout <- list("xaxis.autorange" = TRUE)
-    }
-  } else {
-    relayout <- list()
-  }
+  relayout <- mb_x_relayout_from_event(xed, x_reset_range)
 
   if (sync_tracks) {
-    plotly::plotlyProxy("mb_top_summary", session) %>%
-      plotly::plotlyProxyInvoke("relayout", relayout)
-    plotly::plotlyProxy("mb_bottom_gene", session) %>%
-      plotly::plotlyProxyInvoke("relayout", relayout)
+    mb_sync_track_relayout(session, relayout)
   }
 
-  if (!is.null(yed$r0) && !is.null(yed$r1)) {
-    y0_raw <- yed$r0
-    y1_raw <- yed$r1
-    if (y_reversed && !is.null(y_max)) {
-      y0_raw <- (y_max + 1) - y0_raw
-      y1_raw <- (y_max + 1) - y1_raw
-    }
-    y0 <- min(y0_raw, y1_raw)
-    y1 <- max(y0_raw, y1_raw)
-    y0c <- round(y0)
-    y1c <- round(y1)
-    if (y0c > y1c) {
-      tmp <- y0c
-      y0c <- y1c
-      y1c <- tmp
-    }
-    y0e <- y0c - 0.5
-    y1e <- y1c + 0.5
-    yrelayout <- list(
-      yaxis = list(
-        range = c(y1e, y0e), autorange = FALSE,
-        showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL
-      )
-    )
-  } else if (!is.null(yed$r) && length(yed$r) == 2) {
-    y0_raw <- yed$r[[1]]
-    y1_raw <- yed$r[[2]]
-    if (y_reversed && !is.null(y_max)) {
-      y0_raw <- (y_max + 1) - y0_raw
-      y1_raw <- (y_max + 1) - y1_raw
-    }
-    y0 <- min(y0_raw, y1_raw)
-    y1 <- max(y0_raw, y1_raw)
-    y0c <- round(y0)
-    y1c <- round(y1)
-    if (y0c > y1c) {
-      tmp <- y0c
-      y0c <- y1c
-      y1c <- tmp
-    }
-    y0e <- y0c - 0.5
-    y1e <- y1c + 0.5
-    yrelayout <- list(
-      yaxis = list(
-        range = c(y1e, y0e), autorange = FALSE,
-        showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL
-      )
-    )
-  } else if (yed$auto) {
-    yrelayout <- list(
-      yaxis = list(
-        autorange = "reversed",
-        showticklabels = FALSE, ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL
-      )
-    )
-  } else {
-    yrelayout <- NULL
-  }
-
+  yrelayout <- mb_y_relayout_from_event(yed, y_max, y_reversed)
   if (sync_sidebar && !is.null(yrelayout)) {
-    plotly::plotlyProxy("d", session) %>%
-      plotly::plotlyProxyInvoke("relayout", yrelayout)
+    mb_proxy_relayout("d", session, yrelayout)
   }
   invisible(NULL)
 }
@@ -238,7 +247,11 @@ megabrowser_full_x_range <- function(display_range = NULL, table = NULL) {
       return(c(1, max_pos))
     }
   }
-  c(1, nrow(table))
+  fallback_max <- if (is.null(table)) NA_real_ else suppressWarnings(nrow(table))
+  if (is.finite(fallback_max) && fallback_max >= 1) {
+    return(c(1, fallback_max))
+  }
+  c(1, 1)
 }
 
 get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
@@ -246,99 +259,158 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
   time_before <- Sys.time()
   cat("Creating metabrowser heatmap\n")
 
-  colors <- if (color_theme == "default (White-Blue)") {
-    c("white", "lightblue", rep("blue", 4 + color_mult), "navy", "black")
-  } else if (color_theme == "Matrix (black,green,red)") {
-    c("#000000", "#2CFA1F", "yellow2", rep("#FF2400", color_mult))
-  } else stop("Invalid color theme!")
-  mat <- t(table)
-
-  km <- attr(table, "km")
-  stopifnot(!is.null(km))
-  row_clusters <- attr(table, "row_order_list")
-  stopifnot(!is.null(row_clusters))
-
+  colors <- megabrowser_heatmap_colors(color_theme, color_mult)
   if (plotType == "plotly") {
-    mat <- mat[rev(unlist(row_clusters, use.names = FALSE)),]
-    plot_mat <- mat[rev(seq_len(nrow(mat))), , drop = FALSE]
-    ratio <- attr(table, "ratio")
-    if (is.null(ratio) || !is.numeric(ratio) || length(ratio) != 1 || !is.finite(ratio) || ratio < 1) {
-      ratio <- 1
-    }
-    ratio <- as.integer(ratio)
-    x_positions <- ((seq_len(ncol(mat)) - 1L) * ratio) + 1L
-    full_x_range <- megabrowser_full_x_range(table = table)
-    full_y_range <- c(0.5, nrow(mat) + 0.5)
-    colorscale <- megabrowser_heatmap_colorscale(colors)
-
-    margins <- margin_megabrowser()
-    margins$t <- margins$b  <- 8
-    if (inherits(template, "plotly")) {
-      plot <- template
-      plot$x$data[[1]]$x <- x_positions
-      plot$x$data[[1]]$y <- NULL
-      plot$x$data[[1]]$z <- plot_mat
-      plot$x$data[[1]]$colorscale <- colorscale
-      plot$x$data[[1]]$zmin <- NULL
-      plot$x$data[[1]]$zmax <- NULL
-      plot$x$data[[1]]$zauto <- NULL
-      plot$x$data[[1]]$autocolorscale <- NULL
-      if (length(plot$x$attrs) >= 1) {
-        plot$x$attrs[[1]]$x <- x_positions
-        plot$x$attrs[[1]]$y <- NULL
-        plot$x$attrs[[1]]$z <- plot_mat
-        plot$x$attrs[[1]]$colorscale <- colorscale
-      }
-      plot <- plot %>% plotly::layout(
-        margin = margins,
-        xaxis = list(
-          range = full_x_range,
-          autorange = FALSE
-        ),
-        yaxis = list(
-          range = full_y_range,
-          autorange = FALSE
-        ),
-        dragmode = "zoom"
-      ) %>%
-        plotly::config(doubleClick = FALSE)
-    } else {
-      plot <- plotly::plot_ly(
-        x = x_positions,
-        z = plot_mat,
-        colors = colors,
-        showscale = FALSE,
-        type = "heatmapgl"
-      ) %>% plotly::layout(
-        margin = margins,
-        xaxis = list(
-          range = full_x_range,
-          autorange = FALSE
-        ),
-        yaxis = list(
-          range = full_y_range,
-          autorange = FALSE
-        ),
-        dragmode = "zoom"
-      ) %>%
-        plotly::config(doubleClick = FALSE)
-    }
-
+    plot <- megabrowser_plotly_heatmap(table, colors, template)
   } else {
-    mat <- mat[rev(unlist(row_clusters, use.names = FALSE)),]
-    cluster <- km$cluster[rev(unlist(row_clusters, use.names = FALSE))]
-    cluster <- factor(cluster, levels = rev(sort(unique(cluster))))
-
-    plot <- ComplexHeatmap::Heatmap(mat, show_row_dend = FALSE,
-                            cluster_columns = FALSE,
-                            cluster_rows = FALSE,
-                            use_raster = TRUE,  raster_quality = 5,
-                            split = cluster, gap = unit(0.2, "mm"),
-                            col =  colors, show_row_names = FALSE,
-                            show_heatmap_legend = FALSE, row_title = NULL)
+    plot <- megabrowser_complex_heatmap(table, colors)
   }
   timer_done_nice_print("-- metabrowser heatmap done: ", time_before)
   return(plot)
+}
+
+#' Color palette for megabrowser heatmaps.
+#' @noRd
+megabrowser_heatmap_colors <- function(color_theme, color_mult = 3) {
+  if (color_theme == "default (White-Blue)") {
+    return(c("white", "lightblue", rep("blue", 4 + color_mult), "navy", "black"))
+  }
+  if (color_theme == "Matrix (black,green,red)") {
+    return(c("#000000", "#2CFA1F", "yellow2", rep("#FF2400", color_mult)))
+  }
+  stop("Invalid color theme!")
+}
+
+#' Validate and return the saved megabrowser clustering attributes.
+#' @noRd
+megabrowser_row_clusters <- function(table) {
+  km <- attr(table, "km")
+  row_clusters <- attr(table, "row_order_list")
+  stopifnot(!is.null(km), !is.null(row_clusters))
+  list(km = km, row_clusters = row_clusters)
+}
+
+#' Matrix ordered to match the megabrowser sidebar ordering.
+#' @noRd
+megabrowser_ordered_matrix <- function(table) {
+  clusters <- megabrowser_row_clusters(table)
+  mat <- t(table)
+  mat[rev(unlist(clusters$row_clusters, use.names = FALSE)), , drop = FALSE]
+}
+
+#' Binning ratio for a megabrowser heatmap table.
+#' @noRd
+megabrowser_table_ratio <- function(table) {
+  ratio <- attr(table, "ratio")
+  if (is.null(ratio) || !is.numeric(ratio) || length(ratio) != 1L ||
+      !is.finite(ratio) || ratio < 1) return(1L)
+  as.integer(ratio)
+}
+
+#' Plotly heatmap data derived from a megabrowser table.
+#' @noRd
+megabrowser_plotly_heatmap_data <- function(table) {
+  mat <- megabrowser_ordered_matrix(table)
+  ratio <- megabrowser_table_ratio(table)
+  list(
+    x = ((seq_len(ncol(mat)) - 1L) * ratio) + 1L,
+    z = mat[rev(seq_len(nrow(mat))), , drop = FALSE],
+    x_range = megabrowser_full_x_range(table = table),
+    y_range = c(0.5, nrow(mat) + 0.5)
+  )
+}
+
+#' Margins for the central megabrowser heatmap.
+#' @noRd
+megabrowser_heatmap_margins <- function() {
+  margins <- margin_megabrowser()
+  margins$t <- margins$b <- 8
+  margins
+}
+
+#' Plotly layout for the central megabrowser heatmap.
+#' @noRd
+megabrowser_heatmap_layout <- function(heatmap_data) {
+  list(
+    margin = megabrowser_heatmap_margins(),
+    xaxis = list(range = heatmap_data$x_range, autorange = FALSE),
+    yaxis = list(range = heatmap_data$y_range, autorange = FALSE),
+    dragmode = "zoom"
+  )
+}
+
+#' Reuse a plotly heatmap template with new megabrowser data.
+#' @noRd
+megabrowser_heatmap_from_template <- function(template, heatmap_data, colorscale) {
+  plot <- template
+  plot$x$data[[1]]$x <- heatmap_data$x
+  plot$x$data[[1]]$y <- NULL
+  plot$x$data[[1]]$z <- heatmap_data$z
+  plot$x$data[[1]]$colorscale <- colorscale
+  plot$x$data[[1]]$zmin <- NULL
+  plot$x$data[[1]]$zmax <- NULL
+  plot$x$data[[1]]$zauto <- NULL
+  plot$x$data[[1]]$autocolorscale <- NULL
+  megabrowser_heatmap_attrs_from_data(plot, heatmap_data, colorscale)
+}
+
+#' Keep plotly attrs aligned with template data for build-time reuse.
+#' @noRd
+megabrowser_heatmap_attrs_from_data <- function(plot, heatmap_data, colorscale) {
+  if (length(plot$x$attrs) >= 1) {
+    plot$x$attrs[[1]]$x <- heatmap_data$x
+    plot$x$attrs[[1]]$y <- NULL
+    plot$x$attrs[[1]]$z <- heatmap_data$z
+    plot$x$attrs[[1]]$colorscale <- colorscale
+  }
+  plot
+}
+
+#' Build a new plotly megabrowser heatmap when no template is supplied.
+#' @noRd
+megabrowser_new_plotly_heatmap <- function(heatmap_data, colors) {
+  plotly::plot_ly(
+    x = heatmap_data$x,
+    z = heatmap_data$z,
+    colors = colors,
+    showscale = FALSE,
+    type = "heatmapgl"
+  )
+}
+
+#' Apply common layout and Plotly config to a megabrowser heatmap.
+#' @noRd
+megabrowser_configure_plotly_heatmap <- function(plot, heatmap_data) {
+  do.call(plotly::layout, c(list(plot), megabrowser_heatmap_layout(heatmap_data))) %>%
+    plotly::config(doubleClick = FALSE)
+}
+
+#' Build the plotly megabrowser heatmap.
+#' @noRd
+megabrowser_plotly_heatmap <- function(table, colors, template = NULL) {
+  heatmap_data <- megabrowser_plotly_heatmap_data(table)
+  colorscale <- megabrowser_heatmap_colorscale(colors)
+  plot <- if (inherits(template, "plotly")) {
+    megabrowser_heatmap_from_template(template, heatmap_data, colorscale)
+  } else {
+    megabrowser_new_plotly_heatmap(heatmap_data, colors)
+  }
+  megabrowser_configure_plotly_heatmap(plot, heatmap_data)
+}
+
+#' ComplexHeatmap fallback for static megabrowser rendering.
+#' @noRd
+megabrowser_complex_heatmap <- function(table, colors) {
+  clusters <- megabrowser_row_clusters(table)
+  mat <- megabrowser_ordered_matrix(table)
+  cluster <- clusters$km$cluster[rev(unlist(clusters$row_clusters, use.names = FALSE))]
+  cluster <- factor(cluster, levels = rev(sort(unique(cluster))))
+  ComplexHeatmap::Heatmap(
+    mat, show_row_dend = FALSE, cluster_columns = FALSE,
+    cluster_rows = FALSE, use_raster = TRUE, raster_quality = 5,
+    split = cluster, gap = unit(0.2, "mm"), col = colors,
+    show_row_names = FALSE, show_heatmap_legend = FALSE, row_title = NULL
+  )
 }
 
 megabrowser_heatmap_colorscale <- function(colors) {
@@ -578,96 +650,91 @@ profile_plotly_gl <- function(dt, frame_colors = frame_color_themes("R"),
     )
 }
 
-summary_track_allsamples <- function(mat, template = NULL) {
-  time_before <- Sys.time()
-  if (is.null(template)) {
-    template <- covPanelColumnsPlotlyTemplate()
-  }
-  is_empty_summary <- is.null(mat) ||
-    nrow(mat) == 0L ||
+#' TRUE when a megabrowser summary coverage table cannot be plotted.
+#' @noRd
+mb_summary_track_is_empty <- function(mat) {
+  is.null(mat) || nrow(mat) == 0L ||
     !all(c("position", "count") %in% names(mat)) ||
     !any(is.finite(mat$position)) ||
     !any(is.finite(mat$count))
+}
 
-  if (is_empty_summary) {
-    summary_plot <- template %>%
-      plotly::layout(
-        showlegend = FALSE,
-        hovermode = "closest",
-        margin = margin_megabrowser(),
-        paper_bgcolor = "rgba(0,0,0,0)",
-        plot_bgcolor = "rgba(0,0,0,0)",
-        xaxis = list(
-          range = c(0, 1),
-          autorange = FALSE,
-          showticklabels = FALSE,
-          ticks = "",
-          showgrid = FALSE,
-          zeroline = FALSE,
-          title = NULL,
-          fixedrange = FALSE
-        ),
-        yaxis = list(
-          showticklabels = FALSE,
-          ticks = "",
-          showgrid = FALSE,
-          zeroline = FALSE,
-          title = NULL,
-          fixedrange = TRUE
-        )
-      ) %>%
-      plotly::config(doubleClick = FALSE)
-    summary_plot$x$layout$yaxis$title <- NULL
-    summary_plot$x$source <- "mb_top"
-    timer_done_nice_print("-- Mega browser summary track done: ", time_before)
-    return(summary_plot)
-  }
+#' Shared x-axis style for the megabrowser summary track.
+#' @noRd
+mb_summary_xaxis <- function(x_range) {
+  list(range = x_range, autorange = FALSE, showticklabels = FALSE,
+       ticks = "", showgrid = FALSE, zeroline = FALSE, title = NULL,
+       fixedrange = FALSE)
+}
 
-  x_range <- range(mat$position, na.rm = TRUE)
-  summary_plot <- createSinglePlot(
-    profile = mat,
-    withFrames = TRUE,
-    frame_colors = "R",
-    colors = NULL,
-    ylabels = "summary",
-    ylabels_full_name = "summary",
-    lines = numeric(),
-    type = "columns",
-    lib_index = 1,
-    total_libs = 1,
-    flip_ylabel = FALSE,
-    templates = list(cov_panel_columns_plotly = template)
-  ) %>%
-    plotly::layout(
-      showlegend = FALSE,
-      hovermode = "closest",
-      margin = margin_megabrowser(),
-      paper_bgcolor = "rgba(0,0,0,0)",
-      plot_bgcolor  = "rgba(0,0,0,0)",
-      xaxis = list(
-        range = x_range,
-        autorange = FALSE,
-        showticklabels = FALSE,
-        ticks = "",
-        showgrid = FALSE,
-        zeroline = FALSE,
-        title = NULL,
-        fixedrange = FALSE
-      ),
-      yaxis = list(
-        showticklabels = FALSE,
-        ticks = "",
-        showgrid = FALSE,
-        zeroline = FALSE,
-        title = NULL,
-        fixedrange = TRUE
-      )
-    ) %>%
-    addColumnsZoomSwitch() %>%
-    lineDeSimplify() %>%
+#' Shared y-axis style for the megabrowser summary track.
+#' @noRd
+mb_summary_yaxis <- function() {
+  list(showticklabels = FALSE, ticks = "", showgrid = FALSE,
+       zeroline = FALSE, title = NULL, fixedrange = TRUE)
+}
+
+#' Shared layout for the megabrowser summary track.
+#' @noRd
+mb_summary_track_layout <- function(x_range) {
+  list(
+    showlegend = FALSE,
+    hovermode = "closest",
+    margin = margin_megabrowser(),
+    paper_bgcolor = "rgba(0,0,0,0)",
+    plot_bgcolor = "rgba(0,0,0,0)",
+    xaxis = mb_summary_xaxis(x_range),
+    yaxis = mb_summary_yaxis()
+  )
+}
+
+#' Apply shared layout and source metadata to a summary track plot.
+#' @noRd
+mb_finalize_summary_track <- function(plot, x_range) {
+  plot <- do.call(plotly::layout, c(list(plot), mb_summary_track_layout(x_range))) %>%
     plotly::config(doubleClick = FALSE)
-  summary_plot$x$layout$yaxis$title <- NULL
-  summary_plot$x$source <- "mb_top"
+  plot$x$layout$yaxis$title <- NULL
+  plot$x$source <- "mb_top"
+  plot
+}
+
+#' Empty summary track placeholder.
+#' @noRd
+mb_empty_summary_track <- function(template) {
+  mb_finalize_summary_track(template, c(0, 1))
+}
+
+#' Summary track profile plot before shared layout and JS hooks.
+#' @noRd
+mb_summary_profile_plot <- function(mat, template) {
+  createSinglePlot(
+    profile = mat, withFrames = TRUE, frame_colors = "R", colors = NULL,
+    ylabels = "summary", ylabels_full_name = "summary", lines = numeric(),
+    type = "columns", lib_index = 1, total_libs = 1, flip_ylabel = FALSE,
+    templates = list(cov_panel_columns_plotly = template)
+  )
+}
+
+#' Non-empty summary track plot with column switching and line simplification.
+#' @noRd
+mb_nonempty_summary_track <- function(mat, template) {
+  plot <- mb_summary_profile_plot(mat, template) %>%
+    mb_finalize_summary_track(range(mat$position, na.rm = TRUE)) %>%
+    addColumnsZoomSwitch() %>%
+    lineDeSimplify()
+  plot$x$layout$yaxis$title <- NULL
+  plot$x$source <- "mb_top"
+  plot
+}
+
+summary_track_allsamples <- function(mat, template = NULL) {
+  time_before <- Sys.time()
+  if (is.null(template)) template <- covPanelColumnsPlotlyTemplate()
+  summary_plot <- if (mb_summary_track_is_empty(mat)) {
+    mb_empty_summary_track(template)
+  } else {
+    mb_nonempty_summary_track(mat, template)
+  }
   timer_done_nice_print("-- Mega browser summary track done: ", time_before)
   return(summary_plot)
 }

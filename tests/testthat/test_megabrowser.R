@@ -95,6 +95,51 @@ test_that("megabrowser_full_x_range prefers display range span", {
   )
 
   expect_equal(RiboCrypt:::megabrowser_full_x_range(display_range, table), c(1, 1350))
+  expect_equal(RiboCrypt:::megabrowser_full_x_range(table = data.table::data.table()), c(1, 1))
+})
+
+test_that("megabrowser relayout helpers build x and sidebar y reset payloads", {
+  expect_equal(
+    RiboCrypt:::mb_x_relayout_from_event(
+      list(r0 = 10, r1 = 50, r = NULL, auto = FALSE)
+    ),
+    list("xaxis.range" = c(10, 50), "xaxis.autorange" = FALSE)
+  )
+  expect_equal(
+    RiboCrypt:::mb_x_relayout_from_event(
+      list(r0 = NULL, r1 = NULL, r = NULL, auto = TRUE),
+      x_reset_range = c(1, 500)
+    ),
+    list("xaxis.range" = c(1, 500), "xaxis.autorange" = FALSE)
+  )
+  expect_equal(
+    RiboCrypt:::mb_x_relayout_from_event(
+      list(r0 = NULL, r1 = NULL, r = NULL, auto = TRUE),
+      x_reset_range = c(1, NA)
+    ),
+    list("xaxis.autorange" = TRUE)
+  )
+  expect_equal(
+    RiboCrypt:::mb_x_relayout_from_event(
+      list(r0 = NULL, r1 = NULL, r = NULL, auto = TRUE),
+      x_reset_range = c(10, 1)
+    ),
+    list("xaxis.autorange" = TRUE)
+  )
+  expect_equal(
+    RiboCrypt:::mb_y_relayout_from_event(
+      list(r0 = 8.4, r1 = 4.6, r = NULL, auto = FALSE),
+      y_max = 8,
+      y_reversed = TRUE
+    )$yaxis$range,
+    c(4.5, 0.5)
+  )
+  expect_identical(
+    RiboCrypt:::mb_y_relayout_from_event(
+      list(r0 = NULL, r1 = NULL, r = NULL, auto = TRUE)
+    )$yaxis$autorange,
+    "reversed"
+  )
 })
 
 test_that("margin_megabrowser returns expected margins", {
@@ -187,6 +232,14 @@ test_that("summary_track_allsamples handles empty summary data without warnings"
   built <- plotly::plotly_build(p)
   expect_equal(unname(built$x$layout$xaxis$range), c(0, 1))
   expect_identical(p$x$source, "mb_top")
+})
+
+test_that("summary track helpers classify valid and empty coverage", {
+  expect_true(RiboCrypt:::mb_summary_track_is_empty(NULL))
+  expect_true(RiboCrypt:::mb_summary_track_is_empty(data.table::data.table(position = 1)))
+  expect_false(RiboCrypt:::mb_summary_track_is_empty(
+    data.table::data.table(position = 1:2, count = c(0, 3))
+  ))
 })
 
 test_that("annotation_track_allsamples forwards custom regions", {
@@ -353,6 +406,24 @@ test_that("addMegabrowserDoubleClickReset attaches a double-click reset hook", {
   expect_match(render_code, "peer_ids")
 })
 
+test_that("megabrowser reset layout helpers use full x range and heatmap rows", {
+  table_obj <- list(table = data.table::data.table(a = 1:3, b = 4:6))
+
+  expect_equal(
+    RiboCrypt:::megabrowser_mid_reset_layout(c(1, 30), table_obj),
+    list(
+      "xaxis.range" = c(1, 30),
+      "xaxis.autorange" = FALSE,
+      "yaxis.range" = c(0.5, 2.5),
+      "yaxis.autorange" = FALSE
+    )
+  )
+  expect_equal(
+    RiboCrypt:::megabrowser_peer_reset_layout(c(1, 30)),
+    list("xaxis.range" = c(1, 30), "xaxis.autorange" = FALSE)
+  )
+})
+
 test_that("get_meta_browser_plot returns plotly heatmap for plotly type", {
   mat <- matrix(1:20, nrow = 5, ncol = 4)
   table <- data.table::data.table(mat)
@@ -373,6 +444,24 @@ test_that("get_meta_browser_plot returns plotly heatmap for plotly type", {
   expect_identical(built$x$layout$yaxis$autorange, FALSE)
   expect_identical(built$x$layout$dragmode, "zoom")
   expect_equal(unname(built$x$data[[1]]$z[, 1]), c(1, 6, 11, 16))
+})
+
+test_that("megabrowser heatmap helpers derive plotly data and palettes", {
+  mat <- matrix(1:20, nrow = 5, ncol = 4)
+  table <- data.table::data.table(mat)
+  data.table::setattr(table, "ratio", 2L)
+  data.table::setattr(table, "km", stats::kmeans(t(mat), centers = 2))
+  data.table::setattr(table, "row_order_list", list("1" = seq(4)))
+
+  heatmap_data <- RiboCrypt:::megabrowser_plotly_heatmap_data(table)
+
+  expect_equal(utils::head(heatmap_data$x, 3), c(1, 3, 5))
+  expect_equal(dim(heatmap_data$z), c(4, 5))
+  expect_equal(
+    RiboCrypt:::megabrowser_heatmap_colors("Matrix (black,green,red)", 2),
+    c("#000000", "#2CFA1F", "yellow2", "#FF2400", "#FF2400")
+  )
+  expect_error(RiboCrypt:::megabrowser_heatmap_colors("missing"), "Invalid color theme")
 })
 
 test_that("get_meta_browser_plot uses original-coordinate x range for binned tables", {

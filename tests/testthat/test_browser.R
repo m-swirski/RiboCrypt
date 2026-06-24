@@ -108,6 +108,26 @@ make_browser_track_test_fixture <- function(frames_type, kmers, df, tx, cds) {
   )
 }
 
+make_custom_bottom_track <- function(x = 1:6, y = rep(1, length(x)), label = "P") {
+  plotly::plot_ly(x = x, y = y, type = "bar", showlegend = FALSE) %>%
+    plotly::layout(
+      xaxis = list(showticklabels = FALSE),
+      yaxis = list(title = list(text = label), showticklabels = FALSE)
+    )
+}
+
+with_custom_bottom_track <- function(bottom_panel, custom_track) {
+  bottom_panel$custom_bigwig_panels <- list(custom_track)
+  bottom_panel$bottom_plots <- RiboCrypt:::bottom_plots_to_plotly(bottom_panel)
+  bottom_panel$ncustom <- 1L
+  bottom_panel
+}
+
+expect_plot_xaxis_range <- function(plot, expected) {
+  expect_equal(unname(plot$x$layout$xaxis$range), expected)
+  expect_false(isTRUE(plot$x$layout$xaxis$autorange))
+}
+
 make_collapsed_overlap_fixture <- function() {
   display_tx <- GenomicRanges::GRangesList(
     txA = GenomicRanges::GRanges(
@@ -812,7 +832,7 @@ test_that("browser_track_panel_shiny applies zoom_range to the shared x axis", {
     fixture$session
   )
 
-  expect_equal(unname(plot$x$layout$xaxis$range), c(20, 60))
+  expect_plot_xaxis_range(plot, c(20, 60))
 })
 
 test_that("browser_track_panel_shiny keeps full x range with sparse custom bottom track", {
@@ -821,19 +841,7 @@ test_that("browser_track_panel_shiny keeps full x range with sparse custom botto
   controls <- fixture$controls()
 
   bottom_panel <- RiboCrypt:::bottom_panel_shiny(function() controls)
-  custom_track <- plotly::plot_ly(
-    x = 1:6,
-    y = rep(1, 6),
-    type = "bar",
-    showlegend = FALSE
-  ) %>%
-    plotly::layout(
-      xaxis = list(showticklabels = FALSE),
-      yaxis = list(title = list(text = "P"), showticklabels = FALSE)
-    )
-  bottom_panel$custom_bigwig_panels <- list(custom_track)
-  bottom_panel$bottom_plots <- RiboCrypt:::bottom_plots_to_plotly(bottom_panel)
-  bottom_panel$ncustom <- 1L
+  bottom_panel <- with_custom_bottom_track(bottom_panel, make_custom_bottom_track())
 
   plot <- RiboCrypt:::browser_track_panel_shiny(
     function() controls,
@@ -843,8 +851,7 @@ test_that("browser_track_panel_shiny keeps full x range with sparse custom botto
 
   expected_max <- as.numeric(ORFik::widthPerGroup(bottom_panel$display_range, FALSE))
   if (length(expected_max) > 1L) expected_max <- expected_max[[1]]
-  expect_equal(unname(plot$x$layout$xaxis$range), c(1, expected_max))
-  expect_false(isTRUE(plot$x$layout$xaxis$autorange))
+  expect_plot_xaxis_range(plot, c(1, expected_max))
 })
 
 test_that("browser_track_panel_shiny keeps zoom_range when a custom bottom track is present", {
@@ -854,19 +861,8 @@ test_that("browser_track_panel_shiny keeps zoom_range when a custom bottom track
   controls_with_zoom$zoom_range <- c(20, 60)
 
   bottom_panel <- RiboCrypt:::bottom_panel_shiny(function() controls_with_zoom)
-  custom_track <- plotly::plot_ly(
-    x = 1:100,
-    y = rep(1, 100),
-    type = "bar",
-    showlegend = FALSE
-  ) %>%
-    plotly::layout(
-      xaxis = list(showticklabels = FALSE),
-      yaxis = list(title = list(text = "P"), showticklabels = FALSE)
-    )
-  bottom_panel$custom_bigwig_panels <- list(custom_track)
-  bottom_panel$bottom_plots <- RiboCrypt:::bottom_plots_to_plotly(bottom_panel)
-  bottom_panel$ncustom <- 1L
+  custom_track <- make_custom_bottom_track(x = 1:100, y = rep(1, 100))
+  bottom_panel <- with_custom_bottom_track(bottom_panel, custom_track)
 
   plot <- RiboCrypt:::browser_track_panel_shiny(
     function() controls_with_zoom,
@@ -878,6 +874,46 @@ test_that("browser_track_panel_shiny keeps zoom_range when a custom bottom track
   ranges <- lapply(xaxis_names, function(axis_name) plot$x$layout[[axis_name]]$range)
 
   expect_true(all(vapply(ranges, function(r) identical(unname(r), c(20, 60)), logical(1))))
+})
+
+test_that("browser x-range helpers prefer zoom and otherwise use full display", {
+  display_range <- GenomicRanges::GRangesList(
+    tx = GenomicRanges::GRanges("chr1", IRanges::IRanges(c(1, 10), c(4, 15)), "+")
+  )
+
+  expect_equal(RiboCrypt:::browser_display_x_range(display_range), c(1, 10))
+  expect_equal(RiboCrypt:::browser_target_x_range(display_range, c(3, 7)), c(3, 7))
+  expect_equal(RiboCrypt:::browser_target_x_range(display_range, numeric(0)), c(1, 10))
+
+  empty_range <- GenomicRanges::GRangesList(
+    tx = GenomicRanges::GRanges()
+  )
+  expect_null(RiboCrypt:::browser_display_x_range(empty_range))
+})
+
+test_that("custom_seq_track_panels omits unavailable optional tracks", {
+  testthat::local_mocked_bindings(
+    custom_seq_track_file = function(...) NULL,
+    .package = "RiboCrypt"
+  )
+
+  panels <- RiboCrypt:::custom_seq_track_panels(df[1, ], tx[1], TRUE, TRUE)
+
+  expect_identical(panels, list(custom_bigwig_panels = list()))
+})
+
+test_that("custom_seq_track_panels preserves available optional track names", {
+  testthat::local_mocked_bindings(
+    phylo_custom_seq_track_panel = function(...) "phylo-panel",
+    mapability_custom_seq_track_panel = function(...) "map-panel",
+    .package = "RiboCrypt"
+  )
+
+  panels <- RiboCrypt:::custom_seq_track_panels(df[1, ], tx[1], TRUE, TRUE)
+
+  expect_identical(names(panels$custom_bigwig_panels), c("phylo", "mapability"))
+  expect_identical(panels$custom_bigwig_panels$phylo, "phylo-panel")
+  expect_identical(panels$custom_bigwig_panels$mapability, "map-panel")
 })
 
 test_that("custom_seq_track_panel_bigwig builds a native plotly bar track", {
@@ -1267,6 +1303,7 @@ test_that("browser_plot_final_layout_polish keeps x ticks only on bottom shared 
   expect_true(isTRUE(polished$x$layout$xaxis$visible))
   expect_true(isTRUE(polished$x$layout$xaxis$showticklabels))
   expect_identical(polished$x$layout$xaxis$title$text, "position [nt]")
+  expect_plot_xaxis_range(polished, c(1, 10))
   expect_identical(polished$x$layout$legend$x, 1.02)
   expect_identical(polished$x$layout$legend$xanchor, "left")
   expect_identical(polished$x$layout$legend$y, 0.92)

@@ -552,6 +552,157 @@ lock_yaxis_domains_by_proportions <- function(p, proportions, gap = 0, fixed = T
   p
 }
 
+#' Use x = 1..transcript-width as the browser's full reset range.
+#' @noRd
+browser_display_x_range <- function(display_range) {
+  max_x <- suppressWarnings(as.numeric(widthPerGroup(display_range, FALSE)))
+  if (!length(max_x) || !is.finite(max_x[[1]]) || max_x[[1]] < 1) return(NULL)
+  c(1, max_x[[1]])
+}
+
+#' Prefer an explicit zoom range, otherwise use the full browser display range.
+#' @noRd
+browser_target_x_range <- function(display_range, zoom_range = NULL) {
+  if (is.numeric(zoom_range) && length(zoom_range) == 2L &&
+      all(is.finite(zoom_range))) return(unname(zoom_range))
+  browser_display_x_range(display_range)
+}
+
+#' Set a Plotly x-axis range and disable autorange.
+#' @noRd
+browser_set_xaxis_range <- function(axis, x_range) {
+  if (is.null(axis)) axis <- list()
+  if (is.null(x_range)) return(axis)
+  axis$range <- unname(x_range)
+  axis$autorange <- FALSE
+  axis
+}
+
+#' Plotly layout names for x axes.
+#' @noRd
+browser_xaxis_names <- function(plot) {
+  layout_names <- names(plot$x$layout)
+  layout_names[grepl("^xaxis[0-9]*$", layout_names)]
+}
+
+#' Return x if present, otherwise default.
+#' @noRd
+browser_value_or <- function(x, default) {
+  if (is.null(x)) default else x
+}
+
+#' Bottom domain coordinate for the y-axis anchored to an x-axis.
+#' @noRd
+browser_xaxis_bottom <- function(plot, axis_name) {
+  axis <- browser_value_or(plot$x$layout[[axis_name]], list())
+  anchor <- browser_value_or(axis$anchor, "y")
+  yaxis_name <- if (identical(anchor, "y")) "yaxis" else paste0("yaxis", sub("^y", "", anchor))
+  domain <- browser_value_or(plot$x$layout[[yaxis_name]]$domain, c(0, 1))
+  domain[[1]]
+}
+
+#' Identify the bottom x-axis so only it renders tick labels.
+#' @noRd
+browser_bottom_xaxis <- function(plot, xaxis_names = browser_xaxis_names(plot)) {
+  if (!length(xaxis_names)) return("xaxis")
+  bottoms <- vapply(xaxis_names, browser_xaxis_bottom, numeric(1), plot = plot)
+  xaxis_names[[which.min(bottoms)]]
+}
+
+#' Style one browser x-axis after shared subplot assembly.
+#' @noRd
+browser_style_xaxis <- function(axis, axis_name, bottom_xaxis) {
+  if (is.null(axis)) axis <- list()
+  axis$visible <- identical(axis_name, bottom_xaxis)
+  axis$showticklabels <- identical(axis_name, bottom_xaxis)
+  axis$tickfont <- list(size = 16)
+  axis$title <- browser_xaxis_title(axis_name, bottom_xaxis)
+  axis
+}
+
+#' Browser x-axis title for bottom and non-bottom axes.
+#' @noRd
+browser_xaxis_title <- function(axis_name, bottom_xaxis) {
+  if (identical(axis_name, bottom_xaxis)) {
+    return(list(text = "position [nt]", font = list(size = 22)))
+  }
+  list(text = "")
+}
+
+#' Hide duplicate x axes and keep the bottom x-axis labelled.
+#' @noRd
+browser_style_xaxes <- function(plot) {
+  xaxis_names <- browser_xaxis_names(plot)
+  bottom_xaxis <- browser_bottom_xaxis(plot, xaxis_names)
+  for (axis_name in xaxis_names) {
+    plot$x$layout[[axis_name]] <- browser_style_xaxis(
+      plot$x$layout[[axis_name]], axis_name, bottom_xaxis
+    )
+  }
+  plot
+}
+
+#' Browser legend layout shared by all browser plots.
+#' @noRd
+browser_legend_layout <- function() {
+  list(x = 1.02, xanchor = "left", y = 0.92, yanchor = "top",
+       orientation = "v")
+}
+
+#' Apply the browser legend layout to Plotly and its backing layout list.
+#' @noRd
+browser_apply_legend_layout <- function(plot) {
+  legend <- browser_legend_layout()
+  plot <- plot %>% plotly::layout(legend = legend)
+  plot$x$layout$legend <- legend
+  plot
+}
+
+#' Add Plotly export options using the transcript name by default.
+#' @noRd
+browser_apply_export_options <- function(plot, plot_name, display_range,
+                                         width, height, export.format) {
+  filename <- ifelse(plot_name == "default", names(display_range), plot_name)
+  addToImageButtonOptions(plot, filename, width, height, format = export.format)
+}
+
+#' Add an optional browser plot title.
+#' @noRd
+browser_apply_plot_title <- function(plot, plot_title) {
+  if (is.null(plot_title)) return(plot)
+  plot %>% plotly::layout(title = plot_title)
+}
+
+#' Force every shared x-axis onto the same reset/initial range.
+#' @noRd
+browser_apply_shared_x_range <- function(plot, x_range) {
+  axis_names <- browser_xaxis_names(plot)
+  if (!length(axis_names)) axis_names <- "xaxis"
+  for (axis_name in axis_names) {
+    plot$x$layout[[axis_name]] <- browser_set_xaxis_range(
+      plot$x$layout[[axis_name]], x_range
+    )
+  }
+  plot
+}
+
+#' Add browser JS hooks that depend on the full display range.
+#' @noRd
+browser_apply_browser_interactivity <- function(plot, display_x_range) {
+  if (!is.null(display_x_range)) {
+    plot <- addBrowserXRangeClamp(plot, min_x = 1, max_x = display_x_range[[2]])
+  }
+  plot <- browser_legend_cleanup(plot)
+  addColumnsZoomSwitch(plot)
+}
+
+#' Optionally disable Plotly line simplification for animated traces.
+#' @noRd
+browser_apply_line_desimplify <- function(plot, apply_line_desimplify) {
+  if (isTRUE(apply_line_desimplify)) return(lineDeSimplify(plot))
+  plot
+}
+
 browser_plot_final_layout_polish <- function(multiomics_plot,
                                              plot_name,
                                              display_range,
@@ -562,92 +713,15 @@ browser_plot_final_layout_polish <- function(multiomics_plot,
                                              zoom_range,
                                              proportions,
                                              apply_line_desimplify = FALSE) {
+  display_x_range <- browser_display_x_range(display_range)
   multiomics_plot <- remove_y_axis_zero_tick_js(multiomics_plot)
-  max_x <- as.numeric(widthPerGroup(display_range, FALSE))
-  if (length(max_x) > 1) max_x <- max_x[[1]]
-  full_x_range <- c(1, max_x)
-
-  xaxis_names <- names(multiomics_plot$x$layout)[grepl("^xaxis[0-9]*$", names(multiomics_plot$x$layout))]
-  bottom_xaxis <- "xaxis"
-  if (length(xaxis_names) > 0) {
-    `%||%` <- function(x, y) if (is.null(x)) y else x
-
-    axis_bottom <- function(axis_name) {
-      axis <- multiomics_plot$x$layout[[axis_name]]
-      anchor <- axis$anchor %||% "y"
-      yaxis_name <- if (identical(anchor, "y")) "yaxis" else paste0("yaxis", sub("^y", "", anchor))
-      yaxis <- multiomics_plot$x$layout[[yaxis_name]]
-      domain <- yaxis$domain %||% c(0, 1)
-      domain[[1]]
-    }
-
-    bottom_xaxis <- xaxis_names[[which.min(vapply(xaxis_names, axis_bottom, numeric(1)))]]
-
-    for (axis_name in xaxis_names) {
-      axis <- multiomics_plot$x$layout[[axis_name]]
-      if (is.null(axis)) axis <- list()
-      axis$visible <- identical(axis_name, bottom_xaxis)
-      axis$showticklabels <- identical(axis_name, bottom_xaxis)
-      axis$tickfont <- list(size = 16)
-      axis$title <- if (identical(axis_name, bottom_xaxis)) {
-        list(text = "position [nt]", font = list(size = 22))
-      } else {
-        list(text = "")
-      }
-      multiomics_plot$x$layout[[axis_name]] <- axis
-    }
-  }
-
-  multiomics_plot <- multiomics_plot %>%
-    plotly::layout(
-      legend = list(
-        x = 1.02,
-        xanchor = "left",
-        y = 0.92,
-        yanchor = "top",
-        orientation = "v"
-      )
-    )
-  multiomics_plot$x$layout$legend <- list(
-    x = 1.02,
-    xanchor = "left",
-    y = 0.92,
-    yanchor = "top",
-    orientation = "v"
-  )
-
-  filename <- ifelse(plot_name == "default", names(display_range), plot_name)
-  multiomics_plot <- addToImageButtonOptions(multiomics_plot, filename,
-                                             width, height, format = export.format)
-  if (!is.null(plot_title)) multiomics_plot <- multiomics_plot %>%
-    plotly::layout(title = plot_title)
-  # Lock proportions on zoom out
-  # multiomics_plot <- lock_yaxis_domains_by_proportions(multiomics_plot, proportions, gap = 0)
-  target_x_range <- if (!is.null(zoom_range) && length(zoom_range) == 2) {
-    zoom_range
-  } else if (length(full_x_range) == 2L && all(is.finite(full_x_range))) {
-    full_x_range
-  } else {
-    NULL
-  }
-  if (!is.null(target_x_range)) {
-    # Apply the initial range to every shared x-axis so sparse added tracks do
-    # not define the reset/autorange range.
-    for (axis_name in unique(c(bottom_xaxis, xaxis_names))) {
-      axis <- multiomics_plot$x$layout[[axis_name]]
-      if (is.null(axis)) axis <- list()
-      axis$range <- target_x_range
-      axis$autorange <- FALSE
-      multiomics_plot$x$layout[[axis_name]] <- axis
-    }
-  }
-  multiomics_plot <- addBrowserXRangeClamp(multiomics_plot, min_x = 1, max_x = max_x)
-  multiomics_plot <- browser_legend_cleanup(multiomics_plot)
-  multiomics_plot <- addColumnsZoomSwitch(multiomics_plot)
-  if (isTRUE(apply_line_desimplify)) {
-    return(lineDeSimplify(multiomics_plot))
-  }
-  multiomics_plot
+  multiomics_plot <- browser_style_xaxes(multiomics_plot)
+  multiomics_plot <- browser_apply_legend_layout(multiomics_plot)
+  multiomics_plot <- browser_apply_export_options(multiomics_plot, plot_name, display_range, width, height, export.format)
+  multiomics_plot <- browser_apply_plot_title(multiomics_plot, plot_title)
+  multiomics_plot <- browser_apply_shared_x_range(multiomics_plot, browser_target_x_range(display_range, zoom_range))
+  multiomics_plot <- browser_apply_browser_interactivity(multiomics_plot, display_x_range)
+  browser_apply_line_desimplify(multiomics_plot, apply_line_desimplify)
 }
 
 fast_subplot_shared_x <- function(...,

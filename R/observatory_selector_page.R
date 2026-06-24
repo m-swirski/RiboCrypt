@@ -466,6 +466,7 @@ observatory_apply_dt_filters <- function(df, global_search, column_searches) {
   }
 
   keep <- rep(TRUE, nrow(df))
+  global_search <- observatory_single_search_value(global_search)
 
   if (!is.null(column_searches)) {
     max_cols <- min(ncol(df), length(column_searches))
@@ -475,7 +476,7 @@ observatory_apply_dt_filters <- function(df, global_search, column_searches) {
     }
   }
 
-  if (!is.null(global_search) && nzchar(global_search)) {
+  if (nzchar(global_search)) {
     row_match <- Reduce(
       `|`,
       lapply(df, function(col) {
@@ -490,6 +491,11 @@ observatory_apply_dt_filters <- function(df, global_search, column_searches) {
   }
 
   df[keep]
+}
+
+observatory_single_search_value <- function(x) {
+  if (is.null(x) || length(x) == 0L || is.na(x[[1]])) return("")
+  as.character(x[[1]])
 }
 
 observatory_filter_range <- function(values, search_string) {
@@ -523,7 +529,8 @@ observatory_filter_range <- function(values, search_string) {
 }
 
 observatory_apply_dt_column_filter <- function(column, pattern) {
-  if (is.null(pattern) || !nzchar(pattern)) {
+  pattern <- observatory_single_search_value(pattern)
+  if (!nzchar(pattern)) {
     return(rep(TRUE, length(column)))
   }
 
@@ -587,6 +594,93 @@ observatory_selection_snapshot <- function(
   )
 }
 
+#' Normalize DT column filters to the current displayed column count.
+#' @noRd
+observatory_normalize_column_filters <- function(columns, column_count) {
+  normalized <- rep("", column_count)
+  if (is.null(columns)) return(normalized)
+  columns <- as.character(columns)
+  columns[is.na(columns)] <- ""
+  max_cols <- min(length(normalized), length(columns))
+  if (max_cols > 0) normalized[seq_len(max_cols)] <- columns[seq_len(max_cols)]
+  normalized
+}
+
+#' Empty DT filter state for an observatory selection.
+#' @noRd
+observatory_empty_table_filters <- function(column_count) {
+  list(global = "", columns = observatory_normalize_column_filters(NULL, column_count))
+}
+
+#' Filter state for one observatory selection.
+#' @noRd
+observatory_table_filters_for_selection <- function(filters_by_selection,
+                                                    selection_id,
+                                                    column_count) {
+  filters <- filters_by_selection[[selection_id]]
+  if (is.null(filters)) return(observatory_empty_table_filters(column_count))
+  filters$global <- observatory_single_search_value(filters$global)
+  filters$columns <- observatory_normalize_column_filters(filters$columns, column_count)
+  filters
+}
+
+#' Split one DT filter string into non-empty terms.
+#' @noRd
+observatory_filter_terms_from_string <- function(x) {
+  if (is.null(x) || length(x) == 0) return(character())
+  x <- as.character(x)
+  x <- x[!is.na(x) & nzchar(x)]
+  if (!length(x)) return(character())
+  terms <- unlist(strsplit(x, "\\|", fixed = FALSE), use.names = FALSE)
+  terms <- trimws(terms)
+  terms[nzchar(terms)]
+}
+
+#' Terms currently applied through DT global and column filters.
+#' @noRd
+observatory_table_filter_terms <- function(columns = NULL, global = NULL) {
+  terms <- character()
+  if (!is.null(columns)) {
+    terms <- unlist(lapply(as.character(columns), observatory_filter_terms_from_string),
+                    use.names = FALSE)
+  }
+  unique(c(terms, observatory_filter_terms_from_string(global)))
+}
+
+#' Auto-label for a selection represented by DT filters.
+#' @noRd
+observatory_table_filter_label <- function(columns = NULL, global = NULL) {
+  terms <- observatory_table_filter_terms(columns, global)
+  if (!length(terms)) return("All merged")
+  paste(tolower(terms), collapse = "|")
+}
+
+#' Targeted UMAP selection message for the active observatory selector module.
+#' @noRd
+observatory_umap_selection_message <- function(session, runs = character()) {
+  runs <- unique(as.character(runs %||% character()))
+  runs <- runs[!is.na(runs) & nzchar(runs)]
+  list(target = session$ns("libraries_umap_plot_selection"), runs = runs)
+}
+
+#' Send a UMAP highlight update for the active observatory selection.
+#' @noRd
+observatory_send_umap_selection_changed <- function(session, runs) {
+  session$sendCustomMessage(
+    "librariesActiveSelectionChanged",
+    observatory_umap_selection_message(session, runs)
+  )
+}
+
+#' Send a UMAP highlight reset for the active observatory selection.
+#' @noRd
+observatory_send_umap_selection_reset <- function(session) {
+  session$sendCustomMessage(
+    "librariesActiveSelectionReset",
+    list(target = session$ns("libraries_umap_plot_selection"))
+  )
+}
+
 observatory_selector_additional_controller <- function(input, output, session, observatory) {
   `%||%` <- function(x, y) if (is.null(x)) y else x
 
@@ -614,25 +708,13 @@ observatory_selector_additional_controller <- function(input, output, session, o
   }
 
   normalize_column_filters <- function(columns) {
-    normalized <- rep("", displayed_column_count())
-    if (is.null(columns)) return(normalized)
-    columns <- as.character(columns)
-    max_cols <- min(length(normalized), length(columns))
-    if (max_cols > 0) {
-      normalized[seq_len(max_cols)] <- columns[seq_len(max_cols)]
-    }
-    normalized
+    observatory_normalize_column_filters(columns, displayed_column_count())
   }
 
   table_filters_for_selection <- function(selection_id) {
-    filters <- data_table_filters()[[selection_id]]
-    if (is.null(filters)) {
-      filters <- list(global = "", columns = normalize_column_filters(NULL))
-    } else {
-      filters$global <- filters$global %||% ""
-      filters$columns <- normalize_column_filters(filters$columns)
-    }
-    filters
+    observatory_table_filters_for_selection(
+      data_table_filters(), selection_id, displayed_column_count()
+    )
   }
 
   table_filters_have_terms <- function(filters) {
@@ -732,7 +814,7 @@ observatory_selector_additional_controller <- function(input, output, session, o
     )
     clear_active_table_filters(selection_id)
     with_active_subset_update(current_plot_selection(runs))
-    session$sendCustomMessage("librariesActiveSelectionChanged", runs)
+    observatory_send_umap_selection_changed(session, runs)
     apply_data_table_selection(selection_id)
     invisible(NULL)
   }
@@ -754,7 +836,7 @@ observatory_selector_additional_controller <- function(input, output, session, o
     selected_libraries$set_active_label("All merged")
     clear_active_table_filters(selection_id)
     with_active_subset_update(current_plot_selection(character()))
-    session$sendCustomMessage("librariesActiveSelectionReset", "")
+    observatory_send_umap_selection_reset(session)
     apply_data_table_selection(selection_id, character())
     invisible(NULL)
   }
@@ -887,24 +969,9 @@ observatory_selector_additional_controller <- function(input, output, session, o
       return()
     }
 
-    terms <- character(0)
-    if (!is.null(columns)) {
-      column_values <- as.character(columns)
-      terms <- unlist(strsplit(column_values, "\\|", fixed = FALSE), use.names = FALSE)
-    }
-    if (!is.null(global) && nzchar(global)) {
-      terms <- c(terms, unlist(strsplit(global, "\\|", fixed = FALSE), use.names = FALSE))
-    }
-
-    terms <- trimws(terms)
-    terms <- terms[nzchar(terms)]
-    if (length(terms) == 0) {
-      selected_libraries$set_active_label("All merged")
-      return()
-    }
-
-    label <- paste(tolower(unique(terms)), collapse = "|")
-    selected_libraries$set_active_label(label)
+    selected_libraries$set_active_label(
+      observatory_table_filter_label(columns, global)
+    )
   }) |> shiny::bindEvent(
     input$libraries_data_table_manual_search_columns,
     input$libraries_data_table_manual_search
@@ -945,15 +1012,9 @@ observatory_selector_additional_controller <- function(input, output, session, o
   shiny::observe({
     selection <- selected_libraries$active_data_table_selection()
     if (observatory_selection_is_all_merged(selection, libraries_df()$Run)) {
-      session$sendCustomMessage(
-        "librariesActiveSelectionReset",
-        ""
-      )
+      observatory_send_umap_selection_reset(session)
     } else {
-      session$sendCustomMessage(
-        "librariesActiveSelectionChanged",
-        selection
-      )
+      observatory_send_umap_selection_changed(session, selection)
     }
   }) |> shiny::bindEvent(
     selected_libraries$active_data_table_selection(),
@@ -1111,7 +1172,7 @@ observatory_selector_server <- function(
         }
       }
       list(
-        global = manual_global %||% "",
+        global = observatory_single_search_value(manual_global),
         columns = displayed_columns
       )
     })

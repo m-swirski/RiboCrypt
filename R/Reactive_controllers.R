@@ -137,6 +137,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
       dff <- observed_exp_subset(isolate(input$library), libs, df)
       if (nrow(dff) > 200) stop("Browser only supports up to 200 libraries for now,
                                 use Observatory Browser / Megabrowser")
+      if (input$unique_align) uniqueMappers(dff) <- TRUE
       reads <- get_track_paths(dff)
       if (isolate(input$withFrames)) {
         withFrames <- libraryTypes(dff, uniqueTypes = FALSE) %in% c("RFP", "RPF", "LSU", "TI")
@@ -154,7 +155,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
                              sep = "|obs|")
     }
 
-    if (!is_observatory && input$unique_align) uniqueMappers(dff) <- TRUE
+
     frames_subset <- input$frames_subset
     use_all_frames <- length(frames_subset) == 0 || any(c("","all") %in% frames_subset)
     if (use_all_frames) frames_subset <- "all"

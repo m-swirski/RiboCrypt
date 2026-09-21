@@ -527,25 +527,25 @@ study_and_gene_observers <- function(input, output, session) {
 
     } else if (uses_gene) {
       print(id)
-      choices <- unique(isolate(gene_name_list())[,2][[1]])
-      default_gene <- if (id %in% collection_ids) {
-        browser_options["default_gene_meta"]
-      } else {
-        browser_options["default_gene"]
-      }
-      default_tx <- if (id %in% collection_ids) {
-        browser_options["default_isoform_meta"]
-      } else {
-        browser_options["default_isoform"]
-      }
+      gene_name_list_local <- isolate(gene_name_list())
+      browser_options <- resolve_browser_default_options(
+        browser_options,
+        gene_name_list_local,
+        id,
+        query = isolate(getQueryString())
+      )
+      choices <- unique(gene_name_list_local[,2][[1]])
+      default_options <- browser_default_option_names(id)
+      default_gene <- browser_options[default_options["gene"]]
+      default_tx <- browser_options[default_options["tx"]]
       initial_gene <- resolve_gene_selection(
-        isolate(gene_name_list()),
+        gene_name_list_local,
         preferred = default_gene
       )
       # Init round gene
       if (id %in% collection_ids) {
         print("Updating collection gene set")
-        gene_update_select_internal(isolate(gene_name_list()), selected = initial_gene)
+        gene_update_select_internal(gene_name_list_local, selected = initial_gene)
         if (id == collection_ids[1]) {
           gene_update_select_internal(NULL, choices = c("", choices),
                                       id = "other_gene")
@@ -554,7 +554,7 @@ study_and_gene_observers <- function(input, output, session) {
                        ignoreNULL = TRUE, ignoreInit = FALSE, priority = 6)
         }
       } else {
-        gene_update_select_internal(isolate(gene_name_list()), selected = initial_gene)
+        gene_update_select_internal(gene_name_list_local, selected = initial_gene)
       }
       # Non init round gene
       observeEvent(gene_name_list(), {
@@ -585,14 +585,14 @@ study_and_gene_observers <- function(input, output, session) {
       # Tx id update
       # Init round
       initial_tx <- resolve_tx_selection(
-        isolate(gene_name_list()),
+        gene_name_list_local,
         gene = initial_gene,
         preferred = default_tx
       )
       if (length(initial_tx) > 0) {
         tx_update_select_isolated(
           initial_gene,
-          isolate(gene_name_list()),
+          gene_name_list_local,
           selected = initial_tx,
           page = id
         )

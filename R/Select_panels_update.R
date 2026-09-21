@@ -106,6 +106,53 @@ resolve_tx_selection <- function(gene_name_list, gene, preferred = NULL,
   if (length(selected) == 0 || is.na(selected)) isoforms[1] else selected
 }
 
+browser_default_option_names <- function(id) {
+  collection_ids <- c("browser_allsamp", "browser_obs", "selector")
+  if (id %in% collection_ids) {
+    c(gene = "default_gene_meta", tx = "default_isoform_meta")
+  } else {
+    c(gene = "default_gene", tx = "default_isoform")
+  }
+}
+
+url_query_has_value <- function(query, name) {
+  value <- query[[name]]
+  !is.null(value) && length(value) > 0 && !is.na(value[1]) && nzchar(value[1])
+}
+
+gene_for_url_tx <- function(gene_name_list, tx) {
+  if (!isTruthy(tx)) return(character())
+  tx_match <- gene_name_list[value == tx, label][1]
+  if (length(tx_match) == 0 || is.na(tx_match)) character() else tx_match
+}
+
+resolve_browser_default_options <- function(browser_options, gene_name_list, id,
+                                            query = list()) {
+  option_names <- browser_default_option_names(id)
+  default_gene <- as.character(browser_options[option_names["gene"]])
+  default_tx <- as.character(browser_options[option_names["tx"]])
+  query_has_gene <- url_query_has_value(query, "gene")
+  query_has_tx <- url_query_has_value(query, "tx")
+
+  preferred_gene <- if (!query_has_gene && query_has_tx) {
+    gene_for_url_tx(gene_name_list, default_tx)
+  } else {
+    default_gene
+  }
+  selected_gene <- resolve_gene_selection(gene_name_list, preferred = preferred_gene)
+  selected_tx <- resolve_tx_selection(
+    gene_name_list, selected_gene, preferred = default_tx
+  )
+
+  if (!query_has_gene && length(selected_gene) > 0 && isTruthy(selected_gene)) {
+    browser_options[option_names["gene"]] <- selected_gene
+  }
+  if (!query_has_tx && length(selected_tx) > 0 && isTruthy(selected_tx)) {
+    browser_options[option_names["tx"]] <- selected_tx
+  }
+  browser_options
+}
+
 tx_update_select_isolated <- function(gene = NULL, gene_name_list, additionals = NULL,
                              selected = NULL, page = "") {
   page <- paste0("(", page, ")")

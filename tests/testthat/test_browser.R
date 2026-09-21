@@ -292,6 +292,47 @@ test_that("go_when_input_is_ready triggers kickoff when inputs match", {
   expect_true(shiny::isolate(isTRUE(kickoff())))
 })
 
+test_that("short browser URL autostart resolves omitted gene and transcript defaults", {
+  gene_name_list <- data.table::data.table(
+    value = c("TXA1", "TXA2"),
+    label = c("GENEA", "GENEA")
+  )
+  short_query <- list(
+    dff = "all_samples-Saccharomyces_cerevisiae",
+    library = "RUN1",
+    go = "true"
+  )
+  browser_options <- c(
+    plot_on_start = "true",
+    default_gene = "OLDGENE",
+    default_isoform = "OLDTX",
+    default_libs = "RUN1"
+  )
+  input <- list(gene = "GENEA", tx = "TXA1", library = "RUN1")
+  libs <- shiny::reactiveVal("RUN1")
+
+  fired <- shiny::reactiveVal(FALSE)
+  kickoff <- shiny::reactiveVal(FALSE)
+  shiny::isolate(RiboCrypt:::go_when_input_is_ready(
+    input, browser_options, fired, kickoff, libs
+  ))
+  expect_false(shiny::isolate(isTRUE(kickoff())))
+
+  resolved <- RiboCrypt:::resolve_browser_default_options(
+    browser_options, gene_name_list, "browser", query = short_query
+  )
+  expect_equal(unname(resolved["default_gene"]), "GENEA")
+  expect_equal(unname(resolved["default_isoform"]), "TXA1")
+
+  fired <- shiny::reactiveVal(FALSE)
+  kickoff <- shiny::reactiveVal(FALSE)
+  shiny::isolate(RiboCrypt:::go_when_input_is_ready(
+    input, resolved, fired, kickoff, libs
+  ))
+  expect_true(shiny::isolate(isTRUE(fired())))
+  expect_true(shiny::isolate(isTRUE(kickoff())))
+})
+
 test_that("run IDs in browser URLs resolve to library names", {
   libs <- c(
     "RFP_WT_HEK293_kidney_fdmso_PRJNA727298_r1",

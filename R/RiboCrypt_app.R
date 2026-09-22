@@ -123,7 +123,7 @@ RiboCrypt_app <- function(
   server <- function(input, output, session) {
     reactive_url()
     org_and_study_changed_checker(input, output, session)
-    tutorial_server("tutorial")
+    on_first_tab(input, "tutorial", function() tutorial_server("tutorial"))
     rv <- browser_server(
       "browser", all_exp, without_readlengths_env, df,
       experiments, tx, cds, libs, org, gene_name_list,
@@ -147,29 +147,31 @@ RiboCrypt_app <- function(
           templates = templates
         )
       }
-      collection_pages(input, output, session,
-                       df = df_meta,
-                       all_exp = all_exp_meta,
-                       names_init = names_init_meta,
-                       tx_init = tx_init_meta,
-                       cds_init = cds_init_meta,
-                       exp_init = exp_init_meta,
-                       exps_dir, metadata, browser_options)
+      on_first_tab(input, c("MegaBrowser", "Observatory"), function() {
+        collection_pages(input, output, session,
+                         df = df_meta,
+                         all_exp = all_exp_meta,
+                         names_init = names_init_meta,
+                         tx_init = tx_init_meta,
+                         cds_init = cds_init_meta,
+                         exp_init = exp_init_meta,
+                         exps_dir, metadata, browser_options)
+      })
 
     } else {
       print("No collections given, ignoring MegaBrowser and observatory.")
     }
-    rv <- analysis_server(
-      "Analysis", all_exp, without_readlengths_env,
-      with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
-      gene_name_list, rv, metadata, names_init, browser_options
-    )
-    metadata_server(
-      "metadata",
-      all_exp, metadata,
-      all_exp_meta,
-      browser_options
-    )
+    on_first_tab(input, c("Motif metaplot", "Codon dwell time",
+                         "Differential expression", "Frame bias", "FastQ report"),
+      function() analysis_server(
+        "Analysis", all_exp, without_readlengths_env,
+        with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
+        gene_name_list, rv, metadata, names_init, browser_options
+      ))
+    on_first_tab(input, c("Samples", "Studies", "SRA search", "Predicted Translons", "UMAP"),
+      function() metadata_server(
+        "metadata", all_exp, metadata, all_exp_meta, browser_options
+      ))
 
     cat("Server this: ")
     print(round(Sys.time() - this_time_before, 2))

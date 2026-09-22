@@ -74,12 +74,12 @@ gene_choices_from_gene_list <- function(gene_name_list) {
 }
 
 gene_exists_in_gene_list <- function(gene_name_list, gene) {
-  isTruthy(gene) && gene %in% gene_choices_from_gene_list(gene_name_list)
+  isTruthy(gene) && gene %in% gene_name_list[[2]]
 }
 
 resolve_gene_selection <- function(gene_name_list, preferred = NULL,
                                    fallback = NULL) {
-  choices <- gene_choices_from_gene_list(gene_name_list)
+  choices <- gene_name_list[[2]]
   if (length(choices) == 0) return(character())
 
   candidates <- unique(c(preferred, fallback))

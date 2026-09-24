@@ -2,7 +2,43 @@
 
 Date: 2026-09-24. Application commit: `6921bc7`.
 Profiling branch: `perf/plotly-render-profile`.
-No R application code or shipped JavaScript was changed in this investigation.
+No R application code or shipped JavaScript was changed during the original
+profiling investigation. The subsequent branch implementation is described below.
+
+## Application follow-up
+
+The branch now applies the SVG choice through normal `RiboCrypt_app()` calls.
+`automateTicksAA()` uses `aa_panel_renderer()` to retain SVG for codon/frame
+panels with at most 2,000 coordinate entries across their traces. This conservative
+cutoff includes ATF4's 330 entries and is not a benchmark-derived universal
+break-even point. Larger desktop panels retain WebGL; mobile panels retain
+their existing SVG behavior. Coverage tracks and dynamically zoomed sequence
+letters are unchanged. No dependency-preloading or sequence-callback changes
+are included in this iteration.
+
+The full R suite passed 2,776 assertions. Added tests cover preserved coordinates,
+hover text, custom motifs, frame colors, ranges, the exact cutoff across multiple
+traces, dense-panel fallback, mobile behavior and unmodified input objects.
+The normal app (without browser-side trace rewriting) started ATF4 with three
+SVG codon/frame traces, no initial WebGL canvases and all 21 expected traces.
+Chrome exercised actual codon hover and sequence-copy clicks, zoomed sequence
+letters, autorange reset to `[1, 2294]`, and retained range after viewport resize.
+Screenshots confirmed visible codon markers. This resize check does not certify
+the existing overall page layout as mobile-responsive.
+The Observatory URL round trip, selection highlighting, subset/reset actions and
+`go=FALSE` smoke checks also passed with this renderer change.
+
+Run the renderer interaction smoke check against a source-loaded app with:
+
+```sh
+NODE_PATH=/tmp/observatory-url-browser/node_modules \
+  node benchmarks/aa-svg-smoke.cjs http://127.0.0.1:7820/
+```
+
+Stop any old app, run `devtools::load_all(".")` in this checkout, and launch a new
+`RiboCrypt_app()` to test the branch implementation rather than a previously
+cached plot. The original profiling results below are retained as historical
+measurements, not new timings for the integrated implementation.
 
 ## Findings
 

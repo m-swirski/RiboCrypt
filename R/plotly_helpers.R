@@ -55,8 +55,18 @@ automateTicksAA <- function(plot, is_cellphone = FALSE) {
                                 title = list(font = list(size = 22))),
                      xaxis=list(autorange=FALSE))
   }
-  if (!is_cellphone) p <- suppressWarnings(p %>% toWebGL())
-  return(p)
+  aa_panel_renderer(p, is_cellphone)
+}
+
+#' Avoid WebGL startup for small codon panels; keep it for dense desktop panels.
+#' @noRd
+aa_panel_renderer <- function(plot, is_cellphone = FALSE, svg_point_limit = 2000L) {
+  plot <- plotly::plotly_build(plot)
+  point_count <- sum(vapply(plot$x$data, function(trace) length(trace$x), integer(1)))
+  if (!is_cellphone && point_count > svg_point_limit) {
+    return(suppressWarnings(plotly::toWebGL(plot)))
+  }
+  plot
 }
 
 #'

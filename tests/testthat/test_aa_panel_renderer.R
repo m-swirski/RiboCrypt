@@ -1,0 +1,46 @@
+test_that("small codon panels retain SVG coordinates, hover and frame colors", {
+  sequence <- Biostrings::DNAString("ATGTAATAGTGACCCATG")
+  hits <- createSeqPanelPattern(sequence, custom_motif = "CCC")
+  panel <- plotAASeqPanelPlotly(hits, sequence, frame_colors = "Color_blind")
+  original <- plotly::plotly_build(panel)
+  desktop <- plotly::plotly_build(automateTicksAA(panel))
+  mobile <- plotly::plotly_build(automateTicksAA(panel, is_cellphone = TRUE))
+  expect_true(all(vapply(desktop$x$data, function(trace) identical(trace$type, "scatter"), logical(1))))
+  expect_equal(desktop$x$data, mobile$x$data)
+  expect_equal(desktop$x$data, original$x$data)
+  expect_equal(desktop$x$layout$shapes, original$x$layout$shapes)
+  expect_equal(desktop$x$layout$xaxis$range, c(1, nchar(sequence)))
+  expect_equal(desktop$x$layout$yaxis$range, c(-1, 2))
+  expect_true(desktop$x$layout$yaxis$fixedrange)
+  expect_true(any(vapply(desktop$x$data, function(trace) {
+    any(grepl("User Motif", trace$text, fixed = TRUE))
+  }, logical(1))))
+  expect_equal(plotly::plotly_build(panel)$x$data, original$x$data)
+})
+
+test_that("renderer cutoff counts the whole panel and preserves dense mobile SVG", {
+  panel <- plotly::plot_ly(x = 1:1000, y = rep(0, 1000), type = "scatter", mode = "lines")
+  panel <- plotly::add_trace(panel, x = 1:1000, y = rep(1, 1000))
+  small <- plotly::plotly_build(aa_panel_renderer(panel))
+  dense <- plotly::add_trace(panel, x = 1, y = 2)
+  desktop <- plotly::plotly_build(aa_panel_renderer(dense))
+  mobile <- plotly::plotly_build(aa_panel_renderer(dense, is_cellphone = TRUE))
+  types <- function(plot) vapply(plot$x$data, function(trace) trace$type, character(1))
+  expect_equal(types(small), rep("scatter", 2))
+  expect_equal(types(desktop), rep("scattergl", 3))
+  expect_equal(types(mobile), rep("scatter", 3))
+  for (i in seq_along(desktop$x$data)) {
+    expect_equal(desktop$x$data[[i]]$x, mobile$x$data[[i]]$x)
+    expect_equal(desktop$x$data[[i]]$y, mobile$x$data[[i]]$y)
+  }
+})
+
+test_that("real dense codon panels still use WebGL on desktop", {
+  sequence <- Biostrings::DNAString(paste(rep("ATGTAA", 600), collapse = ""))
+  panel <- plotAASeqPanelPlotly(createSeqPanelPattern(sequence), sequence)
+  desktop <- plotly::plotly_build(automateTicksAA(panel))
+  mobile <- plotly::plotly_build(automateTicksAA(panel, is_cellphone = TRUE))
+  expect_true(all(vapply(desktop$x$data, function(trace) identical(trace$type, "scattergl"), logical(1))))
+  expect_true(all(vapply(mobile$x$data, function(trace) identical(trace$type, "scatter"), logical(1))))
+  expect_equal(desktop$x$layout$shapes, mobile$x$layout$shapes)
+})

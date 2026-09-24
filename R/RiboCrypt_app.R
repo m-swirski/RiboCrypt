@@ -189,5 +189,5 @@ RiboCrypt_app <- function(
     cat("Server total: ")
     print(round(Sys.time() - time_before, 2))
   }
-  shinyApp(ui, server, options = options)
+  cache_static_app_ui(shinyApp(ui, server, options = options))
 }

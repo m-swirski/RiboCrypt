@@ -6,6 +6,8 @@ is kept in Git and excluded from R source bundles by `^benchmarks$` in
 
 ## Reports
 
+- [2026-09-24: warm UI response cache](2026-09-24-warm-ui-response.md):
+  next startup iteration, alternating control comparison and cache safety tests.
 - [2026-09-24: Observatory URL review](2026-09-24-observatory-url-review.md):
   restoration fixes, browser round-trip checks and known validation limits.
 - [2026-09-22: ATF4 startup performance branch](2026-09-22-atf4-startup-branch.md):

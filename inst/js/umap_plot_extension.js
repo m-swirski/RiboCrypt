@@ -186,4 +186,5 @@
     });
     registry.handlersInstalled = true;
   }
+  Shiny.setInputValue(valuesInputId + "_ready", Math.random(), { priority: "event" });
 };

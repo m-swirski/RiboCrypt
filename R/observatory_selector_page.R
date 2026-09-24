@@ -451,6 +451,7 @@ observatory_selector_data_table_shiny <- function(libraries_df, table_id = "libr
         "    selectedRuns = new Set(message.selected_runs || []);",
         "    applySelectionToCurrentPage();",
         "  });",
+        "  Shiny.setInputValue(baseId + '_ready', Math.random(), {priority: 'event'});",
         "}"
       )
     ),
@@ -862,13 +863,18 @@ observatory_selector_additional_controller <- function(input, output, session, o
     ignoreInit = TRUE
   )
 
-  shiny::observe({
-    observatory_module()
+  reset_dataset_selection <- function() {
     current_plot_selection(NULL)
     if (!is.null(selected_libraries$active_selection_id())) {
       selected_libraries$set_active_label("All merged")
     }
-  }) |> shiny::bindEvent(observatory_module(), ignoreInit = TRUE)
+  }
+  shiny::observeEvent(input$go, {
+    if (shiny::isTruthy(input$go)) reset_dataset_selection()
+  }, ignoreInit = TRUE)
+  shiny::observeEvent(observatory$experiment_name(), {
+    reset_dataset_selection()
+  }, ignoreInit = TRUE)
 
   shiny::observeEvent(
     list(
@@ -956,7 +962,7 @@ observatory_selector_additional_controller <- function(input, output, session, o
     restore_active_plot_selection(selection_id)
     apply_data_table_filters(selection_id)
     apply_data_table_selection(selection_id)
-  }) |> shiny::bindEvent(selected_libraries$active_selection_id())
+  }) |> shiny::bindEvent(selected_libraries$active_selection_id(), selected_libraries$initialized())
 
   shiny::observe({
     columns <- input$libraries_data_table_manual_search_columns
@@ -1019,8 +1025,14 @@ observatory_selector_additional_controller <- function(input, output, session, o
   }) |> shiny::bindEvent(
     selected_libraries$active_data_table_selection(),
     libraries_df(),
+    input$libraries_umap_plot_selection_ready,
     ignoreNULL = FALSE
   )
+  shiny::observeEvent(input$libraries_data_table_ready, {
+    selection_id <- selected_libraries$active_selection_id()
+    apply_data_table_filters(selection_id)
+    apply_data_table_selection(selection_id)
+  })
 }
 
 observatory_selector_server <- function(
@@ -1213,6 +1225,7 @@ observatory_selector_server <- function(
       input, output, session,
       observatory = list(
         current_plot_selection = current_plot_selection,
+        experiment_name = shiny::reactive(name(meta_experiment_df())),
         observatory_module = observatory_module,
         libraries_df = libraries_df,
         displayed_libraries_df = displayed_libraries_df,

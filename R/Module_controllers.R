@@ -107,29 +107,17 @@ module_browser_shared_ui <- function(input, output, session, clip_ui,
 }
 
 apply_observatory_browser_url_state <- function(session, browser_state) {
-  if (!is.null(browser_state$gene)) shiny::updateSelectizeInput(session, "gene", selected = browser_state$gene)
-  if (!is.null(browser_state$tx)) shiny::updateSelectizeInput(session, "tx", selected = browser_state$tx)
-  if (!is.null(browser_state$frames_type)) shiny::updateSelectizeInput(session, "frames_type", selected = browser_state$frames_type)
-  if (!is.null(browser_state$kmer) && !is.na(as.numeric(browser_state$kmer))) {
-    shiny::updateSliderInput(session, "kmer", value = as.numeric(browser_state$kmer))
+  updates <- list(select = shiny::updateSelectizeInput, slider = shiny::updateSliderInput,
+    numeric = shiny::updateNumericInput, switch = shinyWidgets::updatePrettySwitch,
+    checkbox = shiny::updateCheckboxInput, text = shiny::updateTextInput)
+  controls <- observatory_url_controls()
+  for (type in names(controls)) for (field in controls[[type]]) {
+    value <- browser_state[[field]]
+    if (is.null(value)) next
+    args <- list(session = session, inputId = field)
+    args[[if (type == "select") "selected" else "value"]] <- value
+    do.call(updates[[type]], args)
   }
-  if (!is.null(browser_state$extendLeaders) && !is.na(as.numeric(browser_state$extendLeaders))) {
-    shiny::updateNumericInput(session, "extendLeaders", value = as.numeric(browser_state$extendLeaders))
-  }
-  if (!is.null(browser_state$extendTrailers) && !is.na(as.numeric(browser_state$extendTrailers))) {
-    shiny::updateNumericInput(session, "extendTrailers", value = as.numeric(browser_state$extendTrailers))
-  }
-  if (!is.null(browser_state$viewMode)) shinyWidgets::updatePrettySwitch(session, "viewMode", value = isTRUE(browser_state$viewMode))
-  if (!is.null(browser_state$other_tx)) shinyWidgets::updatePrettySwitch(session, "other_tx", value = isTRUE(browser_state$other_tx))
-  if (!is.null(browser_state$collapsed_introns)) {
-    shinyWidgets::updatePrettySwitch(session, "collapsed_introns", value = isTRUE(browser_state$collapsed_introns))
-  }
-  if (!is.null(browser_state$collapsed_introns_width) && !is.na(as.numeric(browser_state$collapsed_introns_width))) {
-    shiny::updateNumericInput(session, "collapsed_introns_width", value = as.numeric(browser_state$collapsed_introns_width))
-  }
-  if (!is.null(browser_state$genomic_region)) shiny::updateTextInput(session, "genomic_region", value = browser_state$genomic_region)
-  if (!is.null(browser_state$zoom_range)) shiny::updateTextInput(session, "zoom_range", value = browser_state$zoom_range)
-  if (!is.null(browser_state$customSequence)) shiny::updateTextInput(session, "customSequence", value = browser_state$customSequence)
 }
 
 #' @noRd
@@ -209,8 +197,10 @@ observatory_browser_ready_to_kickoff <- function(url_state, input, library_selec
     nzchar(input_tx) &&
     (is.null(expected_gene) || identical(input_gene, expected_gene)) &&
     (is.null(expected_tx) || identical(input_tx, expected_tx)) &&
+    observatory_browser_settings_ready(browser_state, input) &&
     !is.null(library_selections) &&
-    any(lengths(library_selections) > 0)
+    any(lengths(library_selections) > 0) &&
+    observatory_url_selections_ready(url_state$selections, library_selections)
 }
 
 #' @noRd
@@ -263,16 +253,12 @@ module_additional_browser <- function(input, output, session,
       }) |> bindEvent(observatory$observatory_url_state(), ignoreInit = FALSE, once = TRUE)
 
       observe({
+        if (isTRUE(observatory$kickoff())) return()
         st <- observatory$observatory_url_state()
         sel <- observatory$library_selections()
         req(observatory_browser_ready_to_kickoff(st, input, sel))
         observatory$kickoff(TRUE)
-      }) |> bindEvent(
-        input$gene, input$tx,
-        observatory$library_selections(),
-        observatory$observatory_url_state(),
-        ignoreInit = TRUE
-      )
+      })
 
       return(invisible(NULL))
     }

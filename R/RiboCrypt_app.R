@@ -134,6 +134,17 @@ RiboCrypt_app <- function(
                                    all_exp, names_init, tx_init, cds_init,
                                    exp_init, exps_dir, metadata,
                                    browser_options) {
+        url_state <- parse_observatory_url(
+          shiny::isolate(shiny::getQueryString()), shiny::isolate(session$clientData$url_hash)
+        )
+        url_init <- observatory_url_collection_init(url_state, all_exp$name, exp_init, exps_dir)
+        if (!is.null(url_init)) {
+          exp_init <- url_init$df
+          names_init <- url_init$names
+          tx_init <- url_init$tx
+          cds_init <- url_init$cds
+          browser_options["default_experiment_meta"] <- name(exp_init)
+        }
         org_and_study_changed_checker_collection(input, output, session)
         rv <- browser_allsamp_server(
           "browser_allsamp", all_exp, df, experiments,

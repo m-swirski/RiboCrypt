@@ -30,6 +30,9 @@ observatory_server <- function(
       shiny::isolate(observatory_url_state()),
       gene_name_list = shiny::isolate(gene_name_list())
     )
+    observatory_url_state(observatory_resolve_browser_url_state(
+      shiny::isolate(observatory_url_state()), browser_options
+    ))
 
     shiny::observe({
       st <- observatory_url_state()

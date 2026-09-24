@@ -132,12 +132,13 @@ libraries instead of the saved single-library subset. The same failure occurred
 with only group 2 in the saved state.
 
 This is an observed existing issue, not a passing URL-restoration test or a
-regression introduced by deferred initialization. It remains unfixed in this
-performance branch. The separate check used a zlib-compressed, base64url-encoded
+regression introduced by deferred initialization. It was unfixed at the time of
+this benchmark; the subsequent [2026-09-24 URL review](2026-09-24-observatory-url-review.md)
+records its fix and real-browser verification on this branch.
+The separate check used a zlib-compressed, base64url-encoded
 JSON state matching the current URL decoder. Logs and screenshots are in
 `url-state.log` and `url-state-7820.png` / `url-state-7821.png` in the local
-profiling directories. Investigate this separately before demonstrating saved
-Observatory subset links.
+profiling directories.
 
 ## Tradeoffs and remaining work
 

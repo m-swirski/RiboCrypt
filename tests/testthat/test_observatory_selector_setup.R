@@ -1,3 +1,37 @@
+test_observatory_url_startup <- function(active, ids = c("1", "2")) {
+  fixture <- make_observatory_selector_fixture()
+  state <- list(exp = "exp-a", color_by = c("tissue", "cell_line"),
+    selections = list(index = c("1", "2"), active_selection_id = active,
+      plot_selections = list("1" = "SRR1", "2" = "SRR3"),
+      data_table_selections = list("1" = "SRR1", "2" = "SRR3"),
+      labels = list("1" = "First group", "2" = "Saved group")))
+  state$selections$index <- ids
+  for (field in c("plot_selections", "data_table_selections", "labels")) {
+    state$selections[[field]] <- state$selections[[field]][ids]
+  }
+  local_mocked_bindings(
+    allsamples_observer_controller = function(...) NULL,
+    create_observatory_module = function(meta_experiment_df, libraries_df) {
+      list(get_libraries_data = function(...) libraries_df,
+           get_umap_data = function(...) data.table::copy(fixture$umap_df))
+    }, .package = "RiboCrypt"
+  )
+  shiny::testServer(observatory_selector_harness_server,
+    args = list(all_exp = fixture$all_exp, experiment_df = fixture$experiment_df,
+      libraries_df = fixture$libraries_df, initial_url_state = state), {
+      session$setInputs(`selector-dff` = "exp-a", `selector-go` = 0,
+                        `selector-color_by` = "tissue")
+      session$flushReact()
+      session$setInputs(`selector-color_by` = c("tissue", "cell_line"))
+      session$flushReact()
+      snapshot <- selected_libraries_snapshot()
+      expect_equal(snapshot$active_selection_id, active)
+      expect_equal(snapshot$labels, state$selections$labels)
+      expect_equal(snapshot$plot_selections, state$selections$plot_selections)
+      expect_equal(snapshot$data_table_selections, state$selections$data_table_selections)
+    })
+}
+
 make_observatory_selector_fixture <- function() {
   all_exp <- data.frame(
     name = c("exp-a", "exp-b"),
@@ -69,6 +103,12 @@ observatory_selector_harness_server <- function(
     active_selection_id <- selections$active_selection_id
   })
 }
+
+test_that("URL groups survive delayed selector input acknowledgements", {
+  test_observatory_url_startup("1")
+  test_observatory_url_startup("2")
+  test_observatory_url_startup("2", "2")
+})
 
 test_that("observatory_ui includes selector and browser tabs", {
   ui <- RiboCrypt:::observatory_ui(

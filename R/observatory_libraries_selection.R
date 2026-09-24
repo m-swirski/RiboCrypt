@@ -79,6 +79,7 @@ library_selection_server <- function(
     pending_label_input_updates <- shiny::reactiveVal(character())
     skip_initial_plot_sync <- shiny::reactiveVal(FALSE)
     skip_initial_data_table_sync <- shiny::reactiveVal(FALSE)
+    initialized <- shiny::reactiveVal(FALSE)
     `%||%` <- function(x, y) if (is.null(x)) y else x
 
     update_active_label_input <- function(label) {
@@ -97,9 +98,7 @@ library_selection_server <- function(
       ids <- as.character(state$index %||% character())
       if (length(ids) == 0) return(invisible(FALSE))
 
-      plot_selections <- selection_store$plot_selections()
-      data_table_selections <- selection_store$data_table_selections()
-      labels <- selection_store$labels()
+      plot_selections <- data_table_selections <- labels <- list()
 
       for (selection_id in ids) {
         plot_selection <- state$plot_selections[[selection_id]]
@@ -313,14 +312,16 @@ library_selection_server <- function(
     )
 
     shiny::observe({
-      initialized <- initialize_from_state(initial_state())
-      if (isTRUE(initialized)) {
+      restored <- initialize_from_state(initial_state())
+      if (isTRUE(restored)) {
         skip_initial_plot_sync(TRUE)
         skip_initial_data_table_sync(TRUE)
       }
+      initialized(TRUE)
     }) |> shiny::bindEvent(initial_state(), ignoreInit = FALSE, once = TRUE)
 
     list(
+      initialized = initialized,
       active_selection_id = active_selection_id,
       active_plot_selection = active_plot_selection,
       active_data_table_selection = active_data_table_selection,

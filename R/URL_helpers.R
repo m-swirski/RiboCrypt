@@ -13,7 +13,7 @@ make_url_from_inputs <- function(input, session, library = input$library) {
 
 getPageFromURL <- function(session = NULL, url = session$clientData$url_hash,
                            with_hash = FALSE) {
-  hash_raw <- session$clientData$url_hash
+  hash_raw <- url
   if (is.null(hash_raw) || length(hash_raw) == 0 || is.na(hash_raw)) {
     hash <- ""
   } else {
@@ -35,7 +35,9 @@ getHostFromURL <- function(session) {
   } else { # Else local user / other server
     port <- session$clientData$url_port
     pathname <- sub("/$", "", session$clientData$url_pathname)
-    host <- paste0("http://", host, ":", port, pathname)
+    protocol <- session$clientData$url_protocol %||% "http:"
+    port <- if (length(port) && nzchar(port)) paste0(":", port) else ""
+    host <- paste0(protocol, "//", host, port, pathname)
   }
   return(host)
 }
@@ -97,22 +99,7 @@ clipboard_url_text <- function(input, session,
       selected_experiment = resolve(observatory$selected_experiment),
       color_by = resolve(observatory$color_by),
       view = "browser",
-      browser = list(
-        gene = input$gene,
-        tx = input$tx,
-        frames_type = input$frames_type,
-        kmer = input$kmer,
-        extendLeaders = input$extendLeaders,
-        extendTrailers = input$extendTrailers,
-        viewMode = input$viewMode,
-        other_tx = input$other_tx,
-        collapsed_introns = input$collapsed_introns,
-        collapsed_introns_width = input$collapsed_introns_width,
-        genomic_region = input$genomic_region,
-        zoom_range = input$zoom_range,
-        customSequence = input$customSequence,
-        go = TRUE
-      ),
+      browser = observatory_capture_browser_settings(input),
       selections = list(
         index = resolve(observatory$selection_index),
         plot_selections = resolve(observatory$library_selections),
@@ -295,7 +282,7 @@ make_observatory_url_state_param <- function(state) {
 }
 
 parse_observatory_url_state_param <- function(x) {
-  if (is.null(x) || !nzchar(x)) return(NULL)
+  if (!is.character(x) || length(x) != 1L || is.na(x) || !nzchar(x)) return(NULL)
   # Support both legacy base64(JSON) and current base64url(gzip(JSON)).
   x_std <- chartr("-_", "+/", x)
   pad <- (4 - (nchar(x_std) %% 4)) %% 4
@@ -310,9 +297,10 @@ parse_observatory_url_state_param <- function(x) {
   decoded_chr <- tryCatch(rawToChar(decoded_json_raw), error = function(e) NULL)
   if (is.null(decoded_chr)) return(NULL)
 
-  obj <- tryCatch(jsonlite::fromJSON(decoded_chr, simplifyVector = FALSE), error = function(e) NULL)
-  if (is.null(obj) || !is.list(obj)) return(NULL)
-  obj
+  tryCatch({
+    obj <- jsonlite::fromJSON(decoded_chr, simplifyVector = FALSE)
+    observatory_validate_url_state(obj)
+  }, error = function(e) NULL, warning = function(w) NULL)
 }
 
 parse_observatory_url_query <- function(query) {
@@ -327,7 +315,7 @@ parse_observatory_url_query <- function(query) {
     exp = as.character(state$exp %||% ""),
     color_by = as.character(state$color_by %||% character()),
     view = tolower(as.character(state$view %||% "umap")),
-    browser = state$browser %||% list(),
+    browser = observatory_normalize_browser_settings(state$browser),
     selections = observatory_expand_selections(state$selections)
   )
   if (!out$view %in% c("umap", "browser")) out$view <- "umap"

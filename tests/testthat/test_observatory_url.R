@@ -226,7 +226,13 @@ test_that("clipboard_url_text supports browser libraries and observatory run sel
     )
   )
   expect_match(observatory_url, "/#Observatory\\?obs_state=")
-  expect_equal(observatory_url, RiboCrypt:::make_observatory_url(expected_state, session))
+  parsed <- parse_observatory_url_hash(sub(".*#", "#", observatory_url))
+  expect_equal(parsed$selections, observatory_expand_selections(expected_state$selections))
+  expected_browser <- input[setdiff(names(input), c("dff", "library", "unique_align"))]
+  expected_browser$frames_subset <- character()
+  expected_browser$go <- TRUE
+  expect_equal(parsed$browser[sort(names(parsed$browser))],
+               expected_browser[sort(names(expected_browser))])
 })
 
 test_that("clipboard URL button is module-scoped and does not precompute URLs", {

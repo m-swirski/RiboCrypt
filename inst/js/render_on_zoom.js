@@ -2,7 +2,6 @@
   let tracesVisible = 0;
   const switchDistance = data.traces[0]["distance"];
   const targetAxis = data.traces[0]["yaxis"];
-  let currentVisibleSequence = "";
   let lastRange = [null, null];
 
   // ⚙️ Add DNA base traces
@@ -57,20 +56,26 @@
     yaxis: targetAxis
   });
 
+  const styleAxis = () => {
+    const axis = elem._fullLayout?.xaxis || {};
+    const desired = { showticklabels: true, ticks: "outside", showline: false,
+                      showgrid: false, zeroline: false };
+    const changes = {};
+    Object.entries(desired).forEach(([key, value]) => {
+      if (axis[key] !== value) changes["xaxis." + key] = value;
+    });
+    if (Object.keys(changes).length) Plotly.relayout(elem, changes);
+  };
+
   // 🔁 Triggered on zoom/pan
   const onRelayout = (ed) => {
-    const fallbackRange = elem._fullLayout?.xaxis?.range || [0, data.sequence.length];
+    const fallbackRange = elem._fullLayout?.xaxis?.range || [1, data.sequence.length];
     const start = Math.floor("xaxis.range[0]" in ed ? ed["xaxis.range[0]"] : fallbackRange[0]);
     const end = Math.ceil("xaxis.range[1]" in ed ? ed["xaxis.range[1]"] : fallbackRange[1]);
     const distance = end - start;
 
     if (lastRange[0] === start && lastRange[1] === end) return;
     lastRange = [start, end];
-
-    const clampedStart = Math.max(0, start);
-    const clampedEnd = Math.min(data.sequence.length, end);
-    currentVisibleSequence = data.sequence.slice(clampedStart, clampedEnd);
-    console.log("Updated visible sequence of length:", currentVisibleSequence.length);
 
     const placeholderIndex = elem.data.findIndex(trace => trace.name === "sequence_placeholder");
     const sequenceTraceIndexes = elem.data
@@ -84,21 +89,11 @@
         Plotly.addTraces(elem, tracesToAdd(data.traces, start - 300, end + 300));
         tracesVisible = 1;
       }
-      Plotly.relayout(elem, {
-        "xaxis.showticklabels": true,
-        "xaxis.ticks": "outside",
-        "xaxis.showline": false,
-        "xaxis.showgrid": false,
-        "xaxis.zeroline": false
-      });
     } else {
       // Show placeholder trace
       const centerX = (start + end) / 2;
 
       // Remove DNA traces if needed
-      const sequenceTraceIndexes = elem.data
-        .map((trace, i) => trace.name === "sequence" ? i : null)
-        .filter(i => i !== null);
       if (sequenceTraceIndexes.length > 0) {
         Plotly.deleteTraces(elem, sequenceTraceIndexes);
         tracesVisible = 0;
@@ -106,20 +101,15 @@
 
       // Add or update placeholder
       if (placeholderIndex !== -1) {
-        Plotly.restyle(elem, { x: [[centerX]] }, [placeholderIndex]);
+        if (elem.data[placeholderIndex].x[0] !== centerX) {
+          Plotly.restyle(elem, { x: [[centerX]] }, [placeholderIndex]);
+        }
       } else {
         Plotly.addTraces(elem, [createPlaceholderTrace(centerX)]);
       }
 
-      // Clean up axes visuals
-      Plotly.relayout(elem, {
-        "xaxis.showticklabels": true,
-        "xaxis.ticks": "outside",
-        "xaxis.showline": false,
-        "xaxis.showgrid": false,
-        "xaxis.zeroline": false
-      });
     }
+    styleAxis();
   };
 
   // Show copied popup
@@ -183,11 +173,8 @@
     }
   };
 
-  // Initial render with placeholder
-  Plotly.addTraces(elem, [createPlaceholderTrace(data.sequence.length / 2)]);
-  const initialStart = 0;
-  const initialEnd = data.sequence.length;
-  onRelayout({ "xaxis.range[0]": initialStart, "xaxis.range[1]": initialEnd });
+  // Initialize directly from the rendered range, including URL-specified zoom.
+  onRelayout({});
 
   // Bind events
   elem.on('plotly_click', onClick);

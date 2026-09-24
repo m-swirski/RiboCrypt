@@ -6,6 +6,8 @@ is kept in Git and excluded from R source bundles by `^benchmarks$` in
 
 ## Reports
 
+- [2026-09-24: sequence startup redraws](2026-09-24-sequence-startup.md):
+  remove redundant Plotly mutations, with warm-session comparison and URL-zoom tests.
 - [2026-09-24: Plotly rendering profile](2026-09-24-plotly-render-profile.md):
   dependency loading, startup redraws and an experimental SVG comparison.
 - [2026-09-24: warm UI response cache](2026-09-24-warm-ui-response.md):

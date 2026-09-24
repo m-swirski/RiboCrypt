@@ -96,6 +96,7 @@ RiboCrypt_app <- function(
   rc_parameter_setup()
   # User interface
   ui <- tagList(
+    plotly_startup_dependencies(browser_options[["plot_on_start"]]),
     rc_header_styling(),
     rc_header_image(),
     helper_button_redirect_call(),

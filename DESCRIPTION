@@ -67,6 +67,7 @@ Suggests:
   BiocStyle, 
   BSgenome,
   BSgenome.Hsapiens.UCSC.hg19,
-  withr
+  withr,
+  xml2
 RoxygenNote: 7.3.3
 VignetteBuilder: knitr

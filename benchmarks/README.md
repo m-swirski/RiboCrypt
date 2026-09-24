@@ -6,6 +6,10 @@ is kept in Git and excluded from R source bundles by `^benchmarks$` in
 
 ## Reports
 
+- [2026-09-24: earlier Plotly loading](2026-09-24-early-plotly-loading.md):
+  normal versus deferred dependency loading and a three-way warm-session comparison.
+- [2026-09-24: remaining startup costs](2026-09-24-remaining-startup.md):
+  current master timings and ranked dependency-loading, hidden-UI and redraw candidates.
 - [2026-09-24: sequence startup redraws](2026-09-24-sequence-startup.md):
   remove redundant Plotly mutations, with warm-session comparison and URL-zoom tests.
 - [2026-09-24: Plotly rendering profile](2026-09-24-plotly-render-profile.md):

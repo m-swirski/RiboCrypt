@@ -14,6 +14,13 @@ on_first_tab <- function(input, tabs, initialize) {
   invisible(observer)
 }
 
+#' Load the normal Plotly dependencies before an automatic startup plot arrives.
+#' @noRd
+plotly_startup_dependencies <- function(plot_on_start) {
+  if (!isTRUE(as.logical(plot_on_start))) return(NULL)
+  plotly::plot_ly()$dependencies
+}
+
 #' Cache the rendered shell of this app's request-independent, static UI.
 #'
 #' Keep Shiny's complete response, including dependency/singleton registration.

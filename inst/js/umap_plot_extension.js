@@ -1,5 +1,7 @@
 (elem, _, data) => {
-  Plotly.relayout(elem, { dragmode: "select" });
+  if (elem._fullLayout?.dragmode !== "select") {
+    Plotly.relayout(elem, { dragmode: "select" });
+  }
   const valuesInputId = data;
   const sendSelection = (selection) => {
     Shiny.setInputValue(valuesInputId, selection, { priority: "event" });
@@ -147,6 +149,10 @@
   };
 
   const onSelectionReset = (_) => {
+    const hasSelection = elem.data.some(trace => trace.selectedpoints != null) ||
+      elem._fullData?.some(trace => trace.selectedpoints != null);
+    const hasRegion = elem.layout.selections?.length || elem._fullLayout?.selections?.length;
+    if (!hasSelection && !hasRegion) return;
     const tracesToUpdate = Array.from({ length: elem.data.length }, (_, i) => i + 1);
 
     let updatedData = [...elem.data]

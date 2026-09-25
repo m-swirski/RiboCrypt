@@ -41,6 +41,14 @@ async function megaReady(page) {
       }
       await page.getByRole('button',{name:'Subset to page',exact:true}).click();
       await observatoryReady(page,15);
+      await page.locator('a[data-value="Browse"]').click();
+      await page.waitForFunction(()=>document.getElementById('observatory-browser_obs-tx')?.value,
+        null,{timeout:60000});
+      await page.locator('#observatory-browser_obs-go').click();
+      await page.waitForFunction(()=>document.getElementById('observatory-browser_obs-browser_plot')?._fullData?.length>0,
+        null,{timeout:120000});
+      await page.locator('a[data-value="Select libraries"]').click();
+      await observatoryReady(page,15);
       await page.locator('a[data-value="MegaBrowser"]').first().click();
       await megaReady(page);
       const gene=await page.locator('#browser_allsamp-gene').inputValue();
@@ -55,7 +63,8 @@ async function megaReady(page) {
       assert.equal(await page.locator('#browser_allsamp-tx').inputValue(),tx);
       assert.deepEqual(await page.locator('.shiny-output-error').allTextContents(),[]);
       assert.deepEqual(errors,[]);
-      console.log(JSON.stringify({first,hiddenModuleDeferred:true,subsetRetained:true,gene,tx,errors}));
+      console.log(JSON.stringify({first,hiddenModuleDeferred:true,
+        selectedPagePlotted:true,subsetRetained:true,gene,tx,errors}));
       await context.close();
     }
   } finally {await browser.close();}

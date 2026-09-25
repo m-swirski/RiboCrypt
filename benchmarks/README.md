@@ -6,6 +6,8 @@ is kept in Git and excluded from R source bundles by `^benchmarks$` in
 
 ## Reports
 
+- [2026-09-25: UMAP startup redraws](2026-09-25-observatory-umap-redraws.md):
+  skip no-op Plotly updates, paired timings, regression coverage and rejected experiments.
 - [2026-09-25: independent collection startup](2026-09-25-observatory-module-startup.md):
   defer the unused MegaBrowser/Observatory module, with alternating control timings.
 - [2026-09-24: Observatory startup](2026-09-24-observatory-startup.md):

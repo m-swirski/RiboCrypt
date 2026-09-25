@@ -81,6 +81,7 @@ async function checkSelection(page) {
     assert.deepEqual(shared.selections.labels,state.selections.labels);
     for(const [key,value] of Object.entries(settings)) assert.deepEqual(shared.browser[key],value,key);
     const second = await context.newPage();
+    second.on('pageerror',e=>errors.push(e.message));
     await second.goto(copied); await ready(second);
     const restored = await checkSelection(second);
     for(const [key,value] of Object.entries(shared.browser)) {
@@ -108,15 +109,32 @@ async function checkSelection(page) {
       'libraries_data_table .dataTables_scrollBody table').DataTable().page.info()?.recordsTotal === 1,
       selector,{timeout:30000});
     const stopped = structuredClone(state); stopped.browser.go = false;
-    const third = await context.newPage(); await third.goto(url(stopped)); await ready(third,false);
+    const third = await context.newPage();
+    third.on('pageerror',e=>errors.push(e.message));
+    await third.goto(url(stopped)); await ready(third,false);
     await third.waitForTimeout(3000); assert.equal((await snapshot(third)).traces,0);
+    const deferred = structuredClone(state); deferred.view = 'selector';
+    const fourth = await context.newPage();
+    fourth.on('pageerror',e=>errors.push(e.message));
+    await fourth.goto(url(deferred)); await ready(fourth,false);
+    await checkSelection(fourth);
+    assert.equal((await snapshot(fourth)).traces,0);
+    await fourth.locator('a[data-value="Browse"]').click();
+    // Selector URLs do not auto-plot, even if their browser settings contain go.
+    await fourth.locator('#'+browse+'go').click(); await ready(fourth);
+    const delayed = await snapshot(fourth);
+    for(const [key,value] of Object.entries(settings)) {
+      if(key !== 'go') assert.deepEqual(delayed.settings[key],value,key);
+    }
     assert.deepEqual(errors,[]);
+    await fourth.close();
     await third.close();
     await page.close();
     await second.bringToFront();
     await second.screenshot({path:'/tmp/observatory-url-smoke.png',fullPage:true,timeout:60000});
     console.log(JSON.stringify({restoredLibraries:restored.info.recordsTotal,
       highlighted:restored.highlighted,browserTraces:restored.traces,
-      settingsRoundtrip:true,resetAndPageSubset:true,selectedSubset:true,goFalse:true,errors}));
+      settingsRoundtrip:true,resetAndPageSubset:true,selectedSubset:true,goFalse:true,
+      selectorUrlManualPlot:true,errors}));
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});

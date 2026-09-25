@@ -15,7 +15,9 @@ function instrument(profile) {
         const original=value[name];
         value[name]=function(...args) {
           const el=typeof args[0]==='string' ? document.getElementById(args[0]):args[0];
-          const call={name,id:el?.id,start:performance.now()}; record.calls.push(call);
+          const call={name,id:el?.id,start:performance.now(),
+            patch:name==='relayout'?args[1]:undefined,
+            caller:new Error().stack.split('\n').slice(2,5).join('\n')}; record.calls.push(call);
           const result=original.apply(this,args);call.syncEnd=performance.now();
           if(result?.then) result.then(()=>{call.end=performance.now();});
           return result;

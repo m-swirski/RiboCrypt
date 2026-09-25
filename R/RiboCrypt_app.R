@@ -147,17 +147,21 @@ RiboCrypt_app <- function(
           browser_options["default_experiment_meta"] <- name(exp_init)
         }
         org_and_study_changed_checker_collection(input, output, session)
-        rv <- browser_allsamp_server(
-          "browser_allsamp", all_exp, df, experiments,
-          gene_name_list, tx, cds, org, motif_name_list,
-          metadata, browser_options, rv, templates = templates
-        )
-        rv <- observatory_server(
-          "observatory", all_exp, df, experiments,
-          gene_name_list, tx, cds, org,
-          metadata, browser_options, rv,
-          templates = templates
-        )
+        on_first_tab(input, "MegaBrowser", function() {
+          browser_allsamp_server(
+            "browser_allsamp", all_exp, df, experiments,
+            gene_name_list, tx, cds, org, motif_name_list,
+            metadata, browser_options, rv, templates = templates
+          )
+        })
+        on_first_tab(input, "Observatory", function() {
+          observatory_server(
+            "observatory", all_exp, df, experiments,
+            gene_name_list, tx, cds, org,
+            metadata, browser_options, rv,
+            templates = templates
+          )
+        })
       }
       on_first_tab(input, c("MegaBrowser", "Observatory"), function() {
         collection_pages(input, output, session,

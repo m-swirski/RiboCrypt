@@ -6,6 +6,10 @@ is kept in Git and excluded from R source bundles by `^benchmarks$` in
 
 ## Reports
 
+- [2026-09-25: independent collection startup](2026-09-25-observatory-module-startup.md):
+  defer the unused MegaBrowser/Observatory module, with alternating control timings.
+- [2026-09-24: Observatory startup](2026-09-24-observatory-startup.md):
+  live Select libraries UMAP/DT milestones, dependency loading and initialization candidates.
 - [2026-09-24: earlier Plotly loading](2026-09-24-early-plotly-loading.md):
   normal versus deferred dependency loading and a three-way warm-session comparison.
 - [2026-09-24: remaining startup costs](2026-09-24-remaining-startup.md):

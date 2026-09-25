@@ -39,6 +39,42 @@ test_that("initial tab selection initializes the server in each new session", {
   }
 })
 
+test_that("collection tabs initialize independently and retain their shared state", {
+  for (first in c("Observatory", "MegaBrowser")) {
+    starts <- character()
+    shiny::testServer(function(input, output, session) {
+      on_first_tab(input, c("MegaBrowser", "Observatory"), function() {
+        starts <<- c(starts, "shared")
+        selection <- shiny::reactiveVal("initial")
+        on_first_tab(input, "MegaBrowser", function() {
+          starts <<- c(starts, "MegaBrowser")
+          shiny::observeEvent(input$mega_edit, selection(input$mega_edit))
+          output$mega <- shiny::renderText(selection())
+        })
+        on_first_tab(input, "Observatory", function() {
+          starts <<- c(starts, "Observatory")
+          shiny::observeEvent(input$obs_edit, selection(input$obs_edit))
+          output$obs <- shiny::renderText(selection())
+        })
+      })
+    }, {
+      session$setInputs(navbarID = "browser")
+      expect_length(starts, 0L)
+      session$setInputs(navbarID = first)
+      expect_identical(starts, c("shared", first))
+      other <- setdiff(c("Observatory", "MegaBrowser"), first)
+      session$setInputs(navbarID = other)
+      expect_identical(starts, c("shared", first, other))
+      session$setInputs(obs_edit = "selected")
+      expect_identical(output$mega, "selected")
+      session$setInputs(navbarID = "browser")
+      session$setInputs(navbarID = first, mega_edit = "changed")
+      expect_identical(output$obs, "changed")
+      expect_identical(starts, c("shared", first, other))
+    })
+  }
+})
+
 test_that("gene validation preserves selection with repeated transcript labels", {
   genes <- data.table::data.table(
     value = paste0("TX", 1:5), label = c("B", "B", NA, "A", "A")

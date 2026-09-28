@@ -23,16 +23,16 @@ const base=process.argv[2] || 'http://127.0.0.1:7821/';
     await page.waitForFunction(()=>Shiny.shinyapp.$inputValues['predicted_translons-dff']==='human_all_merged_l50');
     await page.locator('#predicted_translons-go').click();
     await page.waitForFunction(()=>{
-      const t=document.querySelector('#predicted_translons-translon_table table');
+      const t=document.querySelector('#predicted_translons-translon_table .dataTables_scrollBody table');
       return t && jQuery.fn.dataTable.isDataTable(t) && jQuery(t).DataTable().page.info().recordsTotal>0;
     },null,{timeout:120000});
-    const rows=await page.evaluate(()=>jQuery('#predicted_translons-translon_table table').DataTable().page.info().recordsTotal);
+    const rows=await page.evaluate(()=>jQuery('#predicted_translons-translon_table .dataTables_scrollBody table').DataTable().page.info().recordsTotal);
     await page.locator('a[data-value="Observatory"]').click();
     await page.waitForFunction(()=>document.getElementById('observatory-selector-libraries_umap_plot')?._fullData?.length>0 &&
       !document.documentElement.classList.contains('shiny-busy'),null,{timeout:120000});
     await tab.click();
-    await page.locator('#predicted_translons-translon_table table').waitFor({state:'visible'});
-    assert.equal(await page.evaluate(()=>jQuery('#predicted_translons-translon_table table').DataTable().page.info().recordsTotal),rows);
+    await page.locator('#predicted_translons-translon_table .dataTables_scrollBody table').waitFor({state:'visible'});
+    assert.equal(await page.evaluate(()=>jQuery('#predicted_translons-translon_table .dataTables_scrollBody table').DataTable().page.info().recordsTotal),rows);
     await page.screenshot({path:'/tmp/translons-navigation.png'});
     await page.goto(base+'#Predicted%20Translons');
     await page.locator('#predicted_translons-go').waitFor({state:'visible',timeout:60000});

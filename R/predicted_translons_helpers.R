@@ -52,6 +52,21 @@ generate_filename <- function(df, format, show_message = TRUE) {
   file
 }
 
+#' Keep the first three displayed columns, requested annotations and localization fields.
+#' @noRd
+translon_simplified_columns <- function(columns) {
+  which(seq_along(columns) <= 3L | columns %in% c(
+    "external_gene_name", "type", "length", "mapability_score", "biotype"
+  ) | startsWith(columns, "LOC_"))
+}
+
+#' @noRd
+translon_simplified_callback <- function(columns, ns) {
+  hidden <- setdiff(seq_along(columns), translon_simplified_columns(columns)) - 1L
+  sprintf("(%s)(table, %s, %s);", fetchJS("translon_table_controls.js"),
+          jsonlite::toJSON(ns("simplified"), auto_unbox = TRUE), jsonlite::toJSON(hidden))
+}
+
 # Generalized function to render the DT table.
 render_translon_datatable <- function(data, session, add_links = TRUE) {
   ns <- session$ns
@@ -93,18 +108,19 @@ render_translon_datatable <- function(data, session, add_links = TRUE) {
     extensions = "Buttons",
     options = list(
       dom = "Bfrtip",
+      scrollX = TRUE,
       buttons = list(
         list(
           extend = "csv",
           text = "Download current page (CSV)",
           filename = "current",
-          exportOptions = list(modifier = list(page = "current"))
+          exportOptions = list(modifier = list(page = "current"), columns = ":visible")
         ),
         list(
           extend = "excel",
           text = "Download current page (Excel)",
           filename = "current",
-          exportOptions = list(modifier = list(page = "current"))
+          exportOptions = list(modifier = list(page = "current"), columns = ":visible")
         )
       ),
       # Tag the ID column's cells so we can bind a click handler only there
@@ -114,7 +130,7 @@ render_translon_datatable <- function(data, session, add_links = TRUE) {
       ))
     ),
     # JS callback: fire event when clicking on ID cells
-    callback = DT::JS(sprintf("
+    callback = DT::JS(translon_simplified_callback(names(data), ns), sprintf("
       var tbl = table.table().node();
       $(tbl).on('click.dt', 'td.dt-id', function() {
         var info    = table.cell(this).index();         // {row, column}

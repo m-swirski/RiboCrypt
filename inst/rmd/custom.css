@@ -1,21 +1,26 @@
-/* Make main chapter titles (#) larger */
-  h1 {
-    font-size: 32px !important; /* Adjust as needed */
-      font-weight: bold;
-    margin-top: 40px;
-  }
-  
-  /* Make subchapter titles (##) slightly smaller */
-    h2 {
-      font-size: 22px !important;
-      font-weight: bold;
-      margin-top: 30px;
-    }
-    
-    /* Make sub-subchapter titles (###) even smaller */
-      h3 {
-        font-size: 18px !important;
-        font-weight: normal;
-        margin-top: 25px;
-      }
-      
+h1 {
+  font-size: 32px !important;
+  font-weight: bold;
+  margin-top: 40px;
+}
+
+h2 {
+  font-size: 22px !important;
+  font-weight: bold;
+  margin-top: 30px;
+}
+
+h3 {
+  font-size: 18px !important;
+  font-weight: normal;
+  margin-top: 25px;
+}
+
+.main-container {
+  overflow-wrap: anywhere;
+}
+
+.main-container img {
+  max-width: 100%;
+  height: auto;
+}

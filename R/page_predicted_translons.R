@@ -12,9 +12,18 @@ predicted_translons_ui <- function(id, all_exp_translons, label = "predicted_tra
     h2("Predicted Translons Overview"),
     # Include shinyjs so we can trigger hidden buttons
     shinyjs::useShinyjs(),
-    sidebarLayout(
-      sidebarPanel(
-        tags$style(HTML("
+    tags$style(HTML("
+        .rc-translon-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 48px; padding: 8px 0 12px; margin-bottom: 12px; }
+        .rc-translon-study-group { flex: 1 1 360px; min-width: 0; max-width: 560px; }
+        .rc-translon-study { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .rc-translon-study .shiny-input-container { flex: 1; min-width: 0; width: auto !important; margin: 0 !important; }
+        .rc-translon-toolbar .selectize-control { margin-bottom: 0; }
+        .rc-translon-simplified .shiny-input-container { width: auto; margin: 0 !important; }
+        .rc-translon-toolbar .checkbox { margin: 0; }
+        .rc-translon-downloads { display: grid; gap: 8px; }
+        .rc-translon-downloads .rc-translon-excel { background-color: #217346 !important; border-color: #217346 !important; color: white !important; }
+        .rc-translon-downloads .rc-translon-excel:hover,
+        .rc-translon-downloads .rc-translon-excel:focus { background-color: #185c37 !important; border-color: #185c37 !important; }
         table.dataTable td.dt-id {
           color: #007BFF;       /* Bootstrap link blue */
           cursor: pointer;      /* hand cursor on hover */
@@ -24,33 +33,27 @@ predicted_translons_ui <- function(id, all_exp_translons, label = "predicted_tra
           color: #0056b3;       /* darker on hover */
         }
       ")),
-        experiment_input_select(all_exp_translons$name, ns),
-        actionButton(ns("go"), "Search", icon = icon("magnifying-glass")),
-        hr(),
-        tags$b("Download Full Table:"),
-        div(
-          # Visible download trigger buttons
-          actionButton(ns("trigger_download_csv"), "Download CSV",
-                       icon = icon("file-csv"), class = "btn btn-primary"),
-          actionButton(ns("trigger_download_excel"), "Download Excel",
-                       icon = icon("file-excel"), class = "btn btn-success"),
-          # Hidden download buttons that use downloadHandler
-          downloadButton(ns("download_csv"), label = NULL, style = "visibility: hidden;"),
-          downloadButton(ns("download_excel"), label = NULL, style = "visibility: hidden;"),
-          div(style = "display:none;",
-            checkboxInput(ns("useCustomRegions"), "Protein structures", TRUE)
-          ),
-          div(style = "display:none;",
-            textInput(ns("selectedRegion"), NULL, value = "")
-          ),
-          style = "display: flex; gap: 10px; margin-top: 10px;"
-        )
-      ),
-      mainPanel(
-        DT::DTOutput(ns("translon_table")) %>% shinycssloaders::withSpinner(color = "#0dc5c1"),
-        uiOutput(ns("proteinStruct"))
-      )
-    )
+    div(class = "rc-translon-toolbar",
+      div(class = "rc-translon-study-group",
+        tags$label("Study", `for` = ns("dff")),
+        div(class = "rc-translon-study",
+          experiment_input_select(all_exp_translons$name, ns, label = NULL),
+          actionButton(ns("go"), "Search", icon = icon("magnifying-glass")))),
+      div(class = "rc-translon-simplified", checkboxInput(ns("simplified"), "simplified", FALSE)),
+      div(class = "rc-translon-downloads",
+        actionButton(ns("trigger_download_csv"), "Download full CSV",
+                     icon = icon("file-csv"), class = "btn btn-primary"),
+        actionButton(ns("trigger_download_excel"), "Download full Excel",
+                     icon = icon("file-excel"), class = "btn btn-success rc-translon-excel"))
+    ),
+    div(style = "display:none;",
+      downloadButton(ns("download_csv"), label = NULL),
+      downloadButton(ns("download_excel"), label = NULL),
+      checkboxInput(ns("useCustomRegions"), "Protein structures", TRUE),
+      textInput(ns("selectedRegion"), NULL, value = "")
+    ),
+    DT::DTOutput(ns("translon_table")) %>% shinycssloaders::withSpinner(color = "#0dc5c1"),
+    uiOutput(ns("proteinStruct"))
   )
 }
 

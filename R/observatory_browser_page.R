@@ -234,6 +234,7 @@ observatory_browser_server <- function(
       shiny::bindCache(main_plot_controls()$hash_browser) |>
       shiny::bindEvent(browser_plot(), ignoreNULL = TRUE)
 
+    browser_coverage_download(output, main_plot_controls, browser_plot)
     module_additional_browser(input, output, session,
                               mode = "observatory",
                               observatory = observatory_browser_url_context(

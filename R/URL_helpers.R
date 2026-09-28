@@ -65,6 +65,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?",
         paste("add_translons_transcode", input$add_translons_transcode, sep = "="),
         paste("genomic_region", sub("\\+;", "p;", sub("\\+$", "p", input$genomic_region)), sep = "="),
         paste("zoom_range", sub("\\+$", "p", input$zoom_range), sep = "="),
+        paste("y_range", utils::URLencode(input$y_range %||% "auto", reserved = TRUE), sep = "="),
         paste("customSequence", input$customSequence, sep = "="),
         paste("phyloP", input$phyloP, sep = "="),
         paste("mapability", input$mapability, sep = "="),
@@ -475,7 +476,7 @@ browser_specific_url_checker <- function(target = c("auto", "browser", "observat
           }
         }
         # Free character box updated
-        for (tag in c("customSequence", "genomic_region", "zoom_range")) {
+        for (tag in c("customSequence", "genomic_region", "zoom_range", "y_range")) {
           value <- query[tag][[1]]
           if (!is.null(value)) {
             if (tag %in% c("genomic_region", "zoom_range")) value <-  gsub("p;", "+;", sub("p$", "+", value))
@@ -498,11 +499,12 @@ browser_specific_url_checker <- function(target = c("auto", "browser", "observat
       # User info is checked through browser
       kickoff <- reactiveVal(FALSE)
       fired <- reactiveVal(FALSE)
-      observeEvent(list(input$gene, input$tx, input$library),
+      observeEvent(list(input$gene, input$tx, input$library, input$y_range), {
+                   if (!is.null(url_args$y_range) && !identical(input$y_range, url_args$y_range)) return()
                    go_when_input_is_ready(
                      input, browser_options, fired, kickoff, libs,
                      runIDs(isolate(df()))
-                   ),
+                   )},
                    ignoreInit = TRUE, ignoreNULL = TRUE)
 
       user_info <- reactive({

@@ -95,6 +95,8 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
                                          textInput(ns("zoom_range"), "Zoom interval", ""),
                                          textInput(ns("customSequence"), "Custom sequences highlight", "")
                                 ),
+                                fluidRow(textInput(ns("y_range"),
+                                  "Y-axis range (auto, max or min:max)", "auto")),
                                 fluidRow(checkboxInput(ns("add_uorfs"), tagList("uORF annotation", tags$br(), "(all candidates)"), FALSE)),
                                 fluidRow(
                                   column(4, checkboxInput(ns("add_translon"), "Predicted translons (Our all-merged: T)", translons)),
@@ -126,12 +128,15 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
                                   column(4, frame_type_select(ns, "summary_track_type", "Summary display type"))
                                 ),
                                 fluidRow(
-                                  column(4, if (include_download_button) {
+                                  column(3, if (include_download_button) {
                                     downloadButton(ns("download_plot_html"), "Download HTML",
                                                    style = "width: 100%; font-size: 14px; font-weight: bold; background-color: #007bff; color: white; border-color: white !important;")
                                   }),
-                                  column(4, export_format_of_plot(ns)),
-                                  column(4, uiOutput(ns("clip"))))
+                                  column(3, export_format_of_plot(ns)),
+                                  column(3, downloadButton(ns("download_coverage"), "Download coverage",
+                                    title = "Displayed coverage values for the last generated plot",
+                                    style = "white-space: normal;")),
+                                  column(3, uiOutput(ns("clip"))))
               )
             )
       ))),
@@ -211,6 +216,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
 
 
       # Additional outputs
+      browser_coverage_download(output, mainPlotControls, browser_plot)
       module_additional_browser(input, output, session)
 
       return(rv)

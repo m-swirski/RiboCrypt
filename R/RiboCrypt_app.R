@@ -113,6 +113,7 @@ RiboCrypt_app <- function(
         names_init_meta
       ),
       observatory_ui("observatory", all_exp_meta, browser_options),
+      predicted_translons_ui("predicted_translons", predicted_translons_experiments(all_exp)),
       analysis_ui("Analysis", all_exp, browser_options, libs, metadata),
       metadata_ui("metadata", all_exp, all_exp_meta),
       tutorial_ui("tutorial")
@@ -184,7 +185,10 @@ RiboCrypt_app <- function(
         with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
         gene_name_list, rv, metadata, names_init, browser_options
       ))
-    on_first_tab(input, c("Samples", "Studies", "SRA search", "Predicted Translons", "UMAP"),
+    on_first_tab(input, "Predicted Translons", function() {
+      predicted_translons_server("predicted_translons", all_exp, browser_options)
+    })
+    on_first_tab(input, c("Samples", "Studies", "SRA search", "UMAP"),
       function() metadata_server(
         "metadata", all_exp, metadata, all_exp_meta, browser_options
       ))

@@ -477,6 +477,7 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
                         browser_input_or_default(input, "withFrames", TRUE),
                         browser_input_or_default(input, "log_scale", FALSE),
                         browser_input_or_default(input, "zoom_range", ""),
+                        browser_input_or_default(input, "y_range", "auto"),
                         browser_input_or_default(input, "frames_subset", "all"),
                         browser_input_or_default(input, "unique_align", FALSE),
                         collapse = "|_|")

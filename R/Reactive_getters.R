@@ -278,6 +278,11 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
     export.format, zoom_range, frame_colors
   )
   timer_done_nice_print("Done (Final panel):", time_before)
+  plot <- browser_apply_y_range(plot, controls$y_range,
+                                 browser_coverage_track_types(controls, profiles))
+  # Server-only attribute: retain exactly the profiles used to draw these tracks.
+  attr(plot, "coverage_export") <- list(profiles = profiles, labels = ylabels_full_name,
+                                         summary = summary_track)
   return(plot)
 }
 

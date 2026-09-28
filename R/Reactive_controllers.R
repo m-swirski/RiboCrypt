@@ -74,6 +74,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
                                                library_selection_labels = NULL) {
   {
     time_before <- controller_init(input, id = "Browser")
+    y_range <- browser_validate_y_range(input$y_range)
     is_observatory <- !is.null(library_selections)
     if (is.null(user_info)) {
       user_info <- function() list(is_cellphone = FALSE, width = NULL)
@@ -184,6 +185,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
                    log_scale = input$log_scale,
                    phyloP = input$phyloP,
                    withFrames = withFrames,
+                   y_range = y_range,
                    zoom_range = zoom_range,
                    frames_subset = frames_subset,
                    mapability = input$mapability,

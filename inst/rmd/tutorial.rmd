@@ -260,6 +260,22 @@ Settings tab contains additional parameters:
     for the summary track)
 -   Export format (Choose plot export format from plotly controls. The
     default is svg vector graphics that allows for high customizability)
+-   Y-axis range (default `auto`). Enter a maximum such as `500000` or `500k`
+    for a range starting at zero, or a pair such as `100:500000`. Click Generate
+    Plot to apply. The same limits apply to coverage and summary tracks in Browser
+    and Observatory Browse, allowing comparisons across genes. Sequence,
+    annotation and heatmap rows are unaffected. With log scaling enabled, limits
+    refer to the displayed log2(count + 1) values. Get URL preserves the setting.
+    Invalid, negative, non-finite or reversed limits produce an error message.
+-   Download coverage (CSV for the last generated plot, available in Browser
+    and Observatory Browse beside Get URL). The first column is the 1-based
+    position along the full plotted region, in transcript orientation; remaining
+    columns are the plotted track names. Values are the same profiles used to
+    draw the tracks, including applied smoothing, log scaling and frame filtering,
+    and any leader/trailer extensions. Plotly zoom does not crop the export.
+    Observatory selection groups remain merged into one column per group.
+    The optional summary coverage track is included; annotation and sequence
+    tracks are not coverage columns.
 -   Plot (red button, render selected gene/region as plotly html, 
     with specified settings)
 
@@ -719,7 +735,8 @@ list is the following:
 -   Samples information (/#Samples)
 -   Studies information (/#Studies)
 -   SRA search (/SRA%20search)
--   Predicted Translons (/#Predicted Translons)
+-   Translons (/#Predicted%20Translons), a top-level tab immediately
+    to the right of Observatory
 -   Studies supported (/#UMAP)
 -   This tutorial (/#tutorial)
 

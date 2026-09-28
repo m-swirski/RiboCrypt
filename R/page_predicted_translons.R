@@ -1,7 +1,14 @@
+#' Experiments supported by the Predicted Translons page.
+#' @noRd
+predicted_translons_experiments <- function(all_exp) {
+  all_exp[grep("all_merged", name), ][libtypes == "RFP", ][
+    grep("Escherichia_coli", name, invert = TRUE), ]
+}
+
 predicted_translons_ui <- function(id, all_exp_translons, label = "predicted_translons") {
   ns <- NS(id)
   tabPanel(
-    title = "Predicted Translons", icon = icon("rectangle-list"),
+    title = "Translons", value = "Predicted Translons", icon = icon("rectangle-list"),
     h2("Predicted Translons Overview"),
     # Include shinyjs so we can trigger hidden buttons
     shinyjs::useShinyjs(),

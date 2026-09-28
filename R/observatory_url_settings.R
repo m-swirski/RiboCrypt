@@ -8,7 +8,7 @@ observatory_url_controls <- function() {
     switch = c("viewMode", "other_tx", "collapsed_introns"),
     checkbox = c("add_uorfs", "add_translon", "add_translons_transcode", "log_scale",
                  "log_scale_protein", "phyloP", "mapability", "withFrames", "summary_track"),
-    text = c("genomic_region", "zoom_range", "customSequence")
+    text = c("genomic_region", "zoom_range", "customSequence", "y_range")
   )
 }
 
@@ -75,6 +75,7 @@ observatory_normalize_control <- function(value, field, type) {
   if (field %in% c("frames_type", "summary_track_type") &&
       !value %in% c("lines", "columns", "stacks", "area", "heatmap", "animate")) stop("Invalid display type")
   if (field == "colors" && !value %in% c("R", "Color_blind")) stop("Invalid color theme")
+  if (field == "y_range") browser_parse_y_range(value)
   value
 }
 

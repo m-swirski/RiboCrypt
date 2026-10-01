@@ -37,8 +37,10 @@ test_that("the shared plot builder retains exactly its plotted profiles for both
                      is_cellphone = FALSE, log_scale = TRUE, summary_track = FALSE,
                      frames_subset = "red")
     result <- browser_track_panel_shiny(function() controls,
-      list(display_range = NULL, annotation_layers = 1, ncustom = 0),
-      session = NULL, ylabels = if (observatory) "Selected group" else "Library A",
+      list(display_range = GenomicRanges::GRangesList(tx = GenomicRanges::GRanges("1", IRanges::IRanges(1, 3))),
+           annotation_layers = 1, ncustom = 0),
+      session = list(ns = shiny::NS(if (observatory) "observatory-browser_obs" else "browser")),
+      ylabels = if (observatory) "Selected group" else "Library A",
       profiles = if (observatory) profiles else NULL)
     expect_identical(attr(result, "coverage_export")$profiles, captured)
     expect_equal(browser_coverage_table(result)[[2]], captured[[1]]$count)

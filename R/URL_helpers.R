@@ -66,6 +66,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?",
         paste("genomic_region", sub("\\+;", "p;", sub("\\+$", "p", input$genomic_region)), sep = "="),
         paste("zoom_range", sub("\\+$", "p", input$zoom_range), sep = "="),
         paste("y_range", utils::URLencode(input$y_range %||% "auto", reserved = TRUE), sep = "="),
+        paste("local_y_max", input$local_y_max %||% TRUE, sep = "="),
         paste("customSequence", input$customSequence, sep = "="),
         paste("phyloP", input$phyloP, sep = "="),
         paste("mapability", input$mapability, sep = "="),
@@ -488,7 +489,7 @@ browser_specific_url_checker <- function(target = c("auto", "browser", "observat
         for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon",
                       "add_translons_transcode", "summary_track",
                       "log_scale", "log_scale_protein","phyloP", "mapability",
-                      "collapsed_introns", "unique_align")) {
+                      "collapsed_introns", "unique_align", "local_y_max")) {
           value <- query[tag][[1]]
           if (!is.null(value)) {
             updateCheckboxInput(inputId = tag, value = as.logical(value))
@@ -499,8 +500,10 @@ browser_specific_url_checker <- function(target = c("auto", "browser", "observat
       # User info is checked through browser
       kickoff <- reactiveVal(FALSE)
       fired <- reactiveVal(FALSE)
-      observeEvent(list(input$gene, input$tx, input$library, input$y_range), {
+      observeEvent(list(input$gene, input$tx, input$library, input$y_range, input$local_y_max), {
                    if (!is.null(url_args$y_range) && !identical(input$y_range, url_args$y_range)) return()
+                   if (!is.null(url_args$local_y_max) &&
+                       !identical(input$local_y_max, as.logical(url_args$local_y_max))) return()
                    go_when_input_is_ready(
                      input, browser_options, fired, kickoff, libs,
                      runIDs(isolate(df()))

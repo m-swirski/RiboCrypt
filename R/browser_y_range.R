@@ -57,3 +57,13 @@ browser_coverage_track_types <- function(controls, profiles) {
   if (isTRUE(controls$summary_track)) types <- c(controls$summary_track_type, rev(types))
   types
 }
+
+#' Client-side zoom scaling uses rendered traces without reloading coverage.
+#' @noRd
+browser_local_y_zoom <- function(plot, limits, track_types, input_id, full_range) {
+  axes <- which(track_types != "heatmap")
+  htmlwidgets::onRender(plot, fetchJS("browser_local_y_zoom.js"), list(
+    axes = unname(as.list(ifelse(axes == 1L, "yaxis", paste0("yaxis", axes)))),
+    input_id = input_id, manual = !is.null(limits), full_range = full_range
+  ))
+}

@@ -7,7 +7,7 @@ observatory_url_controls <- function() {
     numeric = c("extendLeaders", "extendTrailers", "collapsed_introns_width"),
     switch = c("viewMode", "other_tx", "collapsed_introns"),
     checkbox = c("add_uorfs", "add_translon", "add_translons_transcode", "log_scale",
-                 "log_scale_protein", "phyloP", "mapability", "withFrames", "summary_track"),
+                 "log_scale_protein", "phyloP", "mapability", "withFrames", "summary_track", "local_y_max"),
     text = c("genomic_region", "zoom_range", "customSequence", "y_range")
   )
 }

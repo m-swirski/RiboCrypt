@@ -58,3 +58,26 @@ test_that("both URL systems retain manual ranges and Observatory rejects invalid
   expect_false(observatory_browser_settings_ready(restored, list(y_range = "auto")))
   expect_error(observatory_normalize_browser_settings(list(y_range = "10:5")), "maximum greater")
 })
+
+test_that("local zoom scaling is shared, enabled by default and URL-persistent", {
+  expect_match(make_url_from_inputs_parameters(list()), "local_y_max=TRUE", fixed = TRUE)
+  expect_match(make_url_from_inputs_parameters(list(local_y_max = FALSE)), "local_y_max=FALSE", fixed = TRUE)
+  restored <- observatory_normalize_browser_settings(observatory_capture_browser_settings(list(local_y_max = FALSE)))
+  expect_false(restored$local_y_max)
+  expect_false(observatory_browser_settings_ready(restored, list(local_y_max = TRUE)))
+  plot <- browser_local_y_zoom(plotly::plot_ly(), NULL, c("lines", "heatmap", "area"), "browser-local_y_max", c(1, 100))
+  hook <- tail(plot$jsHooks$render, 1)[[1]]
+  expect_equal(hook$data$axes, list("yaxis", "yaxis3"))
+  expect_false(hook$data$manual)
+  expect_equal(hook$data$full_range, c(1, 100))
+  fixed <- browser_local_y_zoom(plotly::plot_ly(), c(0, 100), "lines", "obs-local_y_max", c(1, 100))
+  expect_true(tail(fixed$jsHooks$render, 1)[[1]]$data$manual)
+})
+
+test_that("the shipped local Y scaling callback preserves other tracks and manual limits", {
+  node <- Sys.which("node")
+  skip_if(!nzchar(node), "Node.js is required for JavaScript callback tests")
+  withr::local_envvar(RIBOCRYPT_LOCAL_Y_JS = system.file("js", "browser_local_y_zoom.js", package = "RiboCrypt"))
+  result <- suppressWarnings(system2(node, c("--test", shQuote(test_path("js", "browser-local-y-zoom.cjs"))), stdout = TRUE, stderr = TRUE))
+  expect_null(attr(result, "status"), info = paste(result, collapse = "\n"))
+})

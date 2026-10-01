@@ -438,6 +438,13 @@ annotation and heatmap rows are unaffected. With log scaling enabled,
 limits refer to the displayed log2(count + 1) values. Get URL preserves
 the setting. Invalid, negative, non-finite or reversed limits produce an
 error message.</li>
+<li>Local Y max on zoom (checked by default). Zooming or panning adjusts
+each coverage track’s Y maximum to the visible region, with 5% headroom.
+Zooming back out restores the full-region scale. Uncheck it to keep that
+scale while zooming; the checkbox applies immediately without generating
+a new plot. Explicit manual Y-axis limits take precedence. Heatmaps,
+annotation, sequence and auxiliary tracks are unaffected. Get URL
+preserves this setting in Browser and Observatory Browse.</li>
 <li>Download coverage (CSV for the last generated plot, available in
 Browser and Observatory Browse beside Get URL). The first column is the
 1-based position along the full plotted region, in transcript

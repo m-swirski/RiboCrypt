@@ -97,6 +97,7 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
                                 ),
                                 fluidRow(textInput(ns("y_range"),
                                   "Y-axis range (auto, max or min:max)", "auto")),
+                                fluidRow(checkboxInput(ns("local_y_max"), "Local Y max on zoom", TRUE)),
                                 fluidRow(checkboxInput(ns("add_uorfs"), tagList("uORF annotation", tags$br(), "(all candidates)"), FALSE)),
                                 fluidRow(
                                   column(4, checkboxInput(ns("add_translon"), "Predicted translons (Our all-merged: T)", translons)),

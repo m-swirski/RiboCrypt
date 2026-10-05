@@ -6,6 +6,15 @@ is kept in Git and excluded from R source bundles by `^benchmarks$` in
 
 ## Reports
 
+- [2026-10-05: MegaBrowser preparation and group inspection](2026-10-05-megabrowser-preparation.md):
+  fewer matrix copies, deferred statistics, group-summary exports and backend timings.
+
+- [2026-10-05: MegaBrowser adaptive rendering and group focus](2026-10-05-megabrowser-group-focus.md):
+  canvas/WebGL selection, display-only group focus, heatmap-only layout and warm timings.
+- [2026-10-05: MegaBrowser output cache and view toolbar](2026-10-05-megabrowser-view-toolbar.md):
+  warm rendering comparison, responsive view controls, and no-op zoom-sync fixes.
+- [2026-10-05: MegaBrowser collapsed clusters](2026-10-05-megabrowser-collapsed-clusters.md):
+  display-only aggregation, independent enrichment selection, AMD1 timings and profiling.
 - [2026-09-25: UMAP startup redraws](2026-09-25-observatory-umap-redraws.md):
   skip no-op Plotly updates, paired timings, regression coverage and rejected experiments.
 - [2026-09-25: independent collection startup](2026-09-25-observatory-module-startup.md):

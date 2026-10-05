@@ -205,6 +205,7 @@ compute_collection_table_grouping <- function(metadata, df, metadata_field, tabl
     other_columns <- all_metadata_fields[, .SD, .SDcols = !enrichment_term]
     enrichment_term_char <- enrichment_term
   }
+  names(ordering_vector) <- all_metadata_fields$Run
   sample_ordering <- order(ordering_vector, decreasing = decreasing_order)
   ordering_vector <- ordering_vector[sample_ordering]
   attr(ordering_vector, "meta_order") <- sample_ordering

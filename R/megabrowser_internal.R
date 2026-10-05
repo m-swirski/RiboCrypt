@@ -160,8 +160,7 @@ mb_sidebar_y_range <- function(y0_raw, y1_raw, y_max = NULL, y_reversed = TRUE) 
     y0_raw <- (y_max + 1) - y0_raw
     y1_raw <- (y_max + 1) - y1_raw
   }
-  rounded <- sort(round(c(y0_raw, y1_raw)))
-  c(rounded[[2]] + 0.5, rounded[[1]] - 0.5)
+  sort(c(y0_raw, y1_raw), decreasing = TRUE)
 }
 
 #' Build a sidebar y-axis relayout from a Plotly relayout event.
@@ -173,7 +172,10 @@ mb_y_relayout_from_event <- function(yed, y_max = NULL, y_reversed = TRUE) {
   if (!is.null(yed$r) && length(yed$r) == 2) {
     return(mb_sidebar_range_relayout(yed$r[[1]], yed$r[[2]], y_max, y_reversed))
   }
-  if (isTRUE(yed$auto)) return(mb_sidebar_autorange_relayout())
+  if (isTRUE(yed$auto)) {
+    if (!is.null(y_max)) return(mb_sidebar_range_relayout(0.5, y_max + 0.5, y_max, y_reversed))
+    return(mb_sidebar_autorange_relayout())
+  }
   NULL
 }
 
@@ -219,7 +221,7 @@ sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sideb
   yed <- mb_read_axis_event(ed, y_axes)
   relayout <- mb_x_relayout_from_event(xed, x_reset_range)
 
-  if (sync_tracks) {
+  if (sync_tracks && length(relayout)) {
     mb_sync_track_relayout(session, relayout)
   }
 
@@ -310,14 +312,23 @@ megabrowser_table_ratio <- function(table) {
 #' Plotly heatmap data derived from a megabrowser table.
 #' @noRd
 megabrowser_plotly_heatmap_data <- function(table) {
-  mat <- megabrowser_ordered_matrix(table)
+  orders <- megabrowser_row_clusters(table)$row_clusters
+  mat <- t(table)[unlist(orders, use.names = FALSE), , drop = FALSE]
   ratio <- megabrowser_table_ratio(table)
   list(
     x = ((seq_len(ncol(mat)) - 1L) * ratio) + 1L,
-    z = mat[rev(seq_len(nrow(mat))), , drop = FALSE],
+    y = seq_len(nrow(mat)),
+    type = megabrowser_heatmap_renderer(length(mat), isTRUE(attr(table, "collapsed_clusters"))),
+    z = mat,
     x_range = megabrowser_full_x_range(table = table),
     y_range = c(0.5, nrow(mat) + 0.5)
   )
+}
+
+#' Keep large matrices on WebGL; canvas avoids GL overhead for moderate views.
+#' @noRd
+megabrowser_heatmap_renderer <- function(cells, collapsed = FALSE) {
+  if (collapsed || cells <= 2e6) "heatmap" else "heatmapgl"
 }
 
 #' Margins for the central megabrowser heatmap.
@@ -331,10 +342,14 @@ megabrowser_heatmap_margins <- function() {
 #' Plotly layout for the central megabrowser heatmap.
 #' @noRd
 megabrowser_heatmap_layout <- function(heatmap_data) {
+  yaxis <- list(range = heatmap_data$y_range, autorange = FALSE)
+  if (nrow(heatmap_data$z) <= 20L) yaxis$dtick <- 1
   list(
     margin = megabrowser_heatmap_margins(),
-    xaxis = list(range = heatmap_data$x_range, autorange = FALSE),
-    yaxis = list(range = heatmap_data$y_range, autorange = FALSE),
+    xaxis = list(range = heatmap_data$x_range, autorange = FALSE,
+                 showticklabels = FALSE, ticks = "", showgrid = FALSE,
+                 zeroline = FALSE, showline = FALSE, title = "", automargin = FALSE),
+    yaxis = yaxis,
     dragmode = "zoom"
   )
 }
@@ -345,6 +360,9 @@ megabrowser_heatmap_from_template <- function(template, heatmap_data, colorscale
   plot <- template
   plot$x$data[[1]]$x <- heatmap_data$x
   plot$x$data[[1]]$y <- NULL
+  plot$x$data[[1]]$y0 <- 1
+  plot$x$data[[1]]$dy <- 1
+  plot$x$data[[1]]$type <- heatmap_data$type
   plot$x$data[[1]]$z <- heatmap_data$z
   plot$x$data[[1]]$colorscale <- colorscale
   plot$x$data[[1]]$zmin <- NULL
@@ -360,6 +378,9 @@ megabrowser_heatmap_attrs_from_data <- function(plot, heatmap_data, colorscale) 
   if (length(plot$x$attrs) >= 1) {
     plot$x$attrs[[1]]$x <- heatmap_data$x
     plot$x$attrs[[1]]$y <- NULL
+    plot$x$attrs[[1]]$y0 <- 1
+    plot$x$attrs[[1]]$dy <- 1
+    plot$x$attrs[[1]]$type <- heatmap_data$type
     plot$x$attrs[[1]]$z <- heatmap_data$z
     plot$x$attrs[[1]]$colorscale <- colorscale
   }
@@ -371,10 +392,11 @@ megabrowser_heatmap_attrs_from_data <- function(plot, heatmap_data, colorscale) 
 megabrowser_new_plotly_heatmap <- function(heatmap_data, colors) {
   plotly::plot_ly(
     x = heatmap_data$x,
+    y0 = 1, dy = 1,
     z = heatmap_data$z,
     colors = colors,
     showscale = FALSE,
-    type = "heatmapgl"
+    type = heatmap_data$type
   )
 }
 
@@ -467,14 +489,16 @@ renderMegabrowser <- function(plotType, ns,
   h3 <- sprintf("calc(%s * %.6f)", height, rel_heights[3])
 
   if (plotType == "ggplot2") {
-    tagList <- plotly::plotlyOutput(ns("mb_subplot_static"), height = height, width = width) %>%
+    tagList <- plotly::plotlyOutput(ns("mb_subplot_static"), height = sprintf("calc(%s * 1)", height), width = width) %>%
       shinycssloaders::withSpinner(color = "#0dc5c1")
   } else {
     top <- plotly::plotlyOutput(ns("mb_top_summary"), height = h1, width = width)
     middle <- plotly::plotlyOutput(ns("myPlotlyPlot"), height = h2, width = width)
     middle <- middle %>% shinycssloaders::withSpinner(color = "#0dc5c1")
     bottom <- plotly::plotlyOutput(ns("mb_bottom_gene"), height = h3, width = width)
-    tagList <- tagList(top, middle, bottom)
+    tagList <- tagList(div(class = "mega-summary-track", top),
+                       div(class = "mega-heatmap-track", middle),
+                       div(class = "mega-gene-track", bottom))
   }
   timer_done_nice_print("-- Mega browser 3 row plot done: ", time_before)
   return(tagList)

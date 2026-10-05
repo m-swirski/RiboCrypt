@@ -1,47 +1,10 @@
 allsamples_metadata_clustering <- function(table, enrichment_test_on = "Cluster",
-                                           numeric_bins = 5) {
+                                           numeric_bins = 5, compute_stats = TRUE) {
 
   print("Starting metabrowser clustering info")
-  values <- table$metadata_field
-  at_least_2_values <- length(unique(values)) > 1
-  if (!at_least_2_values) message("Single value analysis not possible, skipping!")
-
   time_before <- Sys.time()
-  req(at_least_2_values)
-  row_orders <- attr(table$table, "row_order_list")
-  orders <- unlist(row_orders, use.names = FALSE)
-  clustering_was_done <- length(row_orders) > 1
-
-  if (!clustering_was_done) {
-    orders <- order(values) # Order by variable instead of cluster
-  }
-  # TODO Fix ordering if clustering
-  meta <- merge.data.table(data.table(Run = names(values), grouping = values, order = orders),
-                     attr(values, "other_columns"), by = "Run", all.x = TRUE, sort = FALSE)
-  meta <- meta[meta$order, ]
-  if (clustering_was_done) {
-    meta[, cluster := rep(seq(length(row_orders)), lengths(row_orders))]
-  }
-  meta[, index := .I]
-  attr(meta, "ylab") <- "Enrichment"
-  if (enrichment_test_on %in% c("Ratio bins", "Other gene tpm bins")) {
-    meta[, cluster := cut(grouping, breaks=numeric_bins)]
-    meta[, grouping_numeric_bins_temp := cluster]
-    other_cols <- attr(values, "other_columns")
-    meta[, grouping := other_cols[,1][[1]]]
-    attr(meta, "xlab") <- attr(values, "xlab")
-  } else if (is.numeric(meta$grouping)) { #Make numeric bins
-      meta[, grouping_numeric_bins := cut(grouping, breaks=numeric_bins)]
-    attr(meta, "xlab") <- paste(attr(values, "xlab"), "(Numeric Bins)")
-  } else if (enrichment_test_on == "Clusters") {
-    attr(meta, "xlab") <- paste(attr(values, "xlab"), "Clusters (K-means)")
-  } else {
-    attr(meta, "xlab") <- paste0(attr(values, "xlab"), ifelse(clustering_was_done, " Clusters (K-means)", ""))
-    attr(meta, "ylab") <- ifelse(clustering_was_done, "Enrichment", "Counts")
-  }
-  attr(meta, "runIDs") <- attr(values, "runIDs")[orders,]
-
-  enrich_dt <- allsamples_meta_stats(meta)
+  meta <- megabrowser_sample_metadata(table, enrichment_test_on, numeric_bins)
+  enrich_dt <- if (compute_stats) allsamples_meta_stats(meta) else NULL
   timer_done_nice_print("-- metabrowser clustering info done: ", time_before)
   # Show it reversed
   meta <- meta[.N:1]
@@ -156,7 +119,7 @@ allsamples_sidebar_plotly <- function(meta, templates = NULL) {
       }
     }
   }
-  did_clustering <- length(unique(meta$cluster)) > 1
+  did_clustering <- "cluster" %in% names(meta) && nrow(meta) > 0L
   subplot_widths <- NULL
   plot_margin <- list(t = 8, b = 8)
   dragmode <- NULL
@@ -172,7 +135,7 @@ allsamples_sidebar_plotly <- function(meta, templates = NULL) {
         yref = "y",
         x = 0,
         y = centers$y_center[i],
-        text = as.character(centers$cluster_idx[i]),
+        text = as.character(centers$cluster[i]),
         showarrow = FALSE,
         textangle = -90,
         xanchor = "right",
@@ -227,7 +190,8 @@ allsamples_sidebar_plotly <- function(meta, templates = NULL) {
     margin = plot_margin,
     dragmode = dragmode,
     yaxis = list(
-      autorange = "reversed",
+      autorange = FALSE,
+      range = c(max(y) + 0.5, min(y) - 0.5),
       showticklabels = FALSE,
       ticks = "",
       showgrid = FALSE,
@@ -281,8 +245,9 @@ allsamples_meta_stats <- function(meta, attr_xlab = attr(meta, "xlab"), attr_yla
   clustering_was_done <- !is.null(res$cluster)
   if (clustering_was_done) {
     concat_table <- table(res$grouping, res$cluster)
-    chi_test <- suppressWarnings(chisq.test(concat_table))
-    res <- chi_test$stdres
+    res <- if (all(dim(concat_table) > 1L) && all(rowSums(concat_table) > 0) &&
+               all(colSums(concat_table) > 0)) suppressWarnings(chisq.test(concat_table))$stdres else
+      matrix(0, nrow(concat_table), ncol(concat_table), dimnames = dimnames(concat_table))
     res[concat_table %in% c(1,2)] <- res[concat_table %in% c(1,2)] / 3
     tooltipe <- "Chi-squared-stdres: "
   } else {
@@ -395,7 +360,7 @@ allsamples_enrich_bar_plotly <- function(enrich) {
 
 allsamples_meta_table <- function(meta_and_clusters) {
   res <- merge.data.table(attr(meta_and_clusters$meta, "runIDs"),
-                          suppressWarnings(meta_and_clusters$meta[, c("index", "order") := NULL]),
+                          suppressWarnings(copy(meta_and_clusters$meta)[, c("index", "order") := NULL]),
                           by = "Run", sort = FALSE)
   if ("cluster" %in% names(res)) {
     res[, cluster := as.character(cluster)]

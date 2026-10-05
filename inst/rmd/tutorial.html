@@ -537,7 +537,7 @@ heatmap)</li>
 heatmap with frame information, so rgb colors from white to dark red
 etc.</li>
 <li>Summary display type: Same as in browser</li>
-<li>Selected region to view: By default uses entire transcript. Can
+<li>Selected region to view: By default uses the leader and CDS. Can
 subset to only view cds or leader+cds etc.</li>
 <li>Select a transcript: Which transcript isoforms not all isoforms have
 computed fsts. By default the longest isoforms have been computed for
@@ -549,16 +549,86 @@ display and analysis.</li>
 normalization; 1 retains single-position resolution.</li>
 </ul>
 </div>
-<div id="statistics-tab" class="section level2">
-<h2>Statistics tab</h2>
+<div id="display-toolbar" class="section level2">
+<h2>Display toolbar</h2>
+<p>The toolbar above the Heatmap, Enrichment, Group summary, Statistics
+and Result table tabs controls the current view without requiring
+Generate Plot:</p>
+<ul>
+<li><strong>Collapsed clusters</strong> (unchecked by default): display
+one mean profile per existing cluster/bin, or per ordering category when
+no clusters/bins are present. Clustering, statistics and result tables
+retain individual libraries. The library and displayed row counts are
+shown separately. Categorical sidebar fields show their most frequent
+non-missing value, with alphabetical tie-breaking; numeric fields show
+their mean. These independent summaries need not describe any single
+library.</li>
+<li><strong>Visible groups</strong>: display only selected existing
+clusters, numeric bins, or ordering categories. Each option includes its
+library count. Leave the selector empty to display all groups. Focus
+applies before collapsing and never reclusters libraries or narrows the
+enrichment analysis/result table. The summary track remains a
+full-collection reference. A new analysis resets the selector when its
+coverage table changes.</li>
+<li><strong>Metadata sidebar</strong>: show or hide the annotation
+sidebar to give the heatmap more horizontal space.</li>
+<li><strong>Heatmap only</strong>: hide the summary and gene annotation
+tracks and use the available height for the interactive heatmap. This is
+a browser-only layout change; it is disabled for the combined static
+ComplexHeatmap view.</li>
+<li><strong>Plot height</strong>: adjust the plot between 400 and 1,200
+pixels. Height and sidebar changes are handled in the browser without
+requesting new coverage.</li>
+<li><strong>Reset zoom</strong> (expand icon): restore the interactive
+heatmap’s full plot ranges. Disabled in the fixed-axis ComplexHeatmap
+view.</li>
+<li><strong>Enrichment metadata</strong>: choose the field used by both
+enrichment views.</li>
+</ul>
+<p>The interactive renderer automatically uses a standard Plotly heatmap
+for moderate matrices (up to two million cells) and WebGL for larger
+full views. Collapsed views keep the standard renderer. This does not
+round or downsample the coverage values.</p>
+</div>
+<div id="enrichment-and-statistics-tabs" class="section level2">
+<h2>Enrichment and Statistics tabs</h2>
 <p>This tab summarizes metadata enrichment within clusters or ordering
 bins. Chi-squared residuals indicate overrepresentation (positive) or
 underrepresentation (negative) of terms such as tissue and cell line.
 Large absolute residuals identify patterns worth investigating; they are
 not, by themselves, proof of a biological effect. Study-specific effects
 and correlated metadata can influence these patterns.</p>
+<p>The <strong>Enrichment</strong> tab displays the enrichment chart;
+<strong>Statistics</strong> gives the corresponding table. Use
+<strong>Enrichment metadata</strong> in the toolbar to choose any
+available metadata column, such as <code>CELL_LINE</code>, independently
+of the column used to order the heatmap. This updates the statistics and
+enrichment chart immediately, without loading coverage or recomputing
+the heatmap or its clusters. The default <strong>Grouping</strong>
+option uses the existing ordering field. Numeric metadata are divided
+into five bins; missing values are represented as a separate category.
+Enrichment is always computed from individual libraries, even when
+collapsed rows are shown.</p>
 <p>If no clustering was applied, this tab gives the number of items per
 metadata term (40 brain samples, 30 kidney samples etc).</p>
+</div>
+<div id="group-summary" class="section level2">
+<h2>Group summary</h2>
+<p>Inspect the membership and metadata of the groups currently selected
+by <strong>Visible groups</strong>. Clearing that selector includes all
+groups. This tab uses individual libraries whether or not the heatmap is
+collapsed.</p>
+<p>Each group/field row shows its library count and representative
+metadata value. <strong>Agreement (%)</strong> is the percentage of all
+libraries in the group matching the most frequent categorical value;
+missing or empty values remain in the denominator. It is not an
+enrichment statistic. Numeric fields show their mean, minimum and
+maximum instead of agreement.</p>
+<p><strong>Group summary CSV</strong> downloads those summaries.
+<strong>Library membership CSV</strong> downloads one row per library
+with its original group label and sidebar metadata. Downloads retain
+numeric precision; rounding applies only to the displayed table. These
+controls do not recompute coverage or clustering.</p>
 </div>
 <div id="result-table" class="section level2">
 <h2>Result table</h2>

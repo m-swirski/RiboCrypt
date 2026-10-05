@@ -208,7 +208,7 @@ test_that("megabrowser relayout helpers build x and sidebar y reset payloads", {
       y_max = 8,
       y_reversed = TRUE
     )$yaxis$range,
-    c(4.5, 0.5)
+    c(4.4, 0.6)
   )
   expect_identical(
     RiboCrypt:::mb_y_relayout_from_event(
@@ -428,6 +428,20 @@ test_that("sync_megabrowser_x_shiny resets synced tracks to explicit x range on 
   expect_true(all(vapply(calls, function(call) identical(call$args[[1]][["xaxis.autorange"]], FALSE), logical(1))))
 })
 
+test_that("size-only and y-only events do not send empty peer relayouts", {
+  calls <- list()
+  testthat::local_mocked_bindings(
+    mb_proxy_relayout = function(output_id, session, relayout) {
+      calls[[length(calls) + 1L]] <<- list(id = output_id, layout = relayout)
+    }, .package = "RiboCrypt")
+  for (event in list(list(autosize = TRUE), list(width = 900, height = 600),
+                     list("margin.l" = 30))) sync_megabrowser_x_shiny(event, NULL)
+  expect_length(calls, 0L)
+  sync_megabrowser_x_shiny(list("yaxis.range" = c(1, 3)), NULL, y_max = 5)
+  expect_length(calls, 1L)
+  expect_identical(calls[[1]]$id, "d")
+})
+
 test_that("sync_megabrowser_x_shiny keeps sidebar y zoom aligned without reversal", {
   calls <- list()
   testthat::local_mocked_bindings(
@@ -451,7 +465,7 @@ test_that("sync_megabrowser_x_shiny keeps sidebar y zoom aligned without reversa
   expect_length(calls, 1)
   expect_identical(calls[[1]]$id, "d")
   expect_identical(calls[[1]]$method, "relayout")
-  expect_equal(calls[[1]]$args[[1]]$yaxis$range, c(4.5, 0.5))
+  expect_equal(calls[[1]]$args[[1]]$yaxis$range, c(4.4, 0.6))
   expect_identical(calls[[1]]$args[[1]]$yaxis$autorange, FALSE)
 })
 
@@ -579,7 +593,7 @@ test_that("get_meta_browser_plot reuses shared heatmap template", {
   )
 
   expect_true(inherits(p, "plotly"))
-  expect_identical(p$x$data[[1]]$type, "heatmapgl")
+  expect_identical(p$x$data[[1]]$type, "heatmap")
   expect_equal(unname(p$x$data[[1]]$x), 1:5)
   expect_equal(dim(p$x$data[[1]]$z), c(4, 5))
 })

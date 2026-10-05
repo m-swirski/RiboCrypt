@@ -309,7 +309,7 @@ module_additional_browser <- function(input, output, session,
 module_additional_megabrowser <- function(input, output, session) {
   with(rlang::caller_env(), {
     selected_enrich_filters <- reactiveVal(NULL)
-    observeEvent(meta_and_clusters(), {
+    observeEvent(list(controller()$table_hash, enrichment_field()), {
       selected_enrich_filters(NULL)
     }, ignoreInit = TRUE)
 
@@ -363,7 +363,7 @@ module_additional_megabrowser <- function(input, output, session) {
       req(input$plotType == "plotly")
       ed <- get_plotly_session_event(session, "plotly_relayout", "mb_mid")
       req(!is.null(ed))
-      y_max <- ncol(table()$table)
+      y_max <- ncol(display_table()$table)
       x_reset_range <- megabrowser_full_x_range(controller()$display_region, table()$table)
       sync_megabrowser_x_shiny(
         ed, session,
@@ -422,7 +422,8 @@ module_additional_megabrowser <- function(input, output, session) {
       filt <- selected_enrich_filters()
       if (is.null(filt)) return(tbl)
       if (!is.null(filt$category) && "grouping" %in% names(tbl)) {
-        tbl <- tbl[as.character(grouping) %in% filt$category]
+        category_values <- if ("grouping_numeric_bins" %in% names(tbl)) tbl$grouping_numeric_bins else tbl$grouping
+        tbl <- tbl[as.character(category_values) %in% filt$category]
       }
       if (!is.null(filt$cluster)) {
         if ("cluster" %in% names(tbl)) {

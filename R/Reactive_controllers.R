@@ -295,7 +295,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list, cds
     # Hash strings
     table_hash <- paste(name(dff), id, table_path, lib_sizes, clusters, min_count,
                         region_type, paste(metadata_field, collapse = ":"), normalization, frame,
-                        kmer, other_tx_hash, paste(ratio_interval, collapse = ":"),
+                        kmer, other_tx_hash, paste(ratio_interval, collapse = ":"), enrichment_term,
                         isolate(input$add_translon), isolate(input$add_translons_transcode),
                         leader_extension, trailer_extension,
                         isolate(input$viewMode), collapsed_introns_width, sep = "|_|")

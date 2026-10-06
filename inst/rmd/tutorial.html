@@ -185,8 +185,9 @@ collection.</p>
 <ul>
 <li><a href="#browser">Browser</a>: inspect coverage for individual
 libraries and genes.</li>
-<li><a href="#mbrowser">MegaBrowser</a>: compare coverage across a
-collection of libraries.</li>
+<li><a href="#mbrowser">MegaBrowser</a>: cluster collection-wide
+coverage, inspect groups and compare metadata or CDS/translon coverage
+ratios.</li>
 <li><a href="#observatory">Observatory</a>: select library groups and
 compare merged tracks.</li>
 <li><a href="#translons">Translons</a>: search and download predicted
@@ -481,33 +482,70 @@ genes.</p>
 </div>
 <div id="mbrowser" class="section level1">
 <h1>MegaBrowser</h1>
-<p>Display all samples for a specific organism over selected gene (Fig.
-5). This tab does not use bigwig files to load (as that would be very
-slow). It uses precomputed fst files of coverage over all libraries.
-Note: Not all isoforms are computed, by default the longest isoform is
-computed.</p>
+<p>MegaBrowser compares coverage across libraries in a precomputed
+collection, with one library per heatmap row before optional display
+collapse (Fig. 5). Choose this workflow for collection-wide patterns;
+use <a href="#browser">Browser</a> for individual tracks or <a
+href="#observatory">Observatory</a> to define groups and compare their
+merged tracks.</p>
+<p>The collection must provide metadata, count/library-size tables and
+per-gene coverage in fst files. MegaBrowser reads that precomputed
+coverage, not one bigWig per library. Available transcripts and
+predicted-translon annotations depend on the collection: not every
+isoform necessarily has coverage. The small ORFik example experiment
+used in the package overview does not supply these collection files.</p>
+<div id="start-with-a-coverage-analysis" class="section level2">
+<h2>Start with a coverage analysis</h2>
+<ol style="list-style-type: decimal">
+<li>Select a collection, gene, transcript and <strong>Select region to
+view</strong>. <strong>leader+cds</strong> is a useful starting point
+for upstream-ORF comparisons.</li>
+<li>Choose metadata ordering and <strong>K-means clusters</strong>, then
+check the normalization, minimum counts and k-mer settings described
+below.</li>
+<li>Enable the desired annotation options, including T and/or TC
+predicted translons if you plan to compare coding regions, and
+<strong>Generate Plot</strong>.</li>
+<li>Inspect the Heatmap, adjust its display, then choose the relevant
+page: <strong>Factor enrichment</strong> (Group summary, Enrichment and
+Statistics) for metadata, or <strong>Translon enrichment</strong> for
+coding-region coverage ratios.</li>
+</ol>
+<p>The analysis library set consists of the individual libraries passing
+the count filter. Display controls do not change this set or rerun
+clustering. Change coverage/annotation settings and generate the plot
+again to start a new analysis. For a concrete example, see <a
+href="#mega-atf4">the ATF4 walkthrough</a>.</p>
 <p><img src="../images/tutorial_fig5.png" width="1000px" height="500px" style="display: block; margin: auto auto auto 0;" /></p>
 <p>Figure 5. Heatmap of thousands of libraries coverage over ATF4
 transcript. Clustered using k-means = 2, with summary track displayed on
 top.</p>
-<div id="selection-panel-browser-1" class="section level2">
-<h2>Selection panel (Browser)</h2>
-<p>Organism, experiment and gene explained above</p>
-<ul>
-<li>Meta motif: Amino acid motifs from all genes over all libraries (+/-
-300 nucleotides shown)</li>
-<li>Order on: the metadata column to order plot by. The first factor
-defined will be the one that decided what to cluster / group by.</li>
-<li>Enrichment test on: What factor to do enrichment analysis on: For
-clusters (factor 1), it will do test on the first factor defined in
-“Order on”. For all the others it will create numeric bins of the
-ordering.</li>
-<li>K-means clusters: How many k-means clusters to use, if &gt; 1, Group
-will be sorted within the clusters, but K-means have priority.</li>
-</ul>
 </div>
-<div id="selection-panel-settings" class="section level2">
-<h2>Selection panel (Settings)</h2>
+<div id="configure-coverage-and-grouping" class="section level2">
+<h2>Configure coverage and grouping</h2>
+<p>Gene and transcript controls are above the heatmap. The sliders
+button opens the collection and settings panels. Organism/experiment
+selection works as in the <a href="#exp">Browser</a>, but the selected
+experiment must be a collection.</p>
+<ul>
+<li><strong>Order on</strong> selects metadata for ordering and the
+sidebar. When k-means clustering is enabled, cluster membership takes
+priority over metadata order.</li>
+<li><strong>K-means clusters</strong> controls the number of
+coverage-profile clusters.</li>
+<li><strong>Enrichment test on</strong> selects the initial analysis
+grouping, such as clusters, interval-ratio bins or other-gene expression
+bins when available. The separate <strong>Enrichment metadata</strong>
+toolbar control chooses which metadata field to inspect within those
+groups after plotting.</li>
+<li><strong>Select region to view</strong> chooses mRNA, CDS,
+leader+CDS, leader or trailer.</li>
+<li><strong>Meta motif</strong> opens precomputed amino-acid-motif
+profiles across genes and libraries rather than the selected gene’s
+coverage.</li>
+</ul>
+<div id="coverage-settings" class="section level3">
+<h3>Coverage settings</h3>
 <ul>
 <li>Normalization
 <ul>
@@ -518,6 +556,12 @@ and multiplied by one million)</li>
 deviation)</li>
 <li>tpm (raw tpm of counts, is very sensitive to extreme peaks)</li>
 </ul></li>
+</ul>
+<p>Heatmap values are log-transformed after normalization. They describe
+profile patterns, not raw counts. <strong>Translon enrichment</strong>
+instead reloads raw unbinned coverage for length-normalized ratios; it
+does not divide these heatmap values.</p>
+<ul>
 <li>Color theme: Which color theme to use</li>
 <li>Color scale multiplier: how much to amplify the color signal (if all
 is single color, try to reduce or increase this depending on which color
@@ -533,15 +577,11 @@ Useful to compare two regions.</li>
 <li>Summary top track (same as in browser, the aggregate of all rows,
 useful to see the frame information, which is not represented in the
 heatmap)</li>
-<li>Split by frame: (Not active yet!): When completed will display the
-heatmap with frame information, so rgb colors from white to dark red
-etc.</li>
+<li>Split by frame: the control is present, but the current collection
+binning does not separate frames. Use the Browser or summary track to
+inspect reading-frame information; the heatmap is not a three-color
+frame display.</li>
 <li>Summary display type: Same as in browser</li>
-<li>Selected region to view: By default uses the leader and CDS. Can
-subset to only view cds or leader+cds etc.</li>
-<li>Select a transcript: Which transcript isoforms not all isoforms have
-computed fsts. By default the longest isoforms have been computed for
-all genes.</li>
 <li>Minimum counts: The minimum raw counts over the total area per
 library to display, useful for excluding low-coverage libraries from the
 display and analysis.</li>
@@ -549,11 +589,27 @@ display and analysis.</li>
 normalization; 1 retains single-position resolution.</li>
 </ul>
 </div>
-<div id="display-toolbar" class="section level2">
-<h2>Display toolbar</h2>
-<p>The toolbar above the Heatmap, Enrichment, Group summary, Statistics
-and Result table tabs controls the current view without requiring
-Generate Plot:</p>
+<div id="annotation-and-renderer-settings" class="section level3">
+<h3>Annotation and renderer settings</h3>
+<p><strong>Predicted translons</strong> adds the T and/or TC annotation
+sources where available. Extensions, full annotation and intron
+collapsing determine which intervals are shown. Generate the plot after
+changing these settings; the Translon enrichment page uses the resulting
+annotation track’s coding intervals.</p>
+<p>Choose <strong>Plotly</strong> for interactive heatmaps or
+<strong>ComplexHeatmap</strong> for the static alternative. The
+interactive renderer uses a standard Plotly heatmap for moderate
+matrices (up to two million cells) and WebGL for larger full views.
+Collapsed views use the standard renderer. This does not round or
+downsample coverage. Rendering time depends on region length, library
+count, clustering and hardware.</p>
+</div>
+</div>
+<div id="inspect-the-heatmap" class="section level2">
+<h2>Inspect the heatmap</h2>
+<p>The toolbar above the result pages separates display controls from
+the metadata enrichment selector. These controls apply without another
+<strong>Generate Plot</strong>:</p>
 <ul>
 <li><strong>Collapsed clusters</strong> (unchecked by default): display
 one mean profile per existing cluster/bin, or per ordering category when
@@ -582,17 +638,74 @@ requesting new coverage.</li>
 <li><strong>Reset zoom</strong> (expand icon): restore the interactive
 heatmap’s full plot ranges. Disabled in the fixed-axis ComplexHeatmap
 view.</li>
-<li><strong>Enrichment metadata</strong>: choose the field used by both
-enrichment views.</li>
+<li><strong>Enrichment metadata</strong>: choose the field used by
+<strong>Enrichment</strong> and <strong>Statistics</strong>. This is
+metadata enrichment, not Translon enrichment.</li>
 </ul>
-<p>The interactive renderer automatically uses a standard Plotly heatmap
-for moderate matrices (up to two million cells) and WebGL for larger
-full views. Collapsed views keep the standard renderer. This does not
-round or downsample the coverage values.</p>
+<p>The distinction between display and analysis also applies to the
+result pages:</p>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Page</th>
+<th>Libraries used</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Heatmap</td>
+<td>Visible groups; optionally one mean row per group.</td>
+</tr>
+<tr class="even">
+<td>Group summary</td>
+<td>Individual libraries in Visible groups, even when collapsed.</td>
+</tr>
+<tr class="odd">
+<td>Enrichment and Statistics</td>
+<td>The full count-filtered analysis library set.</td>
+</tr>
+<tr class="even">
+<td>Translon enrichment</td>
+<td>The full count-filtered analysis library set, using raw
+coverage.</td>
+</tr>
+<tr class="odd">
+<td>Result table</td>
+<td>The full analysis set by default; enrichment/cluster clicks can
+filter it.</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div id="enrichment-and-statistics-tabs" class="section level2">
-<h2>Enrichment and Statistics tabs</h2>
-<p>This tab summarizes metadata enrichment within clusters or ordering
+<div id="mega-groups" class="section level2">
+<h2>Inspect group membership</h2>
+<p><strong>Group summary</strong> explains the metadata behind the
+currently visible groups. Clearing <strong>Visible groups</strong>
+includes all groups; collapse does not change the underlying libraries
+summarized here.</p>
+<p>Each group/field row shows its library count and representative
+metadata value. <strong>Agreement (%)</strong> is the percentage of all
+libraries in the group matching the most frequent categorical value;
+missing or empty values remain in the denominator. It is a descriptive
+proportion, not an enrichment score. Numeric fields show their mean,
+minimum and maximum instead of agreement.</p>
+<p>Use this page to assess whether a collapsed sidebar label represents
+most of its libraries or a mixed group. Its CSV exports retain numeric
+precision; rounding applies only to the displayed table. Export scopes
+are summarized <a href="#mega-exports">below</a>.</p>
+</div>
+<div id="factor-enrichment" class="section level2">
+<h2>Factor enrichment</h2>
+<p>The three main tabs are <strong>Heatmap</strong>, <strong>Factor
+enrichment</strong> and <strong>Translon enrichment</strong>. Factor
+enrichment groups the <strong>Enrichment</strong>, <strong>Group
+summary</strong>, <strong>Statistics</strong> and <strong>Result
+table</strong> views in one workspace.</p>
+<p>These pages summarize metadata enrichment within clusters or ordering
 bins. Chi-squared residuals indicate overrepresentation (positive) or
 underrepresentation (negative) of terms such as tissue and cell line.
 Large absolute residuals identify patterns worth investigating; they are
@@ -612,40 +725,161 @@ collapsed rows are shown.</p>
 <p>If no clustering was applied, this tab gives the number of items per
 metadata term (40 brain samples, 30 kidney samples etc).</p>
 </div>
-<div id="group-summary" class="section level2">
-<h2>Group summary</h2>
-<p>Inspect the membership and metadata of the groups currently selected
-by <strong>Visible groups</strong>. Clearing that selector includes all
-groups. This tab uses individual libraries whether or not the heatmap is
-collapsed.</p>
-<p>Each group/field row shows its library count and representative
-metadata value. <strong>Agreement (%)</strong> is the percentage of all
-libraries in the group matching the most frequent categorical value;
-missing or empty values remain in the denominator. It is not an
-enrichment statistic. Numeric fields show their mean, minimum and
-maximum instead of agreement.</p>
-<p><strong>Group summary CSV</strong> downloads those summaries.
-<strong>Library membership CSV</strong> downloads one row per library
-with its original group label and sidebar metadata. Downloads retain
-numeric precision; rounding applies only to the displayed table. These
-controls do not recompute coverage or clustering.</p>
+<div id="mega-translon" class="section level2">
+<h2>Compare CDS and translon coverage</h2>
+<p>This page compares the unique CDS and translon regions shown in the
+annotation track. Enable the desired predicted translons (T and/or TC)
+and <strong>Generate Plot</strong>, then open <strong>Translon
+enrichment</strong>. Analysis starts only when this page is opened.
+Identical complete exon interval sets are merged, retaining every source
+label; regions with identical outer bounds but different internal
+intervals stay separate.</p>
+<p>When an upstream translon overlaps a CDS, <strong>clean_cds</strong>
+excludes the union of the overlapping upstream-ORF bases. It can contain
+several disjoint intervals. No clean CDS is added when nothing was
+removed. An entirely removed CDS has length zero and undefined coverage
+ratios.</p>
+<p>The <strong>Coverage ratio</strong> selector offers each unordered
+region pair once, with translons ahead of CDS references in the
+numerator and clean CDS references in the denominator. For each library,
+the ratio is the numerator’s mean raw coverage per nucleotide divided by
+the denominator’s mean raw coverage per nucleotide. Coverage comes from
+the unbinned collection, not the log-scaled, normalized heatmap. The
+same count-filtered libraries and saved groups are used. Collapsed rows
+and <strong>Visible groups</strong> do not change this analysis.</p>
+<ul>
+<li><strong>Ratios</strong>: per-group log2 ratio distributions, with an
+equality reference at zero. Zero and undefined ratios cannot appear on
+this log scale.</li>
+<li><strong>Cluster statistics</strong>: library counts,
+valid/undefined/zero ratios, median and interquartile range, and the
+percentage of valid ratios above one. Exploratory two-sided Wilcoxon
+rank-sum tests compare each group with the remaining libraries.
+Rank-biserial effects range from -1 to 1; positive values indicate
+higher ratios in the group. BH adjustment covers all region-pair and
+group comparisons in the analysis. Tests with fewer than two valid
+libraries in either group, or constant values, are left undefined.</li>
+<li><strong>Regions</strong>: source aliases, type, length and
+transcript-coordinate intervals. Click <strong>+</strong> to add a
+user-defined region. The popup proposes an editable label
+(<code>UR1</code>, then <code>UR2</code>, and so on). Enter one-based
+inclusive transcript coordinates: <code>40:80</code> includes both
+endpoints; <code>40</code> is identical to <code>40:40</code>. Reversed
+intervals, malformed input and coordinates outside the raw transcript
+coverage are rejected with an error message. The region receives the
+next sequential ID (for example, <code>R7</code>) and joins all ratio,
+statistics and CSV results. User-defined regions do not change
+annotation-derived clean CDS intervals and reset on a new analysis.</li>
+</ul>
+<p>No pseudocount is added: a zero denominator gives an undefined ratio.
+A zero numerator with a positive denominator gives a valid zero ratio.
+The statistics table retains both counts. Ratio and statistics CSV
+downloads contain all pairs and all included individual libraries, not
+only the pair currently displayed; source labels are included.
+<strong>Regions CSV</strong> provides their interval definitions.</p>
+<p>These comparisons are exploratory, not independent evidence of
+differential translation: clusters are derived from the same coverage
+and libraries may share studies, conditions and biological samples. BH
+adjustment does not remove that dependence or replace a replicate-aware
+analysis. Ratios measure coverage in the intervals, not frame-specific
+translation efficiency or protein output.</p>
 </div>
-<div id="result-table" class="section level2">
-<h2>Result table</h2>
-<p>This tab gives the metadata with run ids, bioproject and cluster /
-numeric bin id, for each sample that passes the count filter.</p>
+<div id="mega-atf4" class="section level2">
+<h2>ATF4 walkthrough</h2>
+<p>This example requires a human all-samples collection with ATF4
+coverage and both T and TC prediction files; it is not available in the
+small ORFik demo.</p>
+<ol style="list-style-type: decimal">
+<li>Select <strong>ATF4</strong>, choose a transcript with precomputed
+coverage and set <strong>Select region to view</strong> to
+<strong>leader+cds</strong>. For the developer test dataset, the
+transcript was <code>ENST00000674920</code>.</li>
+<li>Use <code>TISSUE</code>/<code>CELL_LINE</code> metadata, five
+k-means clusters, minimum counts 100 and k-mer length 1. Enable both T
+and TC predicted translons, then generate the plot.</li>
+<li>Inspect the individual-library heatmap, then enable
+<strong>Collapsed clusters</strong>. Compare the original library count
+with the smaller displayed row count. Open <strong>Factor
+enrichment</strong>, then <strong>Group summary</strong>, to assess the
+metadata agreement behind each label.</li>
+<li>Change <strong>Enrichment metadata</strong> to
+<code>CELL_LINE</code> to inspect metadata enrichment without
+reclustering or recomputing coverage.</li>
+<li>Open <strong>Translon enrichment</strong>. Inspect
+<strong>Regions</strong> first, then compare a translon/CDS pair and the
+corresponding translon/clean_cds pair using <strong>Coverage
+ratio</strong>. Use <strong>Cluster statistics</strong> to inspect
+valid, zero and undefined counts before interpreting the log2
+boxes.</li>
+<li>Optionally use <strong>+</strong> in <strong>Regions</strong> to add
+a custom interval, such as <code>40:80</code>, and edit its proposed
+<code>UR1</code> label. It receives the next region ID and adds
+comparisons without changing the clusters or annotation-derived clean
+CDS.</li>
+<li>Download region definitions, library ratios and statistics so the
+interval identities and comparison scope remain explicit outside the
+app.</li>
+</ol>
+<p>In the developer dataset, four T/TC duplicate pairs became four
+unique translons. The overlapping upstream ORF removed 83 nt from the
+1,056-nt CDS, leaving a 973-nt clean CDS. Together with the CDS, these
+six regions produced 15 unordered pairs. Predictions, transcript
+availability, library counts and clustering results can differ between
+collections or server versions; these numbers are a checked example, not
+expected values for every ATF4 analysis.</p>
 </div>
-<div id="requirements" class="section level2">
-<h2>Requirements</h2>
-<p>MegaBrowser requires precomputed collection experiments, count
-tables, library sizes and per-gene coverage stored in fst files.
-Transcript availability depends on these precomputed files. Rendering
-time varies with region length, library count, clustering, plot type and
-hardware.</p>
-<p>Choose <strong>Plotly</strong> for an interactive heatmap or
-<strong>ComplexHeatmap</strong> for the alternative heatmap renderer.
-Settings also control annotation, predicted translons, extensions and
-intron collapsing.</p>
+<div id="mega-exports" class="section level2">
+<h2>Inspect and export results</h2>
+<p>Under <strong>Factor enrichment</strong>, <strong>Result
+table</strong> gives run IDs, BioProject and group/cluster metadata for
+the count-filtered libraries. Clicking a metadata-enrichment bar or a
+sidebar cluster label opens the matching rows. <strong>Show full
+table</strong> clears that result filter; <strong>Show full
+cluster</strong> expands a metadata-filtered result to its group where
+available. These result-table filters do not change the analysis.</p>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Download</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Group summary CSV</td>
+<td>Per-group/field summaries for Visible groups.</td>
+</tr>
+<tr class="even">
+<td>Library membership CSV</td>
+<td>Individual libraries in Visible groups, with original group labels
+and sidebar metadata.</td>
+</tr>
+<tr class="odd">
+<td>Library ratios CSV</td>
+<td>All coding-region pairs and all analysis libraries, including
+zero/undefined ratios and source labels.</td>
+</tr>
+<tr class="even">
+<td>Statistics CSV</td>
+<td>All coding-region pair/group summaries and tests, not only the
+selected pair.</td>
+</tr>
+<tr class="odd">
+<td>Regions CSV</td>
+<td>Annotation-derived and user-defined region labels, types, lengths
+and interval definitions.</td>
+</tr>
+</tbody>
+</table>
+<p>The group exports respect display focus; the translon exports do not.
+Neither uses collapsed rows as independent observations. For coverage
+exports of individual Browser tracks or merged Observatory groups, use
+their separate <strong>Download coverage</strong> control rather than
+these MegaBrowser ratio downloads.</p>
 </div>
 </div>
 <div id="observatory" class="section level1">
@@ -794,7 +1028,7 @@ peaks)</li>
 <li>Max readlength The maximum readlength to display</li>
 </ul>
 </div>
-<div id="selection-panel-settings-1" class="section level3">
+<div id="selection-panel-settings" class="section level3">
 <h3>Selection panel (settings)</h3>
 <p>Here additional options are shown:</p>
 <ul>
@@ -880,7 +1114,7 @@ requires a valid, full-rank experimental design. A method choice alone
 cannot correct confounded conditions or an unsuitable study design.</li>
 </ul>
 </div>
-<div id="selection-panel-settings-2" class="section level3">
+<div id="selection-panel-settings-1" class="section level3">
 <h3>Selection panel (settings)</h3>
 <ul>
 <li>draw unregulated (show dots for unregulated genes, makes it much

@@ -1,12 +1,12 @@
 ---
-title: "App Tutorial"
+title: "RiboCrypt App Tutorial"
 date: "`r BiocStyle::doc_date()`"
 author: "Michal Swirski & Hakon Tjeldnes"
 output: 
   BiocStyle::html_document:
     self_contained: true
 vignette: >
-  %\VignetteIndexEntry{Tutorial}
+  %\VignetteIndexEntry{RiboCrypt App Tutorial}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

@@ -124,6 +124,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                       )
                     )
                   )),
+                  tabPanel("Factor enrichment", tabsetPanel(id = ns("factor_tabs"),
                   tabPanel("Enrichment", plotlyOutput(outputId = ns("e"))),
                   tabPanel("Group summary",
                            div(class = "mega-layout-controls",
@@ -135,7 +136,8 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                   tabPanel("Result table",
                            uiOutput(outputId = ns("result_table_controls")),
                            DTOutput(outputId = ns("result_table")) %>%
-                             shinycssloaders::withSpinner(color="#0dc5c1"))
+                             shinycssloaders::withSpinner(color="#0dc5c1")))),
+                  megabrowser_translon_ui(ns)
       )
     ))
   )
@@ -222,6 +224,7 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
       }) %>% bindCache(controller()$table_hash, controller()$enrichment_term, isTRUE(input$collapsed_clusters), selected_groups())
       output$display_counts <- renderText(megabrowser_display_counts(table()$table, display_table()))
       megabrowser_group_outputs(output, table, grouped_metadata, selected_groups)
+      megabrowser_translon_outputs(input, output, session, controller, table, grouped_metadata)
       # Heatmap (middle right)
       plot_object <- reactive(mb_plot_object_shiny(display_table()$table, input, templates = templates)) %>%
         bindCache(controller()$table_plot_hash, controller()$enrichment_term, isTRUE(input$collapsed_clusters), selected_groups()) %>%

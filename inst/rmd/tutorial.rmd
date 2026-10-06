@@ -32,7 +32,8 @@ This tutorial covers the main workflows and settings. Available studies,
 annotations and precomputed results depend on the server's data collection.
 
 -   [Browser](#browser): inspect coverage for individual libraries and genes.
--   [MegaBrowser](#mbrowser): compare coverage across a collection of libraries.
+-   [MegaBrowser](#mbrowser): cluster collection-wide coverage, inspect groups
+    and compare metadata or CDS/translon coverage ratios.
 -   [Observatory](#observatory): select library groups and compare merged tracks.
 -   [Translons](#translons): search and download predicted translated regions.
 -   [Analysis](#analysis): run metagene, codon and quality-control analyses.
@@ -307,10 +308,35 @@ genes.
 
 # MegaBrowser {#mbrowser}
 
-Display all samples for a specific organism over selected gene (Fig. 5).
-This tab does not use bigwig files to load (as that would be very slow).
-It uses precomputed fst files of coverage over all libraries. Note: Not
-all isoforms are computed, by default the longest isoform is computed.
+MegaBrowser compares coverage across libraries in a precomputed collection,
+with one library per heatmap row before optional display collapse (Fig. 5).
+Choose this workflow for collection-wide patterns; use [Browser](#browser)
+for individual tracks or [Observatory](#observatory) to define groups and
+compare their merged tracks.
+
+The collection must provide metadata, count/library-size tables and per-gene
+coverage in fst files. MegaBrowser reads that precomputed coverage, not one
+bigWig per library. Available transcripts and predicted-translon annotations
+depend on the collection: not every isoform necessarily has coverage. The
+small ORFik example experiment used in the package overview does not supply
+these collection files.
+
+## Start with a coverage analysis
+
+1. Select a collection, gene, transcript and **Select region to view**.
+   **leader+cds** is a useful starting point for upstream-ORF comparisons.
+2. Choose metadata ordering and **K-means clusters**, then check the
+   normalization, minimum counts and k-mer settings described below.
+3. Enable the desired annotation options, including T and/or TC predicted
+   translons if you plan to compare coding regions, and **Generate Plot**.
+4. Inspect the Heatmap, adjust its display, then choose the relevant page:
+   **Factor enrichment** (Group summary, Enrichment and Statistics) for
+   metadata, or **Translon enrichment** for coding-region coverage ratios.
+
+The analysis library set consists of the individual libraries passing the
+count filter. Display controls do not change this set or rerun clustering.
+Change coverage/annotation settings and generate the plot again to start a
+new analysis. For a concrete example, see [the ATF4 walkthrough](#mega-atf4).
 
 ```{r, echo = FALSE, out.width = "1000px", out.height="500px", fig.align="left"}
 knitr::include_graphics("../images/tutorial_fig5.png")
@@ -320,20 +346,24 @@ Figure 5. Heatmap of thousands of libraries coverage over ATF4
 transcript. Clustered using k-means = 2, with summary track displayed on
 top.
 
-## Selection panel (Browser)
+## Configure coverage and grouping
 
-Organism, experiment and gene explained above
+Gene and transcript controls are above the heatmap. The sliders button opens
+the collection and settings panels. Organism/experiment selection works as in
+the [Browser](#exp), but the selected experiment must be a collection.
 
--   Meta motif: Amino acid motifs from all genes over all libraries (+/- 300 nucleotides shown)
--   Order on: the metadata column to order plot by. The first factor defined will
-    be the one that decided what to cluster / group by.
--   Enrichment test on: What factor to do enrichment analysis on: For clusters (factor 1), 
-    it will do test on the first factor defined in "Order on". For all the others it will create 
-    numeric bins of the ordering.
--   K-means clusters: How many k-means clusters to use, if \> 1, Group
-    will be sorted within the clusters, but K-means have priority.
+- **Order on** selects metadata for ordering and the sidebar. When k-means
+  clustering is enabled, cluster membership takes priority over metadata order.
+- **K-means clusters** controls the number of coverage-profile clusters.
+- **Enrichment test on** selects the initial analysis grouping, such as
+  clusters, interval-ratio bins or other-gene expression bins when available.
+  The separate **Enrichment metadata** toolbar control chooses which metadata
+  field to inspect within those groups after plotting.
+- **Select region to view** chooses mRNA, CDS, leader+CDS, leader or trailer.
+- **Meta motif** opens precomputed amino-acid-motif profiles across genes and
+  libraries rather than the selected gene's coverage.
 
-## Selection panel (Settings)
+### Coverage settings
 
 -   Normalization
     -   transcriptNormalized (each sample's profile is divided by its sum
@@ -341,6 +371,11 @@ Organism, experiment and gene explained above
     -   Max normalized (each position count divided by maximum)
     -   zscore (subtract the profile mean and divide by its standard deviation)
     -   tpm (raw tpm of counts, is very sensitive to extreme peaks)
+
+Heatmap values are log-transformed after normalization. They describe profile
+patterns, not raw counts. **Translon enrichment** instead reloads raw unbinned
+coverage for length-normalized ratios; it does not divide these heatmap values.
+
 -   Color theme: Which color theme to use
 -   Color scale multiplier: how much to amplify the color signal (if all
     is single color, try to reduce or increase this depending on which
@@ -357,24 +392,32 @@ Organism, experiment and gene explained above
 -   Summary top track (same as in browser, the aggregate of all rows,
     useful to see the frame information, which is not represented in the
     heatmap)
--   Split by frame: (Not active yet!): When completed will display the
-    heatmap with frame information, so rgb colors from white to dark red
-    etc.
+-   Split by frame: the control is present, but the current collection binning
+    does not separate frames. Use the Browser or summary track to inspect
+    reading-frame information; the heatmap is not a three-color frame display.
 -   Summary display type: Same as in browser
--   Selected region to view: By default uses the leader and CDS. Can subset to
-    only view cds or leader+cds etc.
--   Select a transcript: Which transcript isoforms not all isoforms have
-    computed fsts. By default the longest isoforms have been computed
-    for all genes.
 -   Minimum counts: The minimum raw counts over the total area per library to display,
     useful for excluding low-coverage libraries from the display and analysis.
 -   K-mer length: aggregate neighboring positions into bins before
     normalization; 1 retains single-position resolution.
 
-## Display toolbar
+### Annotation and renderer settings
 
-The toolbar above the Heatmap, Enrichment, Group summary, Statistics and Result table tabs
-controls the current view without requiring Generate Plot:
+**Predicted translons** adds the T and/or TC annotation sources where available.
+Extensions, full annotation and intron collapsing determine which intervals are
+shown. Generate the plot after changing these settings; the Translon enrichment
+page uses the resulting annotation track's coding intervals.
+
+Choose **Plotly** for interactive heatmaps or **ComplexHeatmap** for the static
+alternative. The interactive renderer uses a standard Plotly heatmap for moderate
+matrices (up to two million cells) and WebGL for larger full views. Collapsed
+views use the standard renderer. This does not round or downsample coverage.
+Rendering time depends on region length, library count, clustering and hardware.
+
+## Inspect the heatmap
+
+The toolbar above the result pages separates display controls from the metadata
+enrichment selector. These controls apply without another **Generate Plot**:
 
 -   **Collapsed clusters** (unchecked by default): display one mean profile
     per existing cluster/bin, or per ordering category when no clusters/bins
@@ -398,16 +441,43 @@ controls the current view without requiring Generate Plot:
     sidebar changes are handled in the browser without requesting new coverage.
 -   **Reset zoom** (expand icon): restore the interactive heatmap's full plot
     ranges. Disabled in the fixed-axis ComplexHeatmap view.
--   **Enrichment metadata**: choose the field used by both enrichment views.
+-   **Enrichment metadata**: choose the field used by **Enrichment** and
+    **Statistics**. This is metadata enrichment, not Translon enrichment.
 
-The interactive renderer automatically uses a standard Plotly heatmap for
-moderate matrices (up to two million cells) and WebGL for larger full views.
-Collapsed views keep the standard renderer. This does not round or downsample
-the coverage values.
+The distinction between display and analysis also applies to the result pages:
 
-## Enrichment and Statistics tabs
+| Page | Libraries used |
+|---|---|
+| Heatmap | Visible groups; optionally one mean row per group. |
+| Group summary | Individual libraries in Visible groups, even when collapsed. |
+| Enrichment and Statistics | The full count-filtered analysis library set. |
+| Translon enrichment | The full count-filtered analysis library set, using raw coverage. |
+| Result table | The full analysis set by default; enrichment/cluster clicks can filter it. |
 
-This tab summarizes metadata enrichment within clusters or ordering bins.
+## Inspect group membership {#mega-groups}
+
+**Group summary** explains the metadata behind the currently visible groups.
+Clearing **Visible groups** includes all groups; collapse does not change
+the underlying libraries summarized here.
+
+Each group/field row shows its library count and representative metadata
+value. **Agreement (%)** is the percentage of all libraries in the group
+matching the most frequent categorical value; missing or empty values remain
+in the denominator. It is a descriptive proportion, not an enrichment score.
+Numeric fields show their mean, minimum and maximum instead of agreement.
+
+Use this page to assess whether a collapsed sidebar label represents most of
+its libraries or a mixed group. Its CSV exports retain numeric precision;
+rounding applies only to the displayed table. Export scopes are summarized
+[below](#mega-exports).
+
+## Factor enrichment
+
+The three main tabs are **Heatmap**, **Factor enrichment** and **Translon
+enrichment**. Factor enrichment groups the **Enrichment**, **Group summary**,
+**Statistics** and **Result table** views in one workspace.
+
+These pages summarize metadata enrichment within clusters or ordering bins.
 Chi-squared residuals indicate overrepresentation (positive) or
 underrepresentation (negative) of terms such as tissue and cell line.
 Large absolute residuals identify patterns worth investigating; they are
@@ -427,38 +497,111 @@ computed from individual libraries, even when collapsed rows are shown.
 If no clustering was applied, this tab gives the number of items per
 metadata term (40 brain samples, 30 kidney samples etc).
 
-## Group summary
+## Compare CDS and translon coverage {#mega-translon}
 
-Inspect the membership and metadata of the groups currently selected by
-**Visible groups**. Clearing that selector includes all groups. This tab
-uses individual libraries whether or not the heatmap is collapsed.
+This page compares the unique CDS and translon regions shown in the annotation
+track. Enable the desired predicted translons (T and/or TC) and **Generate Plot**,
+then open **Translon enrichment**. Analysis starts only when this page is opened.
+Identical complete exon interval sets are merged, retaining every source label;
+regions with identical outer bounds but different internal intervals stay separate.
 
-Each group/field row shows its library count and representative metadata
-value. **Agreement (%)** is the percentage of all libraries in the group
-matching the most frequent categorical value; missing or empty values remain
-in the denominator. It is not an enrichment statistic. Numeric fields show
-their mean, minimum and maximum instead of agreement.
+When an upstream translon overlaps a CDS, **clean_cds** excludes the union of
+the overlapping upstream-ORF bases. It can contain several disjoint intervals.
+No clean CDS is added when nothing was removed. An entirely removed CDS has
+length zero and undefined coverage ratios.
 
-**Group summary CSV** downloads those summaries. **Library membership CSV**
-downloads one row per library with its original group label and sidebar
-metadata. Downloads retain numeric precision; rounding applies only to the
-displayed table. These controls do not recompute coverage or clustering.
+The **Coverage ratio** selector offers each unordered region pair once, with
+translons ahead of CDS references in the numerator and clean CDS references in
+the denominator. For each library, the ratio is the numerator's mean raw
+coverage per nucleotide divided by the denominator's mean raw coverage per
+nucleotide. Coverage comes from the unbinned collection, not the log-scaled,
+normalized heatmap. The same count-filtered libraries and saved groups are used.
+Collapsed rows and **Visible groups** do not change this analysis.
 
-## Result table
+- **Ratios**: per-group log2 ratio distributions, with an equality reference at
+  zero. Zero and undefined ratios cannot appear on this log scale.
+- **Cluster statistics**: library counts, valid/undefined/zero ratios, median
+  and interquartile range, and the percentage of valid ratios above one.
+  Exploratory two-sided Wilcoxon rank-sum tests compare each group with the
+  remaining libraries. Rank-biserial effects range from -1 to 1; positive values
+  indicate higher ratios in the group. BH adjustment covers all region-pair and
+  group comparisons in the analysis. Tests with fewer than two valid libraries
+  in either group, or constant values, are left undefined.
+- **Regions**: source aliases, type, length and transcript-coordinate intervals.
+  Click **+** to add a user-defined region. The popup proposes an editable label
+  (`UR1`, then `UR2`, and so on). Enter one-based inclusive transcript coordinates:
+  `40:80` includes both endpoints; `40` is identical to `40:40`. Reversed intervals,
+  malformed input and coordinates outside the raw transcript coverage are rejected
+  with an error message. The region receives the next sequential ID (for example,
+  `R7`) and joins all ratio, statistics and CSV results. User-defined regions do
+  not change annotation-derived clean CDS intervals and reset on a new analysis.
 
-This tab gives the metadata with run ids, bioproject and cluster / numeric bin id,
-for each sample that passes the count filter.
+No pseudocount is added: a zero denominator gives an undefined ratio. A zero
+numerator with a positive denominator gives a valid zero ratio. The statistics
+table retains both counts. Ratio and statistics CSV downloads contain all pairs
+and all included individual libraries, not only the pair currently displayed;
+source labels are included. **Regions CSV** provides their interval definitions.
 
-## Requirements
+These comparisons are exploratory, not independent evidence of differential
+translation: clusters are derived from the same coverage and libraries may
+share studies, conditions and biological samples. BH adjustment does not remove
+that dependence or replace a replicate-aware analysis. Ratios measure coverage
+in the intervals, not frame-specific translation efficiency or protein output.
 
-MegaBrowser requires precomputed collection experiments, count tables,
-library sizes and per-gene coverage stored in fst files. Transcript
-availability depends on these precomputed files. Rendering time varies
-with region length, library count, clustering, plot type and hardware.
+## ATF4 walkthrough {#mega-atf4}
 
-Choose **Plotly** for an interactive heatmap or **ComplexHeatmap** for
-the alternative heatmap renderer. Settings also control annotation,
-predicted translons, extensions and intron collapsing.
+This example requires a human all-samples collection with ATF4 coverage and
+both T and TC prediction files; it is not available in the small ORFik demo.
+
+1. Select **ATF4**, choose a transcript with precomputed coverage and set
+   **Select region to view** to **leader+cds**. For the developer test dataset,
+   the transcript was `ENST00000674920`.
+2. Use `TISSUE`/`CELL_LINE` metadata, five k-means clusters, minimum counts 100
+   and k-mer length 1. Enable both T and TC predicted translons, then generate
+   the plot.
+3. Inspect the individual-library heatmap, then enable **Collapsed clusters**.
+   Compare the original library count with the smaller displayed row count.
+   Open **Factor enrichment**, then **Group summary**, to assess the metadata agreement
+   behind each label.
+4. Change **Enrichment metadata** to `CELL_LINE` to inspect metadata enrichment
+   without reclustering or recomputing coverage.
+5. Open **Translon enrichment**. Inspect **Regions** first, then compare a
+   translon/CDS pair and the corresponding translon/clean_cds pair using
+   **Coverage ratio**. Use **Cluster statistics** to inspect valid, zero and
+   undefined counts before interpreting the log2 boxes.
+6. Optionally use **+** in **Regions** to add a custom interval, such as `40:80`,
+   and edit its proposed `UR1` label. It receives the next region ID and adds
+   comparisons without changing the clusters or annotation-derived clean CDS.
+7. Download region definitions, library ratios and statistics so the interval
+   identities and comparison scope remain explicit outside the app.
+
+In the developer dataset, four T/TC duplicate pairs became four unique
+translons. The overlapping upstream ORF removed 83 nt from the 1,056-nt CDS,
+leaving a 973-nt clean CDS. Together with the CDS, these six regions produced
+15 unordered pairs. Predictions, transcript availability, library counts and
+clustering results can differ between collections or server versions; these
+numbers are a checked example, not expected values for every ATF4 analysis.
+
+## Inspect and export results {#mega-exports}
+
+Under **Factor enrichment**, **Result table** gives run IDs, BioProject and group/cluster metadata for the
+count-filtered libraries. Clicking a metadata-enrichment bar or a sidebar
+cluster label opens the matching rows. **Show full table** clears that result
+filter; **Show full cluster** expands a metadata-filtered result to its group
+where available. These result-table filters do not change the analysis.
+
+| Download | Scope |
+|---|---|
+| Group summary CSV | Per-group/field summaries for Visible groups. |
+| Library membership CSV | Individual libraries in Visible groups, with original group labels and sidebar metadata. |
+| Library ratios CSV | All coding-region pairs and all analysis libraries, including zero/undefined ratios and source labels. |
+| Statistics CSV | All coding-region pair/group summaries and tests, not only the selected pair. |
+| Regions CSV | Annotation-derived and user-defined region labels, types, lengths and interval definitions. |
+
+The group exports respect display focus; the translon exports do not. Neither
+uses collapsed rows as independent observations. For coverage exports of
+individual Browser tracks or merged Observatory groups, use their separate
+**Download coverage** control rather than these MegaBrowser ratio downloads.
 
 # Observatory {#observatory}
 

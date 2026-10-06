@@ -6,6 +6,9 @@ is kept in Git and excluded from R source bundles by `^benchmarks$` in
 
 ## Reports
 
+- [2026-10-06: MegaBrowser translon enrichment](2026-10-06-megabrowser-translon-enrichment.md):
+  lazy interval-pair ratios, clean CDS, real ATF4 duplicate/overlap checks and timings.
+
 - [2026-10-05: MegaBrowser preparation and group inspection](2026-10-05-megabrowser-preparation.md):
   fewer matrix copies, deferred statistics, group-summary exports and backend timings.
 

@@ -1,0 +1,25 @@
+{
+  "realm": "ribocrypt",
+  "enabled": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": true,
+  "resetPasswordAllowed": true,
+  "passwordPolicy": "length(12) and notUsername and notEmail",
+  "bruteForceProtected": true,
+  "clients": [{
+    "clientId": "ribocrypt-gateway",
+    "enabled": true,
+    "protocol": "openid-connect",
+    "publicClient": false,
+    "secret": "${RIBOCRYPT_OIDC_CLIENT_SECRET}",
+    "standardFlowEnabled": true,
+    "directAccessGrantsEnabled": false,
+    "redirectUris": ["https://${RIBOCRYPT_APP_HOST}/oauth2/callback"],
+    "webOrigins": ["https://${RIBOCRYPT_APP_HOST}"],
+    "defaultClientScopes": ["profile", "email"],
+    "attributes": {"pkce.code.challenge.method": "S256"}
+  }]
+}

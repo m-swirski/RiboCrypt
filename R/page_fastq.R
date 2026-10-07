@@ -42,7 +42,8 @@ fastq_server <- function(id, all_experiments, df, experiments, libs, org, rv,
 
       output$fastq <- renderUI({
         req(page())  # Ensure path exists
-        tags$iframe(seamless = "seamless", src = page(), width = 1000, height = 900)
+        tags$iframe(seamless = "seamless", sandbox = "allow-scripts",
+                    src = page(), width = 1000, height = 900)
       })
       return(rv)
     }

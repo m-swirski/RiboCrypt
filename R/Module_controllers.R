@@ -276,7 +276,7 @@ module_additional_browser <- function(input, output, session,
       }
     )
 
-    output$download_plot_html <- downloadHandler(
+    output$download_plot_html <- rc_download_handler(
       filename = function() {
         paste0("RiboCrypt_", isolate(input$tx), Sys.Date(), ".html")
       },

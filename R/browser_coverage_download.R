@@ -25,7 +25,7 @@ browser_coverage_filename <- function(controls) {
 #' Register lazily: no coverage extraction or serialization during startup.
 #' @noRd
 browser_coverage_download <- function(output, controls, browser_plot) {
-  output$download_coverage <- shiny::downloadHandler(
+  output$download_coverage <- rc_download_handler(
     filename = function() browser_coverage_filename(controls()),
     contentType = "text/csv",
     content = function(file) {

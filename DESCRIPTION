@@ -61,6 +61,8 @@ Imports:
   writexl
 Suggests:
   base64enc,
+  DBI,
+  RSQLite,
   profvis,
   rmarkdown,
   ragg,

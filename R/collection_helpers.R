@@ -8,6 +8,19 @@
 #' @importFrom fst read_fst
 load_collection <- function(path, grl = attr(path, "range"), columns = NULL) {
   stopifnot(length(path) == 1 & is.character(path))
+  context <- rc_access_context()
+  if (!is.null(context)) {
+    rc_access_path(path, context$collection_roots, context)
+    if (!is.null(columns) && any(!columns %in% context$runs)) stop("Library access denied.")
+    if (basename(path) == "coverage_index.fst") {
+      index <- fst::read_fst(path, as.data.table = TRUE)
+      page <- file.path(dirname(path), basename(index$file_forward[1]))
+      rc_access_path(page, context$collection_roots, context)
+      available <- fst::metadata_fst(page)$columnNames
+      columns <- intersect(if (is.null(columns)) context$runs else columns, available)
+      if (!length(columns)) stop("Collection has no authorized libraries.")
+    }
+  }
 
   subset_defined <- !is.null(grl)
   index_provided <- basename(path) == "coverage_index.fst"
@@ -20,7 +33,7 @@ load_collection <- function(path, grl = attr(path, "range"), columns = NULL) {
   } else table <- fst::read_fst(path, as.data.table = TRUE)
   if ("position" %in% colnames(table)) warning("Old megafst format not supported downstream anymore!")
 
-  return(table)
+  return(rc_access_collection_columns(table, context))
 }
 
 collection_user_attributes <- function(x) {
@@ -286,6 +299,7 @@ compute_collection_table <- function(path, lib_sizes, df,
   table <- as.matrix(load_collection(path))
   intersect <- intersect(colnames(table), runIDs(df))
   if (length(intersect) == 0) stop("Malformed experiment to megafst format intersect, no matching runs!")
+  table <- subset_collection_columns(table, intersect)
   if (!all(runIDs(df) %in% intersect)) df <- df[runIDs(df) %in% intersect,]
 
 

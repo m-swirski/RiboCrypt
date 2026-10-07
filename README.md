@@ -123,6 +123,12 @@ Report bugs through [GitHub issues](https://github.com/m-swirski/RiboCrypt/issue
 
 ## Development
 
+The [accounts and analysis platform plan](docs/development/accounts-and-analysis-platform.md)
+tracks the optional identity/dataset-grant implementation and rollout work.
+Authentication is opt-in through `RiboCrypt_app(access_control = ...)`; see the
+[authentication deployment checklist](docs/deployment/authentication.md) before
+configuring an identity provider.
+
 From the repository root, source-load this checkout before testing:
 
 ```r

@@ -6,3 +6,6 @@
 ^doc$
 ^Meta$
 ^benchmarks$
+^docs$
+^deploy$
+^tests/manual$

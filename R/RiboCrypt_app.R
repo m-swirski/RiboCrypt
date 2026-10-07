@@ -40,6 +40,8 @@
 #' remaining all_exp are used in all other modules.
 #' @param columns_to_show character vector of metadata columns shown in the
 #' metadata table tab.
+#' @param access_control NULL for legacy public operation, or configuration from
+#'   `ribocrypt_access_control()` for gateway-authenticated, permission-filtered sessions.
 #' @import shiny bslib ORFik NGLVieweR ggplot2 fst rclipboard data.table
 #' @importFrom Biostrings strsplit width
 #' @importFrom GenomeInfoDb seqlevelsStyle seqlevelsStyle<-
@@ -91,8 +93,15 @@ RiboCrypt_app <- function(
                        "YEAR", "LIBRARYTYPE", "REPLICATE", "CONDITION", "INHIBITOR",
                        "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION",
                        "Cancer_type", "Cell_model", "Cell_type",
-                       "Organ_system", "Sex", "Life_stage")
+                       "Organ_system", "Sex", "Life_stage"),
+  access_control = NULL
 ) {
+  if (!is.null(access_control)) {
+    return(rc_access_app(access_control, list(options = options, metadata = metadata,
+      all_exp_meta = if (missing(all_exp_meta)) NULL else all_exp_meta,
+      browser_options = browser_options, init_tab_focus = init_tab_focus,
+      columns_to_show = columns_to_show, validate.experiments = validate.experiments)))
+  }
   rc_parameter_setup()
   # User interface
   ui <- tagList(
@@ -116,7 +125,8 @@ RiboCrypt_app <- function(
       predicted_translons_ui("predicted_translons", predicted_translons_experiments(all_exp)),
       analysis_ui("Analysis", all_exp, browser_options, libs, metadata),
       metadata_ui("metadata", all_exp, all_exp_meta),
-      tutorial_ui("tutorial")
+      tutorial_ui("tutorial"),
+      rc_access_account_tab()
     )
   )
   cat("Done (UI setup):")
@@ -198,5 +208,7 @@ RiboCrypt_app <- function(
     cat("Server total: ")
     print(round(Sys.time() - time_before, 2))
   }
-  cache_static_app_ui(shinyApp(ui, server, options = options))
+  app <- shinyApp(ui, server, options = options)
+  attr(app, "ribocrypt_ui") <- ui
+  if (is.null(rc_access_context())) cache_static_app_ui(app) else app
 }

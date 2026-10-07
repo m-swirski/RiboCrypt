@@ -48,7 +48,10 @@ collection_to_metawindow <- function(collection_df, region = c("stop","start")[1
   return(output)
 }
 internalGetterSubsetter <- function(x,start,end, collection_path, windowUpstream, windowDownstream) {
-  ff <- as.data.table(fst::read.fst(paste0(collection_path,"/", x,".fst")))
+  path <- file.path(collection_path, paste0(x, ".fst"))
+  context <- rc_access_context()
+  if (!is.null(context)) rc_access_path(path, context$collection_roots, context)
+  ff <- rc_access_collection_columns(as.data.table(fst::read.fst(path)), context)
   ff <- ff[, .SD[start:end,] , by = library][, position := -windowUpstream:windowDownstream,by=library ]
   return(ff)
 }

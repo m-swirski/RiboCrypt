@@ -53,6 +53,6 @@ megabrowser_group_outputs <- function(output, table, grouped, selected) {
 #' CSV values retain their precision; rounding is for the table only.
 #' @noRd
 megabrowser_csv_download <- function(data, name) {
-  downloadHandler(filename = function() paste0("megabrowser-", name, ".csv"),
+  rc_download_handler(filename = function() paste0("megabrowser-", name, ".csv"),
     content = function(file) data.table::fwrite(data(), file, na = ""), contentType = "text/csv")
 }

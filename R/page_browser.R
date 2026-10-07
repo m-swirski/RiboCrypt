@@ -42,9 +42,12 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
     if (include_global_init) rclipboardSetup(),
     if (include_global_init) tags$head(includeHTML(system.file("google_analytics_html", "google_analytics.html", package = "RiboCrypt"))),
     if (include_global_init) tags$script(HTML(sprintf("
-      $(document).on('shiny:connected', function() {
+      function rcSendUserAgent() {
         Shiny.setInputValue('%s', navigator.userAgent, {priority: 'event'});
-      });
+      }
+      $(document).on('shiny:connected', rcSendUserAgent);
+      if (window.Shiny && Shiny.shinyapp && Shiny.shinyapp.$socket &&
+          Shiny.shinyapp.$socket.readyState === 1) rcSendUserAgent();
     ", ns("js_user_agent")))),
     # ---- HEAD with floating settings style ----
     browser_ui_settings_style(),

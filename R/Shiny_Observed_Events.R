@@ -127,6 +127,7 @@ observed_uorf_annotation <- function(gene, df, all = TRUE, add_uorfs = FALSE) {
 observed_translon_annotation <- function(gene, df, all = TRUE, add_translons = FALSE,
                                          add_translons_transcode = FALSE) {
   all_translons <- GRangesList()
+  if (add_translons || add_translons_transcode) rc_access_reference(df)
   if (add_translons) {
     translon_annotation <- file.path(dirname(df@fafile),
                                      "predicted_translons",

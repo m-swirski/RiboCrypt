@@ -16,7 +16,7 @@ study_info_server <- function(id, all_exp) {
                                       extensions = 'Buttons',
                                       filter = "top",
                                       options = list(dom = 'Bfrtip',
-                                                     buttons = c('csv', 'excel')))
+                                                     buttons = rc_access_export_buttons(c('csv', 'excel'))))
     }
   )
 }

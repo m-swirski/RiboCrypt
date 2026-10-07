@@ -35,7 +35,7 @@ handle_download_trigger <- function(input, output, current_format, trigger_input
 # Generalized function for download handlers.
 # 'write_fun' is a function that writes the table to a file.
 make_download_handler <- function(format, write_fun, md) {
-  downloadHandler(
+  rc_download_handler(
     filename = function() {
       generate_filename(md()$df, format)
     },
@@ -109,7 +109,7 @@ render_translon_datatable <- function(data, session, add_links = TRUE) {
     options = list(
       dom = "Bfrtip",
       scrollX = TRUE,
-      buttons = list(
+      buttons = rc_access_export_buttons(list(
         list(
           extend = "csv",
           text = "Download current page (CSV)",
@@ -122,7 +122,7 @@ render_translon_datatable <- function(data, session, add_links = TRUE) {
           filename = "current",
           exportOptions = list(modifier = list(page = "current"), columns = ":visible")
         )
-      ),
+      )),
       # Tag the ID column's cells so we can bind a click handler only there
       columnDefs = list(list(
         targets = id_target - 1,     # DataTables is 0-based

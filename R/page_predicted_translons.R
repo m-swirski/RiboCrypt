@@ -104,7 +104,7 @@ predicted_translons_server <- function(id, all_exp, browser_options) {
         id  <- input$translon_id_click$id
         req(id != "")
         row <- input$translon_id_click$row
-        df <- read.experiment(attr(md()$translon_table, "exp"), validate = FALSE)
+        df <- rc_read_experiment(attr(md()$translon_table, "exp"), validate = FALSE)
         pep_dir <- file.path(refFolder(df), "protein_structure_predictions")
         path <- pep_id_to_path(id, pep_dir)
         path <- ifelse(path == "", "No file found", path)

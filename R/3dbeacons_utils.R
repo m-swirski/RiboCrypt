@@ -114,14 +114,17 @@ download_protein_structures_by_url <- function(tempfiles, results) {
 get_protein_structure_local_on_disk <- function(selectedRegion, region_dir,
                                                 protein_structure_dir, df,
                                                 customRegions) {
+  rc_access_reference(df)
   paths <- character()
   if (!isTruthy(selectedRegion)) return(paths)
   pdb_input <- grepl("\\.pdb$", selectedRegion)
   uorf_clicked <- length(grep("^U[0-9]+$", selectedRegion)) == 1
   translon_clicked <- length(grep(translon_name_regex(), selectedRegion)) == 1
   if (pdb_input) {
+    rc_access_path(selectedRegion, protein_structure_dir)
     paths <- selectedRegion
   } else if (uorf_clicked) {
+    if (!is.null(rc_access_context())) rc_access_path(region_dir, protein_structure_dir)
     paths <- list.files(region_dir, full.names = TRUE)
     paths <- paths[grep(paste0("^uorf_",selectedRegion, ".pdb$"), basename(paths))]
     if (length(paths) == 0) warning("No local protein structure for this uORF!")

@@ -15,7 +15,8 @@ RiboCrypt_app(
   columns_to_show = c("study_accession", "Run", "ScientificName", "sample_title",
     "BioProject", "YEAR", "LIBRARYTYPE", "REPLICATE", "CONDITION", "INHIBITOR", "BATCH",
     "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION", "Cancer_type", "Cell_model",
-    "Cell_type", "Organ_system", "Sex", "Life_stage")
+    "Cell_type", "Organ_system", "Sex", "Life_stage"),
+  access_control = NULL
 )
 }
 \arguments{
@@ -67,6 +68,9 @@ remaining all_exp are used in all other modules.}
 
 \item{columns_to_show}{character vector of metadata columns shown in the
 metadata table tab.}
+
+\item{access_control}{NULL for legacy public operation, or configuration from
+`ribocrypt_access_control()` for gateway-authenticated, permission-filtered sessions.}
 }
 \value{
 RiboCrypt shiny app

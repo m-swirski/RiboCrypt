@@ -27,7 +27,7 @@ get_exp <- function(exp_name, experiments, env,
     paste0("(", page, ")")
   }))
 
-  exp <- read.experiment(exp_name,
+  exp <- rc_read_experiment(exp_name,
     output.env = env, validate = FALSE,
     in.dir = exps_dir
   )
@@ -350,9 +350,7 @@ get_fastq_page <- function(input, libs, df, relative_dir) {
     }
   }
 
-  print(path)
-  addResourcePath("tmpuser", dirname(path)) # Ensure the resource path exists
-  return(file.path("tmpuser", basename(path))) # Return only the path
+  rc_fastq_report_url(path, trim_dir)
 }
 
 click_plot_codon_shiny <- function(mainPlotControls, coverage) {

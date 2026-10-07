@@ -188,7 +188,9 @@ load_data <- function(species) {
 }
 
 load_data_internal <- function(species) {
-  df <- read.experiment(species, validate = FALSE)
+  df <- rc_read_experiment(species, validate = FALSE)
+  rc_access_reference(df)
+  translon_table <- NULL
   table_path <- file.path(refFolder(df),
                           "predicted_translons",
                           "predicted_translons_with_sequence.fst")
@@ -207,11 +209,12 @@ load_data_umap <- function(species, color.by = NULL) {
 }
 
 load_data_umap_internal <- function(species, color.by = c("tissue", "cell_line")) {
-  df <- read.experiment(species, validate = FALSE)
+  df <- rc_read_experiment(species, validate = FALSE)
   dir <- file.path(refFolder(df), "UMAP")
   table_path <- file.path(dir, "UMAP_by_gene_counts.fst")
   if (file.exists(table_path)) {
     dt_umap <- fst::read_fst(table_path, as.data.table = TRUE)
+    dt_umap <- rc_access_umap(dt_umap, df)
     if (length(color.by) > 1) {
       dt_umap[, color_column := do.call(paste, c(.SD, sep = " | ")), .SDcols = color.by]
     } else dt_umap[, color_column := get(color.by)]

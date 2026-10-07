@@ -1,0 +1,16 @@
+# Existing HTTPS server for the LOGIN_HOST, with its own certificates.
+# Place this map in nginx's http context, outside either server block:
+# map $http_upgrade $ribocrypt_connection_upgrade { default upgrade; '' close; }
+# Only the application realm and public assets belong on this public host.
+# Administration (including the master realm) requires a separate private ingress.
+location / { return 404; }
+location ~ ^/(realms/ribocrypt/|resources/) {
+    proxy_pass http://127.0.0.1:8180;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-Port 443;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Prefix "";
+    proxy_set_header Forwarded "";
+}

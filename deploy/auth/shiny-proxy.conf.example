@@ -1,0 +1,16 @@
+# Shared by authenticated and anonymous locations; edit port to match Shiny.
+proxy_pass http://127.0.0.1:3838;
+proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection $ribocrypt_connection_upgrade;
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-Proto https;
+proxy_set_header RiboCrypt-Subject $ribocrypt_subject;
+include /etc/nginx/ribocrypt/gateway-secret.conf;
+# gateway-secret.conf must contain: proxy_set_header RiboCrypt-Gateway-Secret "SECRET";
+proxy_set_header Authorization "";
+proxy_set_header X-Forwarded-Access-Token "";
+proxy_set_header X-Auth-Request-User "";
+proxy_set_header X-Auth-Request-Email "";
+proxy_buffering off;
+proxy_read_timeout 3600s;

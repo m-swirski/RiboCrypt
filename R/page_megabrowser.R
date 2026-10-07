@@ -266,7 +266,8 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
 
       mb_bottom_plot <- reactive({
         if (isTRUE(input$collapsed_translons)) return(megabrowser_translon_annotation_plot(view_table()))
-        get_megabrowser_annotation_plot_shiny(controller, templates = templates)
+        get_megabrowser_annotation_plot_shiny(controller, templates = templates,
+                                             custom = translon_workspace$custom())
       }) %>% bindCache(controller()$table_hash, isTRUE(input$collapsed_translons), translon_workspace$custom())
 
       output$myPlotlyPlot <- renderPlotly({

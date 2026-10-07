@@ -572,7 +572,7 @@ plotly_image_from_plot <- function(plot_fn, width, height, res = 96,
     )
 }
 
-get_megabrowser_annotation_plot_shiny <- function(controller, templates = NULL) {
+get_megabrowser_annotation_plot_shiny <- function(controller, templates = NULL, custom = list()) {
   p <- get_megabrowser_annotation_plot(controller()$id,
                              controller()$dff, controller()$summary_track,
                              controller()$display_annot,
@@ -580,13 +580,24 @@ get_megabrowser_annotation_plot_shiny <- function(controller, templates = NULL) 
                              controller()$plotType, controller()$tx_annotation,
                              controller()$display_region,
                              controller()$annotation,
-                             controller()$customRegions,
+                             megabrowser_annotation_regions(controller(), custom),
                              controller()$viewMode,
                              controller()$collapsed_introns_width,
                              templates = templates
   )
   p$x$source <- "mb_bottom"
   p
+}
+
+megabrowser_annotation_regions <- function(controller, custom) {
+  if (!length(custom)) return(controller$customRegions)
+  mapped <- GenomicRanges::GRangesList(lapply(custom, function(region) {
+    intervals <- region$ranges
+    names(intervals) <- rep("1", length(intervals))
+    unlist(ORFik::pmapFromTranscriptF(intervals, controller$display_region[1], removeEmpty = TRUE), use.names = FALSE)
+  }))
+  names(mapped) <- vapply(custom, `[[`, character(1), "labels")
+  if (is.null(controller$customRegions)) mapped else c(controller$customRegions, mapped)
 }
 
 #' Full plot for allsamples browser

@@ -3,6 +3,32 @@ translon_panel_fixture <- function() {
     rect_starts = c(5L, 12L, 2L, 2L, 1L, 6L), rect_ends = c(9L, 15L, 7L, 7L, 3L, 8L))
 }
 
+test_that("Heatmap gene annotation includes user regions on both strands across exons", {
+  for (orientation in c("+", "-")) {
+    tx <- GenomicRanges::GRangesList(tx = GenomicRanges::GRanges("chr1",
+      IRanges::IRanges(c(100, 200), c(109, 219)), orientation))
+    cds <- GenomicRanges::GRangesList(tx = GenomicRanges::GRanges("chr1",
+      IRanges::IRanges(202, 215), orientation))
+    predicted <- GenomicRanges::GRangesList(T = GenomicRanges::GRanges("chr1",
+      IRanges::IRanges(100, 105), orientation))
+    controller <- list(display_region = tx, customRegions = predicted)
+    custom <- list(megabrowser_user_region("8:23", "UR1", 30),
+                   megabrowser_user_region("25", "Edited label", 30))
+    merged <- megabrowser_annotation_regions(controller, custom)
+    expect_identical(unname(merged$T), unname(predicted$T))
+    expect_identical(names(merged), c("T", "UR1", "Edited label"))
+    panel <- createGeneModelPanel(tx, cds, tx_annotation = tx, custom_regions = merged,
+                                 viewMode = "tx", collapse_intron_flank = 0)[[1]]
+    expect_equal(min(panel[gene_names == "UR1", rect_starts]), 8L)
+    expect_equal(max(panel[gene_names == "UR1", rect_ends]), 23L)
+    expect_equal(sum(panel[gene_names == "UR1", rect_ends - rect_starts + 1L]), 16L)
+    expect_equal(panel[gene_names == "Edited label", rect_starts], 25L)
+    plot <- plotly::plotly_build(geneModelPanelPlotly(panel))
+    expect_match(paste(unlist(lapply(plot$x$data, `[[`, "text")), collapse = " "), "UR1")
+    expect_identical(megabrowser_annotation_regions(controller, list()), predicted)
+  }
+})
+
 test_that("user regions accept inclusive coordinates and editable labels", {
   region <- megabrowser_user_region("40:80", "My ORF", 100)
   expect_equal(region$ranges, IRanges::IRanges(40, 80))

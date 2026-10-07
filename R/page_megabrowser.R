@@ -75,6 +75,9 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                    fluidRow(column(6, gene_input_select(ns, label = "Sort by other gene", id = "other_gene")),
                                             column(6, textInput(ns("ratio_interval"), label = "Sort on interval/ratio : a:b;x:y", value = NULL))),
                                    checkboxInput(ns("display_annot"), label = "Display annotation", value = TRUE),
+                                   checkboxInput(ns("region_support"), "Mark low-support region cells", TRUE),
+                                   fluidRow(column(6, numericInput(ns("region_min_coverage"), "Min per-library coverage sum", 10, min = 0)),
+                                            column(6, numericInput(ns("region_min_libraries"), "Min supporting libraries per group", 3, min = 1, step = 1))),
                                    fluidRow(
                                      column(4, checkboxInput(ns("add_translon"), "Predicted translons (Our all-merged: T)", translons)),
                                      column(4, checkboxInput(ns("add_translons_transcode"), "Predicted translons (TransCode: TC)",
@@ -218,39 +221,65 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
         updateSelectizeInput(session, "visible_groups", choices = stats::setNames(names(groups), labels),
                              selected = character(), server = TRUE)
       })
+      translon_workspace <- megabrowser_translon_workspace(controller, table)
+      view_table <- reactive({
+        if (!isTRUE(input$collapsed_translons)) return(table()$table)
+        megabrowser_translon_display(table()$table, translon_workspace$raw(), translon_workspace$regions())
+      })
       display_table <- reactive({
-        focused <- megabrowser_focused_display(table()$table, grouped_metadata()$meta, selected_groups())
-        if (isTRUE(input$collapsed_clusters)) megabrowser_collapsed_display(focused$table, focused$meta) else focused
-      }) %>% bindCache(controller()$table_hash, controller()$enrichment_term, isTRUE(input$collapsed_clusters), selected_groups())
+        focused <- megabrowser_focused_display(view_table(), grouped_metadata()$meta, selected_groups())
+        if (!isTRUE(input$collapsed_clusters)) return(focused)
+        collapsed <- megabrowser_collapsed_display(focused$table, focused$meta)
+        if (isTRUE(input$collapsed_translons)) megabrowser_translon_cluster_score(collapsed) else collapsed
+      }) %>% bindCache(controller()$table_hash, controller()$enrichment_term, isTRUE(input$collapsed_clusters),
+        isTRUE(input$collapsed_translons), translon_workspace$custom(), selected_groups())
       output$display_counts <- renderText(megabrowser_display_counts(table()$table, display_table()))
+      observeEvent(list(display_table(), input$region_support), {
+        shinyjs::toggleClass("workspace", "mega-translon-score", condition = isTRUE(attr(display_table()$table, "translon_score")))
+        shinyjs::toggleClass("workspace", "mega-region-support", condition = isTRUE(input$region_support) && isTRUE(attr(display_table()$table, "collapsed_translons")))
+      })
       megabrowser_group_outputs(output, table, grouped_metadata, selected_groups)
-      megabrowser_translon_outputs(input, output, session, controller, table, grouped_metadata)
+      megabrowser_translon_outputs(input, output, session, controller, table, grouped_metadata, translon_workspace)
+      megabrowser_cell_outputs(input, output, session, view_table, display_table, grouped_metadata, metadata)
       # Heatmap (middle right)
       plot_object <- reactive(mb_plot_object_shiny(display_table()$table, input, templates = templates)) %>%
-        bindCache(controller()$table_plot_hash, controller()$enrichment_term, isTRUE(input$collapsed_clusters), selected_groups()) %>%
+        bindCache(controller()$table_plot_hash, controller()$enrichment_term, isTRUE(input$collapsed_clusters),
+          isTRUE(input$collapsed_translons), translon_workspace$custom(), selected_groups()) %>%
         bindEvent(display_table(), controller()$table_plot_hash, ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      mb_top_plot <- reactive(summary_track_allsamples(
-        attr(table()$table, "summary_cov"),
-        template = templates$cov_panel_columns_plotly
-      )) %>%
-        bindCache(controller()$table_hash) %>%
-        bindEvent(table(), ignoreInit = FALSE, ignoreNULL = TRUE)
+      output$region_score_legend <- renderUI({
+        req(isTRUE(attr(display_table()$table, "translon_score")))
+        megabrowser_score_legend(megabrowser_heatmap_colors(isolate(input$heatmap_color), isolate(input$color_mult)))
+      }) %>% bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+
+      mb_top_plot <- reactive({
+        if (isTRUE(input$collapsed_translons)) return(megabrowser_translon_summary_plot(view_table()))
+        summary_track_allsamples(
+          attr(table()$table, "summary_cov"),
+          template = templates$cov_panel_columns_plotly
+        )
+      }) %>%
+        bindCache(controller()$table_hash, isTRUE(input$collapsed_translons), translon_workspace$custom())
 
       mb_mid_plot <- reactive(mb_mid_plot_shiny(plot_object(), input$plotType)) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
-      mb_bottom_plot <- reactive(get_megabrowser_annotation_plot_shiny(controller, templates = templates)) %>%
-        bindCache(controller()$table_hash) %>%
-        bindEvent(controller()$table_hash, ignoreInit = FALSE, ignoreNULL = TRUE)
+      mb_bottom_plot <- reactive({
+        if (isTRUE(input$collapsed_translons)) return(megabrowser_translon_annotation_plot(view_table()))
+        get_megabrowser_annotation_plot_shiny(controller, templates = templates)
+      }) %>% bindCache(controller()$table_hash, isTRUE(input$collapsed_translons), translon_workspace$custom())
 
       output$myPlotlyPlot <- renderPlotly({
         req(input$plotType == "plotly")
-        megabrowser_mid_reset_plot(mb_mid_plot(), controller, display_table, ns)
+        p <- megabrowser_mid_reset_plot(mb_mid_plot(), controller, display_table, ns)
+        megabrowser_support_plot(p, view_table(), display_table(), grouped_metadata()$meta, input)
       }) %>%
         bindCache(controller()$table_plot_hash, controller()$enrichment_term,
-                  isTRUE(input$collapsed_clusters), selected_groups(), ns("myPlotlyPlot")) %>%
-        bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+                  isTRUE(input$collapsed_clusters), isTRUE(input$collapsed_translons),
+                  translon_workspace$custom(), selected_groups(), input$region_support,
+                  input$region_min_coverage, input$region_min_libraries, ns("myPlotlyPlot")) %>%
+        bindEvent(plot_object(), input$region_support, input$region_min_coverage, input$region_min_libraries,
+                  ignoreInit = FALSE, ignoreNULL = TRUE)
 
       mb_mid_image <- reactive(mb_mid_image_shiny(plot_object(), session, ns)) %>%
         bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
@@ -263,20 +292,20 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
 
       output$mb_top_summary <- renderPlotly({
         megabrowser_peer_reset_plot(
-          mb_top_plot(), controller, table,
+          mb_top_plot(), controller, display_table,
           c(ns("myPlotlyPlot"), ns("mb_bottom_gene"))
         )
       }) %>%
-        bindCache(controller()$table_hash) %>%
+        bindCache(controller()$table_hash, isTRUE(input$collapsed_translons), translon_workspace$custom()) %>%
         bindEvent(mb_top_plot(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$mb_bottom_gene <- renderPlotly({
         megabrowser_peer_reset_plot(
-          mb_bottom_plot(), controller, table,
+          mb_bottom_plot(), controller, display_table,
           c(ns("myPlotlyPlot"), ns("mb_top_summary"))
         )
       }) %>%
-        bindCache(controller()$table_hash) %>%
+        bindCache(controller()$table_hash, isTRUE(input$collapsed_translons), translon_workspace$custom()) %>%
         bindEvent(mb_bottom_plot(), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       rendered_plot_type <- reactiveVal(NULL)

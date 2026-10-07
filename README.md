@@ -29,6 +29,13 @@ in a Bioconductor release or the hosted app.
    existing cluster/bin; **Visible groups** focuses the display without
    reclustering. Sidebar visibility, heatmap-only mode, plot height and reset
    zoom controls adjust the layout without reloading coverage.
+   **Collapse translons** instead gives equal-width CDS/translon and user-region
+   columns in transcript order, preferring clean CDS over its parent CDS.
+   Combine it with **Collapsed clusters** for region-relative log2 fold-change
+   colours that expose changes in weak uORFs, using the chosen palette and colour
+   scale zoom; hover retains raw densities and
+   exact fold changes. Neither option changes
+   full-matrix clustering or enrichment.
 3. Open **Factor enrichment**, then **Group summary** to inspect metadata modes, agreement percentages,
    numeric summaries and library membership for the visible groups. Export
    summaries or memberships as CSV.
@@ -47,6 +54,12 @@ in a Bioconductor release or the hosted app.
    label (`UR1`, `UR2`, etc.). `40:80` includes both endpoints; `40` is equivalent
    to `40:40`. Invalid coordinates show a validation message. Custom regions
    join comparisons and exports, reset on a new analysis and do not alter clean CDS.
+
+Click a collapsed-translon heatmap cell to inspect coverage distributions,
+library metadata and log2 ratios against clean CDS, with raw ratios retained in CSV exports. **Ratio by metadata** provides
+exploratory term-versus-rest comparisons, support counts and study representation
+without loading coverage again. Configurable low-support markers do not alter
+scores or analyses. See the tutorial for ratio validity and statistical caveats.
 
 Clustering and analyses use individual count-filtered libraries, not collapsed
 rows. Display focus affects the heatmap and Group summary, but not metadata or

@@ -42,6 +42,7 @@ mb_plot_object_shiny <- function(table_obj, input, templates = NULL) {
 mb_mid_plot_shiny <- function(plot_object, plotType) {
   req(plotType == "plotly")
   plot_object$x$source <- "mb_mid"
+  plot_object <- plotly::event_register(plot_object, "plotly_click")
   plotly::event_register(plot_object, "plotly_relayout")
 }
 
@@ -233,6 +234,7 @@ sync_megabrowser_x_shiny <- function(ed, session, sync_tracks = TRUE, sync_sideb
 }
 
 megabrowser_full_x_range <- function(display_range = NULL, table = NULL) {
+  if (isTRUE(attr(table, "collapsed_translons"))) return(c(0.5, nrow(table) + 0.5))
   if (!is.null(display_range)) {
     max_pos <- suppressWarnings(as.numeric(widthPerGroup(display_range, FALSE)))
     if (length(max_pos) > 1) max_pos <- max_pos[[1]]
@@ -315,11 +317,21 @@ megabrowser_plotly_heatmap_data <- function(table) {
   orders <- megabrowser_row_clusters(table)$row_clusters
   mat <- t(table)[unlist(orders, use.names = FALSE), , drop = FALSE]
   ratio <- megabrowser_table_ratio(table)
+  scored <- isTRUE(attr(table, "translon_score"))
+  labels <- if (isTRUE(attr(table, "collapsed_translons")))
+    matrix(rep(attr(table, "translon_regions")$Labels, each = nrow(mat)), nrow = nrow(mat)) else NULL
+  if (scored) labels[] <- paste(labels, "<br>Fold change:", signif(t(attr(table, "translon_fold_change"))[unlist(orders, use.names = FALSE), , drop = FALSE], 3))
   list(
     x = ((seq_len(ncol(mat)) - 1L) * ratio) + 1L,
     y = seq_len(nrow(mat)),
     type = megabrowser_heatmap_renderer(length(mat), isTRUE(attr(table, "collapsed_clusters"))),
     z = mat,
+    collapsed_translons = isTRUE(attr(table, "collapsed_translons")),
+    translon_score = scored,
+    customdata = if (scored) t(attr(table, "translon_density"))[unlist(orders, use.names = FALSE), , drop = FALSE] else NULL,
+    text = labels,
+    hovertemplate = if (scored) "%{text}<br>Mean coverage: %{customdata}<br>log2 fold change (colour, clipped): %{z}<extra></extra>" else
+      if (isTRUE(attr(table, "collapsed_translons"))) "%{text}<br>Mean coverage: %{z}<extra></extra>" else NULL,
     x_range = megabrowser_full_x_range(table = table),
     y_range = c(0.5, nrow(mat) + 0.5)
   )
@@ -343,9 +355,10 @@ megabrowser_heatmap_margins <- function() {
 #' @noRd
 megabrowser_heatmap_layout <- function(heatmap_data) {
   yaxis <- list(range = heatmap_data$y_range, autorange = FALSE)
+  if (isTRUE(heatmap_data$collapsed_translons)) yaxis$automargin <- FALSE
   if (nrow(heatmap_data$z) <= 20L) yaxis$dtick <- 1
   list(
-    margin = megabrowser_heatmap_margins(),
+    margin = if (isTRUE(heatmap_data$collapsed_translons)) megabrowser_translon_margins() else megabrowser_heatmap_margins(),
     xaxis = list(range = heatmap_data$x_range, autorange = FALSE,
                  showticklabels = FALSE, ticks = "", showgrid = FALSE,
                  zeroline = FALSE, showline = FALSE, title = "", automargin = FALSE),
@@ -364,6 +377,9 @@ megabrowser_heatmap_from_template <- function(template, heatmap_data, colorscale
   plot$x$data[[1]]$dy <- 1
   plot$x$data[[1]]$type <- heatmap_data$type
   plot$x$data[[1]]$z <- heatmap_data$z
+  plot$x$data[[1]]$text <- heatmap_data$text
+  plot$x$data[[1]]$hovertemplate <- heatmap_data$hovertemplate
+  plot$x$data[[1]]$customdata <- heatmap_data$customdata
   plot$x$data[[1]]$colorscale <- colorscale
   plot$x$data[[1]]$zmin <- NULL
   plot$x$data[[1]]$zmax <- NULL
@@ -382,6 +398,9 @@ megabrowser_heatmap_attrs_from_data <- function(plot, heatmap_data, colorscale) 
     plot$x$attrs[[1]]$dy <- 1
     plot$x$attrs[[1]]$type <- heatmap_data$type
     plot$x$attrs[[1]]$z <- heatmap_data$z
+    plot$x$attrs[[1]]$text <- heatmap_data$text
+    plot$x$attrs[[1]]$hovertemplate <- heatmap_data$hovertemplate
+    plot$x$attrs[[1]]$customdata <- heatmap_data$customdata
     plot$x$attrs[[1]]$colorscale <- colorscale
   }
   plot
@@ -394,6 +413,9 @@ megabrowser_new_plotly_heatmap <- function(heatmap_data, colors) {
     x = heatmap_data$x,
     y0 = 1, dy = 1,
     z = heatmap_data$z,
+    text = heatmap_data$text,
+    hovertemplate = heatmap_data$hovertemplate,
+    customdata = heatmap_data$customdata,
     colors = colors,
     showscale = FALSE,
     type = heatmap_data$type
@@ -403,6 +425,10 @@ megabrowser_new_plotly_heatmap <- function(heatmap_data, colors) {
 #' Apply common layout and Plotly config to a megabrowser heatmap.
 #' @noRd
 megabrowser_configure_plotly_heatmap <- function(plot, heatmap_data) {
+  if (isTRUE(heatmap_data$translon_score)) plot <- plotly::style(plot, zmin = -1, zmax = 1, zmid = 0,
+    showscale = TRUE, colorbar = list(title = list(text = "log2 FC", font = list(size = 10)),
+      x = 1.01, xpad = 0, thickness = 14, tickfont = list(size = 10),
+      tickvals = c(-1, 0, 1), ticktext = c("<= 0.5x", "1x", ">= 2x")))
   do.call(plotly::layout, c(list(plot), megabrowser_heatmap_layout(heatmap_data))) %>%
     plotly::config(doubleClick = FALSE)
 }
@@ -430,7 +456,8 @@ megabrowser_complex_heatmap <- function(table, colors) {
   ComplexHeatmap::Heatmap(
     mat, show_row_dend = FALSE, cluster_columns = FALSE,
     cluster_rows = FALSE, use_raster = TRUE, raster_quality = 5,
-    split = cluster, gap = unit(0.2, "mm"), col = colors,
+    split = cluster, gap = unit(0.2, "mm"), col = if (isTRUE(attr(table, "translon_score")))
+      circlize::colorRamp2(seq(-1, 1, length.out = length(colors)), colors, space = "RGB") else colors,
     show_row_names = FALSE, show_heatmap_legend = FALSE, row_title = NULL
   )
 }

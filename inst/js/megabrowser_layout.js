@@ -27,7 +27,8 @@
     document.querySelectorAll('.mega-workspace').forEach(resize);
   });
   jQuery(document).on('shiny:value', function (event) {
-    const workspace = event.target.closest('.mega-workspace');
+    const target = event.target && typeof event.target.closest === 'function' ? event.target : document.getElementById(event.name);
+    const workspace = target && target.closest('.mega-workspace');
     if (workspace && workspace.clientWidth < 600) setTimeout(function () {resize(workspace);}, 150);
   });
   document.addEventListener('input', function (event) {

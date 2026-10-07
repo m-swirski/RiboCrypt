@@ -24,6 +24,7 @@ Imports:
   BiocGenerics,
   BiocParallel,
   Biostrings,
+  circlize,
   ComplexHeatmap,
   cowplot,
   crosstalk,

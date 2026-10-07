@@ -94,6 +94,73 @@ const fs = require('node:fs');
     const customRows = fs.readFileSync('/tmp/megabrowser-custom-region-ratios.csv', 'utf8').trim().split('\n');
     assert.equal(customRows.length - 1, libraries * 28);
     assert.match(customRows.join('\n'), /Custom ATF4/);
+    await page.locator('#browser_allsamp-mb_tabs a[data-value="Heatmap"]').click();
+    await page.evaluate(() => document.getElementById('browser_allsamp-visible_groups').selectize.clear());
+    await page.locator('#browser_allsamp-collapsed_clusters').uncheck();
+    await page.locator('#browser_allsamp-collapsed_translons').check();
+    await page.waitForFunction(n => {
+      const p = document.getElementById('browser_allsamp-myPlotlyPlot');
+      return p?._fullData?.[0]?.z.length === n && p._fullData[0].z[0].length === 7 &&
+        p._fullLayout.xaxis.range[0] === 0.5 && !document.documentElement.classList.contains('shiny-busy');
+    }, libraries);
+    assert.equal(await page.evaluate(() => document.getElementById('browser_allsamp-myPlotlyPlot')._fullData[0].text[0].length), 7);
+    assert.match(await page.evaluate(() => document.getElementById('browser_allsamp-myPlotlyPlot')._fullData[0].text[0][6]), /clean_cds/);
+    await page.waitForFunction(() => document.getElementById('browser_allsamp-mb_bottom_gene')?._fullLayout?.xaxis.range[1] === 7.5);
+    await page.waitForFunction(() => {
+      const p = document.getElementById('browser_allsamp-myPlotlyPlot');
+      return ['mb_top_summary', 'mb_bottom_gene'].every(id => {
+        const track = document.getElementById('browser_allsamp-' + id);
+        return Math.abs(track._fullLayout.xaxis._length - p._fullLayout.xaxis._length) < 2;
+      });
+    });
+    await page.locator('#browser_allsamp-collapsed_clusters').check();
+    await page.waitForFunction(() => {
+      const p = document.getElementById('browser_allsamp-myPlotlyPlot');
+      return p?._fullData?.[0]?.z.length === 5 && p._fullData[0].z[0].length === 7 &&
+        !document.documentElement.classList.contains('shiny-busy');
+    });
+    const relative = await page.evaluate(() => {
+      const trace = document.getElementById('browser_allsamp-myPlotlyPlot')._fullData[0];
+      const baseline = document.getElementById('browser_allsamp-mb_top_summary')._fullData[0].y;
+      return {zmin:trace.zmin,zmax:trace.zmax,correct:trace.z.every((row,i)=>row.every((z,j)=>{
+        if (!(baseline[j] > 0)) return z === null;
+        const expected = Math.max(-1,Math.min(1,Math.log2(trace.customdata[i][j]/baseline[j])));
+        return Math.abs(z-expected)<1e-8;
+      }))};
+    });
+    assert.deepEqual(relative, {zmin:-1,zmax:1,correct:true});
+    await page.waitForFunction(() => {
+      const p = document.getElementById('browser_allsamp-myPlotlyPlot');
+      return ['mb_top_summary', 'mb_bottom_gene'].every(id =>
+        Math.abs(document.getElementById('browser_allsamp-' + id)._fullLayout.xaxis._length - p._fullLayout.xaxis._length) < 2);
+    });
+    await page.evaluate(async () => {
+      const p = document.getElementById('browser_allsamp-myPlotlyPlot');
+      await Plotly.relayout(p, {'xaxis.range': [1, 3], 'yaxis.range': [1, 2]});
+      p.emit('plotly_doubleclick');
+    });
+    await page.waitForFunction(() => {
+      const p = document.getElementById('browser_allsamp-myPlotlyPlot');
+      const side = document.getElementById('browser_allsamp-d');
+      return p._fullLayout.xaxis.range[0] === 0.5 && p._fullLayout.xaxis.range[1] === 7.5 &&
+        p._fullLayout.yaxis.range[1] === 5.5 && side?._fullLayout.yaxis.range[0] === 5.5;
+    });
+    await page.screenshot({path: '/tmp/megabrowser-collapsed-translons-desktop.png', fullPage: true});
+    await page.setViewportSize({width: 390, height: 844});
+    await page.waitForTimeout(1000);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
+    assert.equal(await page.locator('.mega-region-legend').isVisible(), true);
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll('.mega-region-legend span')].every(e =>
+      e.getBoundingClientRect().right <= innerWidth)), true);
+    await page.screenshot({path: '/tmp/megabrowser-collapsed-translons-mobile.png', fullPage: true});
+    await page.setViewportSize({width: 1440, height: 1100});
+    await page.locator('#browser_allsamp-collapsed_translons').uncheck();
+    await page.waitForFunction(() => document.getElementById('browser_allsamp-myPlotlyPlot')?._fullData?.[0]?.z[0].length > 7 &&
+      !document.documentElement.classList.contains('shiny-busy'));
+    await page.evaluate(() => document.getElementById('browser_allsamp-d').emit('plotly_clickannotation', {fullAnnotation: {text: '1'}}));
+    await page.waitForFunction(() => Shiny.shinyapp.$inputValues['browser_allsamp-mb_tabs'] === 'Factor enrichment' &&
+      Shiny.shinyapp.$inputValues['browser_allsamp-factor_tabs'] === 'Result table');
+    await page.locator('a[data-value="Translon enrichment"]').click();
     await page.locator('a[data-value="Ratios"]').click();
     await page.screenshot({path: '/tmp/megabrowser-translons-desktop.png', fullPage: true});
     await page.setViewportSize({width: 390, height: 844});

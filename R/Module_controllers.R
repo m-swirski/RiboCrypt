@@ -324,7 +324,8 @@ module_additional_megabrowser <- function(input, output, session) {
       }
 
       selected_enrich_filters(list(category = category, cluster = cluster))
-      updateTabsetPanel(session, "mb_tabs", selected = "Result table")
+      updateTabsetPanel(session, "mb_tabs", selected = "Factor enrichment")
+      updateTabsetPanel(session, "factor_tabs", selected = "Result table")
       shinyjs::runjs(
         sprintf(
           "document.getElementById('%s').scrollIntoView({behavior:'smooth'});",
@@ -350,7 +351,8 @@ module_additional_megabrowser <- function(input, output, session) {
       req(!is.null(cluster_val))
 
       selected_enrich_filters(list(category = NULL, cluster = cluster_val))
-      updateTabsetPanel(session, "mb_tabs", selected = "Result table")
+      updateTabsetPanel(session, "mb_tabs", selected = "Factor enrichment")
+      updateTabsetPanel(session, "factor_tabs", selected = "Result table")
       shinyjs::runjs(
         sprintf(
           "document.getElementById('%s').scrollIntoView({behavior:'smooth'});",
@@ -364,7 +366,7 @@ module_additional_megabrowser <- function(input, output, session) {
       ed <- get_plotly_session_event(session, "plotly_relayout", "mb_mid")
       req(!is.null(ed))
       y_max <- ncol(display_table()$table)
-      x_reset_range <- megabrowser_full_x_range(controller()$display_region, table()$table)
+      x_reset_range <- megabrowser_full_x_range(controller()$display_region, display_table()$table)
       sync_megabrowser_x_shiny(
         ed, session,
         y_max = y_max,

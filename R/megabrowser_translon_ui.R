@@ -31,10 +31,10 @@ megabrowser_translon_ratio_plot <- function(ratios) {
 
 #' Tab gate is outside the cache so background observers cannot start the analysis.
 #' @noRd
-megabrowser_translon_outputs <- function(input, output, session, controller, table, grouped) {
-  custom <- reactiveVal(list())
-  observeEvent(list(controller()$table_hash, controller()$table_plot_hash), custom(list()), priority = 100)
-  raw <- reactive(as.matrix(load_collection(controller()$table_path, columns = colnames(table()$table))))
+megabrowser_translon_outputs <- function(input, output, session, controller, table, grouped, workspace = NULL) {
+  if (is.null(workspace)) workspace <- megabrowser_translon_workspace(controller, table)
+  custom <- workspace$custom
+  raw <- workspace$raw
   cached <- reactive(megabrowser_translon_analysis(controller(), table(), grouped(), custom(), raw())) %>%
     bindCache("translon-ratios-v2", controller()$table_hash, controller()$table_plot_hash, custom())
   analysis <- reactive({req(identical(input$mb_tabs, "Translon enrichment")); cached()})
@@ -58,6 +58,21 @@ megabrowser_translon_outputs <- function(input, output, session, controller, tab
   output$translon_stats_csv <- megabrowser_csv_download(reactive(analysis()$statistics), "translon-statistics")
   output$translon_regions_csv <- megabrowser_csv_download(reactive(analysis()$regions), "translon-regions")
   invisible(analysis)
+}
+
+#' Shared lazy raw coverage and custom regions for enrichment and display.
+#' @noRd
+megabrowser_translon_workspace <- function(controller, table) {
+  custom <- reactiveVal(list())
+  observeEvent(list(controller()$table_hash, controller()$table_plot_hash), custom(list()), priority = 100)
+  raw <- reactive(as.matrix(load_collection(controller()$table_path, columns = colnames(table()$table))))
+  regions <- reactive({
+    base <- megabrowser_translon_regions(megabrowser_translon_panel(controller()), names(controller()$annotation))
+    result <- c(base, custom())
+    names(result) <- paste0("R", seq_along(result))
+    result
+  })
+  list(custom = custom, raw = raw, regions = regions)
 }
 
 #' Modal errors remain visible without discarding the entered values.

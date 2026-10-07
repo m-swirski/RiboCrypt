@@ -34,7 +34,8 @@ megabrowser_clean_cds <- function(regions) {
     overlap <- IRanges::reduce(do.call(c, lapply(upstream, `[[`, "ranges")))
     clean <- IRanges::setdiff(original$ranges, overlap)
     if (!identical(clean, original$ranges)) regions[[length(regions) + 1L]] <-
-      list(labels = paste0("clean_cds (", original$labels, ")"), kind = "clean_cds", ranges = clean)
+      list(labels = paste0("clean_cds (", original$labels, ")"), kind = "clean_cds", ranges = clean,
+           parent_labels = original$labels, parent_start = min(start(original$ranges)), parent_end = max(end(original$ranges)))
   }
   names(regions) <- paste0("R", seq_along(regions))
   regions

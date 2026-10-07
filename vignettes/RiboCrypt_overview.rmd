@@ -136,6 +136,19 @@ grouping, then **Generate Plot**. The heatmap retains individual libraries for
 clustering and analysis; optional **Collapsed clusters** displays one mean row
 per existing group. **Visible groups**, sidebar visibility, heatmap-only mode,
 plot height and reset zoom controls change the view without reclustering.
+**Collapse translons** displays unique CDS/translon and user-defined regions as
+equal-width columns in transcript order, preferring clean CDS over its parent
+CDS. Libraries show mean raw coverage per nucleotide. With **Collapsed clusters**
+also enabled, colours instead show each cluster's log2 fold change relative to
+that region's library-weighted full-analysis mean, so weak regions are not
+masked by strongly covered ones. Raw densities and exact fold changes remain
+in hover text; colours saturate at 0.5x/2x. This descriptive display does not
+change the full-matrix clustering or statistics. Click a region cell to inspect
+individual-library distributions, export its libraries or compare region/clean-CDS
+log2 ratios by a metadata field, retaining raw ratios in library exports.
+The exploratory table reports support and study
+representation as well as rank statistics; it is not study-adjusted evidence.
+Editable low-support markers leave values and analyses unchanged.
 
 The three main tabs are **Heatmap**, **Factor enrichment** and **Translon
 enrichment**. Next choose the question you want to explore:

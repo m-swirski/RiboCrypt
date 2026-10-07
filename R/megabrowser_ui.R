@@ -3,6 +3,7 @@
 megabrowser_view_controls <- function(ns) {
   div(class = "mega-view-toolbar", div(class = "mega-view-controls",
       checkboxInput(ns("collapsed_clusters"), "Collapsed clusters", FALSE),
+      checkboxInput(ns("collapsed_translons"), "Collapse translons", FALSE),
       selectizeInput(ns("visible_groups"), "Visible groups", choices = NULL, multiple = TRUE,
                      options = list(placeholder = "All groups")),
       selectizeInput(ns("enrichment_metadata"), "Enrichment metadata", choices = c("Grouping" = "grouping"))),
@@ -16,6 +17,8 @@ megabrowser_view_controls <- function(ns) {
                    step = 100, value = 700, `aria-label` = "Plot height")),
       tags$button(id = ns("reset_view"), type = "button", class = "btn btn-outline-secondary mega-reset-view", title = "Reset zoom",
                   `aria-label` = "Reset zoom", icon("expand")),
+      uiOutput(ns("region_score_legend"), inline = TRUE, class = "mega-region-legend"),
+      tags$span(class = "mega-support-key", title = "Below the configured supporting-library or per-library coverage-sum threshold.", "x Low support"),
       textOutput(ns("display_counts"), inline = TRUE)))
 }
 
@@ -26,9 +29,10 @@ megabrowser_display_counts <- function(original, display) {
   visible <- if (isTRUE(attr(display$table, "collapsed_clusters"))) sum(display$meta$libraries) else ncol(display$table)
   count <- format(visible, big.mark = ",")
   if (visible != total) count <- paste(count, "of", format(total, big.mark = ","))
-  sprintf("%s libraries | %s %s | %s positions", count,
+  sprintf("%s libraries | %s %s | %s %s", count,
           format(ncol(display$table), big.mark = ","), if (ncol(display$table) == 1L) "row" else "rows",
-          format(nrow(original), big.mark = ","))
+          format(if (isTRUE(attr(display$table, "collapsed_translons"))) nrow(display$table) else nrow(original), big.mark = ","),
+          if (isTRUE(attr(display$table, "collapsed_translons"))) "regions" else "positions")
 }
 
 #' Scoped responsive MegaBrowser layout and client-only view preferences.
@@ -39,12 +43,17 @@ megabrowser_layout_assets <- function() {
     ".mega-view-controls,.mega-layout-controls {display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:6px 0;}",
     ".mega-view-controls .form-group {margin:0;}",
     ".mega-view-controls .shiny-input-container {width:auto;}",
-    ".mega-view-controls > .shiny-input-container:nth-child(2) {width:320px;}",
+    ".mega-view-controls > .shiny-input-container:nth-child(3) {width:320px;}",
     ".mega-view-controls .checkbox {margin:0;}",
     ".mega-view-controls > .shiny-input-container:last-child {width:240px;margin-left:auto;}",
     ".mega-display-option,.mega-height-option {font-weight:normal;margin:0;}",
     ".mega-height-option {display:flex;align-items:center;gap:10px;}",
     ".mega-height-control {width:120px!important;}",
+    ".mega-region-legend {display:none;font-size:12px;align-items:center;gap:12px;}",
+    ".mega-support-key {display:none;font-size:12px;color:#666666;}.mega-region-support .mega-support-key {display:inline;}",
+    ".mega-region-legend span {display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}",
+    ".mega-region-legend i {display:inline-block;width:12px;height:12px;border:1px solid #777;}",
+    "@media(max-width:767px){.mega-translon-score .mega-region-legend {display:flex;}.mega-translon-score [id$='-myPlotlyPlot'] .colorbar {display:none;}}",
     ".mega-layout-controls .shiny-text-output {font-size:13px;color:#535c65;margin-left:auto;}",
     ".mega-focus-heatmap:not(.mega-static-view) .mega-plot-grid {grid-template-rows:0 100% 0;}",
     ".mega-focus-heatmap:not(.mega-static-view) .mega-summary-track,.mega-focus-heatmap:not(.mega-static-view) .mega-gene-track {display:none;}",
@@ -57,6 +66,6 @@ megabrowser_layout_assets <- function() {
     ".mega-workspace .floating_settings_panel {width:min(680px,calc(100vw - 44px))!important;min-width:0!important;max-height:75vh;overflow:auto;}",
     ".mega-workspace .selectize-input {min-height:36px;height:auto;}",
     ".mega-workspace .selectize-input .item {overflow-wrap:anywhere;white-space:normal;}",
-    "@media(max-width:767px){.mega-view-controls,.mega-layout-controls {gap:12px;}.mega-view-controls > .shiny-input-container:nth-child(2),.mega-view-controls > .shiny-input-container:last-child {margin-left:0;width:100%;}.mega-layout-controls .shiny-text-output {margin-left:0;}}"
+    "@media(max-width:767px){.mega-view-controls,.mega-layout-controls {gap:12px;}.mega-view-controls > .shiny-input-container:nth-child(3),.mega-view-controls > .shiny-input-container:last-child {margin-left:0;width:100%;}.mega-layout-controls .shiny-text-output {margin-left:0;}}"
   ))), tags$script(HTML(fetchJS("megabrowser_layout.js"))))
 }

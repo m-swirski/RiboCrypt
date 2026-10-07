@@ -108,6 +108,56 @@ HTML include methods and statistical limitations.
 Final full suite: **3,143 assertions**, zero failures, warnings or skips. Focused
 translon tests: **39 assertions**, all passing. `git diff --check` is clean.
 
+### Initial collapsed-translon display (superseded below)
+
+An independent, default-off **Collapse translons** control displays raw
+per-nucleotide region densities in equal-width columns. It includes unique
+CDS/translon and user-defined regions, excluding synthetic clean CDS. The
+existing clusters and individual-library analysis remain unchanged. Combined
+with cluster collapse, values are arithmetic means of member-library densities.
+Summary and annotation tracks share region axes and fixed horizontal margins;
+hover labels retain region aliases and coordinates. Raw coverage is shared
+with enrichment and loaded only when either analysis/display needs it.
+
+The new focused tests passed **44 assertions**, covering exact exon-aware means,
+single-base regions, both collapse modes, focus, preserved clustering, template
+hover labels, static rendering objects, reset ranges, validation, lazy loading
+and raw-coverage reuse. The full R suite passed. Chrome checked real ATF4 with
+3,159 individual rows or five cluster rows and seven region columns (including
+two user regions), track alignment, double-click reset, restoration of the
+positional heatmap, and desktop/mobile rendering without horizontal overflow.
+No JavaScript or Shiny output errors were observed. These checks do not provide
+a controlled speed comparison for the new display.
+
+### Transcript ordering and region-relative cluster scores
+
+The current display orders regions by transcript start/end, retains enrichment
+region IDs, and replaces a CDS with its own clean CDS where available. A fully
+removed clean CDS remains undefined and uses its parent position for ordering;
+without a clean CDS the original CDS is retained. User-defined regions join
+the same coordinate order. Enrichment comparisons still retain both CDS types.
+
+With both collapse options enabled, colours show log2(cluster mean raw density /
+region mean density across all original analysis libraries). The baseline is
+library-weighted, not equally weighted across clusters, and remains fixed when
+focusing groups. The user-selected colour theme and multiplier map -1/0/+1; colour
+values saturate at 0.5x and 2x while hover retains raw means and exact fold
+changes. Zero cluster coverage takes the lower colour bound. Zero/undefined
+reference coverage stays undefined; no pseudocount is used. This descriptive
+score does not correct for library depth or study effects and is not a test.
+
+Focused display tests passed **66 assertions**, including equal colour scores
+for equal relative changes in strong and weak regions, clipping/zero handling,
+raw hover values, weighted baselines, focus invariance and clean-CDS ordering.
+The full R suite passed. Real ATF4 Chrome checks verified clean CDS last after
+upstream regions and compared every displayed score with raw cluster density
+and the summary-track baseline, in addition to reset and desktop/mobile checks.
+
+Palette selection applies equally to scored and positional heatmaps, including
+the existing colour multiplier. Tests compare both built-in palettes at multiple
+multiplier settings against the ordinary renderer, verify identical score values,
+and check matching static-renderer interpolation and mobile-legend swatches.
+
 Reproduction from repo root:
 
 ```bash

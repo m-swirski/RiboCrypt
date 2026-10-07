@@ -432,6 +432,27 @@ enrichment selector. These controls apply without another **Generate Plot**:
     never reclusters libraries or narrows the enrichment analysis/result table.
     The summary track remains a full-collection reference. A new analysis
     resets the selector when its coverage table changes.
+-   **Collapse translons**: replace nucleotide positions with equal-width columns
+    for unique annotation-derived CDS/translon regions and any user-defined
+    regions, ordered by transcript coordinates. A `clean_cds` replaces its parent
+    CDS when available, preventing overlapping upstream-ORF bases from contributing
+    to the CDS summary. Otherwise the original CDS is retained. Each value is mean raw
+    unbinned coverage per nucleotide in the region, including zero-coverage bases
+    but excluding exon gaps. Libraries remain separate unless **Collapsed clusters**
+    is also active. With both options, colours show log2(cluster mean density /
+    region mean density across all analysis libraries), using the selected
+    colour theme and Color scale zoom, clipped at -1 and +1 (0.5x and 2x).
+    The legend follows the selected palette. Thus a 50% relative increase has the
+    same colour in a weak uORF as in a strongly covered region. The baseline is
+    library-weighted and does not change with Visible groups. Hover retains raw
+    mean coverage and exact fold changes; zero cluster coverage uses the lowest
+    colour, while zero/undefined reference coverage remains undefined. No
+    pseudocount is added. This is a descriptive display, not a significance test
+    or correction for library-depth/study effects. The summary and annotation
+    tracks use the same region columns;
+    hover over region labels for their aliases and coordinates. Clustering and
+    enrichment still use the original full analysis, and unchecking restores
+    the positional heatmap without recomputing clusters.
 -   **Metadata sidebar**: show or hide the annotation sidebar to give the
     heatmap more horizontal space.
 -   **Heatmap only**: hide the summary and gene annotation tracks and use the
@@ -443,6 +464,41 @@ enrichment selector. These controls apply without another **Generate Plot**:
     ranges. Disabled in the fixed-axis ComplexHeatmap view.
 -   **Enrichment metadata**: choose the field used by **Enrichment** and
     **Statistics**. This is metadata enrichment, not Translon enrichment.
+
+### Inspect a region and its metadata associations
+
+With **Collapse translons** enabled, annotation labels use transcript coordinates
+to distinguish uORFs, internal ORFs and downstream ORFs. These names describe
+position relative to the CDS, not independent evidence of translation. User
+regions retain their labels; hover preserves source aliases and region IDs.
+
+Click a heatmap cell to inspect its library or cluster. **Distribution** compares
+its libraries with the remaining analysis libraries using raw region density
+or log2(region/reference density). The reference defaults to clean CDS when available.
+A ratio of 1 has score 0, 2 has score +1 and 0.5 has score -1. Zero numerators
+have score `-Inf`: they are counted in the inspector but omitted from the finite
+distribution. No pseudocount is used. Library tables and CSV retain both raw
+`Ratio` and `Log2FC` values.
+**Libraries** lists the selected cell's libraries, and **Libraries CSV** exports
+their densities, coverage sums, ratios and metadata.
+
+**Ratio by metadata** compares terms in the chosen metadata column across all
+analysis libraries, irrespective of Visible groups. Numeric metadata is binned.
+The table includes log2-transformed raw-ratio quartiles (including zeros), valid/undefined/zero ratios, selected-library
+counts, support counts and study representation where study metadata is available.
+Term-versus-rest Wilcoxon tests and rank-biserial effects are exploratory; BH
+adjustment covers the selected metadata field. These are not study-adjusted or
+replicate-aware effects. Study concentration is an audit aid, not a correction.
+Zero numerators remain valid ratios; zero or undefined reference densities do not.
+
+Settings default to marking low-support cells with a grey x: a library must have
+a region coverage sum of at least 10, and a collapsed group needs at least three
+supporting libraries. Individual-library cells require one supporting library.
+Both thresholds are editable. Ratio-table support requires adequate numerator
+and reference coverage; it does not filter the ratio statistics. Coverage sums
+are density multiplied by region length, not independent read counts. Markers
+do not change colours, clustering or enrichment. Inspection reuses the loaded
+coverage matrix; metadata comparisons are computed only when their tab is opened.
 
 The distinction between display and analysis also applies to the result pages:
 

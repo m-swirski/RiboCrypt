@@ -71,15 +71,34 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 250,
 }
 
 addJSrender <- function(multiomics_plot, target_seq, nplots, seq_render_dist,
-                        aa_letter_code, input_id, frame_colors) {
+                        aa_letter_code, input_id, frame_colors, initial_range = NULL) {
   render_on_zoom_data <- fetch_JS_seq(target_seq = target_seq, nplots = nplots,
                                       distance = seq_render_dist,
                                       aa_letter_code = aa_letter_code, input_id, frame_colors)
   select_region_on_click_data <- list(nplots = nplots, input_id = input_id)
+  multiomics_plot <- browser_initial_sequence_placeholder(multiomics_plot,
+    render_on_zoom_data, initial_range)
   multiomics_plot <- multiomics_plot %>%
     onRender(fetchJS("render_on_zoom.js"), render_on_zoom_data) %>%
     onRender(fetchJS("select_region_on_click.js"), select_region_on_click_data)
   return(multiomics_plot)
+}
+
+#' Prepare wide-range sequence state without a post-render addTraces redraw.
+#' Narrow ranges retain the existing nucleotide/AA callback and its frame slicing.
+#' @noRd
+browser_initial_sequence_placeholder <- function(plot, data, initial_range = NULL) {
+  range <- initial_range %||% c(1, nchar(data$sequence))
+  range <- c(floor(range[1]), ceiling(range[2]))
+  if (diff(range) <= data$traces[[1]]$distance) return(plot)
+  trace <- list(x = I(mean(range)), y = I(0.5), text = "\u00a0\u00a0\u00a0Click to copy sequence\u00a0\u00a0\u00a0",
+    mode = "markers+text", type = "scatter", textposition = "middle center",
+    textfont = list(color = "gray", size = 18),
+    marker = list(size = 100, color = "rgba(0,0,0,0)", opacity = 0.01, line = list(width = 0)),
+    name = "sequence_placeholder", hoverinfo = "text", showlegend = FALSE,
+    xaxis = "x", yaxis = data$traces[[1]]$yaxis)
+  plot$x$data <- c(plot$x$data, list(trace))
+  plot
 }
 
 addColumnsZoomSwitch <- function(multiomics_plot, threshold = columns_zoom_switch_threshold()) {

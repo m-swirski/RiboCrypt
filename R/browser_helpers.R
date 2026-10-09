@@ -230,7 +230,8 @@ multiOmicsPlot_complete_plot <- function(track_panel, bottom_panel, display_rang
     nt_seq_y_index <- length(plots) - bottom_panel$ncustom - 3
     multiomics_plot <- addJSrender(multiomics_plot, bottom_panel$target_seq,
                                    nt_seq_y_index, seq_render_dist,
-                                   aa_letter_code, input_id, bottom_panel$frame_colors)
+                                   aa_letter_code, input_id, bottom_panel$frame_colors,
+                                   initial_range = browser_target_x_range(display_range, zoom_range))
   }
 
   return(browser_plot_final_layout_polish(multiomics_plot, plot_name, display_range,
@@ -616,6 +617,10 @@ browser_style_xaxis <- function(axis, axis_name, bottom_xaxis) {
   if (is.null(axis)) axis <- list()
   axis$visible <- identical(axis_name, bottom_xaxis)
   axis$showticklabels <- identical(axis_name, bottom_xaxis)
+  axis$ticks <- if (identical(axis_name, bottom_xaxis)) "outside" else ""
+  axis$showline <- FALSE
+  axis$showgrid <- FALSE
+  axis$zeroline <- FALSE
   axis$tickfont <- list(size = 16)
   axis$title <- browser_xaxis_title(axis_name, bottom_xaxis)
   axis

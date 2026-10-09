@@ -6,6 +6,10 @@ is kept in Git and excluded from R source bundles by `^benchmarks$` in
 
 ## Reports
 
+- [2026-10-09: warm Browser initial rendering](2026-10-09-warm-browser-init.md):
+  prepare sequence/axis state before rendering, alternating real ATF4 comparisons
+  and live Browser/Observatory regression checks.
+
 - [2026-10-06: MegaBrowser translon enrichment](2026-10-06-megabrowser-translon-enrichment.md):
   lazy interval-pair ratios, clean CDS, real ATF4 duplicate/overlap checks and timings.
 

@@ -9,6 +9,7 @@ compute_collection_table_shiny <- function(mainPlotControls,
                                            subset = mainPlotControls()$subset,
                                            group_on_tx_tpm = mainPlotControls()$group_on_tx_tpm,
                                            split_by_frame = mainPlotControls()$frame,
+                                           frame_phase = mainPlotControls()$frame_phase,
                                            ratio_interval = mainPlotControls()$ratio_interval,
                                            enrichment_term = mainPlotControls()$enrichment_term,
                                            clusters = mainPlotControls()$clusters,
@@ -21,6 +22,7 @@ compute_collection_table_shiny <- function(mainPlotControls,
                                      as_list = TRUE, subset = subset,
                                      group_on_tx_tpm = group_on_tx_tpm,
                                      split_by_frame = split_by_frame,
+                                     frame_phase = frame_phase,
                                      ratio_interval = ratio_interval,
                                      enrichment_term = enrichment_term,
                                      clusters = clusters)
@@ -320,7 +322,10 @@ megabrowser_plotly_heatmap_data <- function(table, color_mult = 3) {
   scored <- isTRUE(attr(table, "translon_score"))
   frame_view <- isTRUE(attr(table, "split_by_frame"))
   encoded <- if (frame_view) megabrowser_frame_encode(mat, color_mult,
-    if (scored) c(-1, 1) else NULL) else NULL
+    if (scored) c(-1, 1) else NULL,
+    if (isTRUE(attr(table, "collapsed_translons"))) NULL else attr(table, "frame_phase")) else NULL
+  present <- attr(table, "frame_cell_present")
+  if (frame_view && !isTRUE(attr(table, "collapsed_translons")) && length(present) == ncol(mat)) encoded[, !present] <- NA_real_
   labels <- if (isTRUE(attr(table, "collapsed_translons")))
     matrix(rep(attr(table, "translon_regions")$Labels, each = nrow(mat)), nrow = nrow(mat)) else NULL
   if (scored) labels[] <- paste(labels, "<br>Fold change:", signif(t(attr(table, "translon_fold_change"))[unlist(orders, use.names = FALSE), , drop = FALSE], 3))
@@ -348,7 +353,7 @@ megabrowser_plotly_heatmap_data <- function(table, color_mult = 3) {
 #' Encode phase and intensity in one heatmap value while preserving raw values
 #' separately for hover. Phase is relative to the displayed sequence start.
 #' @noRd
-megabrowser_frame_encode <- function(mat, color_mult = 3, fixed_limits = NULL) {
+megabrowser_frame_encode <- function(mat, color_mult = 3, fixed_limits = NULL, frame_phase = NULL) {
   # range(..., finite=TRUE) avoids materializing a second full matrix and a
   # separate vector of every finite cell for large library collections.
   limits <- if (is.null(fixed_limits)) suppressWarnings(range(mat, finite = TRUE)) else fixed_limits
@@ -359,11 +364,10 @@ megabrowser_frame_encode <- function(mat, color_mult = 3, fixed_limits = NULL) {
   if (!is.null(fixed_limits)) intensity <- pmin(pmax(intensity, 0), 1)
   zoom <- if (length(color_mult) == 1L && is.finite(color_mult) && color_mult > 0) color_mult else 3
   intensity <- intensity ^ (1.5 / zoom) * (1 - 1e-7)
+  if (is.null(frame_phase) || length(frame_phase) != ncol(mat)) frame_phase <- (seq_len(ncol(mat)) - 1L) %% 3L
   for (phase in 1:2) {
-    if (ncol(mat) > phase) {
-      columns <- seq.int(phase + 1L, ncol(mat), by = 3L)
-      intensity[, columns] <- intensity[, columns, drop = FALSE] + phase
-    }
+    columns <- which(frame_phase == phase)
+    if (length(columns)) intensity[, columns] <- intensity[, columns, drop = FALSE] + phase
   }
   intensity[!is.finite(intensity)] <- NA_real_
   intensity
@@ -514,7 +518,8 @@ megabrowser_complex_heatmap <- function(table, colors, color_mult = 3) {
   mat <- megabrowser_ordered_matrix(table)
   frame_view <- isTRUE(attr(table, "split_by_frame"))
   if (frame_view) {
-    mat <- megabrowser_frame_encode(mat, color_mult, if (isTRUE(attr(table, "translon_score"))) c(-1, 1) else NULL)
+    mat <- megabrowser_frame_encode(mat, color_mult, if (isTRUE(attr(table, "translon_score"))) c(-1, 1) else NULL,
+      if (isTRUE(attr(table, "collapsed_translons"))) NULL else attr(table, "frame_phase"))
     palette <- megabrowser_frame_colorscale()
     colors <- circlize::colorRamp2(as.numeric(palette[, 1]) * 3, palette[, 2], space = "RGB")
   }

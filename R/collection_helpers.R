@@ -84,7 +84,7 @@ collection_valid_library_names <- function(valid_libs) {
 #' @return a data.table of normalized results
 normalize_collection <- function(table, normalization, lib_sizes = NULL,
                                  kmer = 1L, add_logscore = TRUE,
-                                 split_by_frame = FALSE) {
+                                 split_by_frame = FALSE, frame_phase = NULL) {
   mat <- if (is.matrix(table)) table else as.matrix(table)
   setattr(table, "summary_cov", summary_track(mat))
   if (is.character(lib_sizes)) lib_sizes <- readRDS(lib_sizes)
@@ -96,9 +96,19 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
   } else kmer
   setattr(table, "ratio", effective_ratio)
   setattr(table, "split_by_frame", isTRUE(split_by_frame))
-  attrs <- collection_user_attributes(table)
+  if (isTRUE(split_by_frame) && !is.null(frame_phase) && length(frame_phase) == nrow(mat) && all(frame_phase %in% 0:2)) {
+    setattr(table, "frame_reference", "CDS")
+  } else frame_phase <- NULL
   # Binned window
-  if (kmer > 1) mat <- multiSampleBinRows(mat, kmer, split_by_frame)
+  if (kmer > 1) mat <- multiSampleBinRows(mat, kmer, split_by_frame, frame_phase)
+  if (!is.null(frame_phase)) {
+    if (kmer > 1L && length(frame_phase) > kmer) {
+      setattr(table, "frame_cell_present", attr(mat, "frame_cell_present"))
+      frame_phase <- (seq_len(nrow(mat)) - 1L) %% 3L
+    }
+    setattr(table, "frame_phase", frame_phase)
+  }
+  attrs <- collection_user_attributes(table)
 
   # Transcript normalization mode
   norm_opts <- normalizations("metabrowser")
@@ -297,6 +307,7 @@ compute_collection_table <- function(path, lib_sizes, df,
                                      value.var = "logscore", as_list = FALSE,
                                      subset = NULL, group_on_tx_tpm = NULL,
                                      split_by_frame = FALSE,
+                                     frame_phase = NULL,
                                      ratio_interval = NULL,
                                      decreasing_order = FALSE,
                                      enrichment_term = metadata_field[1],
@@ -315,7 +326,7 @@ compute_collection_table <- function(path, lib_sizes, df,
   table <- filter_collection_on_count(table, min_count)
   # Normalize
   table <- normalize_collection(table, normalization, lib_sizes, kmer, TRUE,
-                                split_by_frame)
+                                split_by_frame, frame_phase)
   ## # Sort table by metadata column selected
   # Match metadata table and collection runIDs
   meta_sub <- compute_collection_table_grouping(metadata, df, metadata_field, table,

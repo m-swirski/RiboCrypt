@@ -120,3 +120,51 @@ test_that("frame heatmap encodes colour while keeping exact hover values", {
   attr(mat, "translon_regions") <- data.frame(Labels = rep("region", nrow(mat)))
   expect_false(RiboCrypt:::megabrowser_plotly_heatmap_data(mat)$frame_view)
 })
+
+test_that("CDS phase follows spliced coding sequence on both strands", {
+  gr <- function(start, end, strand) GenomicRanges::GRanges("chr1", IRanges::IRanges(start, end), strand)
+  for (strand in c("+", "-")) {
+    if (strand == "+") {
+      display <- GenomicRanges::GRangesList(tx = gr(c(100, 200), c(108, 207), strand))
+      cds <- GenomicRanges::GRangesList(tx = gr(c(103, 200), c(108, 205), strand))
+      genomic <- GenomicRanges::GRangesList(tx = gr(100, 207, strand))
+      positions <- c(4:9, 10:15)
+      genomic_positions <- c(4:9, 101:106)
+    } else {
+      display <- GenomicRanges::GRangesList(tx = gr(c(200, 100), c(208, 107), strand))
+      cds <- GenomicRanges::GRangesList(tx = gr(c(200, 102), c(205, 107), strand))
+      genomic <- GenomicRanges::GRangesList(tx = gr(100, 208, strand))
+      positions <- c(4:9, 10:15)
+      genomic_positions <- c(4:9, 102:107)
+    }
+    phase <- RiboCrypt:::megabrowser_cds_phase(display, cds)
+    expect_equal(phase[positions], rep(0:2, 4))
+    phase_genomic <- RiboCrypt:::megabrowser_cds_phase(genomic, cds)
+    expect_equal(phase_genomic[genomic_positions], rep(0:2, 4))
+    expect_null(RiboCrypt:::megabrowser_cds_phase(display, GenomicRanges::GRangesList(tx = gr(500, 510, strand))))
+  }
+})
+
+test_that("CDS anchored bins preserve phase and counts, including empty slots", {
+  phase <- c(2L, 0L, 1L, 2L, 0L, 1L, 2L, 0L, 1L, 0L)
+  mat <- matrix(seq_along(phase), ncol = 1, dimnames = list(NULL, "a"))
+  binned <- RiboCrypt:::multiSampleBinRows(mat, 3L, TRUE, phase)
+  expect_equal(as.vector(colSums(binned)), sum(mat))
+  expect_false(tail(attr(binned, "frame_cell_present"), 1))
+  normalized <- RiboCrypt:::normalize_collection(mat, "transcriptNormalized", kmer = 3, split_by_frame = TRUE, frame_phase = phase)
+  expect_identical(attr(normalized, "frame_reference"), "CDS")
+  expect_equal(attr(normalized, "frame_phase"), rep(0:2, 4))
+  expect_equal(as.vector(sum(expm1(normalized))), 1e6, tolerance = 1e-8)
+  raw <- RiboCrypt:::normalize_collection(mat, "transcriptNormalized", kmer = 1, split_by_frame = TRUE, frame_phase = phase)
+  encoded <- RiboCrypt:::megabrowser_frame_encode(t(raw), frame_phase = attr(raw, "frame_phase"))
+  expect_equal(as.integer(floor(encoded)), phase)
+})
+
+test_that("a clipped view uses the original CDS frame when the TIS is outside it", {
+  gr <- function(s, e, strand) GenomicRanges::GRanges("chr1", IRanges::IRanges(s, e), strand)
+  for (strand in c("+", "-")) {
+    cds <- GenomicRanges::GRangesList(tx = gr(100, 111, strand))
+    display <- GenomicRanges::GRangesList(tx = if (strand == "+") gr(104, 109, strand) else gr(102, 107, strand))
+    expect_identical(RiboCrypt:::megabrowser_cds_phase(display, cds), c(1L, 2L, 0L, 1L, 2L, 0L))
+  }
+})

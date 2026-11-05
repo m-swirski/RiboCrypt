@@ -292,13 +292,19 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list, cds
       other_tx_hash <- paste0("sortOther:", other_tx)
     }
 
+    frame_phase <- NULL
+    if (isTRUE(frame) && !isTruthy(motif)) {
+      all_cds <- cds()
+      cds_index <- match(id, names(all_cds))
+      if (!is.na(cds_index)) frame_phase <- megabrowser_cds_phase(display_region, all_cds[cds_index])
+    }
     # Hash strings
     table_hash <- paste(name(dff), id, table_path, lib_sizes, clusters, min_count,
                         region_type, paste(metadata_field, collapse = ":"), normalization, frame,
                         kmer, other_tx_hash, paste(ratio_interval, collapse = ":"), enrichment_term,
                         isolate(input$add_translon), isolate(input$add_translons_transcode),
                         leader_extension, trailer_extension,
-                        isolate(input$viewMode), collapsed_introns_width, sep = "|_|")
+                        isolate(input$viewMode), isolate(input$genomic_region), collapsed_introns_width, sep = "|_|")
     table_plot_hash <- paste(table_hash, isolate(input$other_tx), input$plotType,
                              summary_track, isolate(input$heatmap_color),
                              isolate(input$color_mult), sep = "|_|")
@@ -324,6 +330,7 @@ click_plot_browser_allsamp_controller <- function(input, df, gene_name_list, cds
                    group_on_tx_tpm = other_tx,
                    ratio_interval = ratio_interval,
                    frame = frame,
+                   frame_phase = frame_phase,
                    clusters = clusters,
                    plotType = isolate(input$plotType),
                    summary_track = summary_track,

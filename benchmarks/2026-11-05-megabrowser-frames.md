@@ -26,3 +26,7 @@ NODE_PATH=<node_modules> PLAYWRIGHT_BROWSERS_PATH=<browser_directory> node bench
 The branch does not install ORFik or deploy the public app. Regression tests include normal/short bins, count conservation, true phase-specific region means, overlapping or discontiguous regions, clean-CDS parent-frame anchoring, missing phases, both collapse modes, hover and region cell selection. Existing MegaBrowser regression suites are run as well.
 
 Raw encoder, regression and Shiny smoke logs are in `benchmarks/results/2026-11-05-megabrowser-frames/`.
+
+### CDS-relative frame update
+
+Position view now anchors coding bases to the selected transcript CDS: its initiation-site frame is red. The CDS phase follows spliced coding exons even in genomic views and on the negative strand, including when the initiation site is outside the visible window. Noncoding bases use the displayed-coordinate phase extended from the first coding overlap; they do not imply the CDS is translated there. Without a selected CDS overlap, the displayed start remains the reference. Each bin retains phase-specific values; bins containing no bases for a phase leave that phase blank. Collapsed translons retain their own start reference, and clean CDS uses the parent CDS. Synthetic tests cover both strands, exon boundaries, a clipped initiation site, count conservation, empty phases and collapse.

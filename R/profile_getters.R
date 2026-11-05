@@ -47,13 +47,22 @@ smoothenMultiSampCoverage <- function(dt, kmer, kmers_type = "mean", split_by_fr
   return(dt[,count := get(paste("froll",kmers_type, sep = ""))(count, kmer, fill = 0, align = "center"), by = library])
 }
 
-multiSampleBinRows <- function(mat, ratio = 9, split_by_frame = FALSE) {
+multiSampleBinRows <- function(mat, ratio = 9, split_by_frame = FALSE, frame_phase = NULL) {
   if (nrow(mat) <= ratio) return(mat)
   if (!is.matrix(mat)) mat <- as.matrix(mat)
   if (isTRUE(split_by_frame)) {
     # Bin consecutive codons, retaining a separate row for each phase.
     codons <- ceiling(ratio / 3)
     pos <- seq_len(nrow(mat)) - 1L
+    if (!is.null(frame_phase)) {
+      groups <- (pos %/% (3L * codons)) * 3L + frame_phase + 1L
+      sums <- rowsum(mat, groups, reorder = TRUE)
+      out <- matrix(0, (max(pos) %/% (3L * codons) + 1L) * 3L, ncol(mat),
+                    dimnames = list(NULL, colnames(mat)))
+      out[as.integer(rownames(sums)), ] <- sums
+      attr(out, "frame_cell_present") <- tabulate(groups, nbins = nrow(out)) > 0L
+      return(out)
+    }
     groups <- (pos %/% (3L * codons)) * 3L + (pos %% 3L) + 1L
     return(rowsum(mat, group = groups, reorder = TRUE))
   }

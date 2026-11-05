@@ -85,7 +85,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                    ),
                                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                                    checkboxInput(ns("frame"), label = "Split by frame", value = FALSE),
-                                   tags$small("Red, green and blue show frames 0, 1 and 2. Position view uses the displayed start; collapsed translons use each translon's start (clean CDS uses its parent CDS). Bins pool phases separately and round width up to a multiple of 3."),
+                                   tags$small("Red, green and blue show frames 0, 1 and 2. Position view uses the selected CDS frame when present; otherwise it uses the displayed start. Noncoding positions follow displayed-coordinate phase. Collapsed translons use each translon's start (clean CDS uses its parent CDS). Bins pool phases separately and round width up to a multiple of 3."),
                                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
                                    fluidRow(column(6, numericInput(ns("min_count"), "Minimum counts", min = 0, value = 100)),
                                             column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
@@ -270,7 +270,7 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
         tags$span("Frame: ", tags$span(style = "color:#e3524a", "0"), " / ",
           tags$span(style = "color:#3aa35b", "1"), " / ",
           tags$span(style = "color:#3f7fd6", "2"),
-          if (isTRUE(attr(current, "collapsed_translons"))) " (relative to each translon start)" else " (relative to displayed start)")
+          if (isTRUE(attr(current, "collapsed_translons"))) " (relative to each translon start)" else if (identical(attr(current, "frame_reference"), "CDS")) " (CDS-relative; noncoding positions use display coordinates)" else " (relative to displayed start)")
       })
       outputOptions(output, "frame_legend", suspendWhenHidden = FALSE)
 

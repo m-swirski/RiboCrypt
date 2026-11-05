@@ -128,7 +128,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
         experiment_df = df(),
         tx = tx,
         library_selections = library_selections(),
-        library_selection_labels = lib_labels, kmer = dynamic$kmer
+        library_selection_labels = lib_labels, kmer = if (dynamic$active && isTRUE(input$withFrames) && !isTRUE(input$summary_track)) 1L else dynamic$kmer
       )
       dff <- collection_data$dff
       reads <- collection_data$reads
@@ -146,12 +146,14 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
       } else withFrames <- rep(FALSE, nrow(dff))
     }
 
+    dynamic$client <- browser_dynamic_client_supported(dynamic$active, withFrames, input$summary_track)
+
     # Hash strings for cache
     hash_strings <- hash_strings_browser(
       input, dff, collapsed_introns_width,
       is_cellphone = user_info_value$is_cellphone
     )
-    hash_strings$hash_browser <- paste(hash_strings$hash_browser, dynamic$active, dynamic$type, dynamic$kmer, paste(dynamic$range, collapse = ":"), sep = "|dynamic|")
+    hash_strings$hash_browser <- paste(hash_strings$hash_browser, dynamic$active, dynamic$client, dynamic$type, dynamic$kmer, paste(dynamic$range, collapse = ":"), sep = "|dynamic|")
     if (is_observatory) {
       hash_strings <- lapply(hash_strings, paste,
                              paste(selected_library_groups, collapse = "|sel|"),

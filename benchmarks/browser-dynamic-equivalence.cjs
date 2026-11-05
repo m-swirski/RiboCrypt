@@ -1,0 +1,9 @@
+const{chromium}=require('playwright'),assert=require('node:assert/strict');
+(async()=>{let b=await chromium.launch({args:['--no-sandbox','--disable-dev-shm-usage','--enable-unsafe-swiftshader']}),pages=[];
+for(const port of [7893,7894]){const p=await b.newPage({viewport:{width:1440,height:1000}});await p.goto(`http://127.0.0.1:${port}/#browser`);await p.waitForFunction(()=>document.getElementById('browser-tx')?.value,{timeout:120000});await p.waitForTimeout(3000);await p.locator('#browser-go').click();await p.waitForFunction(()=>document.getElementById('browser-c')?._fullData?.length>2,{timeout:120000});if(port===7894)await p.waitForFunction(()=>Shiny.shinyapp.$inputValues['browser-dynamic_client_mode']==='area',null,{timeout:30000});pages.push(p)}
+const area=await Promise.all(pages.map((p,i)=>p.evaluate(client=>{let ts=document.getElementById('browser-c').data;return (client?ts.filter(t=>t.meta?.rc_columns_switch==='line'):ts.filter(t=>t.fill==='tozeroy')).slice(0,3).map(t=>({x:t.x,y:t.y}))},i===1)));
+assert.deepEqual(area[0],area[1]);
+for(const p of pages) await p.evaluate(()=>Plotly.relayout(document.getElementById('browser-c'),{'xaxis.range':[20,219]}));
+await pages[0].waitForFunction(()=>Shiny.shinyapp.$inputValues['browser-dynamic_view']?.range?.[1]===219&&document.getElementById('browser-c').data.some(t=>t.meta?.rc_columns_switch==='gl_subset'),null,{timeout:120000});
+await pages[1].waitForFunction(()=>Shiny.shinyapp.$inputValues['browser-dynamic_client_mode']==='columns',null,{timeout:30000});
+const columns=await Promise.all(pages.map(p=>p.evaluate(()=>document.getElementById('browser-c').data.filter(t=>t.meta?.rc_columns_switch==='gl_subset').map(t=>({x:t.x,y:t.y})))));assert.deepEqual(columns[0],columns[1]);console.log('ATF4 area and zoomed columns: x/y identical to previous server-driven implementation');await b.close()})().catch(e=>{console.error(e);process.exit(1)});

@@ -232,7 +232,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
 
 
       # Additional outputs
-      browser_coverage_download(output, mainPlotControls, browser_plot)
+      browser_coverage_download(output, mainPlotControls, browser_plot, input)
       module_additional_browser(input, output, session)
 
       return(rv)

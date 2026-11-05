@@ -36,7 +36,11 @@
     const range = elem._fullLayout.xaxis.range;
     const low = Math.min(...range), high = Math.max(...range);
     const full = config.full_range;
-    const local = (!checkbox || checkbox.checked) && !(low <= full[0] && high >= full[1]);
+    const fullView = low <= full[0] && high >= full[1];
+    // Dynamic mode swaps raw and smoothed values without rebuilding the plot.
+    // Recalculate the full-view range as well so it follows the active profile.
+    const local = ((!checkbox || checkbox.checked) && !fullView) ||
+      (elem.__rcDynamicActive && fullView);
     const changes = {};
     for (const [name, original] of originals) {
       const axis = elem._fullLayout[name];

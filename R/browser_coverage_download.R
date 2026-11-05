@@ -1,9 +1,9 @@
 #' Export the exact profiles retained with the generated plot, not current inputs.
 #' @noRd
-browser_coverage_table <- function(plot) {
+browser_coverage_table <- function(plot, dynamic_mode = NULL) {
   snapshot <- attr(plot, "coverage_export")
   shiny::req(length(snapshot$profiles) > 0)
-  profiles <- snapshot$profiles
+  profiles <- if (isTRUE(dynamic_mode %in% c("area", "lines")) && !is.null(snapshot$smooth_profiles)) snapshot$smooth_profiles else snapshot$profiles
   positions <- profiles[[1]]$position
   stopifnot(all(vapply(profiles, function(x) identical(x$position, positions), logical(1))))
   values <- lapply(profiles, function(x) x$count)
@@ -24,12 +24,12 @@ browser_coverage_filename <- function(controls) {
 
 #' Register lazily: no coverage extraction or serialization during startup.
 #' @noRd
-browser_coverage_download <- function(output, controls, browser_plot) {
+browser_coverage_download <- function(output, controls, browser_plot, input = NULL) {
   output$download_coverage <- rc_download_handler(
     filename = function() browser_coverage_filename(controls()),
     contentType = "text/csv",
     content = function(file) {
-      data.table::fwrite(browser_coverage_table(browser_plot()), file)
+      data.table::fwrite(browser_coverage_table(browser_plot(), if (is.null(input)) NULL else input$dynamic_client_mode), file)
     }
   )
 }

@@ -1,0 +1,28 @@
+const {chromium}=require('playwright'), assert=require('node:assert/strict');
+(async()=>{
+ const obs=process.argv.includes('--observatory'), prefix=obs?'observatory-browser_obs-':'browser-', id=prefix+(obs?'browser_plot':'c');
+ const b=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--enable-unsafe-swiftshader']});
+ const p=await b.newPage({viewport:{width:1440,height:1000}}), errors=[];
+ p.on('pageerror',e=>errors.push(e.message));p.on('console',m=>{if(m.type()==='error' && !m.text().includes('attribute viewBox: Expected number')) errors.push(m.text())});
+ await p.goto(process.argv[2]||'http://127.0.0.1:7894/#browser'); if(obs) await p.locator('a[data-value="Browse"]').click();
+ await p.waitForFunction(pre=>document.getElementById(pre+'tx')?.value,prefix,{timeout:120000}); await p.waitForTimeout(3000); await p.locator('#'+prefix+'go').click();
+ await p.waitForFunction(({id,prefix})=>document.getElementById(id)?.__rcDynamicActive && Shiny.shinyapp.$inputValues[prefix+'dynamic_client_mode']==='area',{id,prefix},{timeout:120000});
+ const data=()=>p.evaluate(({id,prefix})=>{const e=document.getElementById(id);return {range:e._fullLayout.xaxis.range,mode:Shiny.shinyapp.$inputValues[prefix+'dynamic_client_mode'],rawEvent:Shiny.shinyapp.$inputValues[prefix+'dynamic_view'],lines:e.data.filter(x=>x.meta?.rc_columns_switch==='line').map(t=>({fill:t.fill,visible:t.visible,y:t.y})),gl:e.data.filter(x=>x.meta?.rc_columns_switch==='gl_subset').map(t=>({visible:t.visible,x:t.x,y:t.y}))}},{id,prefix});
+ const first=await data();assert.ok(first.lines.every(x=>x.fill==='tozeroy' && x.visible===true));
+ await p.evaluate(id=>{const e=document.getElementById(id),i=e.data.findIndex(t=>t.meta?.rc_columns_switch==='gl_subset');e.emit('plotly_legendclick',{curveNumber:i});},id);
+ await p.waitForFunction(id=>{const e=document.getElementById(id);return e.data.find(t=>t.meta?.rc_columns_switch==='line')?.visible===false},id,{timeout:30000});
+ await p.evaluate(id=>{const e=document.getElementById(id),i=e.data.findIndex(t=>t.meta?.rc_columns_switch==='gl_subset');e.emit('plotly_legendclick',{curveNumber:i});},id);
+ await p.waitForFunction(id=>{const e=document.getElementById(id);return e.data.find(t=>t.meta?.rc_columns_switch==='line')?.visible===true},id,{timeout:30000});
+ let t=Date.now();await p.evaluate(id=>Plotly.relayout(document.getElementById(id),{'xaxis.range':[20,219]}),id);
+ await p.waitForFunction(({prefix})=>Shiny.shinyapp.$inputValues[prefix+'dynamic_client_mode']==='columns',{prefix},{timeout:30000});const columns=await data();let ms1=Date.now()-t;
+ assert.ok(columns.gl.every(x=>x.visible===true)); assert.deepEqual(columns.range,[20,219]); assert.equal(columns.rawEvent,undefined);
+ t=Date.now();await p.evaluate(id=>Plotly.relayout(document.getElementById(id),{'xaxis.range':[1,1000]}),id);
+ await p.waitForFunction(({prefix})=>Shiny.shinyapp.$inputValues[prefix+'dynamic_client_mode']==='area',{prefix},{timeout:30000});const area=await data();let ms2=Date.now()-t;
+ area.lines.forEach((line,i)=>assert.deepEqual(line.y,first.lines[i].y.slice(0,line.y.length))); assert.deepEqual(area.range,[1,1000]); assert.equal(area.rawEvent,undefined);
+ await p.locator('#'+prefix+'toggle_settings').click();
+ await p.locator('input[name="'+prefix+'display_mode"][value="manual"]').check();
+ await p.evaluate(pre=>document.getElementById(pre+'frames_type').selectize.setValue('columns'),prefix);
+ await p.locator('#'+prefix+'toggle_settings').click();await p.locator('#'+prefix+'go').click();
+ await p.waitForFunction(({id,prefix})=>Shiny.shinyapp.$inputValues[prefix+'display_mode']==='manual' && document.getElementById(id)?.__rcDynamicActive===false && document.getElementById(id)?.data?.some(t=>t.meta?.rc_columns_switch),{id,prefix},{timeout:120000});
+ console.log(JSON.stringify({obs,area_to_columns_ms:ms1,columns_to_area_ms:ms2,frames:columns.gl.length,manual_switch:true,errors}));assert.deepEqual(errors,[]);await b.close();
+})().catch(e=>{console.error(e);process.exit(1)});

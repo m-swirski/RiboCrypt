@@ -34,3 +34,61 @@ browser_dynamic_settings <- function(input, display_region, zoom_range) {
   style <- browser_dynamic_style(diff(range) + 1)
   list(active = TRUE, type = style$type, kmer = style$kmer, range = range, context = context)
 }
+
+# Compact sidecar: x coordinates and raw counts already exist in column traces.
+#' @noRd
+browser_dynamic_client_config <- function(raw, smooth, frame_colors, input_id, status_id) {
+  tracks <- lapply(seq_along(raw), function(i) {
+    levels <- track_frame_levels(raw[[i]])
+    colors <- track_frame_colors(levels, frame_colors)
+    fills <- track_frame_colors(levels, frame_colors, with_alpha = TRUE)
+    frames <- lapply(levels, function(level) {
+      r <- raw[[i]][as.character(frame) == level]
+      s <- smooth[[i]][as.character(frame) == level]
+      if (!identical(r$position, s$position)) stop("Dynamic coverage position mismatch")
+      list(y = unname(s$count), color = unname(colors[[level]]),
+           fill = grDevices::adjustcolor(fills[[level]], alpha.f = track_area_fill_alpha()))
+    })
+    names(frames) <- levels
+    frames
+  })
+  list(tracks = tracks, input_id = input_id, status_id = status_id)
+}
+
+# Load the padded RFP coverage once, then derive the exact k=1 and k=9
+# versions. The 27 nt padding is a multiple of three, preserving frame phase.
+# Fall back to the existing readers if the complete padding is unavailable.
+#' @noRd
+browser_dynamic_dual_profiles <- function(display_range, reads, frames_subset, log_scale) {
+  extended <- extendTrailers(extendLeaders(display_range, 27L), 27L)
+  original_length <- as.numeric(widthPerGroup(display_range, FALSE))[1L]
+  padded_length <- as.numeric(widthPerGroup(extended, FALSE))[1L]
+  if (!is.finite(original_length) || !is.finite(padded_length) || padded_length != original_length + 54L) return(NULL)
+  per_track <- lapply(reads, function(read) {
+    padded <- getRiboProfile(extended, read, kmers = 1L)
+    if (nrow(padded) != padded_length) return(NULL)
+    raw <- data.table::copy(padded[seq.int(28L, 27L + original_length)])
+    raw[, position := seq_len(.N)]
+    smooth <- data.table::copy(padded)
+    smooth[, genes := as.factor(genes)]
+    smooth <- smoothenSingleSampCoverage(smooth, 9L)
+    if (all(frames_subset != "all")) {
+      use <- which(c("red", "green", "blue") %in% frames_subset) - 1L
+      raw[!(frame %in% use), count := 0]
+      smooth[!(frame %in% use), count := 0]
+    }
+    if (isTRUE(log_scale)) {
+      raw[, count := log2(count + 1)]
+      smooth[, count := log2(count + 1)]
+    }
+    list(raw = raw, smooth = smooth)
+  })
+  if (any(vapply(per_track, is.null, logical(1)))) return(NULL)
+  list(raw = lapply(per_track, `[[`, "raw"), smooth = lapply(per_track, `[[`, "smooth"))
+}
+
+#' @noRd
+browser_dynamic_client_supported <- function(active, with_frames, summary_track) {
+  isTRUE(active) && length(with_frames) > 0L && !anyNA(with_frames) &&
+    all(with_frames) && !isTRUE(summary_track)
+}

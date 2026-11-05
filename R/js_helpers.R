@@ -77,6 +77,8 @@ addColumnsZoomSwitch <- function(multiomics_plot, threshold = columns_zoom_switc
   multiomics_plot %>% htmlwidgets::onRender(
     "
 function(el, x, data) {
+  if (el._rcDynamicCleanup) el._rcDynamicCleanup();
+  if (el.__rcColumnsCleanup) el.__rcColumnsCleanup();
   function getRange(ev) {
     function normalizeRange(lo, hi) {
       lo = Number(lo);
@@ -172,6 +174,7 @@ function(el, x, data) {
   }
 
   function updateColumns(ev) {
+    if (el.__rcDynamicActive) return;
     var dataTraces = (el.data || []);
     var groups = {};
     for (var i = 0; i < dataTraces.length; i++) {
@@ -256,6 +259,10 @@ function(el, x, data) {
 
   el.on('plotly_relayout', updateColumns);
   el.on('plotly_afterplot', updateColumns);
+  el.__rcColumnsCleanup = function() {
+    el.removeListener('plotly_relayout', updateColumns);
+    el.removeListener('plotly_afterplot', updateColumns);
+  };
   updateColumns();
 }
 ",

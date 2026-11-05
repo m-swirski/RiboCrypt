@@ -1,0 +1,8 @@
+const {chromium}=require('playwright'), assert=require('node:assert/strict');
+(async()=>{const b=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--enable-unsafe-swiftshader']});const p=await b.newPage({viewport:{width:1440,height:1000}}), errors=[];p.on('pageerror',e=>errors.push(e.message));
+await p.goto('http://127.0.0.1:7894/?gene=TTN-ENSG00000155657&tx=ENST00000589042&library=RFP&display_mode=dynamic#browser');
+await p.waitForFunction(()=>document.getElementById('browser-tx')?.value==='ENST00000589042',null,{timeout:120000});await p.waitForTimeout(3000);const t=Date.now();await p.locator('#browser-go').click();
+await p.waitForFunction(()=>document.getElementById('browser-c')?.__rcDynamicActive&&Shiny.shinyapp.$inputValues['browser-dynamic_client_mode']==='lines',null,{timeout:120000});const initial=Date.now()-t;
+const e=()=>document.getElementById('browser-c');let s=Date.now();await p.evaluate(()=>Plotly.relayout(document.getElementById('browser-c'),{'xaxis.range':[1,2000]}));let aZoom=Date.now()-s;await p.waitForFunction(()=>Shiny.shinyapp.$inputValues['browser-dynamic_client_mode']==='area',null,{timeout:30000});let a=Date.now()-s;
+s=Date.now();await p.evaluate(()=>Plotly.relayout(document.getElementById('browser-c'),{'xaxis.range':[20,219]}));let cZoom=Date.now()-s;await p.waitForFunction(()=>Shiny.shinyapp.$inputValues['browser-dynamic_client_mode']==='columns',null,{timeout:30000});let c=Date.now()-s;
+console.log(JSON.stringify({initial_ms:initial,lines_to_area_ms:a,lines_zoom_ms:aZoom,area_to_columns_ms:c,columns_zoom_ms:cZoom,errors}));assert.deepEqual(errors,[]);await b.close()})().catch(e=>{console.error(e);process.exit(1)});

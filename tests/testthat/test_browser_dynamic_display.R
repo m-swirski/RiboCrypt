@@ -39,3 +39,32 @@ test_that("a new plot request invalidates a previous zoom event", {
   input$go <- 2L
   expect_equal(RiboCrypt:::browser_dynamic_settings(input, region, numeric())$type, "lines")
 })
+
+test_that("client sidecar retains exact frame-specific smoothed profiles", {
+  raw <- data.table::data.table(position = 1:30, frame = factor(rep(0:2, 10)), library = factor(rep(1, 30)), count = as.numeric(1:30))
+  smooth <- RiboCrypt:::smoothenMultiSampCoverage(data.table::copy(raw), 9L, split_by_frame = TRUE)
+  config <- RiboCrypt:::browser_dynamic_client_config(list(raw), list(smooth), "R", "mode", "status")
+  for (phase in 0:2) expect_equal(config$tracks[[1]][[as.character(phase)]]$y,
+                                  smooth[as.character(frame) == as.character(phase)]$count)
+  bad <- data.table::copy(smooth); bad$position[1] <- 99
+  expect_error(RiboCrypt:::browser_dynamic_client_config(list(raw), list(bad), "R", "mode", "status"), "position mismatch")
+})
+
+test_that("downloads select the profile currently displayed by dynamic view", {
+  raw <- data.table::data.table(position = 1:3, count = c(1,2,3))
+  smooth <- data.table::data.table(position = 1:3, count = c(2,2,2))
+  p <- list(); attr(p, "coverage_export") <- list(profiles = list(raw), smooth_profiles = list(smooth), labels = "sample", summary = FALSE)
+  expect_equal(RiboCrypt:::browser_coverage_table(p, "columns")$sample, c(1,2,3))
+  expect_equal(RiboCrypt:::browser_coverage_table(p, "area")$sample, c(2,2,2))
+  expect_equal(RiboCrypt:::browser_coverage_table(p)$sample, c(1,2,3))
+})
+
+test_that("dynamic client uses the safe server path for unsupported track combinations", {
+  f <- RiboCrypt:::browser_dynamic_client_supported
+  expect_true(f(TRUE, c(TRUE, TRUE), FALSE))
+  expect_false(f(TRUE, c(TRUE, FALSE), FALSE))
+  expect_false(f(TRUE, TRUE, TRUE))
+  expect_false(f(TRUE, logical(), FALSE))
+  expect_false(f(TRUE, NA, FALSE))
+  expect_false(f(FALSE, TRUE, FALSE))
+})

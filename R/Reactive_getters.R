@@ -257,16 +257,34 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
   if (missing(export.format)) export.format <- controls$export_format
   if (missing(zoom_range)) zoom_range <- controls$zoom_range
   if (missing(frames_subset)) frames_subset <- controls$frames_subset
+  client_dynamic <- isTRUE(controls$dynamic_display$client)
+  if (client_dynamic) { frames_type <- "columns"; kmers <- 1L }
   # Input controller
   multiOmicsControllerView(use_fst, selected_libraries)
   timing_phase("track controls")
   # Get NGS data track panels
+  dual_profiles <- if (client_dynamic && !use_fst && is.null(profiles)) {
+    browser_dynamic_dual_profiles(bottom_panel$display_range, reads, frames_subset, log_scale)
+  } else NULL
+  if (!is.null(dual_profiles)) profiles <- dual_profiles$raw
   if (is.null(profiles)) {
     profiles <- multiOmicsPlot_all_profiles(
       bottom_panel$display_range, reads, kmers,
       kmers_type, frames_type, frames_subset,
       withFrames, log_scale, BPPARAM
     )
+  }
+  smooth_profiles <- NULL
+  if (client_dynamic) {
+    smooth_profiles <- if (!is.null(dual_profiles)) {
+      dual_profiles$smooth
+    } else if (use_fst) {
+      lapply(profiles, function(profile) smoothenMultiSampCoverage(
+        data.table::copy(profile), 9L, kmers_type = "mean", split_by_frame = TRUE))
+    } else {
+      multiOmicsPlot_all_profiles(bottom_panel$display_range, reads, 9L,
+        kmers_type, "area", frames_subset, withFrames, log_scale, BPPARAM)
+    }
   }
   timing_phase("coverage profiles")
 
@@ -293,9 +311,15 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
   timer_done_nice_print("Done (Final panel):", time_before)
   if (isTRUE(controls$dynamic_display$active)) {
     plot <- browser_apply_shared_x_range(plot, controls$dynamic_display$range)
-    plot <- htmlwidgets::onRender(plot, fetchJS("browser_dynamic_display.js"), list(
-      active = TRUE, type = controls$dynamic_display$type,
-      context = controls$dynamic_display$context, input_id = session$ns("dynamic_view")))
+    if (client_dynamic) {
+      plot <- htmlwidgets::onRender(plot, fetchJS("browser_dynamic_client.js"),
+        browser_dynamic_client_config(profiles, smooth_profiles, frame_colors,
+          session$ns("dynamic_client_mode"), session$ns("dynamic_display_status")))
+    } else {
+      plot <- htmlwidgets::onRender(plot, fetchJS("browser_dynamic_display.js"), list(
+        active = TRUE, type = controls$dynamic_display$type,
+        context = controls$dynamic_display$context, input_id = session$ns("dynamic_view")))
+    }
   }
   plot <- browser_apply_y_range(plot, controls$y_range,
                                  browser_coverage_track_types(controls, profiles))
@@ -304,7 +328,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
     browser_display_x_range(bottom_panel$display_range))
   timing_phase("y-axis and zoom")
   # Server-only attribute: retain exactly the profiles used to draw these tracks.
-  attr(plot, "coverage_export") <- list(profiles = profiles, labels = ylabels_full_name,
+  attr(plot, "coverage_export") <- list(profiles = profiles, smooth_profiles = smooth_profiles, labels = ylabels_full_name,
                                          summary = summary_track)
   return(plot)
 }

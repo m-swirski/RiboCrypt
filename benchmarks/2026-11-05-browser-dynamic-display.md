@@ -1,0 +1,7 @@
+# Dynamic browser rendering
+
+The standard browser and Observatory share Dynamic and User-defined controls. Dynamic uses the visible inclusive nucleotide span: up to 500 nt columns with k=1, 501–10,000 area with k=9, and over 10,000 lines with k=9. Plotly zoom events notify the server only when the category changes; the interval is restored after rendering. Coverage is recalculated when k changes. Existing Plotly templates for lines, area, columns and the cached gene/sequence annotation panel are reused. Existing links with explicit frame/k-mer settings and no mode restore as User-defined.
+
+Run `benchmarks/browser-dynamic-smoke.cjs` against the isolated app to exercise real zoom transitions. Exact threshold, cache context and URL behavior are also tested in `test_browser_dynamic_display.R`. Timings depend on the selected transcript, tracks, data storage and browser; zoom that crosses a category boundary requires a server round trip and plot update.
+
+Real-data smoke test: ATF4 ENST00000674920 in the standard browser and Observatory. Both changed area → columns → area, kept the requested x range, and reported no JavaScript errors; Observatory aggregated 4,522 runs. In that shared-server observation, its controller took about 0.7–1.0 s and track/subplot preparation about 0.06–0.59 s per transition; these are server log timings, not a controlled end-to-end benchmark. A legacy URL specifying lines and k=3 restored User-defined mode.

@@ -195,6 +195,7 @@ observatory_browser_server <- function(
     )
 
     main_plot_controls <- shiny::reactive({
+      shiny::req(input$tx)
       observatory_browser_main_controller(
         input, tx, cds, df, resolved_library_selections,
         library_selection_labels
@@ -209,7 +210,13 @@ observatory_browser_server <- function(
         ),
         selected_experiment()
       ) |>
-      shiny::bindEvent(list(input$go, kickoff()), ignoreNULL = TRUE, ignoreInit = TRUE)
+      shiny::bindEvent(list(input$go, kickoff(), input$dynamic_view), ignoreNULL = TRUE, ignoreInit = TRUE)
+
+    output$dynamic_display_status <- shiny::renderText({
+      settings <- main_plot_controls()$dynamic_display
+      shiny::req(isTRUE(settings$active))
+      sprintf("Current: %s, k=%s", settings$type, settings$kmer)
+    })
 
     # -- Plot rendering ----------------------------------------------------
 
@@ -226,7 +233,7 @@ observatory_browser_server <- function(
       )
     }) |>
       shiny::bindCache(main_plot_controls()$hash_browser) |>
-      shiny::bindEvent(bottom_panel(), ignoreNULL = TRUE)
+      shiny::bindEvent(list(bottom_panel(), main_plot_controls()$hash_browser), ignoreNULL = TRUE)
 
     output$browser_plot <- plotly::renderPlotly({
       browser_plot()

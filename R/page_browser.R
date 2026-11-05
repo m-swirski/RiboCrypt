@@ -80,11 +80,17 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
                          fluidRow(prettySwitch(ns("unique_align"), "Unique alignments", value = FALSE,
                                       status = "success", fill = TRUE, bigger = TRUE))
                        },
-                       fluidRow(
-                         column(6, frame_type_select(ns, selected = browser_option("default_frame_type", "columns"))),
-                         column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
-                                               value = as.numeric(browser_option("default_kmer", "1"))))
-                       ),
+                       radioButtons(ns("display_mode"), "Frame display and smoothing",
+                         choices = c("Dynamic" = "dynamic", "User-defined" = "manual"),
+                         selected = browser_option("default_display_mode", "dynamic"), inline = TRUE),
+                       conditionalPanel(sprintf("input['%s'] == 'dynamic'", ns("display_mode")),
+                         tags$small("Automatically adapts to the visible region: >10,000 nt: lines, k=9; 501–10,000 nt: area, k=9; ≤500 nt: columns, k=1."),
+                         textOutput(ns("dynamic_display_status"))),
+                       conditionalPanel(sprintf("input['%s'] == 'manual'", ns("display_mode")),
+                         fluidRow(
+                           column(6, frame_type_select(ns, label = "Frame display", selected = browser_option("default_frame_type", "columns"))),
+                           column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
+                                                 value = as.numeric(browser_option("default_kmer", "1")))))),
                        tags$hr(style = "padding-top: 50px; padding-bottom: 50px;")
               ),
               tabPanel("Settings",
@@ -199,9 +205,15 @@ browser_server <- function(id, all_experiments, env, df, experiments,
       study_and_gene_observers(input, output, session)
 
       # Main plot controller, this code is only run if 'plot' is pressed
-      mainPlotControls <- reactive(click_plot_browser_main_controller(input, tx, cds, libs, df, user_info)) %>%
+      mainPlotControls <- reactive({ req(input$tx); click_plot_browser_main_controller(input, tx, cds, libs, df, user_info) }) %>%
         bindCache(browser_controller_cache_version(), input_to_list(input, user_info())) %>%
-        bindEvent(list(input$go, kickoff()), ignoreInit = TRUE, ignoreNULL = FALSE)
+        bindEvent(list(input$go, kickoff(), input$dynamic_view), ignoreInit = TRUE, ignoreNULL = FALSE)
+
+      output$dynamic_display_status <- renderText({
+        settings <- mainPlotControls()$dynamic_display
+        req(isTRUE(settings$active))
+        sprintf("Current: %s, k=%s", settings$type, settings$kmer)
+      })
 
       bottom_panel <- reactive(bottom_panel_shiny(mainPlotControls, templates = templates))  %>%
         bindCache(mainPlotControls()$hash_bottom) %>%
@@ -211,7 +223,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
         mainPlotControls, bottom_panel(), session, templates = templates
       )) %>%
         bindCache(mainPlotControls()$hash_browser) %>%
-        bindEvent(bottom_panel(), ignoreInit = FALSE, ignoreNULL = TRUE)
+        bindEvent(list(bottom_panel(), mainPlotControls()$hash_browser), ignoreInit = FALSE, ignoreNULL = TRUE)
 
       output$c <- renderPlotly(browser_plot()) %>%
         bindCache(mainPlotControls()$hash_browser) %>%
@@ -273,6 +285,7 @@ input_to_list <- function(input, user_info = NULL) {
   cache_user_info <- cache_user_info[setdiff(names(cache_user_info), c("width", "height"))]
 
   a <- a[-which(names(a) %in% to_ignore | grepl(resize_input_pattern, names(a)))]
+  if (identical(a$display_mode, "dynamic") && !is.null(a$dynamic_view)) a$dynamic_go <- input$go
   a <- c(a, user.info = cache_user_info)
   return(a)
 }

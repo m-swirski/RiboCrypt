@@ -52,6 +52,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?",
         paste("tx", input$tx, sep = "="),
         paste("library", paste(library, collapse = ","), sep = "="),
         paste("unique_align", paste(input$unique_align, collapse = ","), sep = "="),
+        paste("display_mode", input$display_mode %||% "manual", sep = "="),
         paste("frames_type", input$frames_type, sep = "="),
         paste("kmer", input$kmer, sep = "="),
         paste("log_scale", input$log_scale, sep = "="),
@@ -450,6 +451,9 @@ browser_specific_url_checker <- function(target = c("auto", "browser", "observat
       if (length(url_args) > 0) {
         query <- url_args
         print("Browser specific URL check")
+        display_mode <- query[["display_mode"]]
+        if (is.null(display_mode) && (!is.null(query[["frames_type"]]) || !is.null(query[["kmer"]]))) display_mode <- "manual"
+        if (!is.null(display_mode) && display_mode %in% c("manual", "dynamic")) updateRadioButtons(session, "display_mode", selected = display_mode)
         for (tag in c("frames_type", "summary_track_type")) {
           value <- query[tag][[1]]
           if (!is.null(value)) {

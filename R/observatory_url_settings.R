@@ -3,6 +3,7 @@
 observatory_url_controls <- function() {
   list(
     select = c("gene", "tx", "frames_type", "colors", "summary_track_type", "frames_subset"),
+    radio = "display_mode",
     slider = "kmer",
     numeric = c("extendLeaders", "extendTrailers", "collapsed_introns_width"),
     switch = c("viewMode", "other_tx", "collapsed_introns"),
@@ -52,6 +53,7 @@ observatory_normalize_browser_settings <- function(settings) {
   types <- rep(names(controls), lengths(controls))
   names(types) <- unlist(controls, use.names = FALSE)
   types <- c(types, go = "switch")
+  if (is.null(settings$display_mode) && any(c("frames_type", "kmer") %in% names(settings))) settings$display_mode <- "manual"
   fields <- intersect(names(settings), names(types))
   stats::setNames(lapply(fields, function(field) {
     observatory_normalize_control(settings[[field]], field, types[[field]])
@@ -74,6 +76,7 @@ observatory_normalize_control <- function(value, field, type) {
   if (field == "kmer" && (value < 1 || value > 20)) stop("Invalid kmer")
   if (field %in% c("frames_type", "summary_track_type") &&
       !value %in% c("lines", "columns", "stacks", "area", "heatmap", "animate")) stop("Invalid display type")
+  if (field == "display_mode" && !value %in% c("dynamic", "manual")) stop("Invalid display mode")
   if (field == "colors" && !value %in% c("R", "Color_blind")) stop("Invalid color theme")
   if (field == "y_range") browser_parse_y_range(value)
   value

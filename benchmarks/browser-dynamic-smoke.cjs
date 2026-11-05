@@ -1,0 +1,24 @@
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+(async()=>{
+ const b=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--enable-unsafe-swiftshader']});
+ const p=await b.newPage({viewport:{width:1440,height:1000}}), errors=[];
+ const obs=process.argv.includes('--observatory');
+ const prefix=obs?'observatory-browser_obs-':'browser-', plotId=prefix+(obs?'browser_plot':'c');
+ p.on('pageerror',e=>errors.push(e.message));
+ await p.goto(process.argv[2]||'http://127.0.0.1:7893/#browser');
+ if(obs) await p.locator('a[data-value="Browse"]').click();
+ await p.waitForFunction(prefix=>document.getElementById(prefix+'tx')?.value,prefix,{timeout:120000});
+ await p.waitForTimeout(3000);
+ await p.locator('#'+prefix+'go').click();
+ await p.waitForFunction(id=>document.getElementById(id)?._fullLayout?.xaxis,plotId,{timeout:120000});
+ const get=()=>p.evaluate(({plotId,prefix})=>{let el=document.getElementById(plotId); return {range:el._fullLayout.xaxis.range,types:el._fullData.map(t=>({type:t.type,fill:t.fill,meta:t.meta})), event:Shiny.shinyapp.$inputValues[prefix+'dynamic_view'], radio:Shiny.shinyapp.$inputValues[prefix+'display_mode']}},{plotId,prefix});
+ console.log('INITIAL',JSON.stringify(await get()));
+ await p.evaluate(id=>Plotly.relayout(document.getElementById(id),{'xaxis.range':[20,219]}),plotId);
+ await p.waitForFunction(({plotId,prefix})=>{let v=Shiny.shinyapp.$inputValues[prefix+'dynamic_view'];let el=document.getElementById(plotId);return v?.range?.[1]===219 && Math.abs(el?._fullLayout?.xaxis?.range?.[1]-219)<0.01 && el?._fullData?.some(t=>t.meta?.rc_columns_switch)},{plotId,prefix},{timeout:120000});
+ console.log('ZOOM COLUMNS',JSON.stringify(await get()));
+ await p.evaluate(id=>Plotly.relayout(document.getElementById(id),{'xaxis.range':[1,1000]}),plotId);
+ await p.waitForFunction(({plotId,prefix})=>{let v=Shiny.shinyapp.$inputValues[prefix+'dynamic_view'];let el=document.getElementById(plotId);return v?.range?.[1]===1000 && Math.abs(el?._fullLayout?.xaxis?.range?.[1]-1000)<0.01 && !el?._fullData?.some(t=>t.meta?.rc_columns_switch)},{plotId,prefix},{timeout:120000});
+ console.log('ZOOM AREA',JSON.stringify(await get()));
+ assert.deepEqual(errors,[]); await b.close();
+})().catch(e=>{console.error(e);process.exit(1)});

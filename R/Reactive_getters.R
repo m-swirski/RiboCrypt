@@ -291,6 +291,12 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
   )
   timing_phase("subplot assembly")
   timer_done_nice_print("Done (Final panel):", time_before)
+  if (isTRUE(controls$dynamic_display$active)) {
+    plot <- browser_apply_shared_x_range(plot, controls$dynamic_display$range)
+    plot <- htmlwidgets::onRender(plot, fetchJS("browser_dynamic_display.js"), list(
+      active = TRUE, type = controls$dynamic_display$type,
+      context = controls$dynamic_display$context, input_id = session$ns("dynamic_view")))
+  }
   plot <- browser_apply_y_range(plot, controls$y_range,
                                  browser_coverage_track_types(controls, profiles))
   plot <- browser_local_y_zoom(plot, controls$y_range,

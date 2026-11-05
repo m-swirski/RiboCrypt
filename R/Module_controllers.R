@@ -107,7 +107,7 @@ module_browser_shared_ui <- function(input, output, session, clip_ui,
 }
 
 apply_observatory_browser_url_state <- function(session, browser_state) {
-  updates <- list(select = shiny::updateSelectizeInput, slider = shiny::updateSliderInput,
+  updates <- list(select = shiny::updateSelectizeInput, radio = shiny::updateRadioButtons, slider = shiny::updateSliderInput,
     numeric = shiny::updateNumericInput, switch = shinyWidgets::updatePrettySwitch,
     checkbox = shiny::updateCheckboxInput, text = shiny::updateTextInput)
   controls <- observatory_url_controls()
@@ -115,7 +115,7 @@ apply_observatory_browser_url_state <- function(session, browser_state) {
     value <- browser_state[[field]]
     if (is.null(value)) next
     args <- list(session = session, inputId = field)
-    args[[if (type == "select") "selected" else "value"]] <- value
+    args[[if (type %in% c("select", "radio")) "selected" else "value"]] <- value
     do.call(updates[[type]], args)
   }
 }

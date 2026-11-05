@@ -4,7 +4,7 @@
 browser_collection_controller_data <- function(input, selected_tx, display_region,
                                                experiment_df, tx,
                                                library_selections,
-                                               library_selection_labels = NULL) {
+                                               library_selection_labels = NULL, kmer = input$kmer) {
   path <- collection_path_from_exp(experiment_df, selected_tx, grl_all = tx())
   profile_display_range <- display_region
   if (!is.null(input$extendLeaders) && is.numeric(input$extendLeaders) && input$extendLeaders != 0) {
@@ -34,7 +34,7 @@ browser_collection_controller_data <- function(input, selected_tx, display_regio
   profiles <- build_collection_profiles(
     matched_selections$selection_indices,
     reads_mat,
-    input$kmer
+    kmer
   )
 
   list(
@@ -116,6 +116,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
       trailer_extension = isolate(input$extendTrailers)
     )
 
+    dynamic <- browser_dynamic_settings(input, display_region, zoom_range)
     profiles <- NULL
     selected_library_groups <- NULL
     if (is_observatory) {
@@ -127,7 +128,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
         experiment_df = df(),
         tx = tx,
         library_selections = library_selections(),
-        library_selection_labels = lib_labels
+        library_selection_labels = lib_labels, kmer = dynamic$kmer
       )
       dff <- collection_data$dff
       reads <- collection_data$reads
@@ -150,6 +151,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
       input, dff, collapsed_introns_width,
       is_cellphone = user_info_value$is_cellphone
     )
+    hash_strings$hash_browser <- paste(hash_strings$hash_browser, dynamic$active, dynamic$type, dynamic$kmer, paste(dynamic$range, collapse = ":"), sep = "|dynamic|")
     if (is_observatory) {
       hash_strings <- lapply(hash_strings, paste,
                              paste(selected_library_groups, collapse = "|sel|"),
@@ -176,8 +178,9 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
                    summary_track_type = input$summary_track_type,
                    viewMode = input$viewMode,
                    collapsed_introns_width = collapsed_introns_width,
-                   kmerLength = input$kmer,
-                   frames_type = input$frames_type,
+                   kmerLength = dynamic$kmer,
+                   frames_type = dynamic$type,
+                   dynamic_display = dynamic,
                    annotation = cds_annotation,
                    tx_annotation = tx_annotation,
                    reads = reads,

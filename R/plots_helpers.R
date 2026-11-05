@@ -197,6 +197,10 @@ track_hover_template <- function(include_frame = FALSE, type = "scatter") {
 
 track_area_fill_alpha <- function() 0.6
 
+# Plotly keeps every original point for hover and data export; this only
+# simplifies SVG path drawing when a trace greatly exceeds the display width.
+browser_simplify_coverage <- function(n) isTRUE(getOption("RiboCrypt.browser_simplify", TRUE)) && n > 5000L
+
 track_guides <- function(plot, x_range, y_max, lines = numeric(), add_zero = TRUE,
                          line_size = 0.2, line_alpha = 0.2) {
   if (length(lines) > 0) {
@@ -296,6 +300,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
       fill_color <- resolve_track_fill_color(colors)
       plot$x$data[[1]]$x <- profile$position
       plot$x$data[[1]]$y <- profile$count
+      plot$x$data[[1]]$line$simplify <- browser_simplify_coverage(nrow(profile))
       plot$x$data[[1]]$fillcolor <- grDevices::adjustcolor(
         fill_color,
         alpha.f = track_area_fill_alpha()
@@ -309,7 +314,8 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
         y = ~count,
         type = "scatter",
         mode = "lines",
-        line = list(color = "black", width = 0.5, simplify = FALSE),
+        line = list(color = "black", width = 0.5,
+                    simplify = type %in% c("lines", "area") && browser_simplify_coverage(nrow(profile))),
         fill = "tozeroy",
         fillcolor = grDevices::adjustcolor(fill_color, alpha.f = track_area_fill_alpha()),
         hovertemplate = track_hover_template(),
@@ -327,6 +333,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
         plot$x$data[[i]]$name <- frame_name
         plot$x$data[[i]]$legendgroup <- frame_name
         plot$x$data[[i]]$line$color <- frame_colors[[frame_name]]
+        plot$x$data[[i]]$line$simplify <- browser_simplify_coverage(nrow(frame_dt))
       }
       if (length(plot$x$data) > length(frame_levels)) {
         plot$x$data <- plot$x$data[seq_along(frame_levels)]
@@ -343,7 +350,8 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
           mode = "lines",
           name = frame_name,
           legendgroup = frame_name,
-          line = list(color = frame_colors[[frame_name]], width = 0.8, simplify = FALSE),
+          line = list(color = frame_colors[[frame_name]], width = 0.8,
+                      simplify = browser_simplify_coverage(nrow(frame_dt))),
           hovertemplate = track_hover_template(include_frame = TRUE),
           showlegend = TRUE
         )
@@ -472,6 +480,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
         plot$x$data[[i]]$y <- frame_dt$count
         plot$x$data[[i]]$name <- frame_name
         plot$x$data[[i]]$legendgroup <- frame_name
+        plot$x$data[[i]]$line$simplify <- browser_simplify_coverage(nrow(frame_dt))
         plot$x$data[[i]]$fillcolor <- grDevices::adjustcolor(
           frame_fill_colors[[frame_name]],
           alpha.f = track_area_fill_alpha()
@@ -492,7 +501,8 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
           mode = "lines",
           name = frame_name,
           legendgroup = frame_name,
-          line = list(color = "black", width = 0.4, simplify = FALSE),
+          line = list(color = "black", width = 0.4,
+                      simplify = browser_simplify_coverage(nrow(frame_dt))),
           fill = "tozeroy",
           fillcolor = grDevices::adjustcolor(
             frame_fill_colors[[frame_name]],

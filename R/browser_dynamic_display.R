@@ -52,7 +52,8 @@ browser_dynamic_client_config <- function(raw, smooth, frame_colors, input_id, s
     names(frames) <- levels
     frames
   })
-  list(tracks = tracks, input_id = input_id, status_id = status_id)
+  list(tracks = tracks, input_id = input_id, status_id = status_id,
+       simplify = isTRUE(getOption("RiboCrypt.browser_simplify", TRUE)))
 }
 
 # Load the padded RFP coverage once, then derive the exact k=1 and k=9

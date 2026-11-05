@@ -61,6 +61,7 @@
         fillcolor:entries.map(g=>g.smooth.fill).concat(entries.map(()=>'rgba(0,0,0,0)')),
         'line.color':entries.map(g=>mode === 'area' ? 'black' : g.smooth.color).concat(entries.map(g=>g.smooth.color)),
         'line.width':entries.map(()=>mode === 'area' ? 0.4 : 0.8).concat(entries.map(()=>width)),
+        'line.simplify':lineData.map(v=>config.simplify !== false && mode !== 'columns' && v.x.length > 5000).concat(entries.map(()=>false)),
         visible:entries.map(g=>mode !== 'columns' && !hidden.has(g.frame)).concat(
           entries.map(g=>hidden.has(g.frame) ? 'legendonly' : true))
       }, indices);

@@ -7,12 +7,48 @@ megabrowser_translon_display <- function(table, raw, regions) {
   bounds <- unlist(lapply(regions, function(region) c(start(region$ranges), end(region$ranges))), use.names = FALSE)
   validate(need(all(bounds >= 1 & bounds <= nrow(raw)), "Region coordinates do not match raw coverage."))
   validate(need(all(is.finite(raw)) && all(raw >= 0), "Region coverage must be finite and non-negative."))
-  density <- t(megabrowser_translon_density(raw, regions))
+  split_frames <- isTRUE(attr(table, "split_by_frame"))
+  if (split_frames) {
+    # Work from unbinned raw coverage: each phase uses only its own bases,
+    # including discontiguous regions and regions shorter than a codon.
+    positions <- seq_len(nrow(raw))
+    position_ranges <- IRanges::IRanges(positions, width = 1)
+    region_info <- megabrowser_translon_region_table(regions)
+    region_info$Display_label <- megabrowser_biological_labels(regions)
+    values <- vector("list", length(regions) * 3L)
+    info <- vector("list", length(values))
+    index <- 0L
+    for (i in seq_along(regions)) {
+      selected <- IRanges::overlapsAny(position_ranges, regions[[i]]$ranges)
+      # A clean CDS can start after an excluded overlap; retain its parent's
+      # coding frame rather than redefining frame zero at the first kept base.
+      origin <- if (!is.null(regions[[i]]$parent_start)) regions[[i]]$parent_start else
+        if (length(regions[[i]]$ranges)) min(start(regions[[i]]$ranges)) else NA_integer_
+      phases <- (positions - origin) %% 3L
+      for (frame in 0:2) {
+        index <- index + 1L
+        keep <- selected & !is.na(phases) & phases == frame
+        values[[index]] <- if (any(keep)) colMeans(raw[keep, , drop = FALSE]) else rep(NA_real_, ncol(raw))
+        row <- data.table::copy(region_info[i, ])
+        row[, `:=`(Parent_region = Region, Region = paste0(Region, "_F", frame),
+                    Frame = frame, Frame_origin = origin, Length_nt = sum(keep),
+                    Labels = paste0(Labels, " (frame ", frame, ")"))]
+        info[[index]] <- row
+      }
+    }
+    density <- do.call(rbind, values)
+    region_info <- data.table::rbindlist(info)
+    rownames(density) <- region_info$Region
+    colnames(density) <- colnames(raw)
+  } else {
+    density <- t(megabrowser_translon_density(raw, regions))
+    region_info <- megabrowser_translon_region_table(regions)
+    region_info$Display_label <- megabrowser_biological_labels(regions)
+  }
   density <- set_collection_user_attributes(density, collection_user_attributes(table))
   attr(density, "ratio") <- 1L
   attr(density, "collapsed_translons") <- TRUE
-  attr(density, "translon_regions") <- megabrowser_translon_region_table(regions)
-  attr(density, "translon_regions")$Display_label <- megabrowser_biological_labels(regions)
+  attr(density, "translon_regions") <- region_info
   attr(density, "translon_summary") <- rowMeans(density)
   density
 }
@@ -20,9 +56,11 @@ megabrowser_translon_display <- function(table, raw, regions) {
 #' Region density summary uses individual libraries, not equally weighted groups.
 #' @noRd
 megabrowser_translon_summary_plot <- function(table) {
+  regions <- attr(table, "translon_regions")
+  bar_color <- if ("Frame" %in% names(regions)) c("#e3524a", "#3aa35b", "#3f7fd6")[regions$Frame + 1L] else "#198c83"
   plot <- plotly::plot_ly() %>% plotly::add_bars(x = seq_len(nrow(table)), y = attr(table, "translon_summary"),
-    width = 1, marker = list(color = "#198c83"), textposition = "none",
-    text = attr(table, "translon_regions")$Labels,
+    width = 1, marker = list(color = bar_color), textposition = "none",
+    text = regions$Labels,
     hovertemplate = "%{text}<br>Mean coverage: %{y}<extra></extra>")
   mb_finalize_summary_track(plot, megabrowser_full_x_range(table = table)) %>%
     plotly::layout(margin = megabrowser_translon_margins())
@@ -32,9 +70,11 @@ megabrowser_translon_summary_plot <- function(table) {
 #' @noRd
 megabrowser_translon_annotation_plot <- function(table) {
   regions <- attr(table, "translon_regions")
+  labels <- regions$Display_label
+  if ("Frame" %in% names(regions)) labels[regions$Frame != 1L] <- ""
   plot <- plotly::plot_ly() %>% plotly::add_bars(x = seq_len(nrow(table)), y = rep(1, nrow(table)), width = 1,
     marker = list(color = ifelse(regions$Type %in% c("CDS", "clean_cds"), "#2878a5", "#198c83")),
-    text = regions$Display_label, textposition = "inside", customdata = paste(regions$Region, regions$Labels, regions$Intervals),
+    text = labels, textposition = "inside", customdata = paste(regions$Region, regions$Labels, regions$Intervals),
     hovertemplate = "%{text}: %{customdata}<extra></extra>") %>%
     plotly::layout(margin = megabrowser_translon_margins(), bargap = 0,
       xaxis = mb_summary_xaxis(megabrowser_full_x_range(table = table)),

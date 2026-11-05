@@ -18,6 +18,7 @@ megabrowser_view_controls <- function(ns) {
       tags$button(id = ns("reset_view"), type = "button", class = "btn btn-outline-secondary mega-reset-view", title = "Reset zoom",
                   `aria-label` = "Reset zoom", icon("expand")),
       uiOutput(ns("region_score_legend"), inline = TRUE, class = "mega-region-legend"),
+      uiOutput(ns("frame_legend"), inline = TRUE, class = "mega-frame-legend"),
       tags$span(class = "mega-support-key", title = "Below the configured supporting-library or per-library coverage-sum threshold.", "x Low support"),
       textOutput(ns("display_counts"), inline = TRUE)))
 }
@@ -29,6 +30,13 @@ megabrowser_display_counts <- function(original, display) {
   visible <- if (isTRUE(attr(display$table, "collapsed_clusters"))) sum(display$meta$libraries) else ncol(display$table)
   count <- format(visible, big.mark = ",")
   if (visible != total) count <- paste(count, "of", format(total, big.mark = ","))
+  if (isTRUE(attr(display$table, "collapsed_translons")) &&
+      isTRUE(attr(display$table, "split_by_frame"))) {
+    regions <- attr(display$table, "translon_regions")
+    return(sprintf("%s libraries | %s %s | %s regions (%s phase cells)", count,
+      format(ncol(display$table), big.mark = ","), if (ncol(display$table) == 1L) "row" else "rows",
+      format(length(unique(regions$Parent_region)), big.mark = ","), format(nrow(display$table), big.mark = ",")))
+  }
   sprintf("%s libraries | %s %s | %s %s", count,
           format(ncol(display$table), big.mark = ","), if (ncol(display$table) == 1L) "row" else "rows",
           format(if (isTRUE(attr(display$table, "collapsed_translons"))) nrow(display$table) else nrow(original), big.mark = ","),
@@ -50,6 +58,7 @@ megabrowser_layout_assets <- function() {
     ".mega-height-option {display:flex;align-items:center;gap:10px;}",
     ".mega-height-control {width:120px!important;}",
     ".mega-region-legend {display:none;font-size:12px;align-items:center;gap:12px;}",
+    ".mega-frame-score .mega-region-legend {display:flex;}",
     ".mega-support-key {display:none;font-size:12px;color:#666666;}.mega-region-support .mega-support-key {display:inline;}",
     ".mega-region-legend span {display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}",
     ".mega-region-legend i {display:inline-block;width:12px;height:12px;border:1px solid #777;}",

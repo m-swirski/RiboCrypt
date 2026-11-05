@@ -89,7 +89,13 @@ normalize_collection <- function(table, normalization, lib_sizes = NULL,
   setattr(table, "summary_cov", summary_track(mat))
   if (is.character(lib_sizes)) lib_sizes <- readRDS(lib_sizes)
   setattr(table, "lib_sizes", lib_sizes)
-  setattr(table, "ratio", kmer)
+  # A frame-aware bin emits three phase columns per codon window. Its spacing
+  # is the window's codon count, not the original nucleotide bin width.
+  effective_ratio <- if (isTRUE(split_by_frame)) {
+    if (kmer > 1L && nrow(mat) > kmer) ceiling(kmer / 3) else 1L
+  } else kmer
+  setattr(table, "ratio", effective_ratio)
+  setattr(table, "split_by_frame", isTRUE(split_by_frame))
   attrs <- collection_user_attributes(table)
   # Binned window
   if (kmer > 1) mat <- multiSampleBinRows(mat, kmer, split_by_frame)
@@ -347,7 +353,9 @@ subset_fst_interval_sum <- function(ratio_interval, table) {
   if (ratio_interval[1] < 1) stop("Ratio interval must start on >= 1")
   table_pos_ratio <- attr(table, "ratio")
   if (!is.null(table_pos_ratio) && table_pos_ratio > 1) {
-    coordinates <- seq.int(1, nrow(table), by = table_pos_ratio)
+    coordinates <- if (isTRUE(attr(table, "split_by_frame"))) {
+      (seq_len(nrow(table)) - 1L) * table_pos_ratio + 1L
+    } else seq.int(1, nrow(table), by = table_pos_ratio)
     ratio_interval[1] <- tail(which(coordinates <= ratio_interval[1]), 1)
     ratio_interval[2] <- tail(which(coordinates <= ratio_interval[2]), 1)
   }

@@ -1,0 +1,136 @@
+Warning message:
+no function found corresponding to methods exports from ‘ORFik’ for: ‘organism’
+megabrowser_frames: ...........................................................
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+Keep up the good work.
+megabrowser_translon_display: ..................................................Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.02 secs
+................Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.02 secs
+Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.01 secs
+.......Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.02 secs
+Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.01 secs
+.......Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.02 secs
+Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.01 secs
+.......Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.02 secs
+Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.01 secs
+.........
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+megabrowser_cell_details: .........................................................
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+megabrowser_groups: [1] "Starting metabrowser clustering info"
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser clustering info done: Time difference of 0 secs
+..[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+.....[1] "Starting metabrowser clustering info"
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser clustering info done: Time difference of 0.03 secs
+[1] "Starting metabrowser clustering info"
+-- metabrowser clustering info done: Time difference of 0 secs
+...[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+..[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+..[1] "Starting metabrowser clustering info"
+-- metabrowser clustering info done: Time difference of 0 secs
+........................[1] "Starting metabrowser clustering info"
+-- metabrowser clustering info done: Time difference of 0 secs
+......[1] "Starting metabrowser clustering info"
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser clustering info done: Time difference of 0 secs
+.................[1] "Starting metabrowser clustering info"
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser clustering info done: Time difference of 0 secs
+..[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+.[1] "Starting metabrowser clustering info"
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser clustering info done: Time difference of 0 secs
+...[1] "Starting metabrowser clustering info"
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser clustering info done: Time difference of 0 secs
+.........-- metabrowser sidebar done: Time difference of 0 secs
+..........[1] "Starting metabrowser clustering info"
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser clustering info done: Time difference of 0 secs
+.............................................[1] "Starting metabrowser clustering info"
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser clustering info done: Time difference of 0 secs
+-- metabrowser sidebar done: Time difference of 0 secs
+....-- metabrowser sidebar done: Time difference of 0 secs
+....-- metabrowser sidebar done: Time difference of 0 secs
+....[1] "Starting metabrowser clustering info"
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser clustering info done: Time difference of 0 secs
+.......[1] "Starting metabrowser clustering info"
+-- metabrowser clustering info done: Time difference of 0 secs
+-- metabrowser sidebar done: Time difference of 0.01 secs
+-- Mega browser summary track done: Time difference of 0.08 secs
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser enrichment plot done: Time difference of 0.03 secs
+-- Mega browser 3 row plot done: Time difference of 0.01 secs
+....[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser enrichment plot done: Time difference of 0.03 secs
+...-- metabrowser sidebar done: Time difference of 0 secs
+.............-- metabrowser sidebar done: Time difference of 0 secs
+.....-- metabrowser sidebar done: Time difference of 0 secs
+..........-- Mega browser 3 row plot done: Time difference of 0.01 secs
+.-- Mega browser 3 row plot done: Time difference of 0.01 secs
+..
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+megabrowser: .....................-- Mega Browser controller done: Time difference of 0.03 secs
+......................[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+.........-- Mega browser summary track done: Time difference of 0.32 secs
+...................-- Mega browser summary track done: Time difference of 0.05 secs
+................................Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0 secs
+............Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0 secs
+..Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.01 secs
+....Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.01 secs
+..Creating metabrowser heatmap
+-- metabrowser heatmap done: Time difference of 0.01 secs
+................[1] "Starting metabrowser clustering info"
+[1] "Starting metabrowser statistics"
+-- metabrowser statistics done: Time difference of 0 secs
+-- metabrowser clustering info done: Time difference of 0 secs
+..............................-- metabrowser sidebar done: Time difference of 0.02 secs
+........-- metabrowser sidebar done: Time difference of 0.02 secs
+.....
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+megabrowser_translons: .................................................................................
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+megabrowser_layout_js: .
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+🥳

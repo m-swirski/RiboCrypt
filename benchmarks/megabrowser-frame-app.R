@@ -1,0 +1,7 @@
+suppressPackageStartupMessages({library(ORFik);library(data.table)})
+setDTthreads(1);devtools::load_all('.',quiet=TRUE)
+all<-list.experiments(validate=FALSE,BPPARAM=BiocParallel::SerialParam()); all<-all[name %in% c('all_merged-Homo_sapiens','all_samples-Homo_sapiens')]; stopifnot(nrow(all)==2)
+meta<-fread('/home/rstudio/livemount/Bio_data/NGS_pipeline/metadata_done_samples_extended.csv')
+opts<-c(default_experiment='all_merged-Homo_sapiens',default_experiment_meta='all_samples-Homo_sapiens',default_gene='ATF4-ENSG00000128272',default_gene_meta='ATF4-ENSG00000128272',default_kmer='9',default_frame_type='area',plot_on_start='FALSE')
+app<-RiboCrypt_app(validate.experiments=FALSE,all_exp=all,all_exp_meta=all[name=='all_samples-Homo_sapiens'],metadata=meta,browser_options=opts)
+shiny::runApp(app,host='127.0.0.1',port=7892,launch.browser=FALSE)

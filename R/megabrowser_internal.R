@@ -265,9 +265,9 @@ get_meta_browser_plot <- function(table, color_theme, color_mult = 3,
 
   colors <- megabrowser_heatmap_colors(color_theme, color_mult)
   if (plotType == "plotly") {
-    plot <- megabrowser_plotly_heatmap(table, colors, template)
+    plot <- megabrowser_plotly_heatmap(table, colors, template, color_mult)
   } else {
-    plot <- megabrowser_complex_heatmap(table, colors)
+    plot <- megabrowser_complex_heatmap(table, colors, color_mult)
   }
   timer_done_nice_print("-- metabrowser heatmap done: ", time_before)
   return(plot)
@@ -313,28 +313,68 @@ megabrowser_table_ratio <- function(table) {
 
 #' Plotly heatmap data derived from a megabrowser table.
 #' @noRd
-megabrowser_plotly_heatmap_data <- function(table) {
+megabrowser_plotly_heatmap_data <- function(table, color_mult = 3) {
   orders <- megabrowser_row_clusters(table)$row_clusters
   mat <- t(table)[unlist(orders, use.names = FALSE), , drop = FALSE]
   ratio <- megabrowser_table_ratio(table)
   scored <- isTRUE(attr(table, "translon_score"))
+  frame_view <- isTRUE(attr(table, "split_by_frame"))
+  encoded <- if (frame_view) megabrowser_frame_encode(mat, color_mult,
+    if (scored) c(-1, 1) else NULL) else NULL
   labels <- if (isTRUE(attr(table, "collapsed_translons")))
     matrix(rep(attr(table, "translon_regions")$Labels, each = nrow(mat)), nrow = nrow(mat)) else NULL
   if (scored) labels[] <- paste(labels, "<br>Fold change:", signif(t(attr(table, "translon_fold_change"))[unlist(orders, use.names = FALSE), , drop = FALSE], 3))
+  if (scored && frame_view) labels[] <- paste(labels, "<br>log2 fold change (clipped):", signif(mat, 3))
   list(
     x = ((seq_len(ncol(mat)) - 1L) * ratio) + 1L,
     y = seq_len(nrow(mat)),
     type = megabrowser_heatmap_renderer(length(mat), isTRUE(attr(table, "collapsed_clusters"))),
-    z = mat,
+    z = if (frame_view) encoded else mat,
+    frame_view = frame_view,
     collapsed_translons = isTRUE(attr(table, "collapsed_translons")),
     translon_score = scored,
-    customdata = if (scored) t(attr(table, "translon_density"))[unlist(orders, use.names = FALSE), , drop = FALSE] else NULL,
+    customdata = if (scored) t(attr(table, "translon_density"))[unlist(orders, use.names = FALSE), , drop = FALSE] else if (frame_view) mat else NULL,
     text = labels,
-    hovertemplate = if (scored) "%{text}<br>Mean coverage: %{customdata}<br>log2 fold change (colour, clipped): %{z}<extra></extra>" else
-      if (isTRUE(attr(table, "collapsed_translons"))) "%{text}<br>Mean coverage: %{z}<extra></extra>" else NULL,
+    hovertemplate = if (scored && frame_view) "%{text}<br>Mean coverage: %{customdata}<extra></extra>" else
+      if (scored) "%{text}<br>Mean coverage: %{customdata}<br>log2 fold change (colour, clipped): %{z}<extra></extra>" else
+      if (isTRUE(attr(table, "collapsed_translons")) && frame_view) "%{text}<br>Mean phase coverage: %{customdata}<extra></extra>" else
+      if (isTRUE(attr(table, "collapsed_translons"))) "%{text}<br>Mean coverage: %{z}<extra></extra>" else
+      if (frame_view) "Display bin slot: %{x}<br>Library row: %{y}<br>Normalized log coverage: %{customdata}<extra></extra>" else NULL,
     x_range = megabrowser_full_x_range(table = table),
     y_range = c(0.5, nrow(mat) + 0.5)
   )
+}
+
+#' Encode phase and intensity in one heatmap value while preserving raw values
+#' separately for hover. Phase is relative to the displayed sequence start.
+#' @noRd
+megabrowser_frame_encode <- function(mat, color_mult = 3, fixed_limits = NULL) {
+  # range(..., finite=TRUE) avoids materializing a second full matrix and a
+  # separate vector of every finite cell for large library collections.
+  limits <- if (is.null(fixed_limits)) suppressWarnings(range(mat, finite = TRUE)) else fixed_limits
+  if (!all(is.finite(limits))) return(matrix(NA_real_, nrow(mat), ncol(mat)))
+  if (is.null(fixed_limits) && limits[1] > 0) limits[1] <- 0
+  span <- diff(limits)
+  intensity <- if (span > 0) (mat - limits[1]) / span else mat * 0
+  if (!is.null(fixed_limits)) intensity <- pmin(pmax(intensity, 0), 1)
+  zoom <- if (length(color_mult) == 1L && is.finite(color_mult) && color_mult > 0) color_mult else 3
+  intensity <- intensity ^ (1.5 / zoom) * (1 - 1e-7)
+  for (phase in 1:2) {
+    if (ncol(mat) > phase) {
+      columns <- seq.int(phase + 1L, ncol(mat), by = 3L)
+      intensity[, columns] <- intensity[, columns, drop = FALSE] + phase
+    }
+  }
+  intensity[!is.finite(intensity)] <- NA_real_
+  intensity
+}
+
+#' Discontinuous white-to-frame-colour bands in a single Plotly heatmap.
+#' @noRd
+megabrowser_frame_colorscale <- function() {
+  eps <- 1e-7
+  cbind(c(0, (1 - eps) / 3, 1 / 3, (2 - eps) / 3, 2 / 3, 1),
+        c("#ffffff", "#e3524a", "#ffffff", "#3aa35b", "#ffffff", "#3f7fd6"))
 }
 
 #' Keep large matrices on WebGL; canvas avoids GL overhead for moderate views.
@@ -425,7 +465,28 @@ megabrowser_new_plotly_heatmap <- function(heatmap_data, colors) {
 #' Apply common layout and Plotly config to a megabrowser heatmap.
 #' @noRd
 megabrowser_configure_plotly_heatmap <- function(plot, heatmap_data) {
-  if (isTRUE(heatmap_data$translon_score)) plot <- plotly::style(plot, zmin = -1, zmax = 1, zmid = 0,
+  if (isTRUE(heatmap_data$frame_view)) {
+    # plotly_build may drop matrix customdata supplied through plot_ly; keep
+    # the original values in both the built trace and its reusable attributes.
+    if (!length(plot$x$data)) plot <- plotly::plotly_build(plot)
+    plot$x$data[[1]]$colorscale <- megabrowser_frame_colorscale()
+    plot$x$data[[1]]$zmin <- 0
+    plot$x$data[[1]]$zmax <- 3
+    plot$x$data[[1]]$zauto <- FALSE
+    plot$x$data[[1]]$showscale <- FALSE
+    plot$x$data[[1]]$customdata <- heatmap_data$customdata
+    plot$x$data[[1]]$hoverinfo <- NULL
+    if (length(plot$x$attrs)) {
+      plot$x$attrs[[1]]$colorscale <- megabrowser_frame_colorscale()
+      plot$x$attrs[[1]]$zmin <- 0
+      plot$x$attrs[[1]]$zmax <- 3
+      plot$x$attrs[[1]]$zauto <- FALSE
+      plot$x$attrs[[1]]$showscale <- FALSE
+      plot$x$attrs[[1]]$customdata <- heatmap_data$customdata
+      plot$x$attrs[[1]]$hoverinfo <- NULL
+    }
+  }
+  if (isTRUE(heatmap_data$translon_score) && !isTRUE(heatmap_data$frame_view)) plot <- plotly::style(plot, zmin = -1, zmax = 1, zmid = 0,
     showscale = TRUE, colorbar = list(title = list(text = "log2 FC", font = list(size = 10)),
       x = 1.01, xpad = 0, thickness = 14, tickfont = list(size = 10),
       tickvals = c(-1, 0, 1), ticktext = c("<= 0.5x", "1x", ">= 2x")))
@@ -435,8 +496,8 @@ megabrowser_configure_plotly_heatmap <- function(plot, heatmap_data) {
 
 #' Build the plotly megabrowser heatmap.
 #' @noRd
-megabrowser_plotly_heatmap <- function(table, colors, template = NULL) {
-  heatmap_data <- megabrowser_plotly_heatmap_data(table)
+megabrowser_plotly_heatmap <- function(table, colors, template = NULL, color_mult = 3) {
+  heatmap_data <- megabrowser_plotly_heatmap_data(table, color_mult)
   colorscale <- megabrowser_heatmap_colorscale(colors)
   plot <- if (inherits(template, "plotly")) {
     megabrowser_heatmap_from_template(template, heatmap_data, colorscale)
@@ -448,15 +509,21 @@ megabrowser_plotly_heatmap <- function(table, colors, template = NULL) {
 
 #' ComplexHeatmap fallback for static megabrowser rendering.
 #' @noRd
-megabrowser_complex_heatmap <- function(table, colors) {
+megabrowser_complex_heatmap <- function(table, colors, color_mult = 3) {
   clusters <- megabrowser_row_clusters(table)
   mat <- megabrowser_ordered_matrix(table)
+  frame_view <- isTRUE(attr(table, "split_by_frame"))
+  if (frame_view) {
+    mat <- megabrowser_frame_encode(mat, color_mult, if (isTRUE(attr(table, "translon_score"))) c(-1, 1) else NULL)
+    palette <- megabrowser_frame_colorscale()
+    colors <- circlize::colorRamp2(as.numeric(palette[, 1]) * 3, palette[, 2], space = "RGB")
+  }
   cluster <- clusters$km$cluster[rev(unlist(clusters$row_clusters, use.names = FALSE))]
   cluster <- factor(cluster, levels = rev(sort(unique(cluster))))
   ComplexHeatmap::Heatmap(
     mat, show_row_dend = FALSE, cluster_columns = FALSE,
     cluster_rows = FALSE, use_raster = TRUE, raster_quality = 5,
-    split = cluster, gap = unit(0.2, "mm"), col = if (isTRUE(attr(table, "translon_score")))
+    split = cluster, gap = unit(0.2, "mm"), col = if (isTRUE(attr(table, "translon_score")) && !frame_view)
       circlize::colorRamp2(seq(-1, 1, length.out = length(colors)), colors, space = "RGB") else colors,
     show_row_names = FALSE, show_heatmap_legend = FALSE, row_title = NULL
   )

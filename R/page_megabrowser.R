@@ -85,6 +85,7 @@ browser_allsamp_ui = function(id,  all_exp, browser_options,
                                    ),
                                    checkboxInput(ns("summary_track"), label = "Summary top track", value = FALSE),
                                    checkboxInput(ns("frame"), label = "Split by frame", value = FALSE),
+                                   tags$small("Red, green and blue show frames 0, 1 and 2. Position view uses the displayed start; collapsed translons use each translon's start (clean CDS uses its parent CDS). Bins pool phases separately and round width up to a multiple of 3."),
                                    frame_type_select(ns, "summary_track_type", "Select summary display type"),
                                    fluidRow(column(6, numericInput(ns("min_count"), "Minimum counts", min = 0, value = 100)),
                                             column(6, sliderInput(ns("kmer"), "K-mer length", min = 1, max = 20,
@@ -236,6 +237,8 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
       output$display_counts <- renderText(megabrowser_display_counts(table()$table, display_table()))
       observeEvent(list(display_table(), input$region_support), {
         shinyjs::toggleClass("workspace", "mega-translon-score", condition = isTRUE(attr(display_table()$table, "translon_score")))
+        shinyjs::toggleClass("workspace", "mega-frame-score", condition =
+          isTRUE(attr(display_table()$table, "translon_score")) && isTRUE(attr(display_table()$table, "split_by_frame")))
         shinyjs::toggleClass("workspace", "mega-region-support", condition = isTRUE(input$region_support) && isTRUE(attr(display_table()$table, "collapsed_translons")))
       })
       megabrowser_group_outputs(output, table, grouped_metadata, selected_groups)
@@ -249,8 +252,27 @@ browser_allsamp_server <- function(id, all_exp, df, experiments,
 
       output$region_score_legend <- renderUI({
         req(isTRUE(attr(display_table()$table, "translon_score")))
+        if (isTRUE(attr(display_table()$table, "split_by_frame"))) {
+          return(tags$span("Frame 0 / 1 / 2: ",
+            tags$span(style = "color:#e3524a", "red"), " / ",
+            tags$span(style = "color:#3aa35b", "green"), " / ",
+            tags$span(style = "color:#3f7fd6", "blue"),
+            "; intensity maps log2 fold change from -1 (white) to +1 (full color)."))
+        }
         megabrowser_score_legend(megabrowser_heatmap_colors(isolate(input$heatmap_color), isolate(input$color_mult)))
       }) %>% bindEvent(plot_object(), ignoreInit = FALSE, ignoreNULL = TRUE)
+      # An initially empty, CSS-hidden legend has zero size; Shiny otherwise
+      # suspends it before it can populate when the frame view becomes visible.
+      outputOptions(output, "region_score_legend", suspendWhenHidden = FALSE)
+      output$frame_legend <- renderUI({
+        current <- display_table()$table
+        req(isTRUE(attr(current, "split_by_frame")) && !isTRUE(attr(current, "translon_score")))
+        tags$span("Frame: ", tags$span(style = "color:#e3524a", "0"), " / ",
+          tags$span(style = "color:#3aa35b", "1"), " / ",
+          tags$span(style = "color:#3f7fd6", "2"),
+          if (isTRUE(attr(current, "collapsed_translons"))) " (relative to each translon start)" else " (relative to displayed start)")
+      })
+      outputOptions(output, "frame_legend", suspendWhenHidden = FALSE)
 
       mb_top_plot <- reactive({
         if (isTRUE(input$collapsed_translons)) return(megabrowser_translon_summary_plot(view_table()))

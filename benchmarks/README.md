@@ -6,6 +6,9 @@ is kept in Git and excluded from R source bundles by `^benchmarks$` in
 
 ## Reports
 
+- [2026-11-05: MegaBrowser frame view](2026-11-05-megabrowser-frames.md):
+  phase-preserving bins, translon/cluster collapse, render timings and tests.
+
 - [2026-11-04: TTN browser and BigWig profiling](2026-11-04-ttn-browser.md):
   real 363-exon timing, multi-track smoothing reuse, and remaining server/client costs.
 

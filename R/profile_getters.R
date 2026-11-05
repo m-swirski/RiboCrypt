@@ -50,6 +50,13 @@ smoothenMultiSampCoverage <- function(dt, kmer, kmers_type = "mean", split_by_fr
 multiSampleBinRows <- function(mat, ratio = 9, split_by_frame = FALSE) {
   if (nrow(mat) <= ratio) return(mat)
   if (!is.matrix(mat)) mat <- as.matrix(mat)
+  if (isTRUE(split_by_frame)) {
+    # Bin consecutive codons, retaining a separate row for each phase.
+    codons <- ceiling(ratio / 3)
+    pos <- seq_len(nrow(mat)) - 1L
+    groups <- (pos %/% (3L * codons)) * 3L + (pos %% 3L) + 1L
+    return(rowsum(mat, group = groups, reorder = TRUE))
+  }
   # Aggregate sum
   k <- (seq_len(nrow(mat)) - 1L) %/% ratio + 1L
   return(rowsum(mat, group = k, reorder = FALSE))

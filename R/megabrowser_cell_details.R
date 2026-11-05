@@ -90,6 +90,9 @@ megabrowser_cell_modal <- function(ns, selection, regions, fields, field) {
   region <- regions[Region == selection$region]
   references <- regions[Type %in% c("clean_cds", "CDS")]
   references <- references[order(Type != "clean_cds")]
+  if ("Frame" %in% names(regions) && nrow(region) && nrow(references)) {
+    references <- references[order(Frame != region$Frame[1L], Type != "clean_cds")]
+  }
   modalDialog(title = paste(region$Display_label, "-", selection$column), size = "l",
     tags$p(style = "overflow-wrap:anywhere", paste(region$Region, region$Labels, "|", region$Intervals, "|", region$Length_nt, "nt")),
     uiOutput(ns("cell_summary")),

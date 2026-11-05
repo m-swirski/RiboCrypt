@@ -1,0 +1,4 @@
+FRAME AND COLLAPSED CLUSTERS {"rows":5,"cols":447,"legend":"\n  Frame: \n  0\n   / \n  1\n   / \n  2\n   (relative to displayed start)\n"} ms 5948
+BOTH COLLAPSES {"rows":5,"cols":3,"text":["ENST00000674920 (frame 0) <br>Fold change: 1.08 <br>log2 fold change (clipped): 0.114","ENST00000674920 (frame 1) <br>Fold change: 0.836 <br>log2 fold change (clipped): -0.259","ENST00000674920 (frame 2) <br>Fold change: 1.14 <br>log2 fold change (clipped): 0.187"],"legend":"Frame 0 / 1 / 2:\nred\n/\ngreen\n/\nblue\n; intensity maps log2 fold change from -1 (white) to +1 (full color)."}
+COLLAPSED TRANSLONS ONLY {"rows":3742,"cols":3}
+FRAME OFF {"rows":3742,"cols":1}

@@ -17,12 +17,34 @@
       const endShift = (endFrame < frame) ? -1 : 0;
       const frameAdjustedEnd = Math.floor(end / 3) + endShift;
 
-      const xSeg = traceDef.x.slice(frameAdjustedStart, frameAdjustedEnd);
-      const ySeg = traceDef.y.slice(frameAdjustedStart, frameAdjustedEnd);
+      let xSeg, ySeg, textSeg;
+      if (traceDef.compact) {
+        // Match Array.slice's negative-end behaviour, including ranges beyond
+        // the transcript. Positions are 1-based and frames are 0-based.
+        const length = traceDef.length;
+        const endIndex = frameAdjustedEnd < 0
+          ? Math.max(length + frameAdjustedEnd, 0)
+          : Math.min(frameAdjustedEnd, length);
+        xSeg = []; ySeg = []; textSeg = [];
+        for (let i = Math.min(frameAdjustedStart, length); i < endIndex; i++) {
+          const position = frame + 1 + i * 3;
+          let text = traceDef.kind === "nt" ? data.sequence.charAt(position - 1)
+            : data.translations[frame].charAt(i);
+          if (traceDef.kind === "aa" && data.three_letters) {
+            text = data.aa_codes[text] ?? null;
+          }
+          xSeg.push(position); ySeg.push(traceDef.y); textSeg.push(text);
+        }
+      } else {
+        // Backwards compatibility for plots prepared with the previous payload.
+        xSeg = traceDef.x.slice(frameAdjustedStart, frameAdjustedEnd);
+        ySeg = traceDef.y.slice(frameAdjustedStart, frameAdjustedEnd);
+        textSeg = traceDef.text.slice(frameAdjustedStart, frameAdjustedEnd);
+      }
       if (!xSeg.length || !ySeg.length) return null;   // skip empty traces
       return {
         x: xSeg, y: ySeg,
-        text: traceDef.text.slice(frameAdjustedStart, frameAdjustedEnd),
+        text: textSeg,
         textfont: { color: traceDef.color },
         xaxis: traceDef.xaxis,
         yaxis: traceDef.yaxis,
@@ -154,9 +176,11 @@
         (name === "sequence" || name === "sequence_placeholder")) {
       const layout = elem._fullLayout || {};
       const range = layout.xaxis?.range || [0, data.sequence.length];
-      const start = Math.max(0, Math.floor(range[0]));
-      const end = Math.min(data.sequence.length, Math.ceil(range[1]));
-      const visibleSequence = data.sequence.slice(start, end);
+      // Plot positions are 1-based; JavaScript string slices are 0-based and
+      // end-exclusive. Include exactly the integer positions in the viewport.
+      const start = Math.max(0, Math.ceil(Math.min(range[0], range[1])) - 1);
+      const end = Math.min(data.sequence.length, Math.floor(Math.max(range[0], range[1])));
+      const visibleSequence = data.sequence.slice(start, Math.max(start, end));
 
       console.log("Copied sequence of length:", visibleSequence.length);
       Shiny.setInputValue(data.input_id, visibleSequence, { priority: "event" });

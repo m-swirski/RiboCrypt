@@ -35,38 +35,29 @@ fetch_JS_seq <- function(target_seq, nplots, distance = 250,
   nt_yaxis <- paste0("y", nplots + 1)
   aa_yaxis <- paste0("y", nplots + 3)
 
-  rendered_seq <- strsplit(as.character(target_seq),"")[[1]]
-  translate_fuzzy_logic <- ifelse(all(rendered_seq %in% DNA_BASES), "error", "X")
+  sequence <- as.character(target_seq)
+  translate_fuzzy_logic <- ifelse(grepl("[^ACGT]", sequence), "X", "error")
 
   ir <- new2("IRanges", start = seq.int(3), width = display_dist - seq.int(0, 2), check = FALSE) # 3 AA frames
   aas <- suppressWarnings(translate(extractAt(target_seq, ir), if.fuzzy.codon = translate_fuzzy_logic))
-  aas <- strsplit(as.character(aas), "")
-  if (aa_letter_code == "three_letters") {
-    aa_code <- AMINO_ACID_CODE
-    aa_code["*"] <- "*"
-    aas <- lapply(aas, function(x) aa_code[match(x, names(aa_code))] )
-  }
-
-  nts <- lapply(seq(3), function(x) seq(x, display_dist, 3))
-  nts_js_data <- lapply(1:3, function(fr) list(x = nts[[fr]],
-                                               text = rendered_seq[nts[[fr]]],
-                                               y = rep(0.5, length(nts[[fr]])),
-                                               xaxis = "x",
-                                               yaxis = nt_yaxis,
-                                               distance = distance,
-                                               color = fr_colors[fr]))
-  aa_js_data <- lapply(1:3, function(fr) list(x = nts[[fr]][seq_along(aas[[fr]])],
-                                              text = aas[[fr]],
-                                              y = rep(2.4 - fr, length(aas[[fr]])),
-                                              xaxis = "x",
-                                              yaxis = aa_yaxis,
-                                              distance = distance,
-                                              color = "grey45"))
+  aas <- as.list(unname(as.character(aas)))
+  # Send compact strings rather than six complete x/y/text arrays. The browser
+  # reconstructs exactly the visible letters when zoomed in.
+  nts_js_data <- lapply(1:3, function(fr) list(compact = TRUE, kind = "nt",
+    length = max(0L, floor((display_dist - fr) / 3) + 1L), y = 0.5,
+    xaxis = "x", yaxis = nt_yaxis, distance = distance, color = fr_colors[fr]))
+  aa_js_data <- lapply(1:3, function(fr) list(compact = TRUE, kind = "aa",
+    length = nchar(aas[[fr]]), y = 2.4 - fr,
+    xaxis = "x", yaxis = aa_yaxis, distance = distance, color = "grey45"))
 
   render_on_zoom_data <- c(nts_js_data, aa_js_data)
 
   return(list(traces = render_on_zoom_data,
-              sequence = as.character(target_seq),
+              sequence = sequence, translations = aas,
+              three_letters = identical(aa_letter_code, "three_letters"),
+              aa_codes = if (identical(aa_letter_code, "three_letters")) {
+                code <- AMINO_ACID_CODE; code["*"] <- "*"; as.list(code)
+              } else NULL,
               input_id = paste0(input_id, "_copy")))
 }
 

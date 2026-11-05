@@ -1,0 +1,194 @@
+TTN BACKEND TRIAL 1
+[1] "Creating bottom panel.."
+Done (bottom panel):Time difference of 0.53 secs
+[1] "Creating track panel.."
+[browser profile] track controls: 0.009 s
+[browser profile] coverage profiles: 0.587 s
+[browser profile] track plots: 1.206 s
+Done (track panel):Time difference of 1.8 secs
+[1] "Merging coverage tracks and bottom"
+[browser profile] subplot assembly: 0.118 s
+Done (Final panel):Time difference of 0.12 secs
+[browser profile] y-axis and zoom: 0.003 s
+BOTTOM+TRACK+MERGE 2.455 s
+TTN BACKEND TRIAL 2
+[1] "Creating bottom panel.."
+Done (bottom panel):Time difference of 0.82 secs
+[1] "Creating track panel.."
+[browser profile] track controls: 0.126 s
+[browser profile] coverage profiles: 0.569 s
+[browser profile] track plots: 0.440 s
+Done (track panel):Time difference of 1.14 secs
+[1] "Merging coverage tracks and bottom"
+[browser profile] subplot assembly: 0.480 s
+Done (Final panel):Time difference of 0.48 secs
+[browser profile] y-axis and zoom: 0.016 s
+BOTTOM+TRACK+MERGE 2.533 s
+TTN BACKEND TRIAL 3
+[1] "Creating bottom panel.."
+Done (bottom panel):Time difference of 0.35 secs
+[1] "Creating track panel.."
+[browser profile] track controls: 0.008 s
+[browser profile] coverage profiles: 0.395 s
+[browser profile] track plots: 0.024 s
+Done (track panel):Time difference of 0.43 secs
+[1] "Merging coverage tracks and bottom"
+[browser profile] subplot assembly: 0.110 s
+Done (Final panel):Time difference of 0.11 secs
+[browser profile] y-axis and zoom: 0.001 s
+BOTTOM+TRACK+MERGE 0.888 s
+FULL PLOTLY JSON 1 0.491 s, bytes 3458594
+FULL PLOTLY JSON 2 0.34 s, bytes 3458594
+FULL PLOTLY JSON 3 0.257 s, bytes 3458594
+FULL PLOTLY JSON 4 0.199 s, bytes 3458594
+[1] "Creating bottom panel.."
+Done (bottom panel):Time difference of 0.17 secs
+[1] "Creating track panel.."
+[browser profile] track controls: 0.005 s
+[browser profile] coverage profiles: 0.288 s
+[browser profile] track plots: 0.015 s
+Done (track panel):Time difference of 0.31 secs
+[1] "Merging coverage tracks and bottom"
+[browser profile] subplot assembly: 0.062 s
+Done (Final panel):Time difference of 0.06 secs
+[browser profile] y-axis and zoom: 0.000 s
+[1] "Creating bottom panel.."
+Done (bottom panel):Time difference of 0.16 secs
+[1] "Creating track panel.."
+[browser profile] track controls: 0.005 s
+[browser profile] coverage profiles: 1.202 s
+[browser profile] track plots: 0.021 s
+Done (track panel):Time difference of 1.23 secs
+[1] "Merging coverage tracks and bottom"
+[browser profile] subplot assembly: 0.061 s
+Done (Final panel):Time difference of 0.06 secs
+[browser profile] y-axis and zoom: 0.001 s
+[1] "Creating bottom panel.."
+Done (bottom panel):Time difference of 0.16 secs
+[1] "Creating track panel.."
+[browser profile] track controls: 0.004 s
+[browser profile] coverage profiles: 0.218 s
+[browser profile] track plots: 0.025 s
+Done (track panel):Time difference of 0.25 secs
+[1] "Merging coverage tracks and bottom"
+[browser profile] subplot assembly: 0.062 s
+Done (Final panel):Time difference of 0.06 secs
+[browser profile] y-axis and zoom: 0.001 s
+[1] "Creating bottom panel.."
+Done (bottom panel):Time difference of 0.2 secs
+[1] "Creating track panel.."
+[browser profile] track controls: 0.005 s
+[browser profile] coverage profiles: 0.209 s
+[browser profile] track plots: 0.014 s
+Done (track panel):Time difference of 0.23 secs
+[1] "Merging coverage tracks and bottom"
+[browser profile] subplot assembly: 0.058 s
+Done (Final panel):Time difference of 0.06 secs
+[browser profile] y-axis and zoom: 0.001 s
+[1] "Creating bottom panel.."
+Done (bottom panel):Time difference of 0.15 secs
+[1] "Creating track panel.."
+[browser profile] track controls: 0.005 s
+[browser profile] coverage profiles: 0.215 s
+[browser profile] track plots: 0.054 s
+Done (track panel):Time difference of 0.27 secs
+[1] "Merging coverage tracks and bottom"
+[browser profile] subplot assembly: 0.061 s
+Done (Final panel):Time difference of 0.06 secs
+[browser profile] y-axis and zoom: 0.000 s
+[1] "Creating bottom panel.."
+Done (bottom panel):Time difference of 0.15 secs
+[1] "Creating track panel.."
+[browser profile] track controls: 0.004 s
+[browser profile] coverage profiles: 0.214 s
+[browser profile] track plots: 0.015 s
+Done (track panel):Time difference of 0.23 secs
+[1] "Merging coverage tracks and bottom"
+[browser profile] subplot assembly: 0.094 s
+Done (Final panel):Time difference of 0.09 secs
+[browser profile] y-axis and zoom: 0.000 s
+RPROF TOP TOTAL
+                                        total.time total.pct mem.total
+"RiboCrypt:::browser_track_panel_shiny"       2.90     57.43     739.1
+"<Anonymous>"                                 2.76     54.65     678.7
+"do.call"                                     2.53     50.10     569.8
+"build_browser_profiles"                      2.32     45.94     390.4
+"getRiboProfile"                              2.32     45.94     390.4
+"multiOmicsPlot_all_profiles"                 2.32     45.94     390.4
+".local"                                      1.72     34.06     352.6
+"FUN"                                         1.67     33.07     433.6
+"coverage_random_access_file"                 1.53     30.30     161.3
+"coveragePerTiling"                           1.53     30.30     161.3
+"jsonlite::toJSON"                            1.16     22.97     252.0
+"plotly::plotly_json"                         1.16     22.97     252.0
+"to_JSON"                                     1.16     22.97     252.0
+"<GC>"                                        1.14     22.57      21.1
+"vapply"                                      1.07     21.19     191.0
+"asJSON"                                      1.01     20.00     148.5
+"copy"                                        0.99     19.60      35.8
+"RiboCrypt:::bottom_panel_shiny"              0.99     19.60     376.1
+"as.data.table.list"                          0.98     19.41       5.7
+"data.table"                                  0.98     19.41       5.7
+"recycle"                                     0.97     19.21       4.8
+"["                                           0.88     17.43     318.1
+"lapply"                                      0.73     14.46     302.7
+"plotly_build.plotly"                         0.71     14.06     350.6
+"num_to_char"                                 0.69     13.66      77.2
+"[.data.table"                                0.66     13.07     224.2
+"multiOmicsPlot_bottom_panels"                0.65     12.87     232.0
+"eval"                                        0.62     12.28     215.6
+"callNextMethod"                              0.52     10.30     223.8
+"plotly::plotly_build"                        0.52     10.30     230.9
+                                        self.time self.pct
+"RiboCrypt:::browser_track_panel_shiny"      0.00     0.00
+"<Anonymous>"                                0.03     0.59
+"do.call"                                    0.01     0.20
+"build_browser_profiles"                     0.00     0.00
+"getRiboProfile"                             0.00     0.00
+"multiOmicsPlot_all_profiles"                0.00     0.00
+".local"                                     0.32     6.34
+"FUN"                                        0.06     1.19
+"coverage_random_access_file"                0.00     0.00
+"coveragePerTiling"                          0.00     0.00
+"jsonlite::toJSON"                           0.00     0.00
+"plotly::plotly_json"                        0.00     0.00
+"to_JSON"                                    0.00     0.00
+"<GC>"                                       1.14    22.57
+"vapply"                                     0.02     0.40
+"asJSON"                                     0.01     0.20
+"copy"                                       0.02     0.40
+"RiboCrypt:::bottom_panel_shiny"             0.00     0.00
+"as.data.table.list"                         0.00     0.00
+"data.table"                                 0.00     0.00
+"recycle"                                    0.00     0.00
+"["                                          0.00     0.00
+"lapply"                                     0.05     0.99
+"plotly_build.plotly"                        0.00     0.00
+"num_to_char"                                0.66    13.07
+"[.data.table"                               0.10     1.98
+"multiOmicsPlot_bottom_panels"               0.00     0.00
+"eval"                                       0.01     0.20
+"callNextMethod"                             0.08     1.58
+"plotly::plotly_build"                       0.00     0.00
+RPROF TOP SELF
+                  self.time self.pct total.time total.pct mem.total
+"<GC>"                 1.14    22.57       1.14     22.57      21.1
+"num_to_char"          0.66    13.07       0.69     13.66      77.2
+".local"               0.32     6.34       1.72     34.06     352.6
+"factor"               0.26     5.15       0.26      5.15      24.3
+"is"                   0.15     2.97       0.25      4.95     119.6
+"[.data.table"         0.10     1.98       0.66     13.07     224.2
+"collapse"             0.10     1.98       0.10      1.98      12.6
+"callNextMethod"       0.08     1.58       0.52     10.30     223.8
+"deparse_vector"       0.08     1.58       0.08      1.58      17.9
+"FUN"                  0.06     1.19       1.67     33.07     433.6
+"tryCatch"             0.06     1.19       0.17      3.37     122.7
+"%%"                   0.06     1.19       0.06      1.19      28.3
+"lapply"               0.05     0.99       0.73     14.46     302.7
+"standardGeneric"      0.05     0.99       0.40      7.92     178.9
+"%in%"                 0.05     0.99       0.31      6.14     148.6
+"doTryCatch"           0.05     0.99       0.10      1.98      89.3
+"stopifnot"            0.05     0.99       0.08      1.58      43.3
+"paste0"               0.05     0.99       0.06      1.19      23.5
+"collapse_object"      0.05     0.99       0.05      0.99       5.4
+"length"               0.04     0.79       0.15      2.97      74.3

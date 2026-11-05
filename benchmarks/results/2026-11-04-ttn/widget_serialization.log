@@ -1,0 +1,29 @@
+[1] "Creating bottom panel.."
+Done (bottom panel):Time difference of 0.33 secs
+[1] "Creating track panel.."
+[browser profile] track controls: 0.006 s
+[browser profile] coverage profiles: 0.363 s
+[browser profile] track plots: 0.910 s
+Done (track panel):Time difference of 1.28 secs
+[1] "Merging coverage tracks and bottom"
+[browser profile] subplot assembly: 0.057 s
+Done (Final panel):Time difference of 0.06 secs
+[browser profile] y-axis and zoom: 0.002 s
+WIDGET BYTES old 8392089
+WIDGET BYTES new 3699566
+SERIALIZE 1 old 0.474
+SERIALIZE 1 new 0.177
+SERIALIZE 2 new 0.174
+SERIALIZE 2 old 0.412
+SERIALIZE 3 old 0.417
+SERIALIZE 3 new 0.238
+SERIALIZE 4 new 0.182
+SERIALIZE 4 old 0.456
+SERIALIZE 5 old 0.419
+SERIALIZE 5 new 0.179
+SERIALIZE 6 new 0.181
+SERIALIZE 6 old 1.516
+SERIALIZE 7 old 0.429
+SERIALIZE 7 new 0.182
+SERIALIZE 8 new 0.181
+SERIALIZE 8 old 0.42

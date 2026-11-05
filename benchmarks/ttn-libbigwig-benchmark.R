@@ -1,0 +1,9 @@
+# Build the upstream libBigWig MIT library separately; see benchmark notes.
+# LIBBIGWIG_PREFIX=/tmp/ribocrypt_libbigwig_prefix LD_LIBRARY_PATH=/tmp/ribocrypt_libbigwig_prefix/lib OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 Rscript benchmarks/ttn-libbigwig-benchmark.R
+suppressPackageStartupMessages({library(ORFik);library(data.table);library(GenomicRanges);library(Rcpp)})
+setDTthreads(1);prefix<-Sys.getenv('LIBBIGWIG_PREFIX');stopifnot(nzchar(prefix));Sys.setenv(PKG_CPPFLAGS=paste0('-I',prefix,'/include'),PKG_LIBS=paste0('-L',prefix,'/lib -lBigWig'))
+Rcpp::sourceCpp('benchmarks/ttn-libbigwig-prototype.cpp',rebuild=TRUE,showOutput=FALSE)
+df<-read.experiment('all_merged-Homo_sapiens',validate=FALSE);tx<-loadRegion(df,'mrna');reads<-ORFik::filepath(df,'bigwig',suffix_stem=c('_pshifted',''))[[1]]
+ids<-c('ENST00000589042','ENST00000454784'); for(id in ids){gr<-tx[id];ex<-gr[[1]];minus<-as.character(strand(ex)[1])=='-';path<-reads[[if(minus)2 else 1]];chr<-as.character(seqnames(ex)[1]);old<-function()ORFik::coveragePerTiling(gr,reads,as.data.table=TRUE,withFrames=TRUE,is.sorted=TRUE);lib<-function(gap){z<-libbigwig_exons(path,chr,start(ex),end(ex),minus,gap);if(all(round(z)==z))z<-as.integer(z);d<-data.table(count=z,genes=rep.int(1L,length(z)),position=seq_along(z));d[,frame:=(position-1)%%3];d}
+ expected<-old();for(gap in c(-1L,0L,100L,500L,5000L,500000L)) {ans<-lib(gap);if(!identical(as.data.frame(expected),as.data.frame(ans)))stop('mismatch ',id,' gap ',gap);cat('identity',id,'gap',gap,'PASS\n')}
+ funcs<-list(orfik=old,lib_exons=function()lib(-1L),lib_500=function()lib(500L),lib_full=function()lib(500000L));for(f in funcs)invisible(f());set.seed(723);for(i in 1:8){ord<-sample(names(funcs));for(n in ord){t<-proc.time()[['elapsed']];invisible(funcs[[n]]());cat('timing',id,i,n,proc.time()[['elapsed']]-t,'\n')}}}

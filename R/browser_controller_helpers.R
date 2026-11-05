@@ -190,24 +190,37 @@ build_browser_track_plots <- function(profiles, withFrames, frame_colors, colors
 #' @noRd
 build_single_browser_profile <- function(read, with_frames, kmer, log_scale,
                                          display_range, kmers_type, frames_type,
-                                         frames_subset) {
-  getProfileWrapper(
-    display_range,
-    read,
-    with_frames,
-    kmer,
-    log_scale,
-    kmers_type,
-    type = frames_type,
-    frames_subset = frames_subset
-  )
+                                         frames_subset, extended_range = NULL) {
+  args <- list(display_range, read, with_frames, kmer, log_scale, kmers_type,
+               type = frames_type, frames_subset = frames_subset)
+  if (!is.null(extended_range)) args$extended_range <- extended_range
+  do.call(getProfileWrapper, args)
+}
+
+#' Reuse identical smoothing ranges within one profile calculation.
+#' @noRd
+browser_shared_smoothing_ranges <- function(display_range, kmers, n) {
+  result <- rep(list(NULL), n)
+  if (n < 2L || !length(kmers) || !is.numeric(kmers)) return(result)
+  k <- rep(kmers, length.out = n)
+  repeated <- unique(k[!is.na(k) & is.finite(k) & k != 1 &
+                         (duplicated(k) | duplicated(k, fromLast = TRUE))])
+  for (value in repeated) {
+    region <- extendTrailers(extendLeaders(display_range, value * 3), value * 3)
+    result[k == value & !is.na(k)] <- rep(list(region), sum(k == value, na.rm = TRUE))
+  }
+  result
 }
 
 #' @noRd
 build_browser_profiles <- function(display_range, reads, kmers, kmers_type,
                                    frames_type, frames_subset, withFrames,
                                    log_scale, BPPARAM) {
-  profile_args <- list(reads, withFrames, kmers, log_scale)
+  n <- if (any(lengths(list(reads, withFrames, kmers, log_scale)) == 0L)) 0L else
+    max(lengths(list(reads, withFrames, kmers, log_scale)))
+  shared_ranges <- browser_shared_smoothing_ranges(display_range, kmers, n)
+  profile_args <- list(reads, withFrames, kmers, log_scale,
+                       extended_range = shared_ranges)
 
   if (is(BPPARAM, "SerialParam")) {
     return(do.call(

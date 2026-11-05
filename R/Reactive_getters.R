@@ -230,6 +230,15 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
                                       templates = NULL) {
   time_before <- Sys.time()
   print("Creating track panel..")
+  timing_enabled <- isTRUE(getOption("RiboCrypt.browser_profile", FALSE))
+  timing_start <- if (timing_enabled) proc.time()[["elapsed"]] else NULL
+  timing_phase <- function(name) {
+    if (!timing_enabled) return(invisible(NULL))
+    now <- proc.time()[["elapsed"]]
+    message(sprintf("[browser profile] %s: %.3f s", name, now - timing_start))
+    timing_start <<- now
+    invisible(NULL)
+  }
   controls <- mainPlotControls()
   if (missing(reads)) reads <- controls$reads
   if (missing(withFrames)) withFrames <- controls$withFrames
@@ -250,6 +259,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
   if (missing(frames_subset)) frames_subset <- controls$frames_subset
   # Input controller
   multiOmicsControllerView(use_fst, selected_libraries)
+  timing_phase("track controls")
   # Get NGS data track panels
   if (is.null(profiles)) {
     profiles <- multiOmicsPlot_all_profiles(
@@ -258,6 +268,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
       withFrames, log_scale, BPPARAM
     )
   }
+  timing_phase("coverage profiles")
 
   track_panel <- multiOmicsPlot_all_track_plots(
     profiles, withFrames, frame_colors,
@@ -267,6 +278,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
     BPPARAM,
     templates = templates
   )
+  timing_phase("track plots")
   timer_done_nice_print("Done (track panel):", time_before)
   time_before <- Sys.time()
   plot <- multiOmicsPlot_complete_plot(track_panel, bottom_panel,
@@ -277,12 +289,14 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
     plot_name, plot_title, width, height,
     export.format, zoom_range, frame_colors
   )
+  timing_phase("subplot assembly")
   timer_done_nice_print("Done (Final panel):", time_before)
   plot <- browser_apply_y_range(plot, controls$y_range,
                                  browser_coverage_track_types(controls, profiles))
   plot <- browser_local_y_zoom(plot, controls$y_range,
     browser_coverage_track_types(controls, profiles), session$ns("local_y_max"),
     browser_display_x_range(bottom_panel$display_range))
+  timing_phase("y-axis and zoom")
   # Server-only attribute: retain exactly the profiles used to draw these tracks.
   attr(plot, "coverage_export") <- list(profiles = profiles, labels = ylabels_full_name,
                                          summary = summary_track)

@@ -1,4 +1,5 @@
-getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
+getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean",
+                           extended_range = NULL) {
   count <- NULL; genes <- NULL # Avoid data.table warning
   not_coverage <- is(footprints, "GenomicRanges") |
     is(footprints, "GAlignments") | is(footprints, "GAlignmentPairs")
@@ -11,7 +12,9 @@ getRiboProfile <- function(grl, footprints, kmers = 1, kmers_type = "mean") {
                                     withFrames=TRUE, is.sorted = TRUE)
     footprints[, frame := as.factor(frame)]
   } else{
-    extended_range <- grl %>% extendLeaders(kmers * 3) %>% extendTrailers(kmers * 3)
+    if (is.null(extended_range)) {
+      extended_range <- grl %>% extendLeaders(kmers * 3) %>% extendTrailers(kmers * 3)
+    }
     footprints <- coveragePerTiling(extended_range,
                                     if(not_coverage) {
                                       subsetByOverlaps(footprints, grl)}
@@ -61,7 +64,8 @@ multiSampleBinRows <- function(mat, ratio = 9, split_by_frame = FALSE) {
 #' @return data.table of coverage
 #' @importFrom dplyr `%>%`
 #' @keywords internal
-getCoverageProfile <- function(grl, reads, kmers = 1, kmers_type = "mean") {
+getCoverageProfile <- function(grl, reads, kmers = 1, kmers_type = "mean",
+                               extended_range = NULL) {
   not_coverage <- is(reads, "GenomicRanges") |
     is(reads, "GAlignments") | is(reads, "GAlignmentPairs")
   if (kmers == 1) {
@@ -72,7 +76,9 @@ getCoverageProfile <- function(grl, reads, kmers = 1, kmers_type = "mean") {
       as.data.table = TRUE, is.sorted = TRUE)
   } else {
     count <- NULL; genes <- NULL # Avoid data.table warning
-    extended_range <- grl %>% extendLeaders(kmers * 3) %>% extendTrailers(kmers * 3)
+    if (is.null(extended_range)) {
+      extended_range <- grl %>% extendLeaders(kmers * 3) %>% extendTrailers(kmers * 3)
+    }
     coverage <- coveragePerTiling(extended_range,
                                   if(not_coverage) {
                                     subsetByOverlaps(reads, grl)}
@@ -88,17 +94,20 @@ getCoverageProfile <- function(grl, reads, kmers = 1, kmers_type = "mean") {
 }
 
 getProfileWrapper <- function(display_range, reads, withFrames, kmers = 1, log_scale = FALSE,
-                              kmers_type = "mean", type = "lines", frames_subset = "all") {
+                              kmers_type = "mean", type = "lines", frames_subset = "all",
+                              extended_range = NULL) {
 
   if (withFrames) {
-    profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type)
+    profile <- getRiboProfile(display_range, reads, kmers, kmers_type = kmers_type,
+                              extended_range = extended_range)
     if (all(frames_subset != "all")) {
       color_options <- c("red", "green", "blue")
       frame_to_use <- which(color_options %in% frames_subset) - 1
       profile <- profile[!(frame %in% frame_to_use), count := 0]
     }
   } else {
-    profile <- getCoverageProfile(display_range, reads, kmers, kmers_type = kmers_type)
+    profile <- getCoverageProfile(display_range, reads, kmers, kmers_type = kmers_type,
+                                  extended_range = extended_range)
   }
   if (log_scale) profile[, count := log2(count + 1)]
   return(profile)

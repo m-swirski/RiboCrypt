@@ -74,7 +74,9 @@ rc_home_server <- function(input, output, session, all_exp, metadata, rv, df, li
   }, ignoreNULL=FALSE)
   output$home_species_info <- shiny::renderUI({
     x <- catalog[match(input$home_species,catalog$name),,drop=FALSE]; shiny::req(nrow(x),!is.na(x$name))
-    shiny::div(class="rc-home-stats",sprintf("%s · %s Ribo-seq libraries · %s studies",x$clade,format(x$libraries,big.mark=","),format(x$studies,big.mark=",")))
+    shiny::div(class="rc-home-stats",sprintf("%s · %s Ribo-seq %s · %s %s",x$clade,
+      format(x$libraries,big.mark=","),if (x$libraries == 1) "library" else "libraries",
+      format(x$studies,big.mark=","),if (!is.na(x$studies) && x$studies == 1) "study" else "studies"))
   })
   output$home_sample_search_ui <- shiny::renderUI({
     shiny::req(input$home_experiment)

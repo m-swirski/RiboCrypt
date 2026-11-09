@@ -10,14 +10,16 @@
     const node=(n,a)=>{let e=document.createElementNS(ns,n);Object.entries(a).forEach(([k,v])=>e.setAttribute(k,v));svg.appendChild(e);return e};
     const n=d.length,max=Math.max(1,...d.map(s=>s.libraries||0));
     const groups=[...new Set(d.map(s=>s.clade))],gap=1.8,slots=n+groups.length*gap;
+    const plural=(count,singular,pluralForm)=>`${count} ${Number(count)===1?singular:pluralForm}`;
     node('circle',{cx:310,cy:310,r:142,fill:'#f8fbf9',stroke:'#eaf0ed'});
     const point=(r,a)=>[310+r*Math.cos(a),310+r*Math.sin(a)];
     d.forEach((s,i)=>{const a=-Math.PI/2+2*Math.PI*(i+(groups.indexOf(s.clade)+.5)*gap)/slots,b=a+2*Math.PI/slots*.78,r=175+95*Math.log1p(s.libraries||0)/Math.log1p(max),A=point(153,a),B=point(r,a),C=point(r,b),D=point(153,b);
-      const p=node('path',{d:`M ${A} L ${B} A ${r} ${r} 0 0 1 ${C} L ${D} A 153 153 0 0 0 ${A} Z`,fill:colors[s.clade]||colors.Unclassified,tabindex:0,role:'button','aria-label':`${s.name}: ${s.libraries} libraries, ${s.studies} studies`});
+      const p=node('path',{d:`M ${A} L ${B} A ${r} ${r} 0 0 1 ${C} L ${D} A 153 153 0 0 0 ${A} Z`,fill:colors[s.clade]||colors.Unclassified,tabindex:0,role:'button','aria-label':`${s.name}: ${plural(s.libraries,'library','libraries')}, ${plural(s.studies,'study','studies')}`});
       const choose=()=>Shiny.setInputValue('home_wheel_species',s.name,{priority:'event'});p.addEventListener('click',choose);p.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose()}});
-      const show=()=>{tip.textContent=`${s.name} · ${s.clade} · ${s.libraries} libraries · ${s.studies} studies`;tip.style.display='block';const box=p.getBoundingClientRect(),parent=tip.parentNode.getBoundingClientRect();tip.style.left=(box.left-parent.left)+'px';tip.style.top=(box.top-parent.top-35)+'px'};p.addEventListener('mouseenter',show);p.addEventListener('focus',show);p.addEventListener('mouseleave',()=>tip.style.display='none');p.addEventListener('blur',()=>tip.style.display='none');
+      const show=()=>{tip.textContent=`${s.name} · ${s.clade} · ${plural(s.libraries,'library','libraries')} · ${plural(s.studies,'study','studies')}`;tip.style.display='block';const box=p.getBoundingClientRect(),parent=tip.parentNode.getBoundingClientRect();tip.style.left=(box.left-parent.left)+'px';tip.style.top=(box.top-parent.top-35)+'px'};p.addEventListener('mouseenter',show);p.addEventListener('focus',show);p.addEventListener('mouseleave',()=>tip.style.display='none');p.addEventListener('blur',()=>tip.style.display='none');
     });
-    [['EXPLORE THE ATLAS',286,11],[(n||0)+' species',320,23],[(d.reduce((a,s)=>a+(s.libraries||0),0)).toLocaleString()+' Ribo-seq libraries',350,11]].forEach(([t,y,size])=>{let x=node('text',{x:310,y,'text-anchor':'middle','font-size':size,fill:'#366058','pointer-events':'none'});x.textContent=t});
+    const total=d.reduce((a,s)=>a+(s.libraries||0),0);
+    [['EXPLORE THE ATLAS',286,11],[(n||0)+' species',320,23],[plural(total.toLocaleString(),'Ribo-seq library','Ribo-seq libraries'),350,11]].forEach(([t,y,size])=>{let x=node('text',{x:310,y,'text-anchor':'middle','font-size':size,fill:'#366058','pointer-events':'none'});x.textContent=t});
     Object.entries(colors).forEach(([group,color])=>{if(!d.some(x=>x.clade===group))return;let s=document.createElement('span'),i=document.createElement('i');i.style.background=color;s.append(i,document.createTextNode(group));legend.append(s)});
   }
   Shiny.addCustomMessageHandler('rc-home-wheel',draw);

@@ -1,0 +1,92 @@
+species,clade
+Homo sapiens,Mammals
+Mus musculus,Mammals
+Rattus norvegicus,Mammals
+Chlorocebus sabaeus,Mammals
+Cricetulus griseus,Mammals
+Mesocricetus auratus,Mammals
+Macaca mulatta,Mammals
+Monodelphis domestica,Mammals
+Ornithorhynchus anatinus,Mammals
+Pan troglodytes,Mammals
+Equus caballus,Mammals
+Sus scrofa,Mammals
+Gorilla gorilla,Mammals
+Danio rerio,Other vertebrates
+Cyprinus carpio,Other vertebrates
+Gallus gallus,Other vertebrates
+Xenopus laevis,Other vertebrates
+Oryzias latipes,Other vertebrates
+Anolis carolinensis,Other vertebrates
+Caenorhabditis elegans,Invertebrates
+Drosophila melanogaster,Invertebrates
+Oikopleura dioica,Invertebrates
+Ostrinia furnacalis,Invertebrates
+Aedes aegypti,Invertebrates
+Caenorhabditis brenneri,Invertebrates
+Caenorhabditis briggsae,Invertebrates
+Caenorhabditis remanei,Invertebrates
+Arabidopsis thaliana,Plants
+Zea mays,Plants
+Oryza sativa,Plants
+Solanum lycopersicum,Plants
+Marchantia polymorpha,Plants
+Brassica rapa,Plants
+Chlamydomonas reinhardtii,Plants
+Echinochloa crus-galli,Plants
+Hordeum vulgare,Plants
+Glycine max,Plants
+Gossypium arboreum,Plants
+Medicago truncatula,Plants
+Malus domestica,Plants
+Solanum tuberosum,Plants
+Sorghum bicolor,Plants
+Brassica napus,Plants
+Gossypium hirsutum,Plants
+Gossypium raimondii,Plants
+Nicotiana tabacum,Plants
+Saccharomyces cerevisiae,Fungi
+Schizosaccharomyces pombe,Fungi
+Neurospora crassa,Fungi
+Candida albicans,Fungi
+Cryptococcus neoformans var. grubii,Fungi
+Penicillium oxalicum,Fungi
+Colletotrichum orbiculare,Fungi
+Fusarium graminearum,Fungi
+Kluyveromyces marxianus,Fungi
+Komagataella phaffii,Fungi
+Saccharomyces paradoxus,Fungi
+Naumovozyma castellii,Fungi
+Pyricularia oryzae,Fungi
+Histoplasma capsulatum,Fungi
+Saccharomyces uvarum,Fungi
+Cryptococcus neoformans,Fungi
+Saccharomyces arboricola,Fungi
+Saccharomyces kudriavzevii,Fungi
+Saccharomyces mikatae,Fungi
+Plasmodium falciparum,Protists
+Trypanosoma brucei,Protists
+Toxoplasma gondii,Protists
+Trypanosoma cruzi,Protists
+Escherichia coli,Bacteria
+Bacillus subtilis,Bacteria
+Zymomonas mobilis ZM4,Bacteria
+Mycolicibacterium smegmatis,Bacteria
+Streptomyces avermitilis,Bacteria
+Streptomyces tsukubensis,Bacteria
+Synechocystis,Bacteria
+Pseudomonas aeruginosa,Bacteria
+Streptomyces clavuligerus,Bacteria
+Streptomyces venezuelae,Bacteria
+Mycobacterium tuberculosis,Bacteria
+Caulobacter vibrioides,Bacteria
+Salmonella enterica,Bacteria
+Streptomyces griseus,Bacteria
+Clostridium drakei,Bacteria
+Streptomyces coelicolor,Bacteria
+Vibrio vulnificus,Bacteria
+Flavobacterium johnsoniae,Bacteria
+Bacteroides thetaiotaomicron,Bacteria
+Mycobacteroides abscessus,Bacteria
+Vibrio natriegens,Bacteria
+Haloferax volcanii,Archaea

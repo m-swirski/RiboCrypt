@@ -1,0 +1,11 @@
+# Optional Home selector
+
+Home is opt-in. Provide a trusted HTML fragment in `home_html` and optionally set `init_tab_focus = "home"`; see `inst/scripts/run_home_selector_example.R`. If `home_html` is NULL or missing, the Home tab and logo link are absent and the existing Browser default remains. Direct links to `#browser` keep working. The logo navigates to `#home` without a full page reload.
+
+The wheel and experiment choices are built from the session's `all_exp` and metadata, not a bundled public experiment catalog. Taxonomic group labels use `inst/home/species_clades.csv`; unrecognized organisms are marked Unclassified. Hosts and host-plus-construct organisms share a wheel position; their exact experiments remain available in the list. Counts use supplied metadata and refer to unique Run and study accession identifiers, not verified data availability. Search and choices only expose data already present in the session catalog.
+
+The example launcher keeps canonical per-species collections in `all_exp_meta` for the existing MegaBrowser, and also keeps available RNA/SSU/disome/CAGE `all_samples` collections in `all_exp` for the Browser and Home. An installation can only show experiments registered in its own ORFik experiment directory. For the public app this may require separate publication of a local experiment; this branch does not publish one.
+
+For `all_samples-*` collections, Home searches the chosen collection's Run IDs, stage, condition, fraction and library type, plus matching rows of the metadata passed to the app. Multiple sample results can be selected. On opening, the browser switches to the selected experiment and then resolves those Run IDs to the browser's library names. If no sample is selected, the browser uses its default selection. RNA-specific rich metadata is searchable if supplied in the `metadata` argument; otherwise the collection's own annotations remain searchable.
+
+This implementation adds a trusted fragment, stylesheet and JavaScript to the Shiny page. Custom content must not assume it is isolated from the rest of the app. Startup still loads the default experiment; Home does not yet make first load lazy. The static shell cache is bypassed when Home is enabled so Shiny can re-register Selectize assets across sessions.

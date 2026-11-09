@@ -29,6 +29,9 @@
 #' - hide_settings : Hide settings bar in browser on start, default "TRUE"\cr
 #' @param init_tab_focus character, default "browser". Which tab to open on
 #' init.
+#' @param home_html Optional path to a trusted HTML fragment for the Home page.
+#'   If NULL or absent, Home and logo navigation are disabled. The package
+#'   example is `system.file("home", "home.html", package = "RiboCrypt")`.
 #' @param metadata a path to csv or a data.table of metadata columns,
 #' must contain a "Run" column to merge IDs to ORFik experiments.
 #' It is used in the metabrowser tab for grouping of samples.
@@ -94,15 +97,19 @@ RiboCrypt_app <- function(
                        "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION",
                        "Cancer_type", "Cell_model", "Cell_type",
                        "Organ_system", "Sex", "Life_stage"),
-  access_control = NULL
+  access_control = NULL, home_html = NULL
 ) {
   if (!is.null(access_control)) {
     return(rc_access_app(access_control, list(options = options, metadata = metadata,
       all_exp_meta = if (missing(all_exp_meta)) NULL else all_exp_meta,
       browser_options = browser_options, init_tab_focus = init_tab_focus,
-      columns_to_show = columns_to_show, validate.experiments = validate.experiments)))
+      columns_to_show = columns_to_show, validate.experiments = validate.experiments,
+      home_html = home_html)))
   }
+  home_enabled <- is.character(home_html) && length(home_html)==1L && !is.na(home_html) && file.exists(home_html)
+  if (!home_enabled && identical(init_tab_focus,"home")) init_tab_focus <- "browser"
   rc_parameter_setup()
+  if (home_enabled) shiny::addResourcePath("rc-home",system.file("home",package="RiboCrypt"))
   # User interface
   ui <- tagList(
     plotly_startup_dependencies(browser_options[["plot_on_start"]]),
@@ -113,9 +120,10 @@ RiboCrypt_app <- function(
       id = "navbarID",
       lang = "en",
       windowTitle = "RiboCrypt",
-      title = rc_title(),
+      title = rc_title(home_enabled),
       theme = rc_theme(),
       selected = init_tab_focus,
+      if (home_enabled) rc_home_ui(home_html, all_exp, metadata),
       browser_ui("browser", all_exp, browser_options, names_init, libs),
       browser_allsamp_ui(
         "browser_allsamp", all_exp_meta, browser_options, metadata,
@@ -133,8 +141,9 @@ RiboCrypt_app <- function(
   print(round(Sys.time() - time_before, 2))
 
   server <- function(input, output, session) {
-    reactive_url()
+    reactive_url(home_enabled)
     org_and_study_changed_checker(input, output, session)
+    if (home_enabled) rc_home_server(input, output, session, all_exp, metadata, rv, df, libs)
     on_first_tab(input, "tutorial", function() tutorial_server("tutorial"))
     rv <- browser_server(
       "browser", all_exp, without_readlengths_env, df,
@@ -210,5 +219,7 @@ RiboCrypt_app <- function(
   }
   app <- shinyApp(ui, server, options = options)
   attr(app, "ribocrypt_ui") <- ui
-  if (is.null(rc_access_context())) cache_static_app_ui(app) else app
+  # Home contains dynamically registered Selectize dependencies. Re-render the
+  # shell per request so Shiny can re-register them after prior sessions close.
+  if (is.null(rc_access_context()) && !home_enabled) cache_static_app_ui(app) else app
 }

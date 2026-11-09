@@ -352,7 +352,7 @@ make_observatory_url <- function(state, session) {
 #'
 #' Currently does not support update of input fields other than selected page
 #' @noRd
-reactive_url <- function() {
+reactive_url <- function(home_enabled = FALSE) {
   with(rlang::caller_env(), {
     cat("Server startup: "); print(round(Sys.time() - time_before, 2))
     this_time_before <- Sys.time()
@@ -360,6 +360,7 @@ reactive_url <- function() {
     # Page routing API
     observeEvent(session$clientData$url_hash, {
       currentHash <- getPageFromURL(session)
+      if (identical(currentHash, "home") && !home_enabled) currentHash <- "browser"
       if (is.null(input$navbarID) || (!is.null(currentHash) && !identical(currentHash, input$navbarID))){
         freezeReactiveValue(input, "navbarID")
         updateNavbarPage(session, "navbarID", selected = currentHash)

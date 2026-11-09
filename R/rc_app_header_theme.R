@@ -12,9 +12,10 @@ rc_theme <- function() {
     success = "#c0ffa4", font_scale = 1.2, bootswatch = "zephyr")
 }
 
-rc_title <- function() {
+rc_title <- function(home_enabled = FALSE) {
   withTags(
-    a(img(src = file.path("images", "logo_traces_update.png"),
+    a(href = if (home_enabled) "#home" else NULL,
+      img(src = file.path("images", "logo_traces_update.png"),
           alt = "RiboCrypt",
           height = 50)))
 }

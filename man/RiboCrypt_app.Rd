@@ -16,7 +16,8 @@ RiboCrypt_app(
     "BioProject", "YEAR", "LIBRARYTYPE", "REPLICATE", "CONDITION", "INHIBITOR", "BATCH",
     "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION", "Cancer_type", "Cell_model",
     "Cell_type", "Organ_system", "Sex", "Life_stage"),
-  access_control = NULL
+  access_control = NULL,
+  home_html = NULL
 )
 }
 \arguments{
@@ -54,6 +55,10 @@ where libs are seperated by ",", like "RFP_WT_r1|RFP_WT_r2". Also support
 
 \item{init_tab_focus}{character, default "browser". Which tab to open on
 init.}
+
+\item{home_html}{Optional path to a trusted HTML fragment for the Home page.
+If NULL or absent, Home and logo navigation are disabled. The package
+example is \code{system.file("home", "home.html", package = "RiboCrypt")}.}
 
 \item{metadata}{a path to csv or a data.table of metadata columns,
 must contain a "Run" column to merge IDs to ORFik experiments.

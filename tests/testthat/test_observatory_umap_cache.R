@@ -1,11 +1,11 @@
 test_that("precomputed UMAP cache is rejected for stale sources or collections", {
   p <- structure(list(),class="plotly")
-  x <- list(schema=1L,source_md5="old",plotly_version="1",runs=c("A","B"),plot=p)
+  x <- list(schema=2L,source_md5="old",plotly_version="1",runs=c("A","B"),plot=p)
   expect_true(rc_umap_cache_valid(x,"old",c("A","B"),"1"))
   expect_false(rc_umap_cache_valid(x,"changed",c("A","B"),"1"))
   expect_false(rc_umap_cache_valid(x,"old",c("B","A"),"1"))
   expect_false(rc_umap_cache_valid(x,"old",c("A","B"),"2"))
-  expect_null(rc_umap_cached_plot(NULL,c("tissue","cell_line"),"2d",c(1,2)))
+  expect_null(rc_umap_cached_plot(NULL,c("tissue","cell_line"),"6d",c(1,2)))
 })
 
 test_that("UMAP axes use one projection and do not modify the caller's data", {
@@ -27,4 +27,10 @@ test_that("a stale table fallback never exposes samples outside the collection",
   expect_warning(y <- rc_umap_align_runs(x,c("b","a","new")),"samples differ")
   expect_identical(y$sample,c("b","a"))
   expect_error(rc_umap_align_runs(x,"not-present"),"no samples")
+})
+
+test_that("a missing provenance hash cannot validate a cache", {
+  p <- structure(list(), class = "plotly")
+  x <- list(schema=2L, source_md5=NA_character_, plotly_version="1", runs="A", plot=p)
+  expect_false(rc_umap_cache_valid(x, NA_character_, "A", "1"))
 })

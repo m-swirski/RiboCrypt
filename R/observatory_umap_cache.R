@@ -35,7 +35,7 @@ rc_umap_cached_plot <- function(experiment, color_by, embedding, axes) {
     x <- readRDS(path)
     if (!rc_umap_cache_valid(x, unname(tools::md5sum(source)), as.character(ORFik::runIDs(experiment)),
                              as.character(utils::packageVersion("plotly")))) return(NULL)
-    x$plot
+    rc_umap_cached_axis_titles(x$plot, experiment, source)
   }, error=function(e) NULL)
 }
 
@@ -65,4 +65,24 @@ precompute_observatory_umap <- function(experiment, path=rc_umap_cache_file(expe
   saveRDS(x,tmp,compress=FALSE)
   if (!file.rename(tmp,path)) stop("Could not publish the precomputed UMAP cache")
   invisible(path)
+}
+
+# Interpretation is tied to the exact human 2D coordinates, never inferred
+# from a different embedding or transferred to another organism.
+rc_umap_cached_axis_titles <- function(plot, experiment, source) {
+  if (!identical(ORFik::name(experiment), "all_samples-Homo_sapiens")) return(plot)
+  annotation <- file.path(dirname(source), "UMAP_2d_axis_annotations.csv")
+  if (!file.exists(annotation) || !file.exists(source)) return(plot)
+  tryCatch({
+    if (file.info(annotation)$mtime < file.info(source)$mtime) return(plot)
+    a <- utils::read.csv(annotation, stringsAsFactors = FALSE, check.names = FALSE)
+    if (!all(c("axis", "label", "source_md5") %in% names(a)) ||
+        nrow(a) != 2L || anyDuplicated(a$axis) ||
+        !setequal(a$axis, 1:2) || anyNA(a$label) || any(!nzchar(a$label)) ||
+        !all(a$source_md5 == unname(tools::md5sum(source)))) return(plot)
+    a <- a[match(1:2, a$axis), , drop = FALSE]
+    plot$x$layout$xaxis$title <- paste0("UMAP 1 (", a$label[1], ")")
+    plot$x$layout$yaxis$title <- paste0("UMAP 2 (", a$label[2], ")")
+    plot
+  }, error = function(e) plot)
 }

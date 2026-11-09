@@ -205,6 +205,7 @@ observatory_selector_umap_plot_shiny <- function(observatory_module, color_by, s
   if (is.null(p)) p <- umap_plot(observatory_module$get_umap_data(color_by, embedding),
                                  color.by = color_by, template = templates$observatory_umap_plotly,
                                  axes = axes)
+  if (identical(embedding, "6d")) p <- rc_umap_6d_axis_titles(p, experiment, axes)
   p <- htmlwidgets::onRender(p,
       fetchJS("umap_plot_extension.js"),
       session$ns("libraries_umap_plot_selection")

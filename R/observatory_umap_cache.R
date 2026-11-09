@@ -15,10 +15,12 @@ rc_umap_render_key <- function(df, embedding = "2d") {
     file.path(dir,"UMAP_by_gene_counts_6d.fst"),
     file.path(dir,"UMAP_by_gene_counts_inputs.rds"),
     file.path(dir,"UMAP_by_gene_counts_6d_inputs.rds"))
+  annotation <- file.path(dir, paste0("UMAP_", embedding, "_axis_annotations.csv"))
+  if (identical(ORFik::name(df), "all_samples-Homo_sapiens")) files <- c(files, annotation)
   hashes <- vapply(files,function(x) if (file.exists(x)) unname(tools::md5sum(x)) else NA_character_,character(1))
   # Include the session's actual Run order: access-filtered collections can
   # share a name while exposing different libraries to different users.
-  list(hashes=hashes,runs=as.character(ORFik::runIDs(df)))
+  list(hashes=hashes, mtimes = vapply(files, function(x) if (file.exists(x)) as.numeric(file.info(x)$mtime) else NA_real_, numeric(1)), runs=as.character(ORFik::runIDs(df)))
 }
 rc_umap_cache_valid <- function(x, source_md5, runs, plotly_version) {
   is.list(x) && identical(x$schema,1L) && identical(x$source_md5,source_md5) &&
@@ -84,5 +86,26 @@ rc_umap_cached_axis_titles <- function(plot, experiment, source) {
     plot$x$layout$xaxis$title <- paste0("UMAP 1 (", a$label[1], ")")
     plot$x$layout$yaxis$title <- paste0("UMAP 2 (", a$label[2], ")")
     plot
+  }, error = function(e) plot)
+}
+
+# 6D is a separate embedding; annotations are versioned against its own file.
+rc_umap_6d_axis_titles <- function(plot, experiment, axes) {
+  if (is.null(experiment) || !identical(ORFik::name(experiment), "all_samples-Homo_sapiens")) return(plot)
+  source <- file.path(ORFik::refFolder(experiment), "UMAP", "UMAP_by_gene_counts_6d.fst")
+  annotation <- file.path(dirname(source), "UMAP_6d_axis_annotations.csv")
+  if (!file.exists(annotation) || !file.exists(source)) return(plot)
+  tryCatch({
+    if (file.info(annotation)$mtime < file.info(source)$mtime) return(plot)
+    a <- utils::read.csv(annotation, stringsAsFactors = FALSE, check.names = FALSE)
+    if (!all(c("axis", "label", "source_md5") %in% names(a)) ||
+        nrow(a) != 6L || anyDuplicated(a$axis) || !setequal(a$axis, 1:6) ||
+        anyNA(a$label) || any(!nzchar(a$label)) ||
+        !all(a$source_md5 == unname(tools::md5sum(source)))) return(plot)
+    labels <- a$label[match(as.integer(axes), a$axis)]
+    if (length(labels) != 2L || anyNA(labels)) return(plot)
+    # layout() handles both fully built templates and normal plotly objects.
+    plotly::layout(plot, xaxis = list(title = paste0("UMAP ", axes[1], " (", labels[1], ")")),
+                   yaxis = list(title = paste0("UMAP ", axes[2], " (", labels[2], ")")))
   }, error = function(e) plot)
 }

@@ -47,9 +47,9 @@ rc_home_ui <- function(home_html, all_exp, metadata) {
         shiny::column(5, shiny::div(class="rc-home-card", shiny::h3("Choose your data"),
           shiny::selectizeInput("home_species", "Species", choices=sort(unique(rc_home_host(all_exp$organism))),
             selected=if ("Homo sapiens" %in% rc_home_host(all_exp$organism)) "Homo sapiens" else rc_home_host(all_exp$organism)[1],
-            options=list(placeholder="Search species")),
+            width="100%", options=list(placeholder="Search species")),
           shiny::uiOutput("home_species_info"),
-          shiny::selectizeInput("home_experiment", "Experiment", choices=character(), options=list(maxOptions=100)),
+          shiny::selectizeInput("home_experiment", "Experiment", choices=character(), width="100%", options=list(maxOptions=100)),
           shiny::uiOutput("home_sample_search_ui"),
           shiny::actionButton("home_open", "Open in Browser", class="btn-primary"),
           shiny::p(class="rc-home-hint", "Experiment availability depends on this installation. The wheel counts use supplied Ribo-seq metadata."))))))
@@ -82,7 +82,7 @@ rc_home_server <- function(input, output, session, all_exp, metadata, rv, df, li
     shiny::tagList(shiny::tags$hr(),shiny::h4("Find samples in this collection"),
       shiny::textInput("home_sample_query","Search sample metadata",placeholder="e.g. EIF4"),
       shiny::helpText("Searches collection annotations and supplied metadata. Select the samples to open; leave empty to use the default."),
-      shiny::selectizeInput("home_samples","Matching samples",choices=character(),multiple=TRUE,options=list(maxOptions=100)),
+      shiny::selectizeInput("home_samples","Matching samples",choices=character(),multiple=TRUE,width="100%",options=list(maxOptions=100)),
       shiny::textOutput("home_sample_count"))
   })
   sample_data <- shiny::eventReactive(input$home_experiment, {

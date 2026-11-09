@@ -1,0 +1,68 @@
+# Cached Plotly objects preserve Shiny's onRender selection hook, which is
+# attached separately for each session after loading. Never use a shared cache
+# in authenticated sessions: the current collection may be permission-filtered.
+rc_umap_cache_file <- function(df) {
+  staging <- getOption("ribocrypt.umap_cache_dir",NULL)
+  if (!is.null(staging)) return(file.path(staging,paste0(ORFik::name(df),"_observatory_default.rds")))
+  safe_name <- gsub("[^A-Za-z0-9_.-]","_",ORFik::name(df))
+  file.path(ORFik::refFolder(df),"UMAP",paste0("observatory_plotly_",safe_name,"_tissue_cellline_v1.rds"))
+}
+rc_umap_source_file <- function(df) file.path(ORFik::refFolder(df),"UMAP","UMAP_by_gene_counts.fst")
+rc_umap_render_key <- function(df, embedding = "2d") {
+  dir <- file.path(ORFik::refFolder(df),"UMAP")
+  files <- c(file.path(dir,"UMAP_by_gene_counts.fst"))
+  if (identical(embedding,"6d")) files <- c(files,
+    file.path(dir,"UMAP_by_gene_counts_6d.fst"),
+    file.path(dir,"UMAP_by_gene_counts_inputs.rds"),
+    file.path(dir,"UMAP_by_gene_counts_6d_inputs.rds"))
+  hashes <- vapply(files,function(x) if (file.exists(x)) unname(tools::md5sum(x)) else NA_character_,character(1))
+  # Include the session's actual Run order: access-filtered collections can
+  # share a name while exposing different libraries to different users.
+  list(hashes=hashes,runs=as.character(ORFik::runIDs(df)))
+}
+rc_umap_cache_valid <- function(x, source_md5, runs, plotly_version) {
+  is.list(x) && identical(x$schema,1L) && identical(x$source_md5,source_md5) &&
+    identical(x$plotly_version,plotly_version) && identical(x$runs,runs) && inherits(x$plot,"plotly")
+}
+
+rc_umap_cached_plot <- function(experiment, color_by, embedding, axes) {
+  if (is.null(experiment) || !is.null(rc_access_context()) || !isTRUE(getOption("ribocrypt.umap_cache",TRUE)) ||
+      !identical(as.character(color_by),c("tissue","cell_line")) || !identical(embedding,"2d") ||
+      !identical(as.integer(axes),c(1L,2L))) return(NULL)
+  path <- rc_umap_cache_file(experiment); source <- rc_umap_source_file(experiment)
+  if (!file.exists(path) || !file.exists(source)) return(NULL)
+  tryCatch({
+    x <- readRDS(path)
+    if (!rc_umap_cache_valid(x, unname(tools::md5sum(source)), as.character(ORFik::runIDs(experiment)),
+                             as.character(utils::packageVersion("plotly")))) return(NULL)
+    x$plot
+  }, error=function(e) NULL)
+}
+
+#' Precompute an Observatory default Plotly object for one collection
+#'
+#' The cache is used only for public sessions, the original 2D projection and
+#' the default tissue/cell-line coloring. Source checksum, collection Run order,
+#' and Plotly version are checked when it is loaded. Stale caches are ignored.
+#' @param experiment An ORFik collection experiment.
+#' @param path Output path; defaults to the collection reference UMAP directory.
+#' @return The output path, invisibly.
+#' @export
+precompute_observatory_umap <- function(experiment, path=rc_umap_cache_file(experiment)) {
+  if (!is.null(rc_access_context())) stop("Shared UMAP caches cannot be built within an access-filtered session")
+  source <- rc_umap_source_file(experiment)
+  if (!file.exists(source)) stop("No original 2D UMAP available: ",source)
+  before <- unname(tools::md5sum(source))
+  d <- fst::read_fst(source,as.data.table=TRUE)
+  runs <- as.character(ORFik::runIDs(experiment))
+  if (!identical(as.character(d$sample),runs)) stop("UMAP sample order differs from the collection; rebuild the UMAP first")
+  d[, color_column := paste(tissue,cell_line,sep=" | ")]
+  p <- umap_plot(d,color.by=c("tissue","cell_line"),template=observatoryUmapPlotlyTemplate())
+  if (!identical(before,unname(tools::md5sum(source)))) stop("UMAP source changed during cache creation")
+  x <- list(schema=1L, source_md5=before, plotly_version=as.character(utils::packageVersion("plotly")), runs=runs, plot=p)
+  dir.create(dirname(path),recursive=TRUE,showWarnings=FALSE)
+  tmp <- tempfile(pattern=".umap-cache-",tmpdir=dirname(path)); on.exit(unlink(tmp),add=TRUE)
+  saveRDS(x,tmp,compress=FALSE)
+  if (!file.rename(tmp,path)) stop("Could not publish the precomputed UMAP cache")
+  invisible(path)
+}

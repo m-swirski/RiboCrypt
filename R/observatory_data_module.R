@@ -18,8 +18,8 @@ create_observatory_module <- function(meta_experiment_df, libraries_df) {
   # TODO
   # A function that returns a UMAP projection over libraries for a given organisms
   # returns a dataframe(TODO expand on the contents of dataframe)
-  get_umap_data <- function(color_by = c("tissue", "cell_line")) {
-    load_data_umap_internal(meta_experiment_df@experiment, color.by = color_by)
+  get_umap_data <- function(color_by = c("tissue", "cell_line"), embedding = "2d") {
+    load_data_umap_internal(meta_experiment_df@experiment, color.by = color_by, embedding = embedding)
   }
 
   # A function that returns a list of libraries available for a given organism

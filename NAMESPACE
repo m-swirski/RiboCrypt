@@ -3,6 +3,7 @@
 S3method(print,ribocrypt_access_control)
 export(DEG_plot)
 export(RiboCrypt_app)
+export(precompute_observatory_umap)
 export(browseRC)
 export(cdsExonCoverageQC)
 export(collection_dir_from_exp)

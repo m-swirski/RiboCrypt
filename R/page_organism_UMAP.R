@@ -105,7 +105,7 @@ umap_plot_add_hover_text <- function(dt_umap) {
   dt_umap
 }
 
-umap_plot_from_template <- function(dt_umap, color.by, template) {
+umap_plot_from_template <- function(dt_umap, color.by, template, axes = c(1L,2L)) {
   color_title <- stringr::str_to_title(paste(color.by, collapse = " | "))
   dt_umap <- umap_plot_add_hover_text(dt_umap)
   group_values <- as.character(dt_umap$color_column)
@@ -149,18 +149,27 @@ umap_plot_from_template <- function(dt_umap, color.by, template) {
   plot$x$visdat <- NULL
   plot$x$cur_data <- NULL
   plot$x$layout$legend$title$text <- color_title
+  plot$x$layout$xaxis$title <- paste("UMAP", axes[1])
+  plot$x$layout$yaxis$title <- paste("UMAP", axes[2])
   plot
 }
 
 umap_plot <- function(dt_umap, color.by = attr(dt_umap, "color.by"),
-                      template = NULL) {
+                      template = NULL, axes = c(1L, 2L)) {
+  axes <- as.integer(axes)
+  if (length(axes) != 2L || anyNA(axes) || anyDuplicated(axes)) stop("Choose two different UMAP axes")
+  requested <- paste("UMAP", axes)
+  if (!all(requested %in% names(dt_umap))) stop("Selected axes are not present in this UMAP")
+  dt_umap <- data.table::copy(dt_umap)
+  selected_x <- dt_umap[[requested[1]]]; selected_y <- dt_umap[[requested[2]]]
+  dt_umap[, `:=`(`UMAP 1` = selected_x, `UMAP 2` = selected_y)]
   color.by.temp <- "color_column"
   names(color.by.temp) <- stringr::str_to_title(paste(color.by, collapse = " | "))
   color.by <- color.by.temp
   groups_n <- data.table::uniqueN(dt_umap$color_column)
   custom_palette <- umap_plot_palette(groups_n)
   if (inherits(template, "plotly")) {
-    return(umap_plot_from_template(dt_umap, names(color.by), template))
+    return(umap_plot_from_template(dt_umap, names(color.by), template, axes))
   }
 
   dt_umap <- umap_plot_add_hover_text(dt_umap)
@@ -178,8 +187,8 @@ umap_plot <- function(dt_umap, color.by = attr(dt_umap, "color.by"),
     hovertemplate = "%{text}<extra></extra>"
   ) %>%
     plotly::layout(
-      xaxis = list(title = "UMAP 1", zeroline = FALSE),
-      yaxis = list(title = "UMAP 2", zeroline = FALSE),
+      xaxis = list(title = paste("UMAP",axes[1]), zeroline = FALSE),
+      yaxis = list(title = paste("UMAP",axes[2]), zeroline = FALSE),
       legend = list(title = list(text = names(color.by))),
       template = "plotly_white",
       dragmode = "select"

@@ -208,12 +208,44 @@ load_data_umap <- function(species, color.by = NULL) {
   data <- load_data_umap_internal(species, color.by)
 }
 
-load_data_umap_internal <- function(species, color.by = c("tissue", "cell_line")) {
+rc_umap_align_runs <- function(table, runs) {
+  if (!"sample" %in% names(table) || anyNA(table$sample) || anyDuplicated(table$sample)) stop("UMAP has missing or duplicated sample identifiers; regenerate it.")
+  ids <- as.character(runs)
+  if (identical(as.character(table$sample),ids)) return(table)
+  keep <- match(ids,as.character(table$sample)); keep <- keep[!is.na(keep)]
+  if (!length(keep)) stop("This UMAP contains no samples in the current collection; regenerate it.")
+  warning("UMAP and collection samples differ; displaying only matching samples. Regenerate the UMAP.",call.=FALSE)
+  table[keep]
+}
+
+load_data_umap_internal <- function(species, color.by = c("tissue", "cell_line"), embedding = "2d") {
   df <- rc_read_experiment(species, validate = FALSE)
   dir <- file.path(refFolder(df), "UMAP")
-  table_path <- file.path(dir, "UMAP_by_gene_counts.fst")
+  if (!embedding %in% c("2d", "6d")) stop("Unknown UMAP embedding")
+  table_path <- file.path(dir, if (embedding == "6d") "UMAP_by_gene_counts_6d.fst" else "UMAP_by_gene_counts.fst")
   if (file.exists(table_path)) {
     dt_umap <- fst::read_fst(table_path, as.data.table = TRUE)
+    if (embedding == "6d") {
+      six_inputs <- file.path(dir, "UMAP_by_gene_counts_6d_inputs.rds")
+      base_inputs <- file.path(dir, "UMAP_by_gene_counts_inputs.rds")
+      if (!file.exists(six_inputs)) stop("The six-dimensional UMAP has no provenance; regenerate it.")
+      six <- tryCatch(readRDS(six_inputs), error=function(e) NULL)
+      base <- if (file.exists(base_inputs)) tryCatch(readRDS(base_inputs), error=function(e) NULL) else NULL
+      if (is.null(six) || !identical(as.character(six$samples),as.character(dt_umap$sample)))
+        stop("The six-dimensional UMAP provenance does not match its samples; regenerate it.")
+      if (!is.null(base$counts_hash) && !identical(base$counts_hash,six$counts_hash))
+        stop("The 2D and six-dimensional UMAPs use different count tables; regenerate the six-dimensional UMAP.")
+      two_path <- file.path(dir, "UMAP_by_gene_counts.fst")
+      if (file.exists(two_path)) {
+        current <- fst::read_fst(two_path,as.data.table=TRUE)
+        if (!identical(as.character(current$sample),as.character(dt_umap$sample)))
+          stop("The 2D and six-dimensional UMAPs have different samples; regenerate the six-dimensional UMAP.")
+        axes <- paste("UMAP",1:6)
+        if (!all(axes %in% names(dt_umap))) stop("Six-dimensional UMAP is missing coordinates.")
+        dt_umap <- cbind(dt_umap[,..axes],current[,setdiff(names(current),c("UMAP 1","UMAP 2")),with=FALSE])
+      }
+    }
+    dt_umap <- rc_umap_align_runs(dt_umap,ORFik::runIDs(df))
     dt_umap <- rc_access_umap(dt_umap, df)
     if (length(color.by) > 1) {
       dt_umap[, color_column := do.call(paste, c(.SD, sep = " | ")), .SDcols = color.by]
@@ -222,7 +254,7 @@ load_data_umap_internal <- function(species, color.by = c("tissue", "cell_line")
     setattr(dt_umap, "exp", species)
     setattr(dt_umap, "color.by", color.by)
   } else {
-    stop("Species has no computed UMAP, pick another!")
+    stop(sprintf("Species has no computed %s UMAP, pick another embedding or organism.", embedding))
   }
   dt_umap
 }

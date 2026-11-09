@@ -84,14 +84,18 @@ observatory_selector_ui <- function(id, meta_experiment_list, browser_options) {
           multiple = TRUE
         )
       ),
+      shiny::column(2, shiny::selectInput(ns("umap_embedding"), "Projection",
+        choices=c("Original 2D"="2d", "Six-dimensional"="6d"), selected="2d")),
+      shiny::column(1, shiny::selectInput(ns("umap_x"), "X axis", choices=1:6, selected=1)),
+      shiny::column(1, shiny::selectInput(ns("umap_y"), "Y axis", choices=1:6, selected=2)),
       shiny::column(1, plot_button(ns("go"))),
       shiny::column(
         3,
-        library_selection_picker(ns("library_selection")),
-        offset = 4
+        library_selection_picker(ns("library_selection"))
       )#,
       # shiny::column(1, library_selection_reset_button(ns("library_selection")))
     ),
+    shiny::tags$small("The 2D and 6D UMAPs are independent projections; choose two different axes and select Generate Plot. Axes are not ranked like principal components."),
     shiny::fluidRow(
       shiny::fluidRow(
         plotly::plotlyOutput(ns("libraries_umap_plot"), height = "600px") |>
@@ -194,14 +198,14 @@ observatory_normalize_plot_selection <- function(selected_runs, all_runs) {
 }
 
 observatory_selector_umap_plot_shiny <- function(observatory_module, color_by, session,
-                                                 templates = NULL) {
+                                                 templates = NULL, experiment = NULL,
+                                                 embedding = "2d", axes = c(1L,2L)) {
   time_before <- Sys.time()
-  p <- observatory_module$get_umap_data(color_by) |>
-    umap_plot(
-      color.by = color_by,
-      template = templates$observatory_umap_plotly
-    ) |>
-    htmlwidgets::onRender(
+  p <- rc_umap_cached_plot(experiment, color_by, embedding, axes)
+  if (is.null(p)) p <- umap_plot(observatory_module$get_umap_data(color_by, embedding),
+                                 color.by = color_by, template = templates$observatory_umap_plotly,
+                                 axes = axes)
+  p <- htmlwidgets::onRender(p,
       fetchJS("umap_plot_extension.js"),
       session$ns("libraries_umap_plot_selection")
     )
@@ -1098,13 +1102,19 @@ observatory_selector_server <- function(
     })
 
     output$libraries_umap_plot <- plotly::renderPlotly({
+      axes <- as.integer(c(input$umap_x %||% 1L, input$umap_y %||% 2L))
+      embedding <- input$umap_embedding %||% "2d"
+      shiny::validate(shiny::need(length(unique(axes)) == 2, "Choose different UMAP axes."),
+        shiny::need(embedding != "2d" || all(axes <= 2), "Choose the six-dimensional projection for axes 3–6."))
       observatory_selector_umap_plot_shiny(
         observatory_module = observatory_module(),
         color_by = input$color_by,
         session = session,
-        templates = templates
+        templates = templates, experiment = meta_experiment_df(), embedding = embedding, axes = axes
       )
-    }) |> shiny::bindCache(name(meta_experiment_df()), input$color_by) |> shiny::bindEvent(observatory_module())
+    }) |> shiny::bindCache(name(meta_experiment_df()), input$color_by, input$umap_embedding, input$umap_x, input$umap_y,
+                           rc_umap_render_key(meta_experiment_df(), input$umap_embedding %||% "2d")) |>
+      shiny::bindEvent(observatory_module())
 
     current_plot_selection <- shiny::reactiveVal(NULL)
 

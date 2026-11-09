@@ -83,8 +83,8 @@ rc_umap_cached_axis_titles <- function(plot, experiment, source) {
         !setequal(a$axis, 1:2) || anyNA(a$label) || any(!nzchar(a$label)) ||
         !all(a$source_md5 == unname(tools::md5sum(source)))) return(plot)
     a <- a[match(1:2, a$axis), , drop = FALSE]
-    plot$x$layout$xaxis$title <- paste0("UMAP 1 (", a$label[1], ")")
-    plot$x$layout$yaxis$title <- paste0("UMAP 2 (", a$label[2], ")")
+    plot$x$layout$xaxis$title <- paste0("UMAP 1 (Enriched: ", a$label[1], ")")
+    plot$x$layout$yaxis$title <- paste0("UMAP 2 (Enriched: ", a$label[2], ")")
     plot
   }, error = function(e) plot)
 }
@@ -105,7 +105,7 @@ rc_umap_6d_axis_titles <- function(plot, experiment, axes) {
     labels <- a$label[match(as.integer(axes), a$axis)]
     if (length(labels) != 2L || anyNA(labels)) return(plot)
     # layout() handles both fully built templates and normal plotly objects.
-    plotly::layout(plot, xaxis = list(title = paste0("UMAP ", axes[1], " (", labels[1], ")")),
-                   yaxis = list(title = paste0("UMAP ", axes[2], " (", labels[2], ")")))
+    plotly::layout(plot, xaxis = list(title = paste0("UMAP ", axes[1], " (Enriched: ", labels[1], ")")),
+                   yaxis = list(title = paste0("UMAP ", axes[2], " (Enriched: ", labels[2], ")")))
   }, error = function(e) plot)
 }

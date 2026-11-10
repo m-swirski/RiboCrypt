@@ -83,6 +83,13 @@ RiboCrypt shiny app
 \description{
 Create RiboCrypt app
 }
+\details{
+For faster first Observatory display, the Plotly library is loaded during page
+startup when collections are available. Set
+\code{options(ribocrypt.observatory_plotly_preload = "prefetch")} for a
+non-blocking download, or \code{"none"} to disable this preload. Set
+\code{options(ribocrypt.umap_webgl = FALSE)} to use SVG rendering.
+}
 \examples{
 run_variable <- 1 # Ignore check test limit
 ## Default run

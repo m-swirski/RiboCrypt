@@ -56,7 +56,7 @@ observatoryUmapPlotlyTemplate <- function() {
     plotly::plot_ly(
       x = numeric(),
       y = numeric(),
-      type = "scatter",
+      type = "scattergl",
       mode = "markers",
       name = "",
       legendgroup = "",
@@ -107,7 +107,6 @@ umap_plot_add_hover_text <- function(dt_umap) {
 
 umap_plot_from_template <- function(dt_umap, color.by, template, axes = c(1L,2L)) {
   color_title <- stringr::str_to_title(paste(color.by, collapse = " | "))
-  dt_umap <- umap_plot_add_hover_text(dt_umap)
   group_values <- as.character(dt_umap$color_column)
   group_values[is.na(group_values)] <- "NA"
   groups <- sort(unique(group_values))
@@ -133,7 +132,15 @@ umap_plot_from_template <- function(dt_umap, color.by, template, axes = c(1L,2L)
       trace <- base_trace
       trace$x <- group_dt[["UMAP 1"]]
       trace$y <- group_dt[["UMAP 2"]]
-      trace$text <- group_dt$hover_text
+      # Keep identifiers compact in the trace and use structured metadata in
+      # the hover template rather than repeating static HTML for every point.
+      trace$text <- as.character(group_dt$sample)
+      fields <- lapply(group_dt[, .(BioProject, author, inhibitors, tissues_cell_lines)],
+                       function(x) { x <- as.character(x); x[is.na(x)] <- "NA"; x })
+      trace$customdata <- unname(as.matrix(as.data.frame(fields, stringsAsFactors=FALSE)))
+      trace$hovertemplate <- paste0("BioProject %{customdata[0]}<br>Run ID: %{text}",
+        "<br>Author: %{customdata[1]}<br>Inhibitor: %{customdata[2]}",
+        "<br>Tissue | CellLine: %{customdata[3]}<extra></extra>")
       trace$name <- group
       trace$legendgroup <- group
       trace$marker$color <- palette[[i]]

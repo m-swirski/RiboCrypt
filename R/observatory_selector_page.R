@@ -207,6 +207,7 @@ observatory_selector_umap_plot_shiny <- function(observatory_module, color_by, s
                                  color.by = color_by, template = templates$observatory_umap_plotly,
                                  axes = axes)
   p <- rc_umap_axis_titles(p, experiment, embedding, axes)
+  p <- rc_umap_svg_fallback(p)
   p <- htmlwidgets::onRender(p,
       fetchJS("umap_plot_extension.js"),
       session$ns("libraries_umap_plot_selection")
@@ -1139,7 +1140,36 @@ observatory_selector_server <- function(
       plot_sel
     })
 
+    # Let the plot finish before building the table. A timeout keeps the table
+    # accessible even when a plot is unavailable or the browser cannot render it.
+    table_ready <- shiny::reactiveVal(FALSE)
+    table_generation <- 0L
+    shiny::observeEvent(observatory_module(), {
+      table_ready(FALSE)
+      table_generation <<- table_generation + 1L
+      generation <- table_generation
+      # When there is no selected embedding, the table need not wait for a
+      # Plotly-ready event that cannot arrive.
+      embedding <- shiny::isolate(input$umap_embedding) %||% "2d"
+      source <- tryCatch({
+        dir <- file.path(ORFik::refFolder(meta_experiment_df()), "UMAP")
+        file.path(dir, paste0("UMAP_by_gene_counts", if (embedding == "2d") "" else paste0("_", embedding), ".fst"))
+      }, error=function(e) "")
+      if (!file.exists(source)) {
+        table_ready(TRUE)
+        return()
+      }
+      session$onFlushed(function() {
+        later::later(function() {
+          if (!session$isClosed() && identical(generation, table_generation)) table_ready(TRUE)
+        }, delay=3)
+      }, once=TRUE)
+    }, priority=100, ignoreNULL=TRUE)
+    shiny::observeEvent(input$libraries_umap_plot_selection_ready, {
+      table_ready(TRUE)
+    }, ignoreNULL=TRUE)
     output$libraries_data_table <- DT::renderDT({
+      shiny::req(table_ready())
       observatory_selector_data_table_shiny(
         libraries_df(),
         table_id = session$ns("libraries_data_table")

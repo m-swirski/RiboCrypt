@@ -38,3 +38,17 @@ test_that("startup dependencies are registered once with Shiny and preserve its 
   expect_identical(scripts[grepl("/jquery.min.js", scripts, fixed = TRUE)],
                    lazy_scripts[grepl("/jquery.min.js", lazy_scripts, fixed = TRUE)])
 })
+
+test_that("Observatory Plotly priming supports eager, nonblocking and disabled modes", {
+  old <- options(ribocrypt.observatory_plotly_preload="eager")
+  on.exit(options(old), add=TRUE)
+  expect_identical(rc_observatory_plotly_preload(TRUE, FALSE), plotly::plot_ly()$dependencies)
+  expect_null(rc_observatory_plotly_preload(FALSE, FALSE))
+  expect_null(rc_observatory_plotly_preload(TRUE, TRUE))
+  options(ribocrypt.observatory_plotly_preload="prefetch")
+  link <- rc_observatory_plotly_preload(TRUE, FALSE)
+  expect_identical(link$name, "link")
+  expect_identical(link$attribs$rel, "prefetch")
+  options(ribocrypt.observatory_plotly_preload="none")
+  expect_null(rc_observatory_plotly_preload(TRUE, FALSE))
+})

@@ -66,3 +66,11 @@ test('programmatic selection, reset and subsequent user selection still propagat
   h.events.plotly_selected({points:[{text:'Run: A<br>Tissue: kidney'}]});
   assert.equal(h.inputs.at(-1).value[0],'A');
 });
+
+test('compact run identifiers support selection in both directions',async()=>{
+  const h=harness();h.elem.data[0].text=['SRR123','SRR456'];
+  h.select(['SRR456']);assert.equal(h.elem.data[0].selectedpoints[0],1);
+  await Promise.resolve();h.reset();await Promise.resolve();
+  h.events.plotly_selected({points:[{text:'SRR123'}]});
+  assert.equal(h.inputs.at(-1).value[0],'SRR123');
+});

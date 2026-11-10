@@ -48,20 +48,27 @@ observatory_server <- function(
       templates = templates
     )
 
-    observatory_browser_server(
-      "browser_obs",
-      selections$meta_experiment_df,
-      shiny::reactive(selections$selected_libraries_snapshot()$data_table_selections),
-      selections$all_library_runs,
-      shiny::reactive(selections$selected_libraries_snapshot()$labels), gene_name_list,
-      tx, cds, experiments, org, rv, browser_options,
-      templates = templates,
-      selection_index = shiny::reactive(selections$selected_libraries_snapshot()$index),
-      active_selection_id = shiny::reactive(selections$selected_libraries_snapshot()$active_selection_id),
-      selected_experiment = selections$selected_experiment,
-      color_by = selections$color_by,
-      observatory_url_state = observatory_url_state
-    )
+    # The browser loads gene and transcript state; postpone it until its tab
+    # is first opened so it cannot block the selector's initial plot.
+    browser_started <- FALSE
+    shiny::observeEvent(input$observatory_view, {
+      if (!identical(input$observatory_view, "Browse") || browser_started) return()
+      browser_started <<- TRUE
+      observatory_browser_server(
+        "browser_obs",
+        selections$meta_experiment_df,
+        shiny::reactive(selections$selected_libraries_snapshot()$data_table_selections),
+        selections$all_library_runs,
+        shiny::reactive(selections$selected_libraries_snapshot()$labels), gene_name_list,
+        tx, cds, experiments, org, rv, browser_options,
+        templates = templates,
+        selection_index = shiny::reactive(selections$selected_libraries_snapshot()$index),
+        active_selection_id = shiny::reactive(selections$selected_libraries_snapshot()$active_selection_id),
+        selected_experiment = selections$selected_experiment,
+        color_by = selections$color_by,
+        observatory_url_state = observatory_url_state
+      )
+    }, ignoreInit=FALSE)
     return(rv)
   })
 }

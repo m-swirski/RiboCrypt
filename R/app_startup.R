@@ -21,6 +21,26 @@ plotly_startup_dependencies <- function(plot_on_start) {
   plotly::plot_ly()$dependencies
 }
 
+# Prime Plotly for Observatory. Eager loading favors the first Observatory
+# transition; prefetch avoids blocking the initial page, at a speed cost.
+rc_observatory_plotly_preload <- function(enabled, plot_on_start) {
+  if (!isTRUE(enabled) || isTRUE(as.logical(plot_on_start))) return(NULL)
+  mode <- getOption("ribocrypt.observatory_plotly_preload", "eager")
+  if (identical(mode, "none")) return(NULL)
+  if (identical(mode, "eager")) return(plotly::plot_ly()$dependencies)
+  if (!identical(mode, "prefetch")) stop("Invalid ribocrypt.observatory_plotly_preload option")
+  deps <- plotly::plot_ly()$dependencies
+  match <- Filter(function(x) identical(x$name, "plotly-main"), deps)
+  if (length(match) != 1L) return(NULL)
+  dep <- match[[1L]]
+  if (length(dep$script) != 1L || is.null(dep$package)) return(NULL)
+  dir <- system.file(dep$src$file, package=dep$package)
+  if (!nzchar(dir) || !file.exists(file.path(dir, dep$script))) return(NULL)
+  prefix <- paste0(dep$name, "-", as.character(dep$version))
+  shiny::addResourcePath(prefix, dir)
+  shiny::tags$link(rel="prefetch", as="script", href=paste0(prefix,"/",dep$script))
+}
+
 #' Cache the rendered shell of this app's request-independent, static UI.
 #'
 #' Keep Shiny's complete response, including dependency/singleton registration.

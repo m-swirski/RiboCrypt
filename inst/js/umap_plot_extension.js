@@ -60,6 +60,9 @@
       const match = part.match(/^Run(?: ID)?:\s*(.+)$/i);
       if (match) return normalizeRunId(match[1]);
     }
+    // New compact traces carry the Run ID directly; retain compatibility with
+    // cached and older traces whose text contains the full hover markup.
+    if (!/<[^>]*>|<br\s*\/?>/i.test(value) && !/^Run(?: ID)?:/i.test(value)) return value;
     return null;
   };
   const messagePayload = (message) => {

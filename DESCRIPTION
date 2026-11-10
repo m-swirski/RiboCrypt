@@ -42,6 +42,7 @@ Imports:
   IRanges,
   jsonlite,
   knitr,
+  later,
   markdown,
   matrixStats,
   NGLVieweR,

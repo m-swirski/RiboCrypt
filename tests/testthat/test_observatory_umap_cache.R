@@ -1,6 +1,6 @@
 test_that("precomputed UMAP cache is rejected for stale sources or collections", {
   p <- structure(list(),class="plotly")
-  x <- list(schema=3L,source_md5="old",plotly_version="1",runs=c("A","B"),plot=p)
+  x <- list(schema=6L,source_md5="old",plotly_version="1",runs=c("A","B"),plot=p)
   expect_true(rc_umap_cache_valid(x,"old",c("A","B"),"1"))
   expect_false(rc_umap_cache_valid(x,"changed",c("A","B"),"1"))
   expect_false(rc_umap_cache_valid(x,"old",c("B","A"),"1"))
@@ -31,7 +31,7 @@ test_that("a stale table fallback never exposes samples outside the collection",
 
 test_that("a missing provenance hash cannot validate a cache", {
   p <- structure(list(), class = "plotly")
-  x <- list(schema=3L, source_md5=NA_character_, plotly_version="1", runs="A", plot=p)
+  x <- list(schema=6L, source_md5=NA_character_, plotly_version="1", runs="A", plot=p)
   expect_false(rc_umap_cache_valid(x, NA_character_, "A", "1"))
 })
 
@@ -53,4 +53,34 @@ test_that("axis annotations follow the selected fit and fail closed when stale",
   a$source_md5 <- unname(tools::md5sum(source)); write.csv(a, annotation, row.names=FALSE)
   Sys.setFileTime(annotation, Sys.time()-10)
   expect_identical(rc_umap_apply_axis_annotations(p, source, annotation, 3L, c(2L,3L)), p)
+})
+
+
+test_that("prebuilt UMAP widgets skip only the redundant Plotly rebuild", {
+  p <- observatoryUmapPlotlyTemplate()
+  p <- plotly::plotly_build(p)
+  class(p) <- c("rc_umap_prebuilt", class(p))
+  expect_identical(plotly::plotly_build(p), p)
+  expect_s3_class(p, "plotly")
+})
+
+test_that("compact UMAP hover retains the Run and every metadata field", {
+  x <- data.table::data.table(`UMAP 1`=1, `UMAP 2`=2,
+    color_column="kidney | HEK", BioProject="PRJ123", sample="SRR1",
+    author="Smith", inhibitors="chx", tissues_cell_lines="kidney | HEK")
+  p <- umap_plot(x, color.by=c("tissue","cell_line"),
+                 template=observatoryUmapPlotlyTemplate())
+  t <- p$x$data[[1]]
+  expect_identical(t$text, "SRR1")
+  expect_equal(unname(t$customdata[1,]), c("PRJ123", "Smith", "chx", "kidney | HEK"))
+  expect_match(t$hovertemplate, "Run ID: %{text}", fixed=TRUE)
+  expect_identical(t$type, "scattergl")
+})
+
+test_that("SVG compatibility conversion does not mutate the cached widget", {
+  old <- options(ribocrypt.umap_webgl=FALSE); on.exit(options(old), add=TRUE)
+  p <- observatoryUmapPlotlyTemplate()
+  q <- rc_umap_svg_fallback(p)
+  expect_identical(p$x$data[[1]]$type, "scattergl")
+  expect_identical(q$x$data[[1]]$type, "scatter")
 })

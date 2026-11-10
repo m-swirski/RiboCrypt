@@ -43,6 +43,11 @@
 #' remaining all_exp are used in all other modules.
 #' @param columns_to_show character vector of metadata columns shown in the
 #' metadata table tab.
+#' @details For faster first Observatory display, the Plotly library is loaded
+#'   during page startup when collections are available. Set
+#'   `options(ribocrypt.observatory_plotly_preload = "prefetch")` for a
+#'   non-blocking download, or `"none"` to disable this preload. Set
+#'   `options(ribocrypt.umap_webgl = FALSE)` to use the SVG compatibility path.
 #' @param access_control NULL for legacy public operation, or configuration from
 #'   `ribocrypt_access_control()` for gateway-authenticated, permission-filtered sessions.
 #' @import shiny bslib ORFik NGLVieweR ggplot2 fst rclipboard data.table
@@ -113,6 +118,8 @@ RiboCrypt_app <- function(
   # User interface
   ui <- tagList(
     plotly_startup_dependencies(browser_options[["plot_on_start"]]),
+    rc_observatory_plotly_preload(!is.null(all_exp_meta) && nrow(all_exp_meta) > 0L,
+                                   browser_options[["plot_on_start"]]),
     rc_header_styling(),
     rc_header_image(),
     helper_button_redirect_call(),

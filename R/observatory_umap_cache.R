@@ -5,7 +5,7 @@ rc_umap_cache_file <- function(df) {
   staging <- getOption("ribocrypt.umap_cache_dir",NULL)
   if (!is.null(staging)) return(file.path(staging,paste0(ORFik::name(df),"_observatory_default.rds")))
   safe_name <- gsub("[^A-Za-z0-9_.-]","_",ORFik::name(df))
-  file.path(ORFik::refFolder(df),"UMAP",paste0("observatory_plotly_",safe_name,"_tissue_cellline_2d_v3.rds"))
+  file.path(ORFik::refFolder(df),"UMAP",paste0("observatory_plotly_",safe_name,"_tissue_cellline_2d_v6.rds"))
 }
 rc_umap_source_file <- function(df) file.path(ORFik::refFolder(df),"UMAP","UMAP_by_gene_counts.fst")
 rc_umap_render_key <- function(df, embedding = "2d") {
@@ -19,7 +19,7 @@ rc_umap_render_key <- function(df, embedding = "2d") {
   hashes <- vapply(files,function(x) if (file.exists(x)) unname(tools::md5sum(x)) else NA_character_,character(1))
   # Include the session's actual Run order: access-filtered collections can
   # share a name while exposing different libraries to different users.
-  list(hashes=hashes, mtimes = vapply(files, function(x) if (file.exists(x)) as.numeric(file.info(x)$mtime) else NA_real_, numeric(1)), runs=as.character(ORFik::runIDs(df)))
+  list(hashes=hashes, mtimes = vapply(files, function(x) if (file.exists(x)) as.numeric(file.info(x)$mtime) else NA_real_, numeric(1)), runs=as.character(ORFik::runIDs(df)), webgl=isTRUE(getOption("ribocrypt.umap_webgl", TRUE)))
 }
 rc_umap_cache_source_hash <- function(df) {
   dir <- file.path(ORFik::refFolder(df), "UMAP")
@@ -28,7 +28,7 @@ rc_umap_cache_source_hash <- function(df) {
   paste(unname(tools::md5sum(files)), collapse = ":")
 }
 rc_umap_cache_valid <- function(x, source_md5, runs, plotly_version) {
-  !is.na(source_md5) && is.list(x) && identical(x$schema,3L) && identical(x$source_md5,source_md5) &&
+  !is.na(source_md5) && is.list(x) && identical(x$schema,6L) && identical(x$source_md5,source_md5) &&
     identical(x$plotly_version,plotly_version) && identical(x$runs,runs) && inherits(x$plot,"plotly")
 }
 
@@ -66,8 +66,12 @@ precompute_observatory_umap <- function(experiment, path=rc_umap_cache_file(expe
   if (!identical(as.character(d$sample),runs)) stop("UMAP sample order differs from the collection; rebuild the UMAP first")
   d[, color_column := paste(tissue,cell_line,sep=" | ")]
   p <- umap_plot(d,color.by=c("tissue","cell_line"),template=observatoryUmapPlotlyTemplate())
+  # Plotly's normal render path rebuilds even a built widget. Build once at
+  # cache creation; the S3 method below preserves session event registration.
+  p <- plotly::plotly_build(p)
+  class(p) <- c("rc_umap_prebuilt", class(p))
   if (!identical(before,rc_umap_cache_source_hash(experiment))) stop("UMAP source changed during cache creation")
-  x <- list(schema=3L, source_md5=before, plotly_version=as.character(utils::packageVersion("plotly")), runs=runs, plot=p)
+  x <- list(schema=6L, source_md5=before, plotly_version=as.character(utils::packageVersion("plotly")), runs=runs, plot=p)
   dir.create(dirname(path),recursive=TRUE,showWarnings=FALSE)
   tmp <- tempfile(pattern=".umap-cache-",tmpdir=dirname(path)); on.exit(unlink(tmp),add=TRUE)
   saveRDS(x,tmp,compress=FALSE)
@@ -98,7 +102,25 @@ rc_umap_apply_axis_annotations <- function(plot, source, annotation, dims, axes)
         !all(a$source_md5 == unname(tools::md5sum(source)))) return(plot)
     labels <- a$label[match(as.integer(axes), a$axis)]
     if (length(labels) != 2L || anyNA(labels)) return(plot)
-    plotly::layout(plot, xaxis=list(title=paste0("UMAP ",axes[1]," (Enriched: ",labels[1],")")),
-                   yaxis=list(title=paste0("UMAP ",axes[2]," (Enriched: ",labels[2],")")))
+    xtitle <- paste0("UMAP ",axes[1]," (Enriched: ",labels[1],")")
+    ytitle <- paste0("UMAP ",axes[2]," (Enriched: ",labels[2],")")
+    if (inherits(plot, "rc_umap_prebuilt")) {
+      plot$x$layout$xaxis$title <- xtitle
+      plot$x$layout$yaxis$title <- ytitle
+      plot
+    } else plotly::layout(plot, xaxis=list(title=xtitle), yaxis=list(title=ytitle))
   }, error=function(e) plot)
+}
+
+#' @export
+plotly_build.rc_umap_prebuilt <- function(p, registerFrames=TRUE) p
+
+# Optional compatibility path for browsers without working WebGL. The cached
+# object remains immutable; list copy-on-modify converts only this response.
+rc_umap_svg_fallback <- function(plot) {
+  if (isTRUE(getOption("ribocrypt.umap_webgl", TRUE))) return(plot)
+  for (i in seq_along(plot$x$data)) {
+    if (identical(plot$x$data[[i]]$type, "scattergl")) plot$x$data[[i]]$type <- "scatter"
+  }
+  plot
 }

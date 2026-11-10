@@ -211,6 +211,9 @@ RiboCrypt_app <- function(
         with_readlengths_env, df, df_with, experiments, tx, cds, libs, org,
         gene_name_list, rv, metadata, names_init, browser_options
       ))
+    on_first_tab(input, "Translation", function() {
+      translation_server("translation", browser_options, all_exp)
+    })
     on_first_tab(input, "Predicted Translons", function() {
       predicted_translons_server("predicted_translons", all_exp, browser_options)
     })

@@ -8,6 +8,7 @@ analysis_ui <- function(id, all_exp, browser_options, libs, metadata,
     heatmap_ui("Heatmap", all_exp, browser_options, libs),
     codon_ui("Codon", all_exp, browser_options, libs),
     DEG_ui("DEG", all_exp, browser_options),
+    translation_ui("translation"),
     quality_ui("quality", all_exp, browser_options, libs),
     fastq_ui("FastQ_report", all_exp, browser_options, libs)
   )

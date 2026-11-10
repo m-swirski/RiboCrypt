@@ -30,6 +30,7 @@ Imports:
   crosstalk,
   data.table,
   dplyr,
+  digest,
   DT,
   fst,
   GenomeInfoDb,
@@ -62,6 +63,10 @@ Imports:
   writexl
 Suggests:
   base64enc,
+  DESeq2,
+  future,
+  promises,
+  SummarizedExperiment,
   DBI,
   RSQLite,
   profvis,

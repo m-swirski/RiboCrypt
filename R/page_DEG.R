@@ -13,8 +13,8 @@ DEG_ui <- function(id, all_exp, browser_options, label = "DEG") {
                    diff_method_input_select(ns),
                    factor_input_select(ns),
                    condition_input_select(ns),
-                   library_input_select(ns, label = "Libraries (Group1)", id = "library1"),
-                   library_input_select(ns, label = "Libraries (Group2)", id = "library2"),
+                   library_input_select(ns, label = "Libraries (Group 1 / numerator)", id = "library1"),
+                   library_input_select(ns, label = "Libraries (Group 2 / reference)", id = "library2"),
                    helper_button_redirect_call()
           ),
           tabPanel("Settings",

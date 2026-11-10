@@ -171,7 +171,7 @@ rc_access_experiment_catalog <- function(context) {
   experiments <- lapply(seq_len(nrow(context$catalog)), function(i) {
     row <- context$catalog[i, ]
     df <- rc_read_experiment(row$experiment)
-    list(df = df, info = data.table::data.table(name = row$experiment, organism = ORFik::organism(df),
+    list(df = df, info = data.table::data.table(name = row$experiment, organism = BiocGenerics::organism(df),
       author = df@author, libtypes = list(unique(df$libtype)), samples = nrow(df)))
   })
   context$runs <- unique(unlist(lapply(experiments, function(x) ORFik::runIDs(x$df))))

@@ -84,8 +84,11 @@ observatory_selector_ui <- function(id, meta_experiment_list, browser_options) {
           multiple = TRUE
         )
       ),
-      shiny::column(1, shiny::selectInput(ns("umap_x"), "X axis", choices=1:6, selected=1)),
-      shiny::column(1, shiny::selectInput(ns("umap_y"), "Y axis", choices=1:6, selected=2)),
+      shiny::column(1, shiny::selectInput(ns("umap_embedding"), "Dimensions", choices=setNames(paste0(2:6, "d"), 2:6), selected="2d")),
+      shiny::conditionalPanel(condition="input.umap_embedding != '2d'", ns=ns,
+        shiny::column(1, shiny::selectInput(ns("umap_x"), "X axis", choices=1:6, selected=1)),
+        shiny::column(1, shiny::selectInput(ns("umap_y"), "Y axis", choices=1:6, selected=2))
+      ),
       shiny::column(1, plot_button(ns("go"))),
       shiny::column(
         3,
@@ -93,7 +96,7 @@ observatory_selector_ui <- function(id, meta_experiment_list, browser_options) {
       )#,
       # shiny::column(1, library_selection_reset_button(ns("library_selection")))
     ),
-    shiny::tags$small("Choose two different UMAP components and select Generate Plot. Components are not ranked like principal components."),
+    shiny::tags$small("Each dimensionality is a separately optimized UMAP fit. Human axis descriptions are exploratory associations; (+) and (-) indicate correlation direction. Components are not ordered like principal components."),
     shiny::fluidRow(
       shiny::fluidRow(
         plotly::plotlyOutput(ns("libraries_umap_plot"), height = "600px") |>
@@ -197,13 +200,13 @@ observatory_normalize_plot_selection <- function(selected_runs, all_runs) {
 
 observatory_selector_umap_plot_shiny <- function(observatory_module, color_by, session,
                                                  templates = NULL, experiment = NULL,
-                                                 embedding = "6d", axes = c(1L,2L)) {
+                                                 embedding = "2d", axes = c(1L,2L)) {
   time_before <- Sys.time()
   p <- rc_umap_cached_plot(experiment, color_by, embedding, axes)
   if (is.null(p)) p <- umap_plot(observatory_module$get_umap_data(color_by, embedding),
                                  color.by = color_by, template = templates$observatory_umap_plotly,
                                  axes = axes)
-  if (identical(embedding, "6d")) p <- rc_umap_6d_axis_titles(p, experiment, axes)
+  p <- rc_umap_axis_titles(p, experiment, embedding, axes)
   p <- htmlwidgets::onRender(p,
       fetchJS("umap_plot_extension.js"),
       session$ns("libraries_umap_plot_selection")
@@ -1100,18 +1103,30 @@ observatory_selector_server <- function(
       observatory_format_libraries_df(libraries_df())
     })
 
+    shiny::observeEvent(input$umap_embedding, {
+      dim <- as.integer(sub("d$", "", input$umap_embedding %||% "2d"))
+      if (is.na(dim) || !dim %in% 2:6) return()
+      x <- suppressWarnings(as.integer(input$umap_x)); y <- suppressWarnings(as.integer(input$umap_y))
+      if (!length(x) || is.na(x) || x > dim || x < 1) x <- 1L
+      if (!length(y) || is.na(y) || y > dim || y < 1 || y == x) y <- if (x == 1L) 2L else 1L
+      shiny::updateSelectInput(session, "umap_x", choices=seq_len(dim), selected=x)
+      shiny::updateSelectInput(session, "umap_y", choices=seq_len(dim), selected=y)
+    }, ignoreInit=FALSE)
+
     output$libraries_umap_plot <- plotly::renderPlotly({
-      axes <- as.integer(c(input$umap_x %||% 1L, input$umap_y %||% 2L))
-      embedding <- "6d"
-      shiny::validate(shiny::need(length(unique(axes)) == 2, "Choose different UMAP axes."))
+      embedding <- input$umap_embedding %||% "2d"
+      dim <- suppressWarnings(as.integer(sub("d$", "", embedding)))
+      shiny::validate(shiny::need(length(dim)==1L && !is.na(dim) && dim %in% 2:6, "Choose a supported UMAP dimensionality."))
+      axes <- if (dim == 2L) c(1L,2L) else as.integer(c(input$umap_x %||% 1L, input$umap_y %||% 2L))
+      shiny::validate(shiny::need(length(axes)==2L && !anyNA(axes) && length(unique(axes))==2L && all(axes %in% seq_len(dim)), "Choose two different axes available in this UMAP."))
       observatory_selector_umap_plot_shiny(
         observatory_module = observatory_module(),
         color_by = input$color_by,
         session = session,
         templates = templates, experiment = meta_experiment_df(), embedding = embedding, axes = axes
       )
-    }) |> shiny::bindCache(name(meta_experiment_df()), input$color_by, input$umap_x, input$umap_y,
-                           rc_umap_render_key(meta_experiment_df(), "6d")) |>
+    }) |> shiny::bindCache(name(meta_experiment_df()), input$color_by, input$umap_embedding, input$umap_x, input$umap_y,
+                           rc_umap_render_key(meta_experiment_df(), input$umap_embedding %||% "2d")) |>
       shiny::bindEvent(observatory_module())
 
     current_plot_selection <- shiny::reactiveVal(NULL)

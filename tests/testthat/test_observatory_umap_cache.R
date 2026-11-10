@@ -1,11 +1,11 @@
 test_that("precomputed UMAP cache is rejected for stale sources or collections", {
   p <- structure(list(),class="plotly")
-  x <- list(schema=2L,source_md5="old",plotly_version="1",runs=c("A","B"),plot=p)
+  x <- list(schema=3L,source_md5="old",plotly_version="1",runs=c("A","B"),plot=p)
   expect_true(rc_umap_cache_valid(x,"old",c("A","B"),"1"))
   expect_false(rc_umap_cache_valid(x,"changed",c("A","B"),"1"))
   expect_false(rc_umap_cache_valid(x,"old",c("B","A"),"1"))
   expect_false(rc_umap_cache_valid(x,"old",c("A","B"),"2"))
-  expect_null(rc_umap_cached_plot(NULL,c("tissue","cell_line"),"6d",c(1,2)))
+  expect_null(rc_umap_cached_plot(NULL,c("tissue","cell_line"),"2d",c(1,2)))
 })
 
 test_that("UMAP axes use one projection and do not modify the caller's data", {
@@ -31,6 +31,26 @@ test_that("a stale table fallback never exposes samples outside the collection",
 
 test_that("a missing provenance hash cannot validate a cache", {
   p <- structure(list(), class = "plotly")
-  x <- list(schema=2L, source_md5=NA_character_, plotly_version="1", runs="A", plot=p)
+  x <- list(schema=3L, source_md5=NA_character_, plotly_version="1", runs="A", plot=p)
   expect_false(rc_umap_cache_valid(x, NA_character_, "A", "1"))
+})
+
+test_that("axis annotations follow the selected fit and fail closed when stale", {
+  dir <- tempfile(); dir.create(dir); on.exit(unlink(dir, recursive=TRUE))
+  source <- file.path(dir, "embedding.fst"); writeLines("coordinates", source)
+  annotation <- file.path(dir, "annotations.csv")
+  a <- data.frame(axis=1:3, label=c("A +", "B -", "C +"),
+                  source_md5=unname(tools::md5sum(source)))
+  write.csv(a, annotation, row.names=FALSE)
+  Sys.setFileTime(annotation, Sys.time()+2)
+  p <- observatoryUmapPlotlyTemplate()
+  q <- plotly::plotly_build(rc_umap_apply_axis_annotations(p, source, annotation, 3L, c(2L,3L)))
+  expect_identical(q$x$layout$xaxis$title, "UMAP 2 (Enriched: B -)")
+  expect_identical(q$x$layout$yaxis$title, "UMAP 3 (Enriched: C +)")
+  expect_identical(rc_umap_apply_axis_annotations(p, source, annotation, 4L, c(2L,3L)), p)
+  a$source_md5 <- "wrong"; write.csv(a, annotation, row.names=FALSE)
+  expect_identical(rc_umap_apply_axis_annotations(p, source, annotation, 3L, c(2L,3L)), p)
+  a$source_md5 <- unname(tools::md5sum(source)); write.csv(a, annotation, row.names=FALSE)
+  Sys.setFileTime(annotation, Sys.time()-10)
+  expect_identical(rc_umap_apply_axis_annotations(p, source, annotation, 3L, c(2L,3L)), p)
 })

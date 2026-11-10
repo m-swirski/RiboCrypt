@@ -195,5 +195,17 @@
     });
     registry.handlersInstalled = true;
   }
+  // Deferred legend (layout.meta.rcDeferredLegend, R/page_organism_UMAP.R): the points are painted first and the
+  // native legend is added in a later task, so it no longer delays the first paint.
+  const meta = elem.layout && elem.layout.meta;
+  if (meta && meta.rcDeferredLegend && elem.layout.showlegend === false && typeof window.setTimeout === "function") {
+    const showLegend = () => {
+      if (document.body.contains(elem) && elem.layout && elem.layout.showlegend === false) {
+        Plotly.relayout(elem, { showlegend: true });
+      }
+    };
+    const later = () => window.setTimeout(showLegend, 0);
+    if (typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(later); else later();
+  }
   Shiny.setInputValue(valuesInputId + "_ready", Math.random(), { priority: "event" });
 };

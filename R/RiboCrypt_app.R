@@ -188,7 +188,7 @@ RiboCrypt_app <- function(
             metadata, browser_options, rv,
             templates = templates
           )
-        })
+        }, prewarm = rc_observatory_prewarm_delay())
       }
       on_first_tab(input, c("MegaBrowser", "Observatory"), function() {
         collection_pages(input, output, session,
@@ -199,7 +199,7 @@ RiboCrypt_app <- function(
                          cds_init = cds_init_meta,
                          exp_init = exp_init_meta,
                          exps_dir, metadata, browser_options)
-      })
+      }, prewarm = rc_observatory_prewarm_delay())
 
     } else {
       print("No collections given, ignoring MegaBrowser and observatory.")

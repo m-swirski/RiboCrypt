@@ -5,7 +5,7 @@ rc_umap_cache_file <- function(df) {
   staging <- getOption("ribocrypt.umap_cache_dir",NULL)
   if (!is.null(staging)) return(file.path(staging,paste0(ORFik::name(df),"_observatory_default.rds")))
   safe_name <- gsub("[^A-Za-z0-9_.-]","_",ORFik::name(df))
-  file.path(ORFik::refFolder(df),"UMAP",paste0("observatory_plotly_",safe_name,"_tissue_cellline_2d_v6.rds"))
+  file.path(ORFik::refFolder(df),"UMAP",paste0("observatory_plotly_",safe_name,"_tissue_cellline_2d_v7.rds"))
 }
 rc_umap_source_file <- function(df) file.path(ORFik::refFolder(df),"UMAP","UMAP_by_gene_counts.fst")
 rc_umap_render_key <- function(df, embedding = "2d") {
@@ -28,7 +28,7 @@ rc_umap_cache_source_hash <- function(df) {
   paste(unname(tools::md5sum(files)), collapse = ":")
 }
 rc_umap_cache_valid <- function(x, source_md5, runs, plotly_version) {
-  !is.na(source_md5) && is.list(x) && identical(x$schema,6L) && identical(x$source_md5,source_md5) &&
+  !is.na(source_md5) && is.list(x) && identical(x$schema,7L) && identical(x$source_md5,source_md5) &&
     identical(x$plotly_version,plotly_version) && identical(x$runs,runs) && inherits(x$plot,"plotly")
 }
 
@@ -71,7 +71,7 @@ precompute_observatory_umap <- function(experiment, path=rc_umap_cache_file(expe
   p <- plotly::plotly_build(p)
   class(p) <- c("rc_umap_prebuilt", class(p))
   if (!identical(before,rc_umap_cache_source_hash(experiment))) stop("UMAP source changed during cache creation")
-  x <- list(schema=6L, source_md5=before, plotly_version=as.character(utils::packageVersion("plotly")), runs=runs, plot=p)
+  x <- list(schema=7L, source_md5=before, plotly_version=as.character(utils::packageVersion("plotly")), runs=runs, plot=p)
   dir.create(dirname(path),recursive=TRUE,showWarnings=FALSE)
   tmp <- tempfile(pattern=".umap-cache-",tmpdir=dirname(path)); on.exit(unlink(tmp),add=TRUE)
   saveRDS(x,tmp,compress=FALSE)

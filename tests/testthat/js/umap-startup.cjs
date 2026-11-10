@@ -74,3 +74,17 @@ test('compact run identifiers support selection in both directions',async()=>{
   h.events.plotly_selected({points:[{text:'SRR123'}]});
   assert.equal(h.inputs.at(-1).value[0],'SRR123');
 });
+
+test('a deferred legend is switched on after the first paint, once', ()=>{
+  const calls=[]; let timer=null;
+  const elem={data:[{text:['Run: A']}],layout:{showlegend:false,meta:{rcDeferredLegend:true}},
+    _fullLayout:{dragmode:'select'},_fullData:[{}],on:()=>{},addEventListener:()=>{},querySelectorAll:()=>[]};
+  const window={requestAnimationFrame:fn=>fn(),setTimeout:fn=>{timer=fn;}};
+  const Plotly={relayout:(_,patch)=>{calls.push(patch);Object.assign(elem.layout,patch);}};
+  const run=vm.runInNewContext(source,{window,Plotly,document:{body:{contains:()=>true}},
+    Shiny:{setInputValue:()=>{},addCustomMessageHandler:()=>{}}});
+  run(elem,null,'umap_selection');
+  assert.deepEqual(calls,[]);                       // nothing before the scheduled task
+  timer(); assert.equal(JSON.stringify(calls),JSON.stringify([{showlegend:true}]));
+  timer(); assert.equal(calls.length,1);            // already shown: no second relayout
+});

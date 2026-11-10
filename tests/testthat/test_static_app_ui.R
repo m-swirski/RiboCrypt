@@ -20,7 +20,7 @@ test_that("static UI caching preserves Shiny's complete response", {
   expect_match(first$content, "window.once = true;", fixed = TRUE)
 })
 
-test_that("query strings and non-root requests retain the original handler", {
+test_that("app query strings share the cached page; Shiny restore/showcase queries and non-root requests do not", {
   calls <- 0L
   app <- cache_static_app_ui(list(httpHandler = function(req) {
     calls <<- calls + 1L
@@ -28,7 +28,12 @@ test_that("query strings and non-root requests retain the original handler", {
   }))
   plain <- list(REQUEST_METHOD = "GET", PATH_INFO = "/", QUERY_STRING = "")
   app$httpHandler(plain)
-  queries <- c("gene=ATF4&go=true", "obs_state=abc", "_state_id_=abc", "showcase=1")
+  for (query in c("gene=ATF4&go=true", "?go=FALSE", "obs_state=abc")) {
+    req <- plain; req$QUERY_STRING <- query
+    expect_identical(app$httpHandler(req)$content, plain)          # the static page, rendered once
+  }
+  expect_equal(calls, 1L)
+  queries <- c("_state_id_=abc", "showcase=1", "gene=ATF4&_inputs_&x=1", "_values_&y=2")
   for (query in queries) {
     req <- plain; req$QUERY_STRING <- query
     expect_identical(app$httpHandler(req)$content, req)

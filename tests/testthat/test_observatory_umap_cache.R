@@ -1,6 +1,6 @@
 test_that("precomputed UMAP cache is rejected for stale sources or collections", {
   p <- structure(list(),class="plotly")
-  x <- list(schema=6L,source_md5="old",plotly_version="1",runs=c("A","B"),plot=p)
+  x <- list(schema=7L,source_md5="old",plotly_version="1",runs=c("A","B"),plot=p)
   expect_true(rc_umap_cache_valid(x,"old",c("A","B"),"1"))
   expect_false(rc_umap_cache_valid(x,"changed",c("A","B"),"1"))
   expect_false(rc_umap_cache_valid(x,"old",c("B","A"),"1"))
@@ -31,7 +31,7 @@ test_that("a stale table fallback never exposes samples outside the collection",
 
 test_that("a missing provenance hash cannot validate a cache", {
   p <- structure(list(), class = "plotly")
-  x <- list(schema=6L, source_md5=NA_character_, plotly_version="1", runs="A", plot=p)
+  x <- list(schema=7L, source_md5=NA_character_, plotly_version="1", runs="A", plot=p)
   expect_false(rc_umap_cache_valid(x, NA_character_, "A", "1"))
 })
 
@@ -72,9 +72,29 @@ test_that("compact UMAP hover retains the Run and every metadata field", {
                  template=observatoryUmapPlotlyTemplate())
   t <- p$x$data[[1]]
   expect_identical(t$text, "SRR1")
-  expect_equal(unname(t$customdata[1,]), c("PRJ123", "Smith", "chx", "kidney | HEK"))
+  # the tissue | cell line label equals the trace name, so it is taken from the trace instead of each point
+  expect_equal(unname(t$customdata[1,]), c("PRJ123", "Smith", "chx"))
+  expect_identical(t$name, "kidney | HEK")
   expect_match(t$hovertemplate, "Run ID: %{text}", fixed=TRUE)
+  expect_match(t$hovertemplate, "Tissue | CellLine: %{fullData.name}", fixed=TRUE)
   expect_identical(t$type, "scattergl")
+  # a label that differs from the group is kept per point
+  y <- data.table::copy(x)[, tissues_cell_lines := "kidney | HEK293"]
+  t2 <- umap_plot(y, color.by=c("tissue","cell_line"), template=observatoryUmapPlotlyTemplate())$x$data[[1]]
+  expect_equal(unname(t2$customdata[1,]), c("PRJ123", "Smith", "chx", "kidney | HEK293"))
+  expect_match(t2$hovertemplate, "%{customdata[3]}", fixed=TRUE)
+})
+
+test_that("compact UMAP payload: rounded coordinates, no empty per-trace styles, legend drawn after first paint", {
+  x <- data.table::data.table(`UMAP 1`=c(1.23456789, 2), `UMAP 2`=c(-3.98765432, 4),
+    color_column=c("a | x", "b | y"), BioProject="PRJ1", sample=c("R1", "R2"),
+    author="A", inhibitors="chx", tissues_cell_lines=c("a | x", "b | y"))
+  p <- umap_plot(x, color.by=c("tissue","cell_line"), template=observatoryUmapPlotlyTemplate())
+  expect_equal(p$x$data[[1]]$x, 1.235); expect_equal(p$x$data[[1]]$y, -3.988)
+  expect_null(p$x$data[[1]]$error_x); expect_null(p$x$data[[1]]$error_y); expect_null(p$x$data[[1]]$line)
+  expect_false(p$x$layout$showlegend)
+  expect_true(p$x$layout$meta$rcDeferredLegend)
+  expect_true(all(vapply(p$x$data, function(t) isTRUE(t$showlegend), logical(1))))
 })
 
 test_that("SVG compatibility conversion does not mutate the cached widget", {

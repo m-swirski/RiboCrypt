@@ -51,8 +51,7 @@ rc_home_ui <- function(home_html, all_exp, metadata) {
           shiny::uiOutput("home_species_info"),
           shiny::selectizeInput("home_experiment", "Experiment", choices=character(), width="100%", options=list(maxOptions=100)),
           shiny::uiOutput("home_sample_search_ui"),
-          shiny::actionButton("home_open", "Open in Browser", class="btn-primary"),
-          shiny::p(class="rc-home-hint", "Experiment availability depends on this installation. The wheel counts use supplied Ribo-seq metadata."))))))
+          shiny::actionButton("home_open", "Open in Browser", class="btn-primary"))))))
 }
 
 rc_home_server <- function(input, output, session, all_exp, metadata, rv, df, libs) {

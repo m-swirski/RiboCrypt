@@ -25,3 +25,11 @@ test_that("logo navigation is enabled only with a home page", {
   expect_match(as.character(rc_title(TRUE)),"#home",fixed=TRUE)
   expect_false(grepl("#home",as.character(rc_title(FALSE)),fixed=TRUE))
 })
+
+test_that("every species clade is a wheel clade and viral references are Viruses", {
+  x <- utils::read.csv(system.file("home", "species_clades.csv", package = "RiboCrypt"), stringsAsFactors = FALSE)
+  wheel <- c("Mammals","Other vertebrates","Invertebrates","Plants","Fungi","Protists","Bacteria","Archaea","Viruses")
+  expect_true(all(x$clade %in% wheel))
+  expect_false(anyDuplicated(x$species) > 0)
+  expect_equal(x$clade[x$species %in% c("Sars cov2", "Sars rozman2016")], c("Viruses", "Viruses"))
+})

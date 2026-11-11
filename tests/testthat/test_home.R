@@ -31,5 +31,10 @@ test_that("every species clade is a wheel clade and viral references are Viruses
   wheel <- c("Mammals","Other vertebrates","Invertebrates","Plants","Fungi","Protists","Bacteria","Archaea","Viruses")
   expect_true(all(x$clade %in% wheel))
   expect_false(anyDuplicated(x$species) > 0)
-  expect_equal(x$clade[x$species %in% c("Sars cov2", "Sars rozman2016")], c("Viruses", "Viruses"))
+  expect_equal(x$clade[x$species %in% c("Sars cov2", "Murine coronavirus")], c("Viruses", "Viruses"))
+})
+
+test_that("home shows display names for custom references and hosts for host x pathogen genomes", {
+  expect_equal(rc_home_host(c("Sars rozman2016", "Homo sapiens x Sars cov2", "Mus musculus")),
+               c("Murine coronavirus", "Homo sapiens", "Mus musculus"))
 })

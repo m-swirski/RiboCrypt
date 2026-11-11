@@ -1,6 +1,14 @@
 # Optional landing page. The experiment and metadata catalogs always come from
 # the current session, including access-control filtering.
-rc_home_host <- function(x) sub(" x .*$", "", as.character(x))
+# Display names on the home page: host of "host x pathogen" genomes; organism names of custom references that
+# are not species names (reference folder names kept as they are)
+rc_home_display_names <- c("Sars rozman2016" = "Murine coronavirus")
+rc_home_host <- function(x) {
+  x <- sub(" x .*$", "", as.character(x))
+  i <- x %in% names(rc_home_display_names)
+  x[i] <- unname(rc_home_display_names[x[i]])
+  x
+}
 
 rc_home_groups <- function(x) {
   out <- rep("Single experiments", length(x))

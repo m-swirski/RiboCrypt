@@ -181,13 +181,15 @@ test_that("observatory UMAP plot reuses built plotly template", {
   p <- RiboCrypt:::umap_plot(dt, color.by = "BioProject", template = template)
 
   expect_s3_class(p, "plotly")
-  expect_equal(length(p$x$data), data.table::uniqueN(dt$BioProject))
+  # one data trace with every point, then one empty legend entry per group
+  expect_equal(length(p$x$data), data.table::uniqueN(dt$BioProject) + 1L)
+  expect_equal(length(p$x$data[[1]]$x), nrow(dt))
   expect_equal(
-    vapply(p$x$data, `[[`, character(1), "name"),
+    vapply(p$x$data[-1], `[[`, character(1), "name"),
     sort(unique(dt$BioProject))
   )
-  expect_equal(vapply(p$x$data, function(trace) length(trace$x), integer(1)), c(2L, 1L, 1L, 1L))
-  expect_equal(p$x$data[[1]]$marker$color, RiboCrypt:::umap_plot_palette(4L)[[1]])
+  expect_equal(tabulate(p$x$layout$meta$rcPointGroup + 1L), c(2L, 1L, 1L, 1L))
+  expect_equal(p$x$data[[2]]$marker$color, RiboCrypt:::umap_plot_palette(4L)[[1]])
   expect_equal(template$x$layout$legend$title$text, "")
   expect_equal(length(template$x$data[[1]]$x), 1L)
 })

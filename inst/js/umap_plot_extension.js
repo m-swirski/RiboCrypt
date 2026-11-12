@@ -82,9 +82,46 @@
     return new Set(selected.map(normalizeRunId).filter((run) => run !== null));
   };
 
+  // Single-trace layout (R/page_organism_UMAP.R): all points are trace 0, the legend entries are empty traces 1..n.
+  // layout.meta.rcPointGroup holds each point's 0-based group, so legend clicks hide/show groups through per-point
+  // opacity on trace 0 (one WebGL trace keeps box/lasso dragging smooth), and hidden points are never selected.
+  const pointGroup = (elem.layout && elem.layout.meta && Array.isArray(elem.layout.meta.rcPointGroup))
+    ? elem.layout.meta.rcPointGroup : null;
+  const hiddenGroups = new Set();
+  const baseOpacity = (elem.data[0] && elem.data[0].marker && typeof elem.data[0].marker.opacity === "number")
+    ? elem.data[0].marker.opacity : 0.75;
+  const applyGroupVisibility = () => {
+    const nGroups = elem.data.length - 1;
+    const opacity = pointGroup.map((g) => (hiddenGroups.has(g) ? 0 : baseOpacity));
+    const legendVisible = Array.from({ length: nGroups }, (_, i) => (hiddenGroups.has(i) ? "legendonly" : true));
+    const legendIdx = Array.from({ length: nGroups }, (_, i) => i + 1);
+    Plotly.restyle(elem, { "marker.opacity": [opacity] }, [0]);
+    Plotly.restyle(elem, { visible: legendVisible }, legendIdx);
+  };
+  if (pointGroup) {
+    elem.on("plotly_legendclick", (ev) => {
+      const g = ev.curveNumber - 1;
+      if (g < 0) return false;
+      if (hiddenGroups.has(g)) hiddenGroups.delete(g); else hiddenGroups.add(g);
+      applyGroupVisibility();
+      return false;
+    });
+    elem.on("plotly_legenddoubleclick", (ev) => {
+      const g = ev.curveNumber - 1;
+      if (g < 0) return false;
+      const nGroups = elem.data.length - 1;
+      const isolated = hiddenGroups.size === nGroups - 1 && !hiddenGroups.has(g);
+      hiddenGroups.clear();
+      if (!isolated) for (let i = 0; i < nGroups; i += 1) if (i !== g) hiddenGroups.add(i);
+      applyGroupVisibility();
+      return false;
+    });
+  }
+  const pointIsHidden = (point) => pointGroup && point.curveNumber === 0 && hiddenGroups.has(pointGroup[point.pointIndex]);
+
   const onSelected = (e) => {
     if (suppressSelectionEvents > 0) return;
-    const selectedPoints = e && Array.isArray(e.points) ? e.points : [];
+    const selectedPoints = (e && Array.isArray(e.points) ? e.points : []).filter((point) => !pointIsHidden(point));
     const pointValuesToSet = selectedPoints.map((point) => {
       return runIdFromText(point.text);
     }).filter((run) => run !== null);
@@ -101,7 +138,27 @@
     return false;
   };
 
-  elem.on("plotly_selected", onSelected);
+  // Live selection while dragging: plotly_selecting fires on every mouse move; send at most every 150 ms and only
+  // when the selected Run set changed, so the table follows the box. plotly_selected (mouse-up) sends the final set.
+  let lastLiveKey = null; let liveTimer = null; let pendingLive = null;
+  const flushLive = () => {
+    liveTimer = null;
+    if (!pendingLive) return;
+    const runs = (Array.isArray(pendingLive.points) ? pendingLive.points : []).filter((p) => !pointIsHidden(p))
+      .map((p) => runIdFromText(p.text)).filter((r) => r !== null);
+    pendingLive = null;
+    const key = runs.length + ":" + runs.slice(0, 50).join(",") + ":" + runs.slice(-50).join(",");
+    if (key === lastLiveKey) return;
+    lastLiveKey = key;
+    sendSelection(runs);
+  };
+  elem.on("plotly_selecting", (e) => {
+    if (suppressSelectionEvents > 0) return;
+    pendingLive = e;
+    if (liveTimer === null) liveTimer = window.setTimeout(flushLive, 150);
+  });
+  elem.on("plotly_selected", (e) => { lastLiveKey = null; pendingLive = null;
+    if (liveTimer !== null) { window.clearTimeout(liveTimer); liveTimer = null; } onSelected(e); });
   elem.on("plotly_deselect", onDeselected);
   elem.on("plotly_doubleclick", triggerDeselected);
 

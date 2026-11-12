@@ -114,49 +114,30 @@ umap_plot_from_template <- function(dt_umap, color.by, template, axes = c(1L,2L)
   palette <- umap_plot_palette(length(groups))
 
   base_trace <- template$x$data[[1]]
-  # plotly_build() adds empty error bars and line styles to every trace; with one trace per group they only add payload.
+  # plotly_build() adds empty error bars and line styles to every trace; they only add payload.
   base_trace$error_x <- NULL; base_trace$error_y <- NULL; base_trace$line <- NULL
-  traces <- vector("list", max(length(groups), 1L))
-
-  if (length(groups) == 0) {
-    trace <- base_trace
-    trace$x <- numeric()
-    trace$y <- numeric()
-    trace$text <- character()
-    trace$name <- ""
-    trace$legendgroup <- ""
-    trace$showlegend <- FALSE
-    traces[[1]] <- trace
-  } else {
-    for (i in seq_along(groups)) {
-      group <- groups[[i]]
-      group_dt <- dt_umap[group_values == group]
-      trace <- base_trace
-      # 3 decimals on a UMAP spanning tens of units is far below one pixel; full doubles (plotly serializes with
-      # 50 digits) only made the payload larger.
-      trace$x <- round(group_dt[["UMAP 1"]], 3)
-      trace$y <- round(group_dt[["UMAP 2"]], 3)
-      # Keep identifiers compact in the trace and use structured metadata in
-      # the hover template rather than repeating static HTML for every point.
-      trace$text <- as.character(group_dt$sample)
-      fields <- lapply(group_dt[, .(BioProject, author, inhibitors, tissues_cell_lines)],
-                       function(x) { x <- as.character(x); x[is.na(x)] <- "NA"; x })
-      # The tissue | cell line label equals the trace (group) name for every point in the default colouring:
-      # take it from the trace instead of repeating it per point.
-      per_group <- all(fields$tissues_cell_lines == group)
-      if (per_group) fields$tissues_cell_lines <- NULL
-      trace$customdata <- unname(as.matrix(as.data.frame(fields, stringsAsFactors=FALSE)))
-      trace$hovertemplate <- paste0("BioProject %{customdata[0]}<br>Run ID: %{text}",
-        "<br>Author: %{customdata[1]}<br>Inhibitor: %{customdata[2]}",
-        "<br>Tissue | CellLine: ", if (per_group) "%{fullData.name}" else "%{customdata[3]}", "<extra></extra>")
-      trace$name <- group
-      trace$legendgroup <- group
-      trace$marker$color <- palette[[i]]
-      trace$showlegend <- TRUE
-      traces[[i]] <- trace
-    }
-  }
-
+  # All points are ONE scattergl trace with per-point colours. One WebGL trace per colour group (232 for the human
+  # collection) made every box/lasso drag redraw 232 regl traces per mouse move: the selection box stalled ~0.7 s per
+  # move (software GL bench, 2026-11-12) and plotly_selected came 0.4-0.9 s after mouse-up; one trace: no stalls,
+  # ~30 ms. The legend is one EMPTY svg trace per group (no points, no WebGL cost); legend clicks are handled in
+  # umap_plot_extension.js via layout.meta.rcPointGroup (0-based group index of every point of trace 0).
+  point_group <- match(group_values, groups) - 1L
+  trace <- base_trace
+  trace$x <- round(dt_umap[["UMAP 1"]], 3)   # 3 decimals: far below one pixel, smaller payload
+  trace$y <- round(dt_umap[["UMAP 2"]], 3)
+  trace$text <- as.character(dt_umap$sample)
+  fields <- lapply(dt_umap[, .(BioProject, author, inhibitors, tissues_cell_lines)],
+                   function(x) { x <- as.character(x); x[is.na(x)] <- "NA"; x })
+  trace$customdata <- unname(as.matrix(as.data.frame(fields, stringsAsFactors = FALSE)))
+  trace$hovertemplate <- paste0("BioProject %{customdata[0]}<br>Run ID: %{text}",
+    "<br>Author: %{customdata[1]}<br>Inhibitor: %{customdata[2]}<br>Tissue | CellLine: %{customdata[3]}<extra></extra>")
+  trace$name <- "libraries"; trace$legendgroup <- NULL; trace$showlegend <- FALSE
+  palette_used <- if (length(groups)) palette[seq_along(groups)] else character()
+  trace$marker$color <- if (length(groups)) unname(palette_used[point_group + 1L]) else character()
+  legend_traces <- lapply(seq_along(groups), function(i) list(
+    type = "scatter", mode = "markers", x = list(NULL), y = list(NULL), name = groups[[i]], legendgroup = groups[[i]],
+    showlegend = TRUE, hoverinfo = "skip", marker = list(size = 9, opacity = 0.75, color = palette_used[[i]])))
+  traces <- c(list(trace), legend_traces)
   plot <- template
   plot$x$data <- traces
   plot$x$attrs <- list()
@@ -166,10 +147,14 @@ umap_plot_from_template <- function(dt_umap, color.by, template, axes = c(1L,2L)
   plot$x$layout$legend$title$text <- color_title
   # Draw the points first: the legend (one entry per group, ~40% of the first render for 177 groups) is switched on
   # by umap_plot_extension.js right after the first paint. Only the Observatory uses this path, always with that hook.
+  plot$x$layout$meta <- list(rcPointGroup = as.integer(point_group))
   if (length(groups) > 0) {
     plot$x$layout$showlegend <- FALSE
-    plot$x$layout$meta <- list(rcDeferredLegend = TRUE)
+    plot$x$layout$meta$rcDeferredLegend <- TRUE
   }
+  # The selection hook (umap_plot_extension.js) listens to plotly events directly; plotly's own Shiny event relay
+  # (brushing on every mouse move, selected with every point) was unused overhead.
+  plot$x$shinyEvents <- list()
   plot$x$layout$xaxis$title <- paste("UMAP", axes[1])
   plot$x$layout$yaxis$title <- paste("UMAP", axes[2])
   plot

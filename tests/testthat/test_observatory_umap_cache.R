@@ -1,6 +1,6 @@
 test_that("precomputed UMAP cache is rejected for stale sources or collections", {
   p <- structure(list(),class="plotly")
-  x <- list(schema=7L,source_md5="old",plotly_version="1",runs=c("A","B"),plot=p)
+  x <- list(schema=8L,source_md5="old",plotly_version="1",runs=c("A","B"),plot=p)
   expect_true(rc_umap_cache_valid(x,"old",c("A","B"),"1"))
   expect_false(rc_umap_cache_valid(x,"changed",c("A","B"),"1"))
   expect_false(rc_umap_cache_valid(x,"old",c("B","A"),"1"))
@@ -72,17 +72,30 @@ test_that("compact UMAP hover retains the Run and every metadata field", {
                  template=observatoryUmapPlotlyTemplate())
   t <- p$x$data[[1]]
   expect_identical(t$text, "SRR1")
-  # the tissue | cell line label equals the trace name, so it is taken from the trace instead of each point
-  expect_equal(unname(t$customdata[1,]), c("PRJ123", "Smith", "chx"))
-  expect_identical(t$name, "kidney | HEK")
+  # one data trace for all points: the tissue | cell line label is kept per point
+  expect_equal(unname(t$customdata[1,]), c("PRJ123", "Smith", "chx", "kidney | HEK"))
   expect_match(t$hovertemplate, "Run ID: %{text}", fixed=TRUE)
-  expect_match(t$hovertemplate, "Tissue | CellLine: %{fullData.name}", fixed=TRUE)
+  expect_match(t$hovertemplate, "%{customdata[3]}", fixed=TRUE)
   expect_identical(t$type, "scattergl")
-  # a label that differs from the group is kept per point
-  y <- data.table::copy(x)[, tissues_cell_lines := "kidney | HEK293"]
-  t2 <- umap_plot(y, color.by=c("tissue","cell_line"), template=observatoryUmapPlotlyTemplate())$x$data[[1]]
-  expect_equal(unname(t2$customdata[1,]), c("PRJ123", "Smith", "chx", "kidney | HEK293"))
-  expect_match(t2$hovertemplate, "%{customdata[3]}", fixed=TRUE)
+  expect_identical(p$x$data[[2]]$name, "kidney | HEK")
+})
+
+test_that("UMAP draws all points in one WebGL trace with per-point group colours", {
+  x <- data.table::data.table(`UMAP 1`=1:3, `UMAP 2`=4:6,
+    color_column=c("b | y", "a | x", "b | y"), BioProject="PRJ1", sample=c("R1", "R2", "R3"),
+    author="A", inhibitors="chx", tissues_cell_lines=c("b | y", "a | x", "b | y"))
+  p <- umap_plot(x, color.by=c("tissue","cell_line"), template=observatoryUmapPlotlyTemplate())
+  expect_length(p$x$data, 3L)
+  t <- p$x$data[[1]]
+  expect_identical(t$type, "scattergl"); expect_false(t$showlegend)
+  expect_identical(t$text, c("R1", "R2", "R3"))
+  # 0-based group index per point (sorted group order), read by the legend/selection JS
+  expect_identical(p$x$layout$meta$rcPointGroup, c(1L, 0L, 1L))
+  pal <- umap_plot_palette(2L)
+  expect_equal(unname(t$marker$color), unname(pal[c(2L, 1L, 2L)]))
+  legend <- p$x$data[-1]
+  expect_identical(vapply(legend, `[[`, character(1), "name"), c("a | x", "b | y"))
+  expect_true(all(vapply(legend, function(l) identical(l$hoverinfo, "skip") && isTRUE(l$showlegend), logical(1))))
 })
 
 test_that("compact UMAP payload: rounded coordinates, no empty per-trace styles, legend drawn after first paint", {
@@ -90,11 +103,11 @@ test_that("compact UMAP payload: rounded coordinates, no empty per-trace styles,
     color_column=c("a | x", "b | y"), BioProject="PRJ1", sample=c("R1", "R2"),
     author="A", inhibitors="chx", tissues_cell_lines=c("a | x", "b | y"))
   p <- umap_plot(x, color.by=c("tissue","cell_line"), template=observatoryUmapPlotlyTemplate())
-  expect_equal(p$x$data[[1]]$x, 1.235); expect_equal(p$x$data[[1]]$y, -3.988)
+  expect_equal(p$x$data[[1]]$x[1], 1.235); expect_equal(p$x$data[[1]]$y[1], -3.988)
   expect_null(p$x$data[[1]]$error_x); expect_null(p$x$data[[1]]$error_y); expect_null(p$x$data[[1]]$line)
   expect_false(p$x$layout$showlegend)
   expect_true(p$x$layout$meta$rcDeferredLegend)
-  expect_true(all(vapply(p$x$data, function(t) isTRUE(t$showlegend), logical(1))))
+  expect_true(all(vapply(p$x$data[-1], function(t) isTRUE(t$showlegend), logical(1))))
 })
 
 test_that("SVG compatibility conversion does not mutate the cached widget", {

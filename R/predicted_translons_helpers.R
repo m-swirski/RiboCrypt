@@ -57,7 +57,7 @@ generate_filename <- function(df, format, show_message = TRUE) {
 translon_simplified_columns <- function(columns) {
   which(seq_along(columns) <= 3L | columns %in% c(
     "external_gene_name", "type", "length", "mapability_score", "biotype"
-  ) | startsWith(columns, "LOC_"))
+  ) | startsWith(toupper(columns), "LOC_"))   # tables use loc_prediction / loc_prediction_score (lower case)
 }
 
 #' @noRd

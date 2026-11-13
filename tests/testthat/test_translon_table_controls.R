@@ -52,3 +52,10 @@ test_that("the shipped column toggle preserves table state and rebinds safely", 
                                      stdout = TRUE, stderr = TRUE))
   expect_null(attr(result, "status"), info = paste(result, collapse = "\n"))
 })
+
+test_that("simplified translon columns keep localization fields in either case", {
+  cols <- c("id", "a", "b", "type", "loc_prediction", "loc_prediction_score", "LOC_extra", "other")
+  keep <- cols[RiboCrypt:::translon_simplified_columns(cols)]
+  expect_true(all(c("loc_prediction", "loc_prediction_score", "LOC_extra") %in% keep))
+  expect_false("other" %in% keep)
+})

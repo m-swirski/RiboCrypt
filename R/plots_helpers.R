@@ -22,10 +22,10 @@ track_vertical_segments <- function(x, y, text = NULL) {
 ensure_columns_gl_hover <- function(plot) {
   for (i in seq_along(plot$x$data)) {
     trace <- plot$x$data[[i]]
-    is_columns_gl_trace <- trace$type %in% c("scattergl", "scatter") &&
-      identical(trace$mode, "lines") &&
-      (identical(trace$meta$rc_columns_switch, "gl_subset") ||
-         is.null(trace$meta$rc_columns_switch))
+    # WebGL column traces, or column traces drawn as SVG on phones (marked gl_subset); unmarked SVG lines
+    # (guides, smoothed lines) keep their own hover
+    is_columns_gl_trace <- identical(trace$mode, "lines") &&
+      (identical(trace$type, "scattergl") || identical(trace$meta$rc_columns_switch, "gl_subset"))
     if (!is_columns_gl_trace) next
     plot$x$data[[i]]$hoverinfo <- "text"
     plot$x$data[[i]]$hovertemplate <- "%{text}<extra></extra>"

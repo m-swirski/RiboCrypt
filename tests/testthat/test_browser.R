@@ -480,7 +480,7 @@ test_that("browser profile helpers delegate to named builder functions", {
   testthat::local_mocked_bindings(
     createSinglePlot = function(profile, with_frames, frame_color, color,
                                 ylabel, ylabel_full_name, lines,
-                                type, lib_index, total_libs, templates = NULL) {
+                                type, lib_index, total_libs, templates = NULL, is_cellphone = FALSE) {
       calls[[length(calls) + 1L]] <<- list(
         profile = profile,
         with_frames = with_frames,
@@ -2115,4 +2115,29 @@ test_that("lineDeSimplify does not warn on animated plotly tracks", {
       RiboCrypt:::getPlotAnimate(profile_anim, TRUE, NULL, "R", "anim", numeric())
     )
   )
+})
+
+test_that("browser column traces use SVG on phones", {
+  profile <- data.table::data.table(position = 1:12,
+    count = 1:12, frame = factor(rep(0:2, 4)))
+  for (mobile in c(FALSE, TRUE)) {
+    for (template in list(NULL, RiboCrypt:::covPanelColumnsPlotlyTemplate())) {
+      plots <- RiboCrypt:::multiOmicsPlot_all_track_plots(
+        list(profile), TRUE, "R", "black", "track", "track", numeric(),
+        "columns", TRUE, "columns", BiocParallel::SerialParam(),
+        templates = list(cov_panel_columns_plotly = template), is_cellphone = mobile
+      )$plots
+      for (plot in plots) {
+        traces <- Filter(function(tr) identical(tr$meta$rc_columns_switch, "gl_subset"),
+                         plotly::plotly_build(plot)$x$data)
+        expect_length(traces, 3)
+        expect_true(all(vapply(traces, function(tr) identical(tr$type,
+          if (mobile) "scatter" else "scattergl"), logical(1))))
+        expect_true(all(vapply(traces, function(tr) identical(tr$hovertemplate,
+          "%{text}<extra></extra>"), logical(1))))
+      }
+    }
+  }
+  expect_true(RiboCrypt:::observatory_browser_cache_user_info("Android")$is_cellphone)
+  expect_false(RiboCrypt:::observatory_browser_cache_user_info("desktop")$is_cellphone)
 })

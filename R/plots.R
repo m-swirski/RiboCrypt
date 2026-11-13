@@ -3,12 +3,12 @@ createSinglePlot <- function(profile, withFrames, frame_colors, colors, ylabels,
                              lib_index, total_libs = 1,
                              flip_ylabel = type == "heatmap",
                              as_plotly = TRUE,
-                             templates = NULL) {
+                             templates = NULL, is_cellphone = FALSE) {
   y_max <- browser_track_y_max(profile, type)
   integer_ticks <- browser_track_has_integer_counts(profile)
   profile_plot <- singlePlot_select_plot_type(
     profile, withFrames, frame_colors, colors,
-    lines, type, lib_index, templates = templates
+    lines, type, lib_index, templates = templates, is_cellphone = is_cellphone
   )
   singlePlot_add_theme(
     profile_plot, ylabels, type, flip_ylabel,
@@ -88,7 +88,7 @@ getPlotAnimate <- function(profile, withFrames, colors, frame_colors,
 }
 
 make_summary_track <- function(profiles, plots, withFrames, frame_colors, colors,
-                               lines, summary_track_type, nplots, templates = NULL) {
+                               lines, summary_track_type, nplots, templates = NULL, is_cellphone = FALSE) {
   count <- NULL # avoid bioccheck error
   summary_profile <- data.table::rbindlist(profiles)
   summary_profile <- summary_profile[, .(count = sum(count)), by = position]
@@ -96,7 +96,8 @@ make_summary_track <- function(profiles, plots, withFrames, frame_colors, colors
   summary_plot <- createSinglePlot(
     summary_profile, all(withFrames), frame_colors, colors[1], "summary",
     FALSE, lines, type = summary_track_type, flip_ylabel = FALSE,
-    lib_index = nplots, total_libs = nplots, templates = templates
+    lib_index = nplots, total_libs = nplots, templates = templates,
+    is_cellphone = is_cellphone
   )
   plots[[nplots]] <- summary_plot
   rev(plots)

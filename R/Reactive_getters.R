@@ -294,7 +294,7 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
     bottom_panel$lines, frames_type,
     summary_track, summary_track_type,
     BPPARAM,
-    templates = templates
+    templates = templates, is_cellphone = isTRUE(controls$is_cellphone)
   )
   timing_phase("track plots")
   timer_done_nice_print("Done (track panel):", time_before)

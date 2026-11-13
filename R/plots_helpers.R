@@ -22,8 +22,10 @@ track_vertical_segments <- function(x, y, text = NULL) {
 ensure_columns_gl_hover <- function(plot) {
   for (i in seq_along(plot$x$data)) {
     trace <- plot$x$data[[i]]
-    is_columns_gl_trace <- identical(trace$type, "scattergl") &&
-      identical(trace$mode, "lines")
+    is_columns_gl_trace <- trace$type %in% c("scattergl", "scatter") &&
+      identical(trace$mode, "lines") &&
+      (identical(trace$meta$rc_columns_switch, "gl_subset") ||
+         is.null(trace$meta$rc_columns_switch))
     if (!is_columns_gl_trace) next
     plot$x$data[[i]]$hoverinfo <- "text"
     plot$x$data[[i]]$hovertemplate <- "%{text}<extra></extra>"
@@ -241,7 +243,7 @@ track_guides <- function(plot, x_range, y_max, lines = numeric(), add_zero = TRU
 
 singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, colors,
                                         lines, type, lib_index, line_size = 0.2,
-                                        templates = NULL) {
+                                        templates = NULL, is_cellphone = FALSE) {
   count <- NULL # Avoid data.table warning
   profile <- data.table::as.data.table(profile)
   frame_theme <- frame_colors
@@ -360,7 +362,12 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
   } else if (type == "columns") {
     if (inherits(templates$cov_panel_columns_plotly, "plotly")) {
       plot <- templates$cov_panel_columns_plotly
-      is_gl_template <- identical(plot$x$data[[1]]$type, "scattergl")
+      is_gl_template <- identical(plot$x$data[[1]]$type, "scattergl") ||
+        identical(plot$x$data[[1]]$meta$rc_columns_switch, "gl_subset")
+      if (is_gl_template) {
+        for (i in seq_len(min(length(frame_levels), length(plot$x$data))))
+          plot$x$data[[i]]$type <- if (isTRUE(is_cellphone)) "scatter" else "scattergl"
+      }
       has_switch_lines <- length(plot$x$data) > length(frame_levels)
       for (i in seq_along(frame_levels)) {
         frame_name <- frame_levels[[i]]
@@ -430,7 +437,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
           x = c(NA_real_),
           y = c(NA_real_),
           text = NA_character_,
-          type = "scattergl",
+          type = if (isTRUE(is_cellphone)) "scatter" else "scattergl",
           mode = "lines",
           name = frame_name,
           legendgroup = frame_name,
@@ -537,7 +544,7 @@ singlePlot_select_plot_type <- function(profile, withFrames, frame_colors, color
 
   plot <- track_guides(plot, x_range, guide_y_max, lines, add_zero = TRUE, line_size = line_size)
   if (type == "columns") {
-    plot <- ensure_columns_gl_hover(plot)
+    plot <- ensure_columns_gl_hover(plotly::plotly_build(plot))
   }
   plot
 }

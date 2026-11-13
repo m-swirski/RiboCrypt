@@ -96,10 +96,12 @@ observatory_resolve_library_selections <- function(
   )
 }
 
-#' Static user info used by the observatory browser cache.
+#' User info used by the observatory browser cache.
 #' @noRd
-observatory_browser_cache_user_info <- function() {
-  list(userAgent = NULL, is_cellphone = FALSE, width = NULL, height = NULL)
+observatory_browser_cache_user_info <- function(user_agent = NULL) {
+  list(userAgent = user_agent,
+       is_cellphone = isTRUE(grepl("Android|iPhone|iPad|iPod", user_agent, ignore.case = TRUE)),
+       width = NULL, height = NULL)
 }
 
 #' Resolved library selections reactive for observatory browser plots.
@@ -124,10 +126,11 @@ observatory_browser_library_selections <- function(library_selections,
 #' @noRd
 observatory_browser_main_controller <- function(input, tx, cds, df,
                                                 library_selections,
-                                                library_selection_labels) {
+                                                library_selection_labels,
+                                                user_info = observatory_browser_cache_user_info) {
   click_plot_browser_main_controller(
     input = input, tx = tx, cds = cds, libs = NULL, df = df,
-    user_info = function() list(is_cellphone = FALSE, width = NULL),
+    user_info = user_info,
     library_selections = library_selections,
     library_selection_labels = library_selection_labels
   )
@@ -188,7 +191,7 @@ observatory_browser_server <- function(
     # -- Gene / transcript input wiring ------------------------------------
     allsamples_observer_controller(input, output, session)
     kickoff <- shiny::reactiveVal(FALSE)
-    cache_user_info <- observatory_browser_cache_user_info()
+    cache_user_info <- shiny::reactive(observatory_browser_cache_user_info(input$js_user_agent))
     resolved_library_selections <- observatory_browser_library_selections(
       library_selections, all_library_runs, active_selection_id,
       library_selection_labels, selection_index
@@ -198,12 +201,12 @@ observatory_browser_server <- function(
       shiny::req(input$tx)
       observatory_browser_main_controller(
         input, tx, cds, df, resolved_library_selections,
-        library_selection_labels
+        library_selection_labels, user_info = cache_user_info
       )
     }) |>
       shiny::bindCache(
         browser_controller_cache_version(),
-        input_to_list(input, cache_user_info),
+        input_to_list(input, cache_user_info()),
         observatory_selection_cache_key(
           library_selections(),
           if (is.null(library_selection_labels)) NULL else library_selection_labels()

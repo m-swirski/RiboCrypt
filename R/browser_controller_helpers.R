@@ -116,7 +116,7 @@ collection_library_hash_suffix <- function(library_selections) {
 build_single_browser_track_plot <- function(profile, with_frames, frame_color, color,
                                             ylabel, ylabel_full_name, lines,
                                             frames_type, lib_index, total_libs,
-                                            templates = NULL) {
+                                            templates = NULL, is_cellphone = FALSE) {
   createSinglePlot(
     profile,
     with_frames,
@@ -128,14 +128,14 @@ build_single_browser_track_plot <- function(profile, with_frames, frame_color, c
     type = frames_type,
     lib_index,
     total_libs,
-    templates = templates
+    templates = templates, is_cellphone = is_cellphone
   )
 }
 
 #' @noRd
 build_browser_track_plots <- function(profiles, withFrames, frame_colors, colors,
                                       ylabels, ylabels_full_name, lines,
-                                      frames_type, BPPARAM, templates = NULL) {
+                                      frames_type, BPPARAM, templates = NULL, is_cellphone = FALSE) {
   total_libs <- length(profiles)
   plot_args <- list(
     profiles,
@@ -160,7 +160,7 @@ build_browser_track_plots <- function(profiles, withFrames, frame_colors, colors
             lines = lines,
             frames_type = frames_type,
             total_libs = total_libs,
-            templates = templates
+            templates = templates, is_cellphone = is_cellphone
           ),
           SIMPLIFY = FALSE
         )
@@ -178,7 +178,7 @@ build_browser_track_plots <- function(profiles, withFrames, frame_colors, colors
           lines = lines,
           frames_type = frames_type,
           total_libs = total_libs,
-          templates = templates
+          templates = templates, is_cellphone = is_cellphone
         ),
         SIMPLIFY = FALSE,
         BPPARAM = BPPARAM

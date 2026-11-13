@@ -149,7 +149,7 @@ multiOmicsPlot_bottom_panels <- function(reference_sequence, display_range, anno
 multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, colors,
                                            ylabels, ylabels_full_name, lines,
                                            frames_type, summary_track, summary_track_type,
-                                           BPPARAM, templates = NULL) {
+                                           BPPARAM, templates = NULL, is_cellphone = FALSE) {
   force(colors)
   force(lines)
   force(ylabels)
@@ -169,7 +169,7 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, c
       lines,
       frames_type,
       BPPARAM,
-      templates = templates
+      templates = templates, is_cellphone = is_cellphone
     )
   }
 
@@ -177,7 +177,8 @@ multiOmicsPlot_all_track_plots <- function(profiles, withFrames, frame_colors, c
   if (summary_track) {
     nplots <- nplots + 1
     plots <- make_summary_track(profiles, plots, withFrames, frame_colors, colors,
-                                lines, summary_track_type, nplots, templates = templates)
+                                lines, summary_track_type, nplots, templates = templates,
+                                is_cellphone = is_cellphone)
   }
   return(list(plots = plots, nplots = nplots, track_type = frames_type))
 }

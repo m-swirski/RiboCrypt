@@ -147,6 +147,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
     }
 
     dynamic$client <- browser_dynamic_client_supported(dynamic$active, withFrames, input$summary_track)
+    explain <- explain_controller(input, dff, tx(), display_region)
 
     # Hash strings for cache
     hash_strings <- hash_strings_browser(
@@ -194,6 +195,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
                    zoom_range = zoom_range,
                    frames_subset = frames_subset,
                    mapability = input$mapability,
+                   explain = explain,
                    frame_colors = frame_colors,
                    colors = colors,
                    library_selections = selected_library_groups,

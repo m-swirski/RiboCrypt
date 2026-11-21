@@ -465,6 +465,7 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
                        browser_input_or_default(input, "customSequence", ""),
                        browser_input_or_default(input, "phyloP", FALSE),
                        browser_input_or_default(input, "mapability", FALSE),
+                       explain_hash(input),
                        isTRUE(is_cellphone),
                        collapse = "|_|")
   # Until plot and coverage is split (bottom must be part of browser hash)

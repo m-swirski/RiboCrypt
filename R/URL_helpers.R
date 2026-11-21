@@ -71,6 +71,7 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?",
         paste("customSequence", input$customSequence, sep = "="),
         paste("phyloP", input$phyloP, sep = "="),
         paste("mapability", input$mapability, sep = "="),
+        if (isTRUE(input$explain_mode)) paste("explain_mode", TRUE, sep = "="),
         paste("colors", input$colors, sep = "="),
         paste("summary_track", input$summary_track, sep = "="),
         paste("summary_track_type", input$summary_track_type, sep = "="),
@@ -494,7 +495,7 @@ browser_specific_url_checker <- function(target = c("auto", "browser", "observat
         for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon",
                       "add_translons_transcode", "summary_track",
                       "log_scale", "log_scale_protein","phyloP", "mapability",
-                      "collapsed_introns", "unique_align", "local_y_max")) {
+                      "collapsed_introns", "unique_align", "local_y_max", "explain_mode")) {
           value <- query[tag][[1]]
           if (!is.null(value)) {
             updateCheckboxInput(inputId = tag, value = as.logical(value))

@@ -68,9 +68,15 @@ bottom_panel_shiny <- function(mainPlotControls, templates = NULL) {
     df, annotation_list$display_range,
     controls$phyloP, controls$mapability
   )
+  explain_data <- explain_locus_data(controls$explain, annotation_list$display_range)
+  custom_bigwig_panels$custom_bigwig_panels <- c(
+    custom_bigwig_panels$custom_bigwig_panels,
+    explain_bottom_panels(explain_data, annotation_list$display_range)
+  )
   bottom_panel <- c(bottom_panel, annotation_list, custom_bigwig_panels,
     ncustom = length(custom_bigwig_panels[[1]])
   )
+  bottom_panel$explain_expected <- explain_data$expected
 
   bottom_panel$bottom_plots <- bottom_plots_to_plotly(bottom_panel, is_cellphone)
 
@@ -85,8 +91,22 @@ bottom_plots_to_plotly <- function(bottom_panel, is_cellphone = FALSE) {
       gene_model = automateTicksGMP(bottom_panel$gene_model_panel),
       AA_model = automateTicksAA(bottom_panel$seq_panel, is_cellphone)
     ),
-    lapply(bottom_panel$custom_bigwig_panels, automateTicksCustomTrack)
+    custom_panels_to_plotly(bottom_panel$custom_bigwig_panels)
   )
+}
+
+#' Axis polish of custom bottom tracks; explainability panels keep their hover.
+#' @noRd
+custom_panels_to_plotly <- function(panels) {
+  if (!length(panels)) return(list())
+  nms <- names(panels)
+  if (is.null(nms)) nms <- rep("", length(panels))
+  out <- lapply(seq_along(panels), function(i) {
+    if (startsWith(nms[i], "explain")) automateTicksExplainTrack(panels[[i]])
+    else automateTicksCustomTrack(panels[[i]])
+  })
+  names(out) <- names(panels)
+  out
 }
 
 
@@ -295,6 +315,10 @@ browser_track_panel_shiny <- function(mainPlotControls, bottom_panel, session,
     summary_track, summary_track_type,
     BPPARAM,
     templates = templates, is_cellphone = isTRUE(controls$is_cellphone)
+  )
+  track_panel$plots <- explain_add_expected_traces(
+    track_panel$plots, bottom_panel$explain_expected, profiles, withFrames,
+    log_scale, summary_track, frames_type
   )
   timing_phase("track plots")
   timer_done_nice_print("Done (track panel):", time_before)

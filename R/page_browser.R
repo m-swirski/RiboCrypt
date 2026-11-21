@@ -125,6 +125,7 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
                                 ),
                                 fluidRow(column(4, checkboxInput(ns("phyloP"), "Conservation (phyloP)", FALSE)),
                                          column(4, checkboxInput(ns("mapability"), "Mapability (28mers)", FALSE))),
+                                explain_settings_ui(ns),
                                 fluidRow(
                                   column(4, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),
                                   column(4, selectizeInput(
@@ -205,6 +206,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
     id,
     function(input, output, session, all_exp = all_experiments) {
       study_and_gene_observers(input, output, session)
+      explain_organism_observer(input, session, df)
 
       # Main plot controller, this code is only run if 'plot' is pressed
       mainPlotControls <- reactive({ req(input$tx); click_plot_browser_main_controller(input, tx, cds, libs, df, user_info) }) %>%

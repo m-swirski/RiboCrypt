@@ -327,6 +327,61 @@ explain_plddt_colors <- function() {
     "confident (70-90)" = "#65CBF3", "very high (>90)" = "#0053D6")
 }
 
+#' Default window status colours and legend labels.
+#'
+#' "RGST" = reproducible gene-specific trend: windows that are not understood
+#' under the mechanistic model and are explained only by per-gene empirical shape
+#' terms (per-gene contrast + 5' ramp; explainer v1.15).
+#' @noRd
+explain_status_defaults <- function() {
+  list(colors = c("understood" = "#a1d99b", "RGST" = "#6baed6", "not understood" = "#de2d26",
+                  "study-specific" = "#fd8d3c", "family-level" = "#9e9ac8", "unknown" = "#d9d9d9",
+                  "contamination" = "#8c510a"),
+       labels = c("RGST" = "RGST (reproducible gene-specific trend)"))
+}
+
+#' Status colours for a store: store colours override the defaults; any status
+#' level of the store without a colour gets a neutral fallback, so windows with
+#' a new status value are still drawn.
+#' @noRd
+explain_status_colors <- function(meta) {
+  cols <- explain_status_defaults()$colors
+  sc <- meta$status_colors
+  if (length(sc)) cols[names(sc)] <- sc
+  miss <- setdiff(meta$status_levels, names(cols))
+  if (length(miss)) cols[miss] <- "#bdbdbd"
+  lv <- meta$status_levels
+  if (length(lv)) cols <- cols[c(intersect(lv, names(cols)), setdiff(names(cols), lv))]
+  cols
+}
+
+#' Legend labels per status (store meta$status_labels override the defaults).
+#' @noRd
+explain_status_labels <- function(meta) {
+  lv <- if (length(meta$status_levels)) meta$status_levels else names(explain_status_defaults()$colors)
+  lab <- setNames(lv, lv)
+  def <- explain_status_defaults()$labels
+  def <- def[intersect(names(def), lv)]
+  lab[names(def)] <- def
+  sl <- meta$status_labels
+  if (length(sl)) lab[intersect(names(sl), lv)] <- sl[intersect(names(sl), lv)]
+  lab
+}
+
+#' Colour legend of the window status ribbon (HTML).
+#' @noRd
+explain_status_legend_ui <- function(meta) {
+  cols <- explain_status_colors(meta)
+  lab <- explain_status_labels(meta)
+  lv <- names(lab)
+  items <- lapply(lv, function(s) tags$span(
+    style = "display:inline-block; margin-right:10px; white-space:nowrap;",
+    tags$span(style = paste0("display:inline-block; width:12px; height:12px; margin-right:4px; ",
+                             "vertical-align:middle; background:", cols[[s]], ";")),
+    lab[[s]]))
+  tags$div(class = "explain-status-legend", style = "font-size:12px;", tags$b("Window status: "), items)
+}
+
 #' Feature lane colours.
 #' @noRd
 explain_feature_lane_colors <- function() {
@@ -403,7 +458,7 @@ explain_status_panel <- function(ex, display_range) {
     format(round(dt$O), big.mark = ",", trim = TRUE), format(round(dt$E), big.mark = ",", trim = TRUE),
     log2((dt$O + 1) / (dt$E + 1)), ifelse(is.na(status_all), "NA", status_all))
   nl <- max(dt$lane)
-  traces <- explain_bar_traces(dt, status, meta$status_colors, rep(0.9, nrow(dt)),
+  traces <- explain_bar_traces(dt, status, explain_status_colors(meta), rep(0.9, nrow(dt)),
                                nl - dt$lane + 0.05, hover)
   explain_panel(traces, display_range, "Explain", c(0, nl))
 }
@@ -557,8 +612,17 @@ explain_settings_ui <- function(ns) {
     column(8, conditionalPanel(
       sprintf("input['%s'] == true", ns("explain_mode")),
       checkboxGroupInput(ns("explain_layers"), NULL, choices = explain_layer_choices(),
-                         selected = c("status", "expected"), inline = TRUE)))
+                         selected = c("status", "expected"), inline = TRUE),
+      explain_status_legend_store()))
   )
+}
+
+#' Status legend for the configured store (NULL when it cannot be read).
+#' @noRd
+explain_status_legend_store <- function() {
+  store <- tryCatch(explain_store_open(), error = function(e) NULL)
+  if (is.null(store)) return(NULL)
+  explain_status_legend_ui(store$meta)
 }
 
 #' Enable the explainability switch only for supported organisms.

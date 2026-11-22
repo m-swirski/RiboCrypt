@@ -137,3 +137,22 @@ test_that("store layers render as panels for a synthetic transcript", {
   expect_equal(RiboCrypt:::explain_store_tx(store, "TX1")$tx$gene, "G1")
   expect_null(RiboCrypt:::explain_store_tx(store, "missing"))
 })
+
+test_that("RGST status gets a colour and legend entry; uncoloured statuses still render", {
+  meta <- list(status_levels = c("understood", "RGST", "not understood", "new-status"),
+               status_colors = c("understood" = "#a1d99b", "not understood" = "#de2d26"))
+  cols <- RiboCrypt:::explain_status_colors(meta)
+  expect_true(all(meta$status_levels %in% names(cols)))
+  expect_equal(unname(cols["RGST"]), "#6baed6")
+  expect_equal(unname(cols["new-status"]), "#bdbdbd")
+  expect_equal(names(cols)[1:4], meta$status_levels)
+  lab <- RiboCrypt:::explain_status_labels(meta)
+  expect_match(lab[["RGST"]], "reproducible gene-specific trend")
+  meta$status_labels <- c("RGST" = "RGST (renamed)")
+  expect_equal(RiboCrypt:::explain_status_labels(meta)[["RGST"]], "RGST (renamed)")
+  html <- as.character(RiboCrypt:::explain_status_legend_ui(meta))
+  expect_match(html, "RGST \\(renamed\\)"); expect_match(html, "#6baed6"); expect_match(html, "new-status")
+  dt <- data.table::data.table(x0 = c(1, 11, 21), x1 = c(10, 20, 30))
+  tr <- RiboCrypt:::explain_bar_traces(dt, c("RGST", "new-status", "understood"), cols, rep(0.9, 3), rep(0, 3), c("a", "b", "c"))
+  expect_setequal(vapply(tr, `[[`, "", "name"), c("RGST", "new-status", "understood"))
+})

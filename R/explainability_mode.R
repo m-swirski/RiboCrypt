@@ -451,10 +451,13 @@ explain_status_panel <- function(ex, display_range) {
   type <- meta$type_levels[dt$type]
   status_all <- meta$status_levels[dt$status_all]
   region <- meta$region_levels[dt$region]
+  # optional hover-only notes (store v1.17+): integer column `note` decoded by meta$note_levels
+  note <- if (!is.null(dt$note) && !is.null(meta$note_levels)) meta$note_levels[dt$note] else rep(NA_character_, nrow(dt))
   hover <- sprintf(
-    "%s<br>%s window %d-%d nt: <b>%s</b>%s<br>O = %s, E = %s, log2 O/E = %.2f<br>all-mapper track: %s",
+    "%s<br>%s window %d-%d nt: <b>%s</b>%s%s<br>O = %s, E = %s, log2 O/E = %.2f<br>all-mapper track: %s",
     dt$label, region, dt$start, dt$end, status,
     ifelse(is.na(type), "", paste0("<br>", type)),
+    ifelse(is.na(note), "", paste0("<br><i>", note, "</i>")),
     format(round(dt$O), big.mark = ",", trim = TRUE), format(round(dt$E), big.mark = ",", trim = TRUE),
     log2((dt$O + 1) / (dt$E + 1)), ifelse(is.na(status_all), "NA", status_all))
   nl <- max(dt$lane)

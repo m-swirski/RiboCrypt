@@ -27,6 +27,7 @@ explain_layer_choices <- function(store = NULL) {
   ch <- c("Window status" = "status", "Expected E on P-sites" = "expected",
           "AlphaFold pLDDT" = "plddt", "UniProt features" = "features")
   if (!is.null(store$translons)) ch <- c(ch, "Translon calls" = "translons")
+  if (isTRUE(store$has_paraloc)) ch <- c(ch, "Localisation signals (Paralloc)" = "paraloc")
   ch
 }
 
@@ -139,7 +140,8 @@ explain_store_open <- function(dir = explain_store_dir()) {
   store <- list(dir = dir, index = index, meta = meta,
                 row = setNames(seq_len(nrow(index)), index$transcript),
                 cache = new.env(parent = emptyenv()),
-                translons = explain_translons_open(dir))
+                translons = explain_translons_open(dir),
+                paraloc = paraloc_open(paraloc_store_dir(dir, meta$organism)))
   assign(key, store, envir = .rc_explain_env)
   store
 }
@@ -194,6 +196,9 @@ explain_known_ids <- function(store, layers = NULL) {
   ids <- names(store$row)
   if (!is.null(store$translons) && "translons" %in% layers) {
     ids <- union(ids, names(store$translons$row))
+  }
+  if (!is.null(store$paraloc) && "paraloc" %in% layers) {
+    ids <- union(ids, names(store$paraloc$row))
   }
   ids
 }
@@ -376,12 +381,15 @@ explain_locus_data <- function(explain, display_range,
   layers <- explain$layers
   display <- unlist(display_range, use.names = FALSE)
   out <- list(status = list(), expected = list(), plddt = list(), features = list(),
-              translons = list(), meta = store$meta, ids = character())
+              translons = list(), paraloc = list(), meta = store$meta, ids = character())
   for (id in explain$ids) {
     if (!(id %in% names(explain$tx_exons))) next
     exons <- explain$tx_exons[[id]]
     if ("translons" %in% layers && !is.null(store$translons)) {
       out$translons[[id]] <- explain_translons_locus(store$translons, id, exons, display)
+    }
+    if ("paraloc" %in% layers && !is.null(store$paraloc)) {
+      out$paraloc[[id]] <- paraloc_locus(store$paraloc, id, exons, display)
     }
     d <- explain_store_tx(store, id)
     if (is.null(d)) next
@@ -414,7 +422,9 @@ explain_locus_data <- function(explain, display_range,
   }
   out$translons <- rbindlist(out$translons)
   if (nrow(out$translons)) out$translons_meta <- store$translons$meta
-  if (!length(out$ids) && !nrow(out$translons)) return(NULL)
+  out$paraloc <- rbindlist(out$paraloc)
+  if (nrow(out$paraloc)) out$paraloc_meta <- store$paraloc$meta
+  if (!length(out$ids) && !nrow(out$translons) && !nrow(out$paraloc)) return(NULL)
   out$status <- rbindlist(out$status)
   out$expected <- rbindlist(out$expected)
   out$plddt <- rbindlist(out$plddt)
@@ -563,6 +573,15 @@ explain_status_legend_ui <- function(meta) {
     tags$span(style = paste0("display:inline-block; width:12px; height:12px; margin-right:4px; ",
                              "vertical-align:middle; background:", cols[[s]], ";")),
     lab[[s]]))
+  tc <- meta$type_colors
+  if (length(tc)) {
+    tl <- meta$type_labels
+    items <- c(items, lapply(names(tc), function(s) tags$span(
+      style = "display:inline-block; margin-right:10px; white-space:nowrap;",
+      tags$span(style = paste0("display:inline-block; width:12px; height:12px; margin-right:4px; ",
+                               "vertical-align:middle; background:", tc[[s]], ";")),
+      if (!is.null(tl) && !is.na(tl[s])) tl[[s]] else s)))
+  }
   tags$div(class = "explain-status-legend", style = "font-size:12px;", tags$b("Window status: "), items)
 }
 
@@ -655,10 +674,35 @@ explain_status_panel <- function(ex, display_range) {
     ifelse(is.na(note), "", paste0("<br><i>", note, "</i>")),
     format(round(dt$O), big.mark = ",", trim = TRUE), format(round(dt$E), big.mark = ",", trim = TRUE),
     log2((dt$O + 1) / (dt$E + 1)), ifelse(is.na(status_all), "NA", status_all))
+  # optional E-term bit mask (store v1.18+): integer column `terms`, levels meta$term_levels (bit k = 2^(k-1))
+  terms <- explain_decode_terms(dt$terms, meta$term_levels)
+  hover <- paste0(hover, ifelse(nzchar(terms), paste0("<br>E terms: ", terms), ""))
+  # optional per-type ribbon colours (store v1.18+: meta$type_colors, e.g. the called dORF term)
+  category <- status
+  tc <- meta$type_colors
+  if (length(tc)) {
+    hit <- !is.na(type) & type %in% names(tc)
+    category[hit] <- type[hit]
+  }
+  cols <- c(explain_status_colors(meta), tc[setdiff(names(tc), names(explain_status_colors(meta)))])
   nl <- max(dt$lane)
-  traces <- explain_bar_traces(dt, status, explain_status_colors(meta), rep(0.9, nrow(dt)),
+  traces <- explain_bar_traces(dt, category, cols, rep(0.9, nrow(dt)),
                                nl - dt$lane + 0.05, hover)
   explain_panel(traces, display_range, "Explain", c(0, nl))
+}
+
+#' Decode the E-term bit mask of windows ("3'UTR RNA term, D3 ..."); "" when none / no levels.
+#' @noRd
+explain_decode_terms <- function(terms, levels) {
+  n <- length(terms)
+  if (is.null(terms) || !length(levels) || !n) return(rep("", n))
+  out <- rep("", n)
+  terms[is.na(terms)] <- 0L
+  for (k in seq_along(levels)) {
+    on <- bitwAnd(as.integer(terms), as.integer(2^(k - 1))) > 0L
+    out[on] <- ifelse(nzchar(out[on]), paste0(out[on], ", ", levels[k]), levels[k])
+  }
+  out
 }
 
 #' AlphaFold pLDDT panel (bar height = pLDDT, colour = confidence band).
@@ -768,6 +812,9 @@ explain_bottom_panels <- function(ex, display_range) {
   if (nrow(ex$features)) panels$explain_features <- explain_features_panel(ex, display_range)
   if (!is.null(ex$translons) && nrow(ex$translons)) {
     panels$explain_translons <- explain_translons_panel(ex, display_range)
+  }
+  if (!is.null(ex$paraloc) && nrow(ex$paraloc)) {
+    panels$explain_paraloc <- paraloc_panel(ex, display_range)
   }
   panels
 }
@@ -885,7 +932,8 @@ explain_settings_ui <- function(ns) {
       checkboxGroupInput(ns("explain_layers"), NULL, choices = explain_layer_choices(tl),
                          selected = c("status", "expected"), inline = TRUE),
       explain_status_legend_store(stores),
-      explain_translons_legend_ui(tl$translons$meta)))
+      explain_translons_legend_ui(tl$translons$meta),
+      if (isTRUE(tl$has_paraloc)) paraloc_legend_ui(Filter(Negate(is.null), lapply(stores, function(s) s$paraloc))[[1]]$meta)))
   )
 }
 
@@ -893,15 +941,16 @@ explain_settings_ui <- function(ns) {
 #' (type colours union, version "v4_3 human, v1 mouse"); list(translons = NULL) without lanes.
 #' @noRd
 explain_stores_translons <- function(stores) {
+  has_paraloc <- any(vapply(stores, function(s) !is.null(s$paraloc), logical(1)))
   metas <- lapply(stores, function(s) s$translons$meta)
   metas <- metas[!vapply(metas, is.null, logical(1))]
-  if (!length(metas)) return(list(translons = NULL))
-  if (length(metas) == 1) return(list(translons = list(meta = metas[[1]])))
+  if (!length(metas)) return(list(translons = NULL, has_paraloc = has_paraloc))
+  if (length(metas) == 1) return(list(translons = list(meta = metas[[1]]), has_paraloc = has_paraloc))
   cols <- character()
   for (m in metas) cols <- c(cols, m$type_colors[setdiff(names(m$type_colors), names(cols))])
   ver <- paste(vapply(names(metas), function(o) paste(metas[[o]]$version, explain_organism_labels(o)), ""),
                collapse = ", ")
-  list(translons = list(meta = list(version = ver, type_colors = cols)))
+  list(translons = list(meta = list(version = ver, type_colors = cols)), has_paraloc = has_paraloc)
 }
 
 #' Status legend for the configured stores (union of their status levels;
@@ -915,6 +964,8 @@ explain_status_legend_store <- function(stores = explain_stores_open()) {
     meta$status_levels <- union(meta$status_levels, m$status_levels)
     meta$status_colors <- c(meta$status_colors, m$status_colors[setdiff(names(m$status_colors), names(meta$status_colors))])
     meta$status_labels <- c(meta$status_labels, m$status_labels[setdiff(names(m$status_labels), names(meta$status_labels))])
+    meta$type_colors <- c(meta$type_colors, m$type_colors[setdiff(names(m$type_colors), names(meta$type_colors))])
+    meta$type_labels <- c(meta$type_labels, m$type_labels[setdiff(names(m$type_labels), names(meta$type_labels))])
   }
   explain_status_legend_ui(meta)
 }

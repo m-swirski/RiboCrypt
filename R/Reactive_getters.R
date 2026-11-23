@@ -95,14 +95,14 @@ bottom_plots_to_plotly <- function(bottom_panel, is_cellphone = FALSE) {
   )
 }
 
-#' Axis polish of custom bottom tracks; explainability panels keep their hover.
+#' Axis polish of custom bottom tracks; explainability and mappability strip panels keep their hover.
 #' @noRd
 custom_panels_to_plotly <- function(panels) {
   if (!length(panels)) return(list())
   nms <- names(panels)
   if (is.null(nms)) nms <- rep("", length(panels))
   out <- lapply(seq_along(panels), function(i) {
-    if (startsWith(nms[i], "explain")) automateTicksExplainTrack(panels[[i]])
+    if (startsWith(nms[i], "explain") || nms[i] == "mappability_strip") automateTicksExplainTrack(panels[[i]])
     else automateTicksCustomTrack(panels[[i]])
   })
   names(out) <- names(panels)
@@ -117,9 +117,15 @@ custom_seq_track_panels <- function(df, display_range, phyloP, mapability) {
   tracks <- append_custom_seq_track(tracks, "phylo", phyloP, function() {
     phylo_custom_seq_track_panel(df, display_range)
   })
-  tracks <- append_custom_seq_track(tracks, "mapability", mapability, function() {
-    mapability_custom_seq_track_panel(df, display_range)
-  })
+  if (isTRUE(mapability) && !is.null(mappability_store_dir(df))) {
+    # coloured two-row strip (unique perfect match / <=2 mm) from the compact store
+    strip <- mappability_strip_track_panel(df, display_range)
+    if (!is.null(strip)) tracks$mappability_strip <- strip
+  } else {
+    tracks <- append_custom_seq_track(tracks, "mapability", mapability, function() {
+      mapability_custom_seq_track_panel(df, display_range)
+    })
+  }
   list(custom_bigwig_panels = tracks)
 }
 

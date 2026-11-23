@@ -144,3 +144,23 @@ test_that("legend lists every class colour", {
   html <- as.character(RiboCrypt:::mappability_legend_ui())
   for (col in RiboCrypt:::mappability_classes()) expect_match(html, col, fixed = TRUE)
 })
+
+test_that("reads select rows by track, part, chromosome and bin (index columns are not shadowed)", {
+  dir <- tempfile("rc_map_bins"); dir.create(dir)
+  # exact nu: 2 rows in bin 0 of chr 1, 1 row in bin 2 of chr 1, 1 row on chr 2; le2mm nu: 5 rows in bin 0
+  ex <- data.table(chr = c(1L, 1L, 1L, 2L), start = c(10L, 50L, 2000010L, 10L), end = c(20L, 60L, 2000020L, 20L),
+                   strand = 1L, n = NA_integer_)
+  le <- data.table(chr = 1L, start = seq(100L, 500L, 100L), end = seq(110L, 510L, 100L), strand = 0L, n = 2L)
+  fst::write_fst(ex, file.path(dir, "exact_nu.fst")); fst::write_fst(le, file.path(dir, "le2mm_nu.fst"))
+  fst::write_fst(data.table(track = c("exact", "exact", "exact", "le2mm"), part = "nu", chr = c(1L, 1L, 2L, 1L),
+                            bin = c(0L, 2L, 0L, 0L), from = c(1L, 3L, 4L, 1L), to = c(2L, 3L, 4L, 5L)),
+                 file.path(dir, "index.fst"))
+  saveRDS(list(seqlevels = c("1", "2"), bin = 1e6, tracks = list()), file.path(dir, "meta.rds"))
+  store <- RiboCrypt:::mappability_store_open(dir)
+  expect_equal(nrow(RiboCrypt:::mappability_read(store, "exact", "nu", 1L, 1L, 1000L)), 2)
+  expect_equal(RiboCrypt:::mappability_read(store, "exact", "nu", 1L, 1999990L, 2000030L)$start, 2000010L)
+  expect_equal(nrow(RiboCrypt:::mappability_read(store, "exact", "nu", 2L, 1L, 1000L)), 1)
+  expect_equal(nrow(RiboCrypt:::mappability_read(store, "le2mm", "nu", 1L, 1L, 1000L)), 5)
+  expect_equal(nrow(RiboCrypt:::mappability_read(store, "exact", "nu", 1L, 1L, 2100000L)), 3)
+  expect_null(RiboCrypt:::mappability_read(store, "le2mm", "def", 1L, 1L, 1000L))
+})

@@ -72,8 +72,9 @@ mappability_chr_code <- function(chr, seqlevels) {
 mappability_read <- function(store, track, part, chr_code, from, to) {
   bin <- store$meta$bin
   b <- seq.int((max(1L, from) - 1L) %/% bin, (to - 1L) %/% bin)
-  ix <- store$index[store$index$track == track & store$index$part == part &
-                      store$index$chr == chr_code & store$index$bin %in% b]
+  idx <- store$index
+  sel <- idx$track == track & idx$part == part & idx$chr == chr_code & idx$bin %in% b  # outside [.data.table: track/part are columns
+  ix <- idx[sel]
   if (!nrow(ix)) return(NULL)
   ix <- ix[order(ix$from)]
   # contiguous bins -> one read each

@@ -47,7 +47,8 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?",
   library <- as.character(library)
   library <- library[!is.na(library) & nzchar(library)]
   paste0(settings,
-  paste(paste("dff", input$dff, sep = "="),
+  # c() drops the optional (NULL) parameters, so the URL has no empty "&&" fields
+  paste(c(paste("dff", input$dff, sep = "="),
         paste("gene", input$gene, sep = "="),
         paste("tx", input$tx, sep = "="),
         paste("library", paste(library, collapse = ","), sep = "="),
@@ -71,14 +72,15 @@ make_url_from_inputs_parameters <-function(input, go = TRUE, settings = "/?",
         paste("customSequence", input$customSequence, sep = "="),
         paste("phyloP", input$phyloP, sep = "="),
         paste("mapability", input$mapability, sep = "="),
+        if (isTRUE(input$exon_strip)) paste("exon_strip", TRUE, sep = "="),
         if (isTRUE(input$explain_mode)) paste("explain_mode", TRUE, sep = "="),
         paste("colors", input$colors, sep = "="),
         paste("summary_track", input$summary_track, sep = "="),
         paste("summary_track_type", input$summary_track_type, sep = "="),
         paste("collapsed_introns_width", input$collapsed_introns_width, sep = "="),
         paste("collapsed_introns", input$collapsed_introns, sep = "="),
-        paste("go", go, sep = "="),
-        sep = "&"))
+        paste("go", go, sep = "=")),
+        collapse = "&"))
 }
 
 clipboard_url_text <- function(input, session,
@@ -494,7 +496,7 @@ browser_specific_url_checker <- function(target = c("auto", "browser", "observat
         # Checkbox updates
         for (tag in c("viewMode", "other_tx", "add_uorfs", "add_translon",
                       "add_translons_transcode", "summary_track",
-                      "log_scale", "log_scale_protein","phyloP", "mapability",
+                      "log_scale", "log_scale_protein","phyloP", "mapability", "exon_strip",
                       "collapsed_introns", "unique_align", "local_y_max", "explain_mode")) {
           value <- query[tag][[1]]
           if (!is.null(value)) {

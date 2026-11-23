@@ -465,6 +465,7 @@ hash_strings_browser <- function(input, dff, ciw = input$collapsed_introns_width
                        browser_input_or_default(input, "customSequence", ""),
                        browser_input_or_default(input, "phyloP", FALSE),
                        browser_input_or_default(input, "mapability", FALSE),
+                       browser_input_or_default(input, "exon_strip", FALSE),
                        explain_hash(input),
                        isTRUE(is_cellphone),
                        collapse = "|_|")

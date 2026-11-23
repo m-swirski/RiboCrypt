@@ -196,6 +196,7 @@ click_plot_browser_main_controller <- function(input, tx, cds, libs, df, user_in
                    frames_subset = frames_subset,
                    mapability = input$mapability,
                    explain = explain,
+                   exon_strip = exon_strip_controller(input, tx(), explain, collapsed_introns_width),
                    frame_colors = frame_colors,
                    colors = colors,
                    library_selections = selected_library_groups,

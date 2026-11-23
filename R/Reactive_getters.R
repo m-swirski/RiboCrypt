@@ -73,6 +73,10 @@ bottom_panel_shiny <- function(mainPlotControls, templates = NULL) {
     custom_bigwig_panels$custom_bigwig_panels,
     explain_bottom_panels(explain_data, annotation_list$display_range)
   )
+  custom_bigwig_panels$custom_bigwig_panels <- exon_strip_insert(
+    custom_bigwig_panels$custom_bigwig_panels,
+    exon_strip_track_panel(controls$exon_strip, annotation_list$display_range)
+  )
   bottom_panel <- c(bottom_panel, annotation_list, custom_bigwig_panels,
     ncustom = length(custom_bigwig_panels[[1]])
   )
@@ -95,14 +99,14 @@ bottom_plots_to_plotly <- function(bottom_panel, is_cellphone = FALSE) {
   )
 }
 
-#' Axis polish of custom bottom tracks; explainability and mappability strip panels keep their hover.
+#' Axis polish of custom bottom tracks; explainability, mappability and exon strip panels keep their hover.
 #' @noRd
 custom_panels_to_plotly <- function(panels) {
   if (!length(panels)) return(list())
   nms <- names(panels)
   if (is.null(nms)) nms <- rep("", length(panels))
   out <- lapply(seq_along(panels), function(i) {
-    if (startsWith(nms[i], "explain") || nms[i] == "mappability_strip") automateTicksExplainTrack(panels[[i]])
+    if (startsWith(nms[i], "explain") || nms[i] %in% c("mappability_strip", "exon_strip")) automateTicksExplainTrack(panels[[i]])
     else automateTicksCustomTrack(panels[[i]])
   })
   names(out) <- names(panels)

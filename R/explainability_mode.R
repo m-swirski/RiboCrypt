@@ -28,7 +28,7 @@ explain_layer_choices <- function(store = NULL) {
           "AlphaFold pLDDT" = "plddt", "UniProt features" = "features")
   if (!is.null(store$translons)) ch <- c(ch, "Translon calls" = "translons")
   if (isTRUE(store$has_paraloc)) ch <- c(ch, "Localisation signals (Paralloc)" = "paraloc")
-  ch
+  c(ch, "Exons (alternating)" = "exons")
 }
 
 #' Normalise an organism name for matching ("Homo_sapiens" == "homo sapiens").
@@ -895,7 +895,7 @@ explain_controller <- function(input, dff, tx_grl, display_region) {
     }
     return(off)
   }
-  layers <- browser_input_or_default(input, "explain_layers", c("status", "expected"))
+  layers <- browser_input_or_default(input, "explain_layers", c("status", "expected", "exons"))
   viewMode <- isTRUE(browser_input_or_default(input, "viewMode", FALSE))
   other_tx <- isTRUE(browser_input_or_default(input, "other_tx", FALSE))
   ids <- explain_candidate_ids(store, shiny::isolate(input$tx), tx_grl, display_region,
@@ -930,7 +930,7 @@ explain_settings_ui <- function(ns) {
     column(8, conditionalPanel(
       sprintf("input['%s'] == true", ns("explain_mode")),
       checkboxGroupInput(ns("explain_layers"), NULL, choices = explain_layer_choices(tl),
-                         selected = c("status", "expected"), inline = TRUE),
+                         selected = c("status", "expected", "exons"), inline = TRUE),
       explain_status_legend_store(stores),
       explain_translons_legend_ui(tl$translons$meta),
       if (isTRUE(tl$has_paraloc)) paraloc_legend_ui(Filter(Negate(is.null), lapply(stores, function(s) s$paraloc))[[1]]$meta)))

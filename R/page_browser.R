@@ -126,6 +126,8 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
                                 fluidRow(column(4, checkboxInput(ns("phyloP"), "Conservation (phyloP)", FALSE)),
                                          column(4, checkboxInput(ns("mapability"), "Mappability (28-mers: unique / \u22642 mm)", FALSE))),
                                 conditionalPanel(sprintf("input['%s'] == true", ns("mapability")), mappability_legend_ui()),
+                                fluidRow(column(4, checkboxInput(ns("exon_strip"), "Exons (alternating)", FALSE))),
+                                conditionalPanel(sprintf("input['%s'] == true", ns("exon_strip")), exon_strip_legend_ui()),
                                 explain_settings_ui(ns),
                                 fluidRow(
                                   column(4, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),

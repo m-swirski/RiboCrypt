@@ -5,18 +5,23 @@
 #   - expected P-site coverage E overlaid on Ribo-seq tracks (scaled to each library)
 #   - AlphaFold pLDDT per codon
 #   - UniProt features per protein (domains, disorder, topology, sites, AF helix/strand)
+#   - translon calls (optional, private classifier release; any transcript of the release, not only MANE)
 # Data come from a compact store directory (built at release time by
 # build_explain_store.R): index.fst (one row per transcript with row ranges),
 # windows.fst, lowmap.fst, plddt.fst, features.fst and meta.rds. Rows are read
-# lazily per transcript and kept in an in-memory cache.
+# lazily per transcript and kept in an in-memory cache. Optional extra lane files
+# (translons_<version>.fst, translons_<version>_index.fst, translons_<version>_meta.rds)
+# add the translon calls lane; stores without them work as before.
 #
 # The store directory is given by option "RiboCrypt.explain_store" or the
 # environment variable RIBOCRYPT_EXPLAIN_STORE; without it the mode is hidden.
 
 #' @noRd
-explain_layer_choices <- function() {
-  c("Window status" = "status", "Expected E on P-sites" = "expected",
-    "AlphaFold pLDDT" = "plddt", "UniProt features" = "features")
+explain_layer_choices <- function(store = NULL) {
+  ch <- c("Window status" = "status", "Expected E on P-sites" = "expected",
+          "AlphaFold pLDDT" = "plddt", "UniProt features" = "features")
+  if (!is.null(store$translons)) ch <- c(ch, "Translon calls" = "translons")
+  ch
 }
 
 #' Explainability store directory, NULL when not configured.
@@ -41,9 +46,64 @@ explain_store_open <- function(dir = explain_store_dir()) {
   meta <- readRDS(file.path(dir, "meta.rds"))
   store <- list(dir = dir, index = index, meta = meta,
                 row = setNames(seq_len(nrow(index)), index$transcript),
-                cache = new.env(parent = emptyenv()))
+                cache = new.env(parent = emptyenv()),
+                translons = explain_translons_open(dir))
   assign(key, store, envir = .rc_explain_env)
   store
+}
+
+#' Translon calls lane files of a store (newest version), NULL when absent.
+#'
+#' Files: translons_<v>.fst (one row per call, rows contiguous per transcript),
+#' translons_<v>_index.fst (transcript, gene, n, chr, strand, from, to, n_slots)
+#' and translons_<v>_meta.rds (levels, colours). Only the index and meta are read
+#' here; call rows are read per transcript (explain_translons_tx).
+#' @noRd
+explain_translons_open <- function(dir) {
+  idx <- list.files(dir, pattern = "^translons_v[0-9_]+_index\\.fst$")
+  if (!length(idx)) return(NULL)
+  vers <- sub("^translons_(v[0-9_]+)_index\\.fst$", "\\1", idx)
+  nv <- numeric_version(gsub("_", ".", sub("^v", "", vers)), strict = FALSE)
+  v <- vers[order(nv, decreasing = TRUE)][1]
+  files <- file.path(dir, paste0("translons_", v, c(".fst", "_index.fst", "_meta.rds")))
+  if (!all(file.exists(files))) return(NULL)
+  res <- tryCatch({
+    index <- fst::read_fst(files[2], as.data.table = TRUE)
+    meta <- readRDS(files[3])
+    list(file = files[1], version = v, index = index, meta = meta,
+         row = setNames(seq_len(nrow(index)), index$transcript),
+         cache = new.env(parent = emptyenv()))
+  }, error = function(e) {
+    warning("Explainability: could not read translon lane ", v, ": ", conditionMessage(e))
+    NULL
+  })
+  res
+}
+
+#' Translon calls of one transcript (lazy, cached); NULL when none.
+#' @noRd
+explain_translons_tx <- function(tl, id, max_cache = 2000L) {
+  if (is.null(tl)) return(NULL)
+  hit <- tl$cache[[id]]
+  if (!is.null(hit)) return(hit)
+  i <- tl$row[id]
+  if (is.na(i)) return(NULL)
+  r <- tl$index[i]
+  calls <- fst::read_fst(tl$file, from = r$from, to = r$to, as.data.table = TRUE)
+  res <- list(tx = r, calls = calls)
+  if (length(ls(tl$cache)) >= max_cache) rm(list = ls(tl$cache), envir = tl$cache)
+  assign(id, res, envir = tl$cache)
+  res
+}
+
+#' Transcript ids with any data for the requested layers.
+#' @noRd
+explain_known_ids <- function(store, layers = NULL) {
+  ids <- names(store$row)
+  if (!is.null(store$translons) && "translons" %in% layers) {
+    ids <- union(ids, names(store$translons$row))
+  }
+  ids
 }
 
 #' Is the organism supported by the store?
@@ -82,11 +142,12 @@ explain_store_tx <- function(store, id, max_cache = 2000L) {
 #' transcript overlapping the displayed region.
 #' @noRd
 explain_candidate_ids <- function(store, selected, tx_grl, display_region,
-                                  include_overlapping = FALSE, max_tx = 5L) {
+                                  include_overlapping = FALSE, max_tx = 5L, layers = NULL) {
   if (is.null(store)) return(character())
-  ids <- intersect(selected, names(store$row))
+  known <- explain_known_ids(store, layers)
+  ids <- intersect(selected, known)
   if (include_overlapping) {
-    spans <- explain_store_spans(store, tx_grl)
+    spans <- explain_store_spans(store, tx_grl, known)
     if (length(spans)) {
       hits <- names(spans)[IRanges::overlapsAny(spans, unlist(display_region, use.names = FALSE),
                                        ignore.strand = TRUE)]
@@ -99,12 +160,12 @@ explain_candidate_ids <- function(store, selected, tx_grl, display_region,
 
 #' Genomic spans of store transcripts in one annotation (cached per annotation).
 #' @noRd
-explain_store_spans <- function(store, tx_grl) {
+explain_store_spans <- function(store, tx_grl, known = names(store$row)) {
   key <- paste0("spans:", length(tx_grl), ":", names(tx_grl)[1], ":",
-                names(tx_grl)[length(tx_grl)])
+                names(tx_grl)[length(tx_grl)], ":", length(known))
   spans <- store$cache[[key]]
   if (is.null(spans)) {
-    ids <- intersect(names(store$row), names(tx_grl))
+    ids <- intersect(known, names(tx_grl))
     spans <- unlist(BiocGenerics::range(tx_grl[ids]))
     assign(key, spans, envir = store$cache)
   }
@@ -219,12 +280,15 @@ explain_locus_data <- function(explain, display_range, store = explain_store_ope
   layers <- explain$layers
   display <- unlist(display_range, use.names = FALSE)
   out <- list(status = list(), expected = list(), plddt = list(), features = list(),
-              meta = store$meta, ids = character())
-  for (lane in seq_along(explain$ids)) {
-    id <- explain$ids[lane]
-    d <- explain_store_tx(store, id)
-    if (is.null(d) || !(id %in% names(explain$tx_exons))) next
+              translons = list(), meta = store$meta, ids = character())
+  for (id in explain$ids) {
+    if (!(id %in% names(explain$tx_exons))) next
     exons <- explain$tx_exons[[id]]
+    if ("translons" %in% layers && !is.null(store$translons)) {
+      out$translons[[id]] <- explain_translons_locus(store$translons, id, exons, display)
+    }
+    d <- explain_store_tx(store, id)
+    if (is.null(d)) next
     if (sum(width(exons)) != d$tx$n) {
       warning("Explainability: transcript length mismatch for ", id, ", skipped")
       next
@@ -232,17 +296,18 @@ explain_locus_data <- function(explain, display_range, store = explain_store_ope
     map <- explain_tx_display_map(exons, display)
     if (!nrow(map)) next
     out$ids <- c(out$ids, id)
+    slane <- length(out$ids)  # store lanes stay contiguous when ids without store data are skipped
     label <- paste0(d$tx$gene, " (", id, ")")
     if (any(c("status", "expected") %in% layers) && !is.null(d$windows)) {
       w <- d$windows
       if ("status" %in% layers) {
         p <- explain_map_ranges(w$start, w$end, map)
-        if (nrow(p)) out$status[[id]] <- data.table(p, w[p$id], lane = lane, label = label)
+        if (nrow(p)) out$status[[id]] <- data.table(p, w[p$id], lane = slane, label = label)
       }
       if ("expected" %in% layers) out$expected[[id]] <- explain_expected_segments(d, map)
     }
     if ("plddt" %in% layers && !is.null(d$plddt)) {
-      out$plddt[[id]] <- explain_plddt_bins(d, map, lane = lane, label = label)
+      out$plddt[[id]] <- explain_plddt_bins(d, map, lane = slane, label = label)
     }
     if ("features" %in% layers && !is.null(d$features)) {
       f <- d$features
@@ -251,12 +316,35 @@ explain_locus_data <- function(explain, display_range, store = explain_store_ope
       if (nrow(p)) out$features[[id]] <- data.table(p, f[p$id], label = label)
     }
   }
-  if (!length(out$ids)) return(NULL)
+  out$translons <- rbindlist(out$translons)
+  if (nrow(out$translons)) out$translons_meta <- store$translons$meta
+  if (!length(out$ids) && !nrow(out$translons)) return(NULL)
   out$status <- rbindlist(out$status)
   out$expected <- rbindlist(out$expected)
   out$plddt <- rbindlist(out$plddt)
   out$features <- rbindlist(out$features)
   out
+}
+
+#' Translon calls of one transcript in display coordinates.
+#'
+#' ORFs crossing an exon junction become several boxes (genomic view) with the
+#' same hover; slot = precomputed sub-lane (packing in transcript nt).
+#' @return data.table(x0, x1, call columns, slot, n_slots, tx, label) or NULL
+#' @noRd
+explain_translons_locus <- function(tl, id, exons, display) {
+  d <- explain_translons_tx(tl, id)
+  if (is.null(d) || !nrow(d$calls)) return(NULL)
+  if (sum(width(exons)) != d$tx$n) {
+    warning("Explainability: transcript length mismatch for ", id, " (translon lane), skipped")
+    return(NULL)
+  }
+  map <- explain_tx_display_map(exons, display)
+  if (!nrow(map)) return(NULL)
+  p <- explain_map_ranges(d$calls$start, d$calls$end, map)
+  if (!nrow(p)) return(NULL)
+  data.table(x0 = p$x0, x1 = p$x1, d$calls[p$id], n_slots = d$tx$n_slots, tx = id,
+             label = paste0(d$tx$gene, " (", id, ")"))
 }
 
 #' Per-nt expected density (unique track) at usable positions, in display x.
@@ -496,6 +584,69 @@ explain_features_panel <- function(ex, display_range) {
   explain_panel(traces, display_range, "UniProt", c(0, nl))
 }
 
+#' Hover text of translon calls.
+#' @noRd
+explain_translons_hover <- function(dt, meta) {
+  type <- meta$type_levels[dt$type]
+  tier <- meta$tier_levels[dt$tier]
+  codon <- meta$codon_levels[dt$start_codon]
+  len <- dt$end - dt$start + 1L
+  num <- function(x, fmt) ifelse(is.na(x), "NA", sprintf(fmt, x))
+  cons <- ifelse(is.na(dt$conserved), "NA", ifelse(dt$conserved, "yes", "no"))
+  eff <- if (!is.null(dt$rt_eff)) dt$rt_eff else rep(NA_real_, nrow(dt))
+  genomic <- if (!is.null(dt$genomic)) dt$genomic else rep(NA_character_, nrow(dt))
+  sprintf("%s<br><b>%s</b> (%s tier)<br>q = %s, P = %s<br>start codon %s; tx nt %d-%d (%d nt)<br>conserved translon (mouse): %s%s%s",
+          dt$label, type, tier, num(dt$q, "%.3g"), num(dt$P, "%.3g"), ifelse(is.na(codon), "NA", codon),
+          dt$start, dt$end, len, cons,
+          ifelse(is.na(eff), "", sprintf("<br>readthrough efficiency: %.3g", eff)),
+          ifelse(is.na(genomic), "", paste0("<br>", genomic)))
+}
+
+#' Translon calls panel: one block of sub-lanes per transcript, boxes coloured
+#' by type, opacity by tier.
+#' @noRd
+explain_translons_panel <- function(ex, display_range) {
+  dt <- ex$translons
+  meta <- ex$translons_meta
+  txs <- unique(dt$tx)
+  nsl <- dt$n_slots[match(txs, dt$tx)]
+  offset <- setNames(c(0L, cumsum(nsl)[-length(nsl)]), txs)
+  total <- sum(nsl)
+  row <- offset[dt$tx] + dt$slot          # 1 = top row
+  base <- total - row + 0.1
+  type <- meta$type_levels[dt$type]
+  tier <- meta$tier_levels[dt$tier]
+  op <- meta$tier_opacity
+  if (is.null(op)) op <- c(high = 0.95, candidate = 0.4)
+  opacity <- unname(op[tier])
+  opacity[is.na(opacity)] <- 0.4
+  hover <- explain_translons_hover(dt, meta)
+  cols <- meta$type_colors
+  miss <- setdiff(unique(type), names(cols))
+  if (length(miss)) cols[miss] <- "#B15928"
+  traces <- explain_bar_traces(dt, type, cols, rep(0.8, nrow(dt)), base, hover)
+  for (k in seq_along(traces)) {
+    sel <- which(type == traces[[k]]$name)
+    traces[[k]]$marker$opacity <- I(opacity[sel])
+    traces[[k]]$marker$line <- list(width = 0.5, color = unname(cols[traces[[k]]$name]))
+    traces[[k]]$meta <- list(rc_explain = "translons")
+  }
+  explain_panel(traces, display_range, "Translons", c(0, total))
+}
+
+#' Translon type colour legend (HTML), NULL without a translon lane.
+#' @noRd
+explain_translons_legend_ui <- function(meta) {
+  if (is.null(meta)) return(NULL)
+  cols <- meta$type_colors
+  items <- lapply(names(cols), function(s) tags$span(
+    style = "display:inline-block; margin-right:10px; white-space:nowrap;",
+    tags$span(style = paste0("display:inline-block; width:12px; height:12px; margin-right:4px; ",
+                             "vertical-align:middle; background:", cols[[s]], ";")), s))
+  tags$div(class = "explain-translons-legend", style = "font-size:12px;",
+           tags$b(paste0("Translon calls (", meta$version, "; solid = high, faint = candidate): ")), items)
+}
+
 #' Bottom panels of the explainability mode (named explain_*).
 #' @noRd
 explain_bottom_panels <- function(ex, display_range) {
@@ -504,6 +655,9 @@ explain_bottom_panels <- function(ex, display_range) {
   if (nrow(ex$status)) panels$explain_status <- explain_status_panel(ex, display_range)
   if (nrow(ex$plddt)) panels$explain_plddt <- explain_plddt_panel(ex, display_range)
   if (nrow(ex$features)) panels$explain_features <- explain_features_panel(ex, display_range)
+  if (!is.null(ex$translons) && nrow(ex$translons)) {
+    panels$explain_translons <- explain_translons_panel(ex, display_range)
+  }
   panels
 }
 
@@ -587,10 +741,10 @@ explain_controller <- function(input, dff, tx_grl, display_region) {
   viewMode <- isTRUE(browser_input_or_default(input, "viewMode", FALSE))
   other_tx <- isTRUE(browser_input_or_default(input, "other_tx", FALSE))
   ids <- explain_candidate_ids(store, shiny::isolate(input$tx), tx_grl, display_region,
-                               include_overlapping = viewMode && other_tx)
+                               include_overlapping = viewMode && other_tx, layers = layers)
   if (!length(ids)) {
     if (!is.null(shiny::getDefaultReactiveDomain())) {
-      shiny::showNotification("Explainability: no MANE transcript with explainer results at this locus.",
+      shiny::showNotification("Explainability: no transcript with explainer results at this locus.",
                               type = "message")
     }
   }
@@ -610,13 +764,15 @@ explain_hash <- function(input) {
 #' @noRd
 explain_settings_ui <- function(ns) {
   if (is.null(explain_store_dir())) return(NULL)
+  store <- tryCatch(explain_store_open(), error = function(e) NULL)
   fluidRow(
     column(4, checkboxInput(ns("explain_mode"), "Explainability (MANE, human)", FALSE)),
     column(8, conditionalPanel(
       sprintf("input['%s'] == true", ns("explain_mode")),
-      checkboxGroupInput(ns("explain_layers"), NULL, choices = explain_layer_choices(),
+      checkboxGroupInput(ns("explain_layers"), NULL, choices = explain_layer_choices(store),
                          selected = c("status", "expected"), inline = TRUE),
-      explain_status_legend_store()))
+      explain_status_legend_store(),
+      explain_translons_legend_ui(store$translons$meta)))
   )
 }
 

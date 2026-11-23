@@ -156,3 +156,116 @@ test_that("RGST status gets a colour and legend entry; uncoloured statuses still
   tr <- RiboCrypt:::explain_bar_traces(dt, c("RGST", "new-status", "understood"), cols, rep(0.9, 3), rep(0, 3), c("a", "b", "c"))
   expect_setequal(vapply(tr, `[[`, "", "name"), c("RGST", "new-status", "understood"))
 })
+
+# ---- translon calls lane ----------------------------------------------------
+
+write_min_store <- function(dir) {
+  dir.create(dir, showWarnings = FALSE)
+  fst::write_fst(data.frame(transcript = "TX1", gene = "G1", n = 200L, cs = 11L, ce = 190L,
+                            w_from = 1L, w_to = 1L, l_from = 1L, l_to = 0L, p_from = 1L, p_to = 0L,
+                            f_from = 1L, f_to = 0L), file.path(dir, "index.fst"))
+  fst::write_fst(data.frame(start = 1L, end = 200L, region = 2L, status = 1L, type = NA_integer_, O = 10, E = 10,
+                            usable_frac = 1, status_all = 1L, type_all = NA_integer_, O_all = 10, E_all = 10),
+                 file.path(dir, "windows.fst"))
+  fst::write_fst(data.frame(start = integer(), end = integer()), file.path(dir, "lowmap.fst"))
+  fst::write_fst(data.frame(codon = integer(), plddt = integer()), file.path(dir, "plddt.fst"))
+  fst::write_fst(data.frame(s = integer(), e = integer(), ftype = integer(), note = character()),
+                 file.path(dir, "features.fst"))
+  saveRDS(list(organism = "Homo sapiens", status_levels = "understood", status_colors = c(understood = "#a1d99b"),
+               region_levels = c("leader", "CDS", "trailer"), type_levels = character(),
+               ftype_levels = "domain", feature_lanes = list("Domains" = "domain")), file.path(dir, "meta.rds"))
+  dir
+}
+
+write_translons <- function(dir, ver = "v4_3") {
+  # TX1: uORF 21-29 (high) and overlapping uoORF 26-120 crossing the exon junction at 100 (candidate, slot 2),
+  # CTE 191-200 (high). TX2 (not in the main store): intORF 5-40.
+  calls <- data.frame(start = c(21L, 26L, 191L, 5L), end = c(29L, 120L, 200L, 40L), slot = c(1L, 2L, 1L, 1L),
+                      type = c(1L, 2L, 3L, 4L), tier = c(1L, 2L, 1L, 2L), start_codon = c(2L, 1L, 3L, 1L),
+                      P = c(0.99, 0.6, NA, 0.7), q = c(0.01, 0.15, 0, 0.12), conserved = c(TRUE, FALSE, NA, FALSE),
+                      rt_eff = c(NA, NA, 0.0465, NA), id = c("a", "b", "c", "d"),
+                      genomic = c("1:1021-1029:-", "1:1401-1420,1001-1080:-", "1:1401-1410:-", "1:2005-2040:+"))
+  fst::write_fst(calls, file.path(dir, paste0("translons_", ver, ".fst")))
+  fst::write_fst(data.frame(transcript = c("TX1", "TX2"), gene = c("G1", "G2"), n = c(200L, 100L), chr = "1",
+                            strand = c("-", "+"), from = c(1L, 4L), to = c(3L, 4L), n_slots = c(2L, 1L),
+                            n_high = c(2L, 0L)), file.path(dir, paste0("translons_", ver, "_index.fst")))
+  saveRDS(list(version = ver, type_levels = c("uORF", "uoORF", "CTE", "intORF"),
+               type_colors = c(uORF = "#E69F00", uoORF = "#D55E00", CTE = "#CC79A7", intORF = "#0072B2"),
+               tier_levels = c("high", "candidate"), tier_opacity = c(high = 0.95, candidate = 0.4),
+               codon_levels = c("ATG", "CTG", "none")), file.path(dir, paste0("translons_", ver, "_meta.rds")))
+}
+
+test_that("stores without translon files work as before (no lane, no layer choice)", {
+  dir <- write_min_store(tempfile("explain_store_old"))
+  store <- RiboCrypt:::explain_store_open(dir)
+  expect_null(store$translons)
+  expect_false("translons" %in% RiboCrypt:::explain_layer_choices(store))
+  expect_false("translons" %in% RiboCrypt:::explain_layer_choices())
+  tx <- GRanges("chr1", IRanges(c(1401, 1001), c(1500, 1100)), "-")
+  explain <- list(active = TRUE, ids = "TX1", layers = c("status", "translons"), tx_exons = GRangesList(TX1 = tx))
+  ex <- RiboCrypt:::explain_locus_data(explain, GRangesList(TX1 = genomic_display(tx)), store)
+  expect_equal(nrow(ex$translons), 0)
+  expect_named(RiboCrypt:::explain_bottom_panels(ex, GRangesList(TX1 = genomic_display(tx))), "explain_status")
+})
+
+test_that("translon lane: discovery, lazy per-transcript reads, junction split, hover and tier opacity", {
+  dir <- write_min_store(tempfile("explain_store_tl"))
+  write_translons(dir, "v4_2")
+  write_translons(dir, "v4_10")  # newest version wins (numeric, not lexical)
+  store <- RiboCrypt:::explain_store_open(dir)
+  expect_equal(store$translons$version, "v4_10")
+  expect_true("translons" %in% RiboCrypt:::explain_layer_choices(store))
+  expect_equal(nrow(RiboCrypt:::explain_translons_tx(store$translons, "TX1")$calls), 3)
+  expect_null(RiboCrypt:::explain_translons_tx(store$translons, "nope"))
+  # translon-only transcripts become candidates only with the layer selected
+  expect_setequal(RiboCrypt:::explain_known_ids(store, "status"), "TX1")
+  expect_setequal(RiboCrypt:::explain_known_ids(store, c("status", "translons")), c("TX1", "TX2"))
+  tx1 <- GRanges("chr1", IRanges(c(1401, 1001), c(1500, 1100)), "-")
+  tx2 <- GRanges("chr1", IRanges(2001, 2100), "+")
+  grl <- GRangesList(TX1 = tx1, TX2 = tx2)
+  expect_equal(RiboCrypt:::explain_candidate_ids(store, c("TX2"), grl, GRangesList(), layers = "translons"), "TX2")
+  expect_length(RiboCrypt:::explain_candidate_ids(store, c("TX2"), grl, GRangesList(), layers = "status"), 0)
+  explain <- list(active = TRUE, ids = c("TX1"), layers = c("status", "translons"), tx_exons = grl["TX1"])
+  display <- GRangesList(TX1 = genomic_display(tx1))
+  ex <- RiboCrypt:::explain_locus_data(explain, display, store)
+  tl <- ex$translons
+  # uoORF 26-120 crosses the junction after tx nt 100 -> two boxes, same id
+  expect_equal(nrow(tl[id == "b"]), 2)
+  expect_equal(tl[id == "b"]$x0, c(26, 401))
+  expect_equal(tl[id == "b"]$x1, c(100, 420))
+  ref <- reference_x(26, 120, tx1, genomic_display(tx1))[[1]]
+  expect_equal(unname(as.matrix(tl[id == "b", .(x0, x1)])), unname(ref))
+  panels <- RiboCrypt:::explain_bottom_panels(ex, display)
+  expect_true("explain_translons" %in% names(panels))
+  tr <- panels$explain_translons$x$data
+  expect_setequal(vapply(tr, `[[`, "", "name"), c("uORF", "uoORF", "CTE"))
+  cte <- tr[[which(vapply(tr, `[[`, "", "name") == "CTE")]]
+  expect_match(cte$hovertext, "readthrough efficiency: 0.0465")
+  expect_match(cte$hovertext, "CTE</b> \\(high tier\\)")
+  expect_match(cte$hovertext, "start codon none")
+  uo <- tr[[which(vapply(tr, `[[`, "", "name") == "uoORF")]]
+  expect_equal(as.numeric(uo$marker$opacity), c(0.4, 0.4))
+  expect_match(uo$hovertext[1], "conserved translon \\(mouse\\): no")
+  expect_match(uo$hovertext[1], "1:1401-1420,1001-1080:-")
+  u <- tr[[which(vapply(tr, `[[`, "", "name") == "uORF")]]
+  expect_equal(as.numeric(u$marker$opacity), 0.95)
+  expect_match(u$hovertext, "q = 0.01, P = 0.99")
+  # slot 1 drawn above slot 2 within the transcript block (2 rows)
+  expect_gt(as.numeric(u$base), as.numeric(uo$base[1]))
+  expect_equal(panels$explain_translons$x$layout$yaxis$range, c(0, 2))
+  # a translon-only transcript (TX2, not in the main store) still gets its lane; store lanes unaffected
+  explain2 <- list(active = TRUE, ids = c("TX2", "TX1"), layers = c("status", "translons"), tx_exons = grl)
+  display2 <- GRangesList(TX2 = GRanges("chr1", IRanges(1001, 2100), "+"))
+  ex2 <- RiboCrypt:::explain_locus_data(explain2, display2, store)
+  expect_setequal(unique(ex2$translons$tx), c("TX1", "TX2"))
+  expect_equal(unique(ex2$status$lane), 1L)
+  expect_equal(ex2$translons[tx == "TX2"]$x0, 1005)
+  p2 <- RiboCrypt:::explain_bottom_panels(ex2, display2)$explain_translons
+  expect_equal(p2$x$layout$yaxis$range, c(0, 3))
+  # length mismatch with the annotation: lane skipped with a warning
+  bad <- GRangesList(TX2 = GRanges("chr1", IRanges(2001, 2050), "+"))
+  expect_warning(res <- RiboCrypt:::explain_translons_locus(store$translons, "TX2", bad[[1]], bad[[1]]), "length mismatch")
+  expect_null(res)
+  html <- as.character(RiboCrypt:::explain_translons_legend_ui(store$translons$meta))
+  expect_match(html, "v4_10"); expect_match(html, "#CC79A7")
+})

@@ -159,7 +159,7 @@ test_that("RGST status gets a colour and legend entry; uncoloured statuses still
 
 # ---- translon calls lane ----------------------------------------------------
 
-write_min_store <- function(dir) {
+write_min_store <- function(dir, organism = "Homo sapiens") {
   dir.create(dir, showWarnings = FALSE)
   fst::write_fst(data.frame(transcript = "TX1", gene = "G1", n = 200L, cs = 11L, ce = 190L,
                             w_from = 1L, w_to = 1L, l_from = 1L, l_to = 0L, p_from = 1L, p_to = 0L,
@@ -171,7 +171,7 @@ write_min_store <- function(dir) {
   fst::write_fst(data.frame(codon = integer(), plddt = integer()), file.path(dir, "plddt.fst"))
   fst::write_fst(data.frame(s = integer(), e = integer(), ftype = integer(), note = character()),
                  file.path(dir, "features.fst"))
-  saveRDS(list(organism = "Homo sapiens", status_levels = "understood", status_colors = c(understood = "#a1d99b"),
+  saveRDS(list(organism = organism, status_levels = "understood", status_colors = c(understood = "#a1d99b"),
                region_levels = c("leader", "CDS", "trailer"), type_levels = character(),
                ftype_levels = "domain", feature_lanes = list("Domains" = "domain")), file.path(dir, "meta.rds"))
   dir
@@ -295,4 +295,110 @@ test_that("explain panel labels are horizontal annotations in each panel's domai
   expect_identical(vapply(ann, `[[`, "", "yref"), c("y domain", "y2 domain"))
   expect_true(all(vapply(ann, `[[`, "", "xref") == "paper"))
   expect_true(all(vapply(ann, function(a) a$font$size, numeric(1)) <= 12))
+})
+
+# ---- per-organism stores ----------------------------------------------------
+
+with_store_config <- function(option, env = "", code) {
+  old <- options(RiboCrypt.explain_store = option)
+  old_env <- Sys.getenv("RIBOCRYPT_EXPLAIN_STORE", unset = NA)
+  Sys.setenv(RIBOCRYPT_EXPLAIN_STORE = env)
+  on.exit({
+    options(old)
+    if (is.na(old_env)) Sys.unsetenv("RIBOCRYPT_EXPLAIN_STORE") else Sys.setenv(RIBOCRYPT_EXPLAIN_STORE = old_env)
+  })
+  force(code)
+}
+
+test_that("single-path option keeps working (old behaviour)", {
+  hs <- write_min_store(tempfile("explain_store_hs"))
+  with_store_config(hs, code = {
+    expect_equal(RiboCrypt:::explain_store_dir(), normalizePath(hs))
+    expect_equal(RiboCrypt:::explain_store_dir("Homo_sapiens"), normalizePath(hs))
+    expect_null(RiboCrypt:::explain_store_dir("Mus musculus"))
+    expect_true(RiboCrypt:::explain_organism_supported("Homo sapiens"))
+    expect_false(RiboCrypt:::explain_organism_supported("Mus musculus"))
+    expect_equal(RiboCrypt:::explain_store_open()$dir, normalizePath(hs))
+    expect_match(as.character(RiboCrypt:::explain_settings_ui(identity)), "Explainability \\(human\\)")
+  })
+  # not configured / invalid directory: mode hidden
+  with_store_config(NULL, code = expect_null(RiboCrypt:::explain_store_dir()))
+  with_store_config(file.path(tempdir(), "no_such_store"), code = {
+    expect_null(RiboCrypt:::explain_store_dir())
+    expect_null(RiboCrypt:::explain_settings_ui(identity))
+  })
+  # environment variable with a single path
+  with_store_config(NULL, env = hs, code = expect_equal(RiboCrypt:::explain_store_dir("homo sapiens"), normalizePath(hs)))
+})
+
+test_that("stores are chosen per organism (named vector, list, unnamed vector, env var)", {
+  hs <- write_min_store(tempfile("explain_store_hs2"))
+  mm <- write_min_store(tempfile("explain_store_mm"), organism = "Mus musculus")
+  write_translons(mm, "v1")
+  configs <- list(named = c("Homo sapiens" = hs, "Mus_musculus" = mm),
+                  list = list(homo_sapiens = hs, "Mus musculus" = mm),
+                  unnamed = c(hs, mm))
+  for (cfg in configs) with_store_config(cfg, code = {
+    expect_equal(RiboCrypt:::explain_store_dir("Mus musculus"), normalizePath(mm))
+    expect_equal(RiboCrypt:::explain_store_dir("Homo sapiens"), normalizePath(hs))
+    expect_equal(RiboCrypt:::explain_store_dir(), normalizePath(hs))  # first entry = default store
+    expect_null(RiboCrypt:::explain_store_dir("Danio rerio"))
+    expect_true(RiboCrypt:::explain_organism_supported("Mus_musculus"))
+    expect_false(RiboCrypt:::explain_organism_supported("Danio rerio"))
+    expect_equal(RiboCrypt:::explain_store_for("Mus musculus")$meta$organism, "Mus musculus")
+  })
+  with_store_config(NULL, env = paste0("Homo sapiens=", hs, "; Mus musculus=", mm), code = {
+    expect_equal(RiboCrypt:::explain_store_dir("Mus musculus"), normalizePath(mm))
+    expect_equal(RiboCrypt:::explain_store_dir("Homo sapiens"), normalizePath(hs))
+  })
+  # an invalid entry is dropped, the others stay usable
+  with_store_config(c("Homo sapiens" = file.path(tempdir(), "missing"), "Mus musculus" = mm), code = {
+    expect_null(RiboCrypt:::explain_store_dir("Homo sapiens"))
+    expect_equal(RiboCrypt:::explain_store_dir(), normalizePath(mm))
+  })
+  # the locus data use the store resolved by the controller (explain$store_dir), not the first store
+  with_store_config(c("Homo sapiens" = hs, "Mus musculus" = mm), code = {
+    tx <- GRanges("chr1", IRanges(c(1401, 1001), c(1500, 1100)), "-")
+    explain <- list(active = TRUE, ids = "TX1", layers = c("status", "translons"),
+                    tx_exons = GRangesList(TX1 = tx), store_dir = normalizePath(mm))
+    ex <- RiboCrypt:::explain_locus_data(explain, GRangesList(TX1 = genomic_display(tx)))
+    expect_equal(ex$meta$organism, "Mus musculus")
+    expect_gt(nrow(ex$translons), 0)
+    explain$store_dir <- NULL  # old controller snapshot: default store
+    ex_hs <- RiboCrypt:::explain_locus_data(explain, GRangesList(TX1 = genomic_display(tx)))
+    expect_equal(ex_hs$meta$organism, "Homo sapiens")
+    expect_equal(nrow(ex_hs$translons), 0)
+    # settings UI: organisms in the label, translon layer offered when any store has a lane
+    html <- as.character(RiboCrypt:::explain_settings_ui(identity))
+    expect_match(html, "Explainability \\(human, mouse\\)")
+    expect_match(html, "Translon calls")
+  })
+})
+
+test_that("controller resolves the store of the experiment's organism", {
+  hs <- write_min_store(tempfile("explain_store_hs3"))
+  mm <- write_min_store(tempfile("explain_store_mm3"), organism = "Mus musculus")
+  input <- list(explain_mode = TRUE, explain_layers = "status", viewMode = FALSE, other_tx = FALSE, tx = "TX1")
+  tx <- GRanges("chr1", IRanges(c(1401, 1001), c(1500, 1100)), "-")
+  fake_df <- function(org) structure(list(), class = "fake_exp", org = org)
+  with_store_config(c("Homo sapiens" = hs, "Mus musculus" = mm), code = {
+    testthat::local_mocked_bindings(organism = function(object) attr(object, "org"), .package = "RiboCrypt")
+    for (org in c("Mus musculus", "Homo sapiens")) {
+      ctl <- RiboCrypt:::explain_controller(input, fake_df(org), GRangesList(TX1 = tx), GRangesList())
+      expect_true(ctl$active)
+      expect_equal(ctl$store_dir, RiboCrypt:::explain_store_dir(org))
+    }
+    expect_false(RiboCrypt:::explain_controller(input, fake_df("Danio rerio"), GRangesList(TX1 = tx), GRangesList())$active)
+  })
+})
+
+test_that("translon hover: conservation line follows meta$conserved_label", {
+  dt <- data.table(label = "G (TX)", type = 1L, tier = 1L, start_codon = 1L, start = 1L, end = 9L,
+                   q = 0.01, P = 0.9, conserved = NA, rt_eff = NA_real_, genomic = NA_character_)
+  meta <- list(type_levels = "uORF", tier_levels = "high", codon_levels = "ATG")
+  expect_match(RiboCrypt:::explain_translons_hover(dt, meta), "conserved translon \\(mouse\\): NA")
+  meta$conserved_label <- NA_character_
+  expect_false(grepl("conserved", RiboCrypt:::explain_translons_hover(dt, meta)))
+  meta$conserved_label <- "conserved translon (human)"
+  expect_match(RiboCrypt:::explain_translons_hover(dt, meta), "conserved translon \\(human\\): NA")
 })

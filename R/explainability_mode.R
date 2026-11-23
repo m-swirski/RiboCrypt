@@ -1,6 +1,6 @@
 # Explainability mode for the single-locus browser.
 #
-# Shows precomputed explainer layers for MANE transcripts (human for now):
+# Shows precomputed explainer layers for the transcripts of an organism store (human MANE, mouse canonical):
 #   - window status ribbon (90-nt windows, status_fam, hover: type, O, E, log2 O/E)
 #   - expected P-site coverage E overlaid on Ribo-seq tracks (scaled to each library)
 #   - AlphaFold pLDDT per codon
@@ -13,8 +13,14 @@
 # (translons_<version>.fst, translons_<version>_index.fst, translons_<version>_meta.rds)
 # add the translon calls lane; stores without them work as before.
 #
-# The store directory is given by option "RiboCrypt.explain_store" or the
-# environment variable RIBOCRYPT_EXPLAIN_STORE; without it the mode is hidden.
+# Stores are given by option "RiboCrypt.explain_store" or the environment variable
+# RIBOCRYPT_EXPLAIN_STORE; without them the mode is hidden. Accepted values:
+#   - one store directory (organism = meta.rds$organism), as before
+#   - a named character vector / list, names = organism, e.g.
+#     c("Homo sapiens" = "<dir>/v117r", "Mus musculus" = "<dir>/v117m")
+#   - an unnamed vector of store directories (organism of each from its meta.rds)
+#   - environment variable: one directory, or "Homo sapiens=<dir>;Mus musculus=<dir>"
+# The store of the selected experiment's organism is used.
 
 #' @noRd
 explain_layer_choices <- function(store = NULL) {
@@ -24,13 +30,99 @@ explain_layer_choices <- function(store = NULL) {
   ch
 }
 
-#' Explainability store directory, NULL when not configured.
+#' Normalise an organism name for matching ("Homo_sapiens" == "homo sapiens").
 #' @noRd
-explain_store_dir <- function() {
-  d <- getOption("RiboCrypt.explain_store", Sys.getenv("RIBOCRYPT_EXPLAIN_STORE", ""))
-  if (is.null(d) || !nzchar(d) || !dir.exists(d) ||
-      !file.exists(file.path(d, "index.fst"))) return(NULL)
-  normalizePath(d)
+explain_norm_organism <- function(x) tolower(gsub("[_ ]+", " ", trimws(as.character(x))))
+
+#' Raw store configuration: option, else environment variable (parsed).
+#' @noRd
+explain_store_config <- function() {
+  d <- getOption("RiboCrypt.explain_store", NULL)
+  if (is.null(d)) {
+    env <- Sys.getenv("RIBOCRYPT_EXPLAIN_STORE", "")
+    if (!nzchar(env)) return(NULL)
+    parts <- trimws(strsplit(env, ";", fixed = TRUE)[[1]])
+    parts <- parts[nzchar(parts)]
+    named <- grepl("=", parts, fixed = TRUE)
+    d <- ifelse(named, sub("^[^=]*=", "", parts), parts)
+    names(d) <- ifelse(named, trimws(sub("=.*$", "", parts)), "")
+    if (!any(named)) d <- unname(d)
+  }
+  d
+}
+
+#' Configured explainability stores: named character vector (names = normalised
+#' organism, values = store directory), empty when none is configured / valid.
+#'
+#' Unnamed entries take the organism from the store's meta.rds. Directories
+#' without index.fst are dropped; for duplicated organisms the first entry wins.
+#' @noRd
+explain_store_dirs <- function(config = explain_store_config()) {
+  empty <- setNames(character(), character())
+  if (is.null(config) || !length(config)) return(empty)
+  nms <- names(config)
+  if (is.null(nms)) nms <- rep("", length(config))
+  dirs <- vapply(config, function(x) if (length(x) == 1 && !is.na(x)) as.character(x) else "", "")
+  ok <- nzchar(dirs) & dir.exists(dirs) & file.exists(file.path(dirs, "index.fst"))
+  if (!any(ok)) return(empty)
+  dirs <- normalizePath(dirs[ok]); nms <- nms[ok]
+  orgs <- vapply(seq_along(dirs), function(i) {
+    if (!is.na(nms[i]) && nzchar(nms[i])) return(explain_norm_organism(nms[i]))
+    explain_store_organism(dirs[i])
+  }, "")
+  keep <- !is.na(orgs) & nzchar(orgs) & !duplicated(orgs)
+  setNames(unname(dirs[keep]), orgs[keep])
+}
+
+#' Organism (normalised) of a store directory from its meta.rds (cached), "" when unreadable.
+#' @noRd
+explain_store_organism <- function(dir) {
+  key <- paste0("org:", dir)
+  org <- .rc_explain_env[[key]]
+  if (!is.null(org)) return(org)
+  org <- tryCatch(explain_norm_organism(readRDS(file.path(dir, "meta.rds"))$organism),
+                  error = function(e) "")
+  if (length(org) != 1 || is.na(org)) org <- ""
+  assign(key, org, envir = .rc_explain_env)
+  org
+}
+
+#' Explainability store directory, NULL when not configured.
+#'
+#' @param organism organism name of the selected experiment; NULL = the first
+#'  configured store (old single-store behaviour, and "is any store configured").
+#' @noRd
+explain_store_dir <- function(organism = NULL) {
+  dirs <- explain_store_dirs()
+  if (!length(dirs)) return(NULL)
+  if (is.null(organism)) return(unname(dirs[1]))
+  if (length(organism) != 1 || is.na(organism)) return(NULL)
+  d <- dirs[explain_norm_organism(organism)]
+  if (is.na(d)) NULL else unname(d)
+}
+
+#' Open the store of an organism, NULL when that organism has none.
+#' @noRd
+explain_store_for <- function(organism) {
+  dir <- explain_store_dir(organism)
+  if (is.null(dir)) return(NULL)
+  explain_store_open(dir)
+}
+
+#' All configured stores, opened (unreadable ones dropped).
+#' @noRd
+explain_stores_open <- function() {
+  dirs <- explain_store_dirs()
+  stores <- lapply(dirs, function(d) tryCatch(explain_store_open(d), error = function(e) NULL))
+  stores[!vapply(stores, is.null, logical(1))]
+}
+
+#' Short display names of the configured organisms ("human, mouse").
+#' @noRd
+explain_organism_labels <- function(orgs = names(explain_store_dirs())) {
+  short <- c("homo sapiens" = "human", "mus musculus" = "mouse")
+  lab <- ifelse(orgs %in% names(short), short[orgs], orgs)
+  paste(unname(lab), collapse = ", ")
 }
 
 .rc_explain_env <- new.env(parent = emptyenv())
@@ -106,12 +198,14 @@ explain_known_ids <- function(store, layers = NULL) {
   ids
 }
 
-#' Is the organism supported by the store?
+#' Is the organism supported?
+#'
+#' @param store a store (check that store only); NULL = any configured store.
 #' @noRd
-explain_organism_supported <- function(organism_name, store = explain_store_open()) {
-  if (is.null(store) || length(organism_name) != 1 || is.na(organism_name)) return(FALSE)
-  norm <- function(x) tolower(gsub("[_ ]+", " ", trimws(x)))
-  identical(norm(organism_name), norm(store$meta$organism))
+explain_organism_supported <- function(organism_name, store = NULL) {
+  if (length(organism_name) != 1 || is.na(organism_name)) return(FALSE)
+  if (is.null(store)) return(!is.null(explain_store_dir(organism_name)))
+  identical(explain_norm_organism(organism_name), explain_norm_organism(store$meta$organism))
 }
 
 #' Read all layers of one transcript (lazy, cached).
@@ -275,7 +369,9 @@ explain_map_points <- function(pos, map) {
 #' @param explain list from the controller: active, layers, ids, tx_exons
 #' @param display_range GRangesList (one group), the final browser display region
 #' @noRd
-explain_locus_data <- function(explain, display_range, store = explain_store_open()) {
+explain_locus_data <- function(explain, display_range,
+                               store = explain_store_open(if (is.null(explain$store_dir)) explain_store_dir()
+                                                          else explain$store_dir)) {
   if (is.null(store) || !isTRUE(explain$active) || !length(explain$ids)) return(NULL)
   layers <- explain$layers
   display <- unlist(display_range, use.names = FALSE)
@@ -604,9 +700,13 @@ explain_translons_hover <- function(dt, meta) {
   len <- dt$end - dt$start + 1L
   num <- function(x, fmt) ifelse(is.na(x), "NA", sprintf(fmt, x))
   cons <- ifelse(is.na(dt$conserved), "NA", ifelse(dt$conserved, "yes", "no"))
+  # meta$conserved_label: hover label of the conservation column (default: human lane, conserved in mouse);
+  # NA / "" = the lane has no conservation column, line omitted
+  cl <- if (is.null(meta$conserved_label)) "conserved translon (mouse)" else meta$conserved_label
+  cons <- if (length(cl) != 1 || is.na(cl) || !nzchar(cl)) rep("", nrow(dt)) else paste0("<br>", cl, ": ", cons)
   eff <- if (!is.null(dt$rt_eff)) dt$rt_eff else rep(NA_real_, nrow(dt))
   genomic <- if (!is.null(dt$genomic)) dt$genomic else rep(NA_character_, nrow(dt))
-  sprintf("%s<br><b>%s</b> (%s tier)<br>q = %s, P = %s<br>start codon %s; tx nt %d-%d (%d nt)<br>conserved translon (mouse): %s%s%s",
+  sprintf("%s<br><b>%s</b> (%s tier)<br>q = %s, P = %s<br>start codon %s; tx nt %d-%d (%d nt)%s%s%s",
           dt$label, type, tier, num(dt$q, "%.3g"), num(dt$P, "%.3g"), ifelse(is.na(codon), "NA", codon),
           dt$start, dt$end, len, cons,
           ifelse(is.na(eff), "", sprintf("<br>readthrough efficiency: %.3g", eff)),
@@ -738,13 +838,13 @@ explain_add_expected_traces <- function(plots, expected, profiles, withFrames,
 explain_controller <- function(input, dff, tx_grl, display_region) {
   off <- list(active = FALSE)
   if (!isTRUE(browser_input_or_default(input, "explain_mode", FALSE))) return(off)
-  store <- explain_store_open()
-  if (is.null(store)) return(off)
+  if (is.null(explain_store_dir())) return(off)
   org <- tryCatch(organism(dff), error = function(e) NA_character_)
-  if (!explain_organism_supported(org, store)) {
+  store <- tryCatch(explain_store_for(org), error = function(e) NULL)
+  if (is.null(store)) {
     if (!is.null(shiny::getDefaultReactiveDomain())) {
       shiny::showNotification(paste0("Explainability mode is only available for ",
-                                     store$meta$organism, " (MANE transcripts)."), type = "warning")
+                                     explain_organism_labels(), "."), type = "warning")
     }
     return(off)
   }
@@ -759,7 +859,7 @@ explain_controller <- function(input, dff, tx_grl, display_region) {
                               type = "message")
     }
   }
-  list(active = length(ids) > 0, layers = layers, ids = ids,
+  list(active = length(ids) > 0, layers = layers, ids = ids, store_dir = store$dir,
        tx_exons = if (length(ids)) tx_grl[ids] else NULL)
 }
 
@@ -775,24 +875,48 @@ explain_hash <- function(input) {
 #' @noRd
 explain_settings_ui <- function(ns) {
   if (is.null(explain_store_dir())) return(NULL)
-  store <- tryCatch(explain_store_open(), error = function(e) NULL)
+  stores <- explain_stores_open()
+  tl <- explain_stores_translons(stores)
   fluidRow(
-    column(4, checkboxInput(ns("explain_mode"), "Explainability (MANE, human)", FALSE)),
+    column(4, checkboxInput(ns("explain_mode"),
+                            paste0("Explainability (", explain_organism_labels(names(stores)), ")"), FALSE)),
     column(8, conditionalPanel(
       sprintf("input['%s'] == true", ns("explain_mode")),
-      checkboxGroupInput(ns("explain_layers"), NULL, choices = explain_layer_choices(store),
+      checkboxGroupInput(ns("explain_layers"), NULL, choices = explain_layer_choices(tl),
                          selected = c("status", "expected"), inline = TRUE),
-      explain_status_legend_store(),
-      explain_translons_legend_ui(store$translons$meta)))
+      explain_status_legend_store(stores),
+      explain_translons_legend_ui(tl$translons$meta)))
   )
 }
 
-#' Status legend for the configured store (NULL when it cannot be read).
+#' Pseudo store for the settings UI: translon lane meta merged over all stores
+#' (type colours union, version "v4_3 human, v1 mouse"); list(translons = NULL) without lanes.
 #' @noRd
-explain_status_legend_store <- function() {
-  store <- tryCatch(explain_store_open(), error = function(e) NULL)
-  if (is.null(store)) return(NULL)
-  explain_status_legend_ui(store$meta)
+explain_stores_translons <- function(stores) {
+  metas <- lapply(stores, function(s) s$translons$meta)
+  metas <- metas[!vapply(metas, is.null, logical(1))]
+  if (!length(metas)) return(list(translons = NULL))
+  if (length(metas) == 1) return(list(translons = list(meta = metas[[1]])))
+  cols <- character()
+  for (m in metas) cols <- c(cols, m$type_colors[setdiff(names(m$type_colors), names(cols))])
+  ver <- paste(vapply(names(metas), function(o) paste(metas[[o]]$version, explain_organism_labels(o)), ""),
+               collapse = ", ")
+  list(translons = list(meta = list(version = ver, type_colors = cols)))
+}
+
+#' Status legend for the configured stores (union of their status levels;
+#' NULL when none can be read).
+#' @noRd
+explain_status_legend_store <- function(stores = explain_stores_open()) {
+  if (!length(stores)) return(NULL)
+  meta <- stores[[1]]$meta
+  for (s in stores[-1]) {
+    m <- s$meta
+    meta$status_levels <- union(meta$status_levels, m$status_levels)
+    meta$status_colors <- c(meta$status_colors, m$status_colors[setdiff(names(m$status_colors), names(meta$status_colors))])
+    meta$status_labels <- c(meta$status_labels, m$status_labels[setdiff(names(m$status_labels), names(meta$status_labels))])
+  }
+  explain_status_legend_ui(meta)
 }
 
 #' Enable the explainability switch only for supported organisms.

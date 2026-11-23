@@ -269,3 +269,30 @@ test_that("translon lane: discovery, lazy per-transcript reads, junction split, 
   html <- as.character(RiboCrypt:::explain_translons_legend_ui(store$translons$meta))
   expect_match(html, "v4_10"); expect_match(html, "#CC79A7")
 })
+
+test_that("explain panel labels are horizontal annotations in each panel's domain (no rotated titles)", {
+  # Rotated 22 px y titles ran into each other in the ~50 px explain panels (live check 2026-11-23);
+  # labels must stay short (<= 7 chars) to fit the left margin.
+  expect_true(all(nchar(c("Explain", "pLDDT", "UniProt", "ORFs")) <= 7))
+  dir <- write_min_store(tempfile("explain_store_lab"))
+  write_translons(dir, "v4_3")
+  store <- RiboCrypt:::explain_store_open(dir)
+  tx1 <- GRanges("chr1", IRanges(c(1401, 1001), c(1500, 1100)), "-")
+  explain <- list(active = TRUE, ids = "TX1", layers = c("status", "translons"),
+                  tx_exons = GRangesList(TX1 = tx1))
+  display <- GRangesList(TX1 = genomic_display(tx1))
+  ex <- RiboCrypt:::explain_locus_data(explain, display, store)
+  panels <- RiboCrypt:::custom_panels_to_plotly(RiboCrypt:::explain_bottom_panels(ex, display))
+  expect_named(panels, c("explain_status", "explain_translons"))
+  for (p in panels) {
+    expect_identical(p$x$layout$yaxis$title$text, "")
+    expect_length(p$x$layout$annotations, 1)
+  }
+  expect_identical(panels$explain_translons$x$layout$annotations[[1]]$text, "ORFs")
+  merged <- RiboCrypt:::fast_subplot_shared_x(unname(panels), nrows = 2, shareX = TRUE)
+  ann <- merged$x$layout$annotations
+  expect_identical(vapply(ann, `[[`, "", "text"), c("Explain", "ORFs"))
+  expect_identical(vapply(ann, `[[`, "", "yref"), c("y domain", "y2 domain"))
+  expect_true(all(vapply(ann, `[[`, "", "xref") == "paper"))
+  expect_true(all(vapply(ann, function(a) a$font$size, numeric(1)) <= 12))
+})

@@ -514,20 +514,31 @@ explain_plotly_template <- function() {
 #' @noRd
 explain_panel <- function(traces, display_range, ylab, yrange) {
   p <- explain_plotly_template()
-  yaxis <- custom_seq_track_yaxis(ylab)
+  # Explain panels are short (~50 px): a rotated y title (22 px) is longer than the
+  # panel and runs into the title of the neighbouring panel. Use a small horizontal
+  # label in the left margin instead (annotation in the panel's y domain).
+  yaxis <- custom_seq_track_yaxis("")
   yaxis$range <- yrange
   yaxis$autorange <- FALSE
-  yaxis$title$font <- list(size = 22)
   xaxis <- custom_seq_track_xaxis(display_range)
   xaxis$autorange <- FALSE
   p$x$data <- traces
   p$x$layout$xaxis <- xaxis
   p$x$layout$yaxis <- yaxis
+  p$x$layout$annotations <- list(explain_panel_label(ylab))
   p$x$layout$bargap <- 0
   p$x$layout$barmode <- "overlay"
   p$x$layout$margin <- list(t = 0, r = 0, b = 0, l = 0, pad = 0)
   p$x$layout$showlegend <- FALSE
   p
+}
+
+#' Horizontal panel label left of the plot area, vertically centred on the panel.
+#' @noRd
+explain_panel_label <- function(text) {
+  list(text = text, xref = "paper", x = 0, xanchor = "right", xshift = -4,
+       yref = "y domain", y = 0.5, yanchor = "middle", showarrow = FALSE,
+       font = list(size = 11))
 }
 
 #' Window status ribbon (one lane per transcript).
@@ -631,7 +642,7 @@ explain_translons_panel <- function(ex, display_range) {
     traces[[k]]$marker$line <- list(width = 0.5, color = unname(cols[traces[[k]]$name]))
     traces[[k]]$meta <- list(rc_explain = "translons")
   }
-  explain_panel(traces, display_range, "Translons", c(0, total))
+  explain_panel(traces, display_range, "ORFs", c(0, total))  # short: the label sits in the ~60 px left margin
 }
 
 #' Translon type colour legend (HTML), NULL without a translon lane.

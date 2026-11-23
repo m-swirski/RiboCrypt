@@ -50,6 +50,16 @@
 #'   `options(ribocrypt.umap_webgl = FALSE)` to use the SVG compatibility path.
 #' @param access_control NULL for legacy public operation, or configuration from
 #'   `ribocrypt_access_control()` for gateway-authenticated, permission-filtered sessions.
+#' @param experimental_unlock NULL (default) or the shared unlock code for private /
+#'   experimental features (currently the explainability mode). NULL keeps them locked
+#'   and shows no unlock box. A single string, or preferably
+#'   \code{experimental_unlock_file(path)} (file readable only by the app user). When
+#'   NULL, read from \code{options(RiboCrypt.experimental_unlock_file = path)},
+#'   \code{options(RiboCrypt.experimental_unlock = value)}, or the environment variables
+#'   \code{RIBOCRYPT_EXPERIMENTAL_UNLOCK_FILE} / \code{RIBOCRYPT_EXPERIMENTAL_UNLOCK}.
+#'   Only a salted HMAC-SHA256 of the code is kept (the plain option / environment
+#'   value is cleared); users type the code in the browser or observatory settings
+#'   to unlock the features for their session only.
 #' @import shiny bslib ORFik NGLVieweR ggplot2 fst rclipboard data.table
 #' @importFrom Biostrings strsplit width
 #' @importFrom GenomeInfoDb seqlevelsStyle seqlevelsStyle<-
@@ -102,15 +112,17 @@ RiboCrypt_app <- function(
                        "BATCH", "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION",
                        "Cancer_type", "Cell_model", "Cell_type",
                        "Organ_system", "Sex", "Life_stage"),
-  access_control = NULL, home_html = NULL
+  access_control = NULL, home_html = NULL, experimental_unlock = NULL
 ) {
+  experimental_unlock <- experimental_unlock_setup(experimental_unlock)
   if (!is.null(access_control)) {
     return(rc_access_app(access_control, list(options = options, metadata = metadata,
       all_exp_meta = if (missing(all_exp_meta)) NULL else all_exp_meta,
       browser_options = browser_options, init_tab_focus = init_tab_focus,
       columns_to_show = columns_to_show, validate.experiments = validate.experiments,
-      home_html = home_html)))
+      home_html = home_html, experimental_unlock = experimental_unlock)))
   }
+  .rc_experimental_env$configured <- !is.null(experimental_unlock)
   home_enabled <- is.character(home_html) && length(home_html)==1L && !is.na(home_html) && file.exists(home_html)
   if (!home_enabled && identical(init_tab_focus,"home")) init_tab_focus <- "browser"
   rc_parameter_setup()
@@ -148,6 +160,7 @@ RiboCrypt_app <- function(
   print(round(Sys.time() - time_before, 2))
 
   server <- function(input, output, session) {
+    experimental_session_init(session, experimental_unlock)
     reactive_url(home_enabled)
     org_and_study_changed_checker(input, output, session)
     if (home_enabled) rc_home_server(input, output, session, all_exp, metadata, rv, df, libs)

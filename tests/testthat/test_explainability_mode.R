@@ -384,11 +384,13 @@ test_that("controller resolves the store of the experiment's organism", {
   with_store_config(c("Homo sapiens" = hs, "Mus musculus" = mm), code = {
     testthat::local_mocked_bindings(organism = function(object) attr(object, "org"), .package = "RiboCrypt")
     for (org in c("Mus musculus", "Homo sapiens")) {
-      ctl <- RiboCrypt:::explain_controller(input, fake_df(org), GRangesList(TX1 = tx), GRangesList())
+      ctl <- RiboCrypt:::explain_controller(input, fake_df(org), GRangesList(TX1 = tx), GRangesList(), enabled = TRUE)
       expect_true(ctl$active)
       expect_equal(ctl$store_dir, RiboCrypt:::explain_store_dir(org))
     }
-    expect_false(RiboCrypt:::explain_controller(input, fake_df("Danio rerio"), GRangesList(TX1 = tx), GRangesList())$active)
+    expect_false(RiboCrypt:::explain_controller(input, fake_df("Danio rerio"), GRangesList(TX1 = tx), GRangesList(), enabled = TRUE)$active)
+    # locked (default outside an unlocked session): never active
+    expect_false(RiboCrypt:::explain_controller(input, fake_df("Homo sapiens"), GRangesList(TX1 = tx), GRangesList())$active)
   })
 })
 

@@ -882,8 +882,12 @@ explain_add_expected_traces <- function(plots, expected, profiles, withFrames,
 
 #' Controller snapshot for explainability mode (plain list, cache safe).
 #' @noRd
-explain_controller <- function(input, dff, tx_grl, display_region) {
+explain_controller <- function(input, dff, tx_grl, display_region,
+                               enabled = experimental_feature_enabled(feature = "explain")) {
   off <- list(active = FALSE)
+  # Experimental feature: only for sessions unlocked with the experimental code
+  # (an explain_mode input forced from the client is ignored when locked).
+  if (!isTRUE(enabled)) return(off)
   if (!isTRUE(browser_input_or_default(input, "explain_mode", FALSE))) return(off)
   if (is.null(explain_store_dir())) return(off)
   org <- tryCatch(organism(dff), error = function(e) NA_character_)
@@ -912,8 +916,8 @@ explain_controller <- function(input, dff, tx_grl, display_region) {
 
 #' Hash part for explainability inputs.
 #' @noRd
-explain_hash <- function(input) {
-  paste(isTRUE(browser_input_or_default(input, "explain_mode", FALSE)),
+explain_hash <- function(input, enabled = experimental_feature_enabled(feature = "explain")) {
+  paste(isTRUE(enabled) && isTRUE(browser_input_or_default(input, "explain_mode", FALSE)),
         paste(browser_input_or_default(input, "explain_layers", ""), collapse = ","),
         sep = ":")
 }
@@ -975,9 +979,12 @@ explain_status_legend_store <- function(stores = explain_stores_open()) {
 explain_organism_observer <- function(input, session, df) {
   if (is.null(explain_store_dir())) return(invisible(NULL))
   observe({
+    # The switch is rendered server-side only for unlocked sessions; re-run on unlock
+    # and toggle after the flush that sends the rendered settings.
+    req(experimental_feature_enabled(session, "explain"))
     org <- tryCatch(organism(df()), error = function(e) NA_character_)
     ok <- explain_organism_supported(org)
-    shinyjs::toggleState("explain_mode", condition = ok)
+    session$onFlushed(function() shinyjs::toggleState("explain_mode", condition = ok), once = TRUE)
     if (!ok && isTRUE(isolate(input$explain_mode))) {
       updateCheckboxInput(session, "explain_mode", value = FALSE)
     }

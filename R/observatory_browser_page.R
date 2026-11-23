@@ -190,6 +190,8 @@ observatory_browser_server <- function(
   shiny::moduleServer(id, function(input, output, session) {
     # -- Gene / transcript input wiring ------------------------------------
     allsamples_observer_controller(input, output, session)
+    experimental_unlock_server(input, output, session)
+    explain_organism_observer(input, session, df)
     kickoff <- shiny::reactiveVal(FALSE)
     cache_user_info <- shiny::reactive(observatory_browser_cache_user_info(input$js_user_agent))
     resolved_library_selections <- observatory_browser_library_selections(

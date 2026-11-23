@@ -17,7 +17,8 @@ RiboCrypt_app(
     "TIMEPOINT", "TISSUE", "CELL_LINE", "GENE", "FRACTION", "Cancer_type", "Cell_model",
     "Cell_type", "Organ_system", "Sex", "Life_stage"),
   access_control = NULL,
-  home_html = NULL
+  home_html = NULL,
+  experimental_unlock = NULL
 )
 }
 \arguments{
@@ -56,10 +57,6 @@ where libs are seperated by ",", like "RFP_WT_r1|RFP_WT_r2". Also support
 \item{init_tab_focus}{character, default "browser". Which tab to open on
 init.}
 
-\item{home_html}{Optional path to a trusted HTML fragment for the Home page.
-If NULL or absent, Home and logo navigation are disabled. The package
-example is \code{system.file("home", "home.html", package = "RiboCrypt")}.}
-
 \item{metadata}{a path to csv or a data.table of metadata columns,
 must contain a "Run" column to merge IDs to ORFik experiments.
 It is used in the metabrowser tab for grouping of samples.}
@@ -76,6 +73,21 @@ metadata table tab.}
 
 \item{access_control}{NULL for legacy public operation, or configuration from
 `ribocrypt_access_control()` for gateway-authenticated, permission-filtered sessions.}
+
+\item{home_html}{Optional path to a trusted HTML fragment for the Home page.
+If NULL or absent, Home and logo navigation are disabled. The package
+example is `system.file("home", "home.html", package = "RiboCrypt")`.}
+
+\item{experimental_unlock}{NULL (default) or the shared unlock code for private /
+experimental features (currently the explainability mode). NULL keeps them locked
+and shows no unlock box. A single string, or preferably
+\code{experimental_unlock_file(path)} (file readable only by the app user). When
+NULL, read from \code{options(RiboCrypt.experimental_unlock_file = path)},
+\code{options(RiboCrypt.experimental_unlock = value)}, or the environment variables
+\code{RIBOCRYPT_EXPERIMENTAL_UNLOCK_FILE} / \code{RIBOCRYPT_EXPERIMENTAL_UNLOCK}.
+Only a salted HMAC-SHA256 of the code is kept (the plain option / environment
+value is cleared); users type the code in the browser or observatory settings
+to unlock the features for their session only.}
 }
 \value{
 RiboCrypt shiny app
@@ -84,11 +96,11 @@ RiboCrypt shiny app
 Create RiboCrypt app
 }
 \details{
-For faster first Observatory display, the Plotly library is loaded during page
-startup when collections are available. Set
-\code{options(ribocrypt.observatory_plotly_preload = "prefetch")} for a
-non-blocking download, or \code{"none"} to disable this preload. Set
-\code{options(ribocrypt.umap_webgl = FALSE)} to use SVG rendering.
+For faster first Observatory display, the Plotly library is loaded
+  during page startup when collections are available. Set
+  `options(ribocrypt.observatory_plotly_preload = "prefetch")` for a
+  non-blocking download, or `"none"` to disable this preload. Set
+  `options(ribocrypt.umap_webgl = FALSE)` to use the SVG compatibility path.
 }
 \examples{
 run_variable <- 1 # Ignore check test limit

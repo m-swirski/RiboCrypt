@@ -128,7 +128,7 @@ browser_ui_shared <- function(id, browser_options, gene_names_init = NULL,
                                 conditionalPanel(sprintf("input['%s'] == true", ns("mapability")), mappability_legend_ui()),
                                 fluidRow(column(4, checkboxInput(ns("exon_strip"), "Exons (alternating)", FALSE))),
                                 conditionalPanel(sprintf("input['%s'] == true", ns("exon_strip")), exon_strip_legend_ui()),
-                                explain_settings_ui(ns),
+                                experimental_settings_ui(ns),
                                 fluidRow(
                                   column(4, checkboxInput(ns("withFrames"), "Split color Frames", TRUE)),
                                   column(4, selectizeInput(
@@ -209,6 +209,7 @@ browser_server <- function(id, all_experiments, env, df, experiments,
     id,
     function(input, output, session, all_exp = all_experiments) {
       study_and_gene_observers(input, output, session)
+      experimental_unlock_server(input, output, session)
       explain_organism_observer(input, session, df)
 
       # Main plot controller, this code is only run if 'plot' is pressed
@@ -291,8 +292,12 @@ input_to_list <- function(input, user_info = NULL) {
   cache_user_info <- user_info[-1]
   cache_user_info <- cache_user_info[setdiff(names(cache_user_info), c("width", "height"))]
 
-  a <- a[-which(names(a) %in% to_ignore | grepl(resize_input_pattern, names(a)))]
+  # The unlock code box is never part of a cache key (it holds the typed code).
+  a <- a[!(names(a) %in% to_ignore | grepl(resize_input_pattern, names(a)) |
+             grepl("experimental_unlock_", names(a), fixed = TRUE))]
   if (identical(a$display_mode, "dynamic") && !is.null(a$dynamic_view)) a$dynamic_go <- input$go
   a <- c(a, user.info = cache_user_info)
+  # Plot caches are app-wide: unlocked and locked sessions must not share entries.
+  a$rc_experimental <- experimental_features_key()
   return(a)
 }

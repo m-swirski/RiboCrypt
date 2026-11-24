@@ -404,3 +404,14 @@ test_that("translon hover: conservation line follows meta$conserved_label", {
   meta$conserved_label <- "conserved translon (human)"
   expect_match(RiboCrypt:::explain_translons_hover(dt, meta), "conserved translon \\(human\\): NA")
 })
+
+test_that("translon hover marks start-stop elements (lane v4_7 start_stop column)", {
+  meta <- list(type_levels = "uORF", tier_levels = "high", codon_levels = "ATG")
+  dt <- data.table::data.table(label = c("a", "b"), type = 1L, tier = 1L, start_codon = 1L, start = c(25L, 87L),
+                               end = c(30L, 98L), q = 0.01, P = 0.9, conserved = NA, start_stop = c(TRUE, FALSE))
+  h <- RiboCrypt:::explain_translons_hover(dt, meta)
+  expect_match(h[1], "(6 nt, start-stop)", fixed = TRUE)
+  expect_match(h[2], "(12 nt)", fixed = TRUE)
+  dt$start_stop <- NULL
+  expect_match(RiboCrypt:::explain_translons_hover(dt, meta)[1], "(6 nt)", fixed = TRUE)
+})

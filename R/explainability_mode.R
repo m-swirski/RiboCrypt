@@ -750,9 +750,11 @@ explain_translons_hover <- function(dt, meta) {
   cons <- if (length(cl) != 1 || is.na(cl) || !nzchar(cl)) rep("", nrow(dt)) else paste0("<br>", cl, ": ", cons)
   eff <- if (!is.null(dt$rt_eff)) dt$rt_eff else rep(NA_real_, nrow(dt))
   genomic <- if (!is.null(dt$genomic)) dt$genomic else rep(NA_character_, nrow(dt))
-  sprintf("%s<br><b>%s</b> (%s tier)<br>q = %s, P = %s<br>start codon %s; tx nt %d-%d (%d nt)%s%s%s",
+  # optional start_stop column (lane v4_7+): start codon directly followed by a stop
+  ss <- if (!is.null(dt$start_stop)) ifelse(dt$start_stop %in% TRUE, ", start-stop", "") else rep("", nrow(dt))
+  sprintf("%s<br><b>%s</b> (%s tier)<br>q = %s, P = %s<br>start codon %s; tx nt %d-%d (%d nt%s)%s%s%s",
           dt$label, type, tier, num(dt$q, "%.3g"), num(dt$P, "%.3g"), ifelse(is.na(codon), "NA", codon),
-          dt$start, dt$end, len, cons,
+          dt$start, dt$end, len, ss, cons,
           ifelse(is.na(eff), "", sprintf("<br>readthrough efficiency: %.3g", eff)),
           ifelse(is.na(genomic), "", paste0("<br>", genomic)))
 }
